@@ -28,14 +28,14 @@ e2e/
 ├── .env.example                     # copy to .env for global local overrides
 ├── docker/
 │   ├── setup.Dockerfile                # shared alpine+tools image (curl/jq/xxd/docker-cli)
-│   ├── bolt11-gen.Dockerfile           # python:3.12-slim + pip bolt11 (fixture generator)
+│   ├── activity-fake.Dockerfile        # debian+node+bolt11+docker-cli — fake-cdk-postgres only
 │   ├── scripts/
 │   │   ├── compose.sh                  # dispatcher: up/down/logs/ps
 │   │   ├── activity-cadence.sh         # long-running cadence simulator (host-controlled)
 │   │   ├── fund-lnd-topology.sh        # runs inside setup for lnd-* configs
 │   │   ├── fund-cln-topology.sh        # runs inside setup for cln-* configs
 │   │   ├── activity-fake.sh            # runs inside activity for fake-backed paths
-│   │   └── gen-bolt11s.py              # runs inside bolt11-gen → /shared/fake-bolt11s.json
+│   │   └── gen-one-bolt11.js           # in-script bolt11 signer (no-LN-stack fallback)
 │   └── configs/
 │       ├── lnd-nutshell-sqlite/
 │       │   ├── compose.yml
@@ -323,20 +323,23 @@ topology, then exits.
       open and writes it to `/shared/<node>.rune` for mint containers to read
       (used by `cln-nutshell-postgres` which authenticates nutshell → clnrest
       with a rune)
-- **fake-cdk-postgres**: no `setup` service (no channels to fund). A
-  `bolt11-gen` sidecar runs once instead, emitting a small JSON map of
-  signed regtest bolt11 fixtures to `/shared/fake-bolt11s.json`; the
-  activity container then runs [activity-fake.sh](docker/scripts/activity-fake.sh)
-  which drives `cdk-cli --unit sat|usd` through mint/swap/melt. Melts
-  pick a fixture so the fake backend sees an "external-looking" invoice.
+- **fake-cdk-postgres**: no `setup` service (no channels to fund). The
+  activity container runs [activity-fake.sh](docker/scripts/activity-fake.sh)
+  which drives `cdk-cli --unit sat|usd` through mint/swap/melt. Melts call
+  [gen-one-bolt11.js](docker/scripts/gen-one-bolt11.js) per-iteration to
+  self-sign a fresh regtest bolt11 (random privkey + payment_hash per call,
+  so the mint never sees a duplicate). Container is built from
+  [activity-fake.Dockerfile](docker/activity-fake.Dockerfile) which bundles
+  node + the `bolt11` npm package alongside docker-cli.
   `ACTIVITY_MEMPOOL_PER_RATE` is pinned to 0 because there's no bitcoind
   to broadcast into.
 - **cln-nutshell-postgres** (multi-unit): runs the normal cln `setup` +
-  `activity` (SAT via real LN) alongside an extra `bolt11-gen` +
-  `activity-fake` pair. The second pair exercises nutshell's USD + EUR
-  keysets through their FakeWallet backends, driven by the same shared
-  fixture file. Sat counts on `activity-fake` are pinned to 0 to avoid
-  double-dipping with the LN activity container.
+  `activity` (SAT via real LN) alongside an extra `activity-fake` service.
+  The second container exercises nutshell's USD + EUR keysets through their
+  FakeWallet backends; melt invoices come from `cln-alice` via the
+  `LN_INVOICE_NODE` env var, so each call gets a fresh payment hash. Sat
+  counts on `activity-fake` are pinned to 0 to avoid double-dipping with
+  the LN activity container.
 
 Downstream services (mint, orchard) depend on setup via
 `service_completed_successfully`.

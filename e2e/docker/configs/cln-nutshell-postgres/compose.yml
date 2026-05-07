@@ -373,22 +373,10 @@ services:
     entrypoint: ["/scripts/activity-cln-topology.sh"]
     restart: "no"
 
-  # One-shot: emits /shared/fake-bolt11s.json for activity-fake (usd+eur).
-  bolt11-gen:
-    build:
-      context: ../..
-      dockerfile: bolt11-gen.Dockerfile
-    container_name: cln-nutshell-postgres-bolt11-gen
-    networks: [net]
-    volumes:
-      - shared:/shared
-      - ../../scripts/gen-bolt11s.js:/app/gen-bolt11s.js:ro
-    entrypoint: ["node", "/app/gen-bolt11s.js", "/shared/fake-bolt11s.json"]
-    restart: "no"
-
   # USD+EUR activity via nutshell FakeWallet. Runs alongside `activity`
   # (which owns SAT + mempool); SAT and mempool counts pinned to 0 here
-  # to avoid double-dipping.
+  # to avoid double-dipping. Melt invoices come from cln-alice via
+  # LN_INVOICE_NODE; no fixture sidecar needed.
   activity-fake:
     build:
       context: ../..
@@ -396,17 +384,16 @@ services:
     container_name: cln-nutshell-postgres-activity-fake
     networks: [net]
     depends_on:
-      orchard:    { condition: service_healthy }
-      wallet:     { condition: service_started }
-      bolt11-gen: { condition: service_completed_successfully }
+      orchard: { condition: service_healthy }
+      wallet:  { condition: service_started }
     volumes:
       - ../../scripts:/scripts:ro
-      - shared:/shared:ro
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - CONFIG_NAME=cln-nutshell-postgres
       - MINT_SERVICE=nutshell
       - MINT_PORT=3338
+      - LN_INVOICE_NODE=cln-alice
       - BTC_RPC_USER=${BTC_RPC_USER}
       - BTC_RPC_PASS=${BTC_RPC_PASS}
       - ACTIVITY_MINTS_SAT=0
