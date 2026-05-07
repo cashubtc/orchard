@@ -505,6 +505,7 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 			this.loading_mint.set(false);
 			this.cdr.detectChanges();
 		} catch (error) {
+			this.loading_mint.set(false);
 			console.error('Error updating dynamic data:', error);
 		}
 	}
