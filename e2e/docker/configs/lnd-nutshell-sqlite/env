@@ -35,6 +35,9 @@ LIGHTNING_RPC_PORT=10009
 MINT_TYPE=nutshell
 MINT_API=http://nutshell:3338
 # MINT_DATABASE set inline in compose (shared volume)
+MINT_RPC_HOST=nutshell
+MINT_RPC_PORT=8086
+MINT_RPC_MTLS=false
 
 # ----- Nutshell mint (backend: lnd-orchard via REST) -----
 # Any 64-char hex value works for regtest; real deployments must rotate.

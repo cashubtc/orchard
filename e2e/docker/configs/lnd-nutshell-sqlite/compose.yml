@@ -206,6 +206,9 @@ services:
       # Disabled for e2e: Playwright fires ~25 `/v1/info` reads per spec run,
       # tripping nutshell's per-IP limiter into `MintPublicApiError` (40001).
       - MINT_RATE_LIMIT=false
+      - MINT_RPC_SERVER_ENABLE=true
+      - MINT_RPC_SERVER_ADDR=0.0.0.0
+      - MINT_RPC_SERVER_MUTUAL_TLS=false
     command: >
       poetry run mint
     healthcheck:
