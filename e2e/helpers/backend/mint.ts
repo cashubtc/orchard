@@ -6,7 +6,7 @@
 
 /* Native Dependencies */
 import {dockerExec} from './docker-cli';
-import {cached} from './_cache';
+import {cached, recache} from './_cache';
 import {mintDbQuery, parseSqlBoolean} from './_sql';
 import type {ConfigInfo, MintUnit} from '@e2e/types/config';
 import type {MintNutInfo} from '@e2e/types/mint';
@@ -15,16 +15,22 @@ export const mint = {
 	/** Read mint state straight from the daemon. Both nutshell and cdk
 	 *  expose NUT-06 at `/v1/info` over their in-container loopback port,
 	 *  reachable via docker exec. */
-	getInfo(config: ConfigInfo): MintNutInfo {
-		return cached(`mint.getInfo:${config.name}`, () => {
-			// 127.0.0.1 not localhost — cdk-mintd's container has no `localhost`
-			// entry in /etc/hosts. nutshell ships curl, cdk-mintd ships wget;
-			// `sh -c` chains so the call survives whichever tool is in $PATH.
+	getInfo(config: ConfigInfo, options: {fresh?: boolean} = {}): MintNutInfo {
+		// 127.0.0.1 not localhost — cdk-mintd's container has no `localhost`
+		// entry in /etc/hosts. nutshell ships curl, cdk-mintd ships wget;
+		// `sh -c` chains so the call survives whichever tool is in $PATH.
+		const fetchInfo = () => {
 			const url = `http://127.0.0.1:${config.mintPort}/v1/info`;
 			const cmd = `curl -fsS ${url} 2>/dev/null || wget -qO- ${url}`;
 			const out = dockerExec(['exec', config.containers.mint, 'sh', '-c', cmd]);
 			return JSON.parse(out) as MintNutInfo;
-		});
+		};
+		// `fresh` skips the cache (and overwrites it) — use after a UI-driven
+		// mutation that just changed `/v1/info` so the next cached read sees
+		// the new value too.
+		const key = `mint.getInfo:${config.name}`;
+		if (options.fresh) return recache(key, fetchInfo);
+		return cached(key, fetchInfo);
 	},
 
 	/** Outstanding ecash liability for the given mint unit, summed across all
@@ -161,6 +167,192 @@ export const mint = {
 		const total_promises = parseInt(mintDbQuery(config, promises_sql), 10);
 		const total_proofs = parseInt(mintDbQuery(config, proofs_sql), 10);
 		return {total_promises, total_proofs, window: {effective_end}};
+	},
+
+	/** Differential oracle for `orc-mint-subsection-dashboard-balance-chart`'s
+	 *  Balance Sheet *Totals* mode. The chart's per-bucket value is
+	 *  `issued − redeemed` per hour, and the cumulative sum across all
+	 *  visible buckets equals outstanding ecash supply at the rightmost
+	 *  bucket boundary. The Orchard resolver feeds the chart from
+	 *  `cashuMintAnalyticsService.getCachedAnalytics` summing the
+	 *  `issued_amount` and `redeemed_amount` metrics, both populated by
+	 *  backfill from the mint daemon's promise/proof streams
+	 *  (mintanalytics.service.ts:419,457).
+	 *
+	 *  Window. Backfill skips buckets `>= current_hour` and writes
+	 *  `last_processed_at` at the most-recent completed hour. Calling code
+	 *  derives `last_processed_at` the same way the activity card spec
+	 *  does (`max(mint_analytics_recent[i].date)` from the readiness
+	 *  probe). The oracle ceilings to `last_processed_at + 3600` so the
+	 *  comparison is meaningful when backfill has run end-to-end through
+	 *  that hour but live activity may have happened since.
+	 *
+	 *  Sums. Mirrors `insertPromiseMetrics` / `insertProofMetrics` per-unit
+	 *  aggregation:
+	 *  - cdk: `blind_signature.amount` for issued (created_time INTEGER,
+	 *    epoch seconds on both sqlite and postgres); `proof.amount` for
+	 *    redeemed (proofs are inserted only on spend, so all rows count).
+	 *  - nutshell: `promises.amount` for issued, `proofs_used.amount` for
+	 *    redeemed. `created` is INTEGER on sqlite, TIMESTAMP on postgres —
+	 *    extract epoch the same way the other oracles do.
+	 *
+	 *  Both legs join through the keyset table (`keyset_id` → `keyset.unit`
+	 *  for cdk; `id` → `keysets.unit` for nutshell) so the per-unit filter
+	 *  matches the chart's per-unit dataset. */
+	balanceWindow(
+		config: ConfigInfo,
+		options: {unit: MintUnit; last_processed_at: number},
+	): {issued: number; redeemed: number; balance: number; window: {effective_end: number}} {
+		const effective_end = options.last_processed_at + 3600;
+		if (effective_end <= 0) return {issued: 0, redeemed: 0, balance: 0, window: {effective_end}};
+
+		const isNutshellPostgres = config.mint === 'nutshell' && config.db === 'postgres';
+		const timeCol = (column: string): string => (isNutshellPostgres ? `EXTRACT(EPOCH FROM ${column})` : column);
+		const unit = options.unit;
+
+		const issued_sql =
+			config.mint === 'cdk'
+				? `SELECT COALESCE(SUM(bs.amount), 0) FROM blind_signature bs JOIN keyset k ON k.id = bs.keyset_id WHERE k.unit = '${unit}' AND bs.created_time < ${effective_end}`
+				: `SELECT COALESCE(SUM(p.amount), 0) FROM promises p JOIN keysets k ON k.id = p.id WHERE k.unit = '${unit}' AND ${timeCol('p.created')} < ${effective_end}`;
+		const redeemed_sql =
+			config.mint === 'cdk'
+				? `SELECT COALESCE(SUM(p.amount), 0) FROM proof p JOIN keyset k ON k.id = p.keyset_id WHERE k.unit = '${unit}' AND p.created_time < ${effective_end}`
+				: `SELECT COALESCE(SUM(p.amount), 0) FROM proofs_used p JOIN keysets k ON k.id = p.id WHERE k.unit = '${unit}' AND ${timeCol('p.created')} < ${effective_end}`;
+
+		const issued = parseInt(mintDbQuery(config, issued_sql), 10);
+		const redeemed = parseInt(mintDbQuery(config, redeemed_sql), 10);
+		return {issued, redeemed, balance: issued - redeemed, window: {effective_end}};
+	},
+
+	/** Differential oracle for the per-metric amount charts on
+	 *  `orc-mint-subsection-dashboard`: Mints, Melts, Swaps, Fee Revenue.
+	 *  Each chart's per-bucket value is `metric_amount` per unit per hour;
+	 *  summing all visible buckets gives the cumulative window total —
+	 *  which equals the daemon DB's source-of-truth total over the same
+	 *  window. The Orchard resolvers are thin wrappers around
+	 *  `getCachedAnalytics([<metric>_amount])` with the per-metric
+	 *  bucketing math living in `cashuMintAnalyticsService.insert*Metrics`
+	 *  (mintanalytics.service.ts:292,334,376,395). This helper mirrors
+	 *  each insertion's source-of-truth aggregation.
+	 *
+	 *  Window. Same `last_processed_at + 3600` ceiling as `balanceWindow`,
+	 *  for the same reason: backfill only writes completed hour buckets
+	 *  and surfaces the most-recent one as `last_processed_at`. Reading
+	 *  the daemon DB up to that ceiling lets the oracle agree with the
+	 *  archive even when live activity has happened since.
+	 *
+	 *  Per-metric source-of-truth (mirrors backfill's per-row sum):
+	 *  - `mints_amount`:
+	 *      cdk: `mint_quote.amount_issued WHERE amount_paid > 0 AND amount_paid <= amount_issued`
+	 *      (cdk derives ISSUED from these conditions — see cdk.service.ts:179-184).
+	 *      nutshell: `mint_quotes.amount WHERE state = 'ISSUED'`.
+	 *      Both: created_time INTEGER on cdk + nutshell sqlite; nutshell+postgres
+	 *      stores TIMESTAMP and needs `EXTRACT(EPOCH FROM ...)`.
+	 *  - `melts_amount`:
+	 *      cdk: `melt_quote.amount WHERE state = 'PAID'`.
+	 *      nutshell: `melt_quotes.amount WHERE state = 'PAID'`.
+	 *  - `swaps_amount`:
+	 *      cdk: `completed_operations.total_redeemed WHERE operation_kind = 'swap'` (one row per
+	 *      swap; cdk groups by `operation_id`). Time column is `completed_at` (BIGINT epoch).
+	 *      nutshell: grouped `proofs_used WHERE melt_quote IS NULL` — one swap == one
+	 *      `(pu.created, k.unit)` group, sum of `pu.amount` per group then sum across groups
+	 *      (mirrors nutshell.service.ts:478-498).
+	 *  - `fees_amount`:
+	 *      cdk: `completed_operations.fee_collected WHERE fee_collected > 0`, joined to keyset via
+	 *      blind_signature.operation_id (cdk.service.ts:534-544 wraps a derived subquery for the
+	 *      same reason; mirror that join structure here).
+	 *      nutshell: derived from `balance_log.keyset_fees_paid` LAG-diffed per unit (the table
+	 *      stores cumulative fees-paid per unit per timestamp; the per-op delta is what backfill
+	 *      consumes via `listFees`). The window function below mirrors the server's SQL.
+	 *
+	 *  Per-unit filter applies the same join as backfill so the per-unit
+	 *  bucket the chart shows is what the oracle returns. */
+	metricWindow(
+		config: ConfigInfo,
+		options: {metric: 'mints_amount' | 'melts_amount' | 'swaps_amount' | 'fees_amount'; unit: MintUnit; last_processed_at: number},
+	): {amount: number; window: {effective_end: number}} {
+		const effective_end = options.last_processed_at + 3600;
+		if (effective_end <= 0) return {amount: 0, window: {effective_end}};
+
+		const isNutshellPostgres = config.mint === 'nutshell' && config.db === 'postgres';
+		const timeCol = (column: string): string => (isNutshellPostgres ? `EXTRACT(EPOCH FROM ${column})` : column);
+		const unit = options.unit;
+
+		let sql: string;
+		if (options.metric === 'mints_amount') {
+			sql =
+				config.mint === 'cdk'
+					? `SELECT COALESCE(SUM(amount_issued), 0) FROM mint_quote WHERE unit = '${unit}' AND amount_paid > 0 AND amount_paid <= amount_issued AND created_time < ${effective_end}`
+					: `SELECT COALESCE(SUM(amount), 0) FROM mint_quotes WHERE unit = '${unit}' AND state = 'ISSUED' AND ${timeCol('created_time')} < ${effective_end}`;
+		} else if (options.metric === 'melts_amount') {
+			sql =
+				config.mint === 'cdk'
+					? `SELECT COALESCE(SUM(amount), 0) FROM melt_quote WHERE unit = '${unit}' AND state = 'PAID' AND created_time < ${effective_end}`
+					: `SELECT COALESCE(SUM(amount), 0) FROM melt_quotes WHERE unit = '${unit}' AND state = 'PAID' AND ${timeCol('created_time')} < ${effective_end}`;
+		} else if (options.metric === 'swaps_amount') {
+			sql =
+				config.mint === 'cdk'
+					? // cdk swap: one row per `operation_id` in `completed_operations` with `operation_kind='swap'`.
+					  // Unit comes via the keyset that issued the swap's blind signature(s), joined through
+					  // `blind_signature.operation_id`. Multiple blind sigs may share an operation_id (shared
+					  // unit per swap), so DISTINCT on operation_id is implicit via the subquery + GROUP BY.
+					  `SELECT COALESCE(SUM(co.total_redeemed), 0) FROM completed_operations co LEFT JOIN (SELECT operation_id, MIN(keyset_id) AS keyset_id FROM blind_signature GROUP BY operation_id) bs ON bs.operation_id = co.operation_id LEFT JOIN keyset k ON k.id = bs.keyset_id WHERE co.operation_kind = 'swap' AND k.unit = '${unit}' AND co.completed_at < ${effective_end}`
+					: // nutshell swap: rows in `proofs_used WHERE melt_quote IS NULL` are swap inputs;
+					  // grouped by `(pu.created, k.unit)` to recover one row per swap. The chart bucket is
+					  // SUM(pu.amount) per group, summed across groups.
+					  `SELECT COALESCE(SUM(g.amount), 0) FROM (SELECT SUM(pu.amount) AS amount FROM (SELECT * FROM proofs_used WHERE melt_quote IS NULL) pu LEFT JOIN keysets k ON k.id = pu.id WHERE k.unit = '${unit}' AND ${timeCol('pu.created')} < ${effective_end} GROUP BY pu.created, k.unit) g`;
+		} else {
+			// fees_amount
+			sql =
+				config.mint === 'cdk'
+					? // cdk fee: `completed_operations.fee_collected` per op (>0). Join to keyset via the op's
+					  // blind sig (same path the server's `listFees` walks). Postgres can't infer the FD
+					  // through the derived subquery — group_by lists all non-aggregated columns.
+					  `SELECT COALESCE(SUM(co.fee_collected), 0) FROM (SELECT * FROM completed_operations WHERE fee_collected > 0) co LEFT JOIN blind_signature bs ON bs.operation_id = co.operation_id LEFT JOIN keyset k ON k.id = bs.keyset_id WHERE k.unit = '${unit}' AND co.completed_at < ${effective_end}`
+					: // nutshell fee: `balance_log.keyset_fees_paid` is cumulative per unit; LAG-diff to recover
+					  // per-event deltas, filter positive, sum within the window. Mirrors nutshell.service.ts:565-575.
+					  `SELECT COALESCE(SUM(fee), 0) FROM (SELECT unit, time AS created_time, keyset_fees_paid - LAG(keyset_fees_paid, 1, 0) OVER (PARTITION BY unit ORDER BY time) AS fee FROM balance_log) deltas WHERE unit = '${unit}' AND fee > 0 AND ${timeCol('created_time')} < ${effective_end}`;
+		}
+
+		const amount = parseInt(mintDbQuery(config, sql), 10);
+		return {amount, window: {effective_end}};
+	},
+
+	/** Differential oracle for `orc-mint-subsection-dashboard-ecash-chart`'s
+	 *  per-unit Blind Signatures + Proofs counts. Same `last_processed_at + 3600`
+	 *  ceiling as the other window oracles. Per-unit because the Ecash chart
+	 *  groups its stacked-bar datasets by unit — the existing
+	 *  `keysetCountsOracle` returns a single global total which collapses
+	 *  multi-unit stacks into one number.
+	 *
+	 *  cdk: `blind_signature` (promises) + `proof` (proofs) joined through
+	 *  the keyset table for unit. Like `keysetCountsOracle`, no state
+	 *  filter on `proof` — backfill streams `states: [SPENT]` but cdk
+	 *  regtest only emits SPENT proofs, so the unfiltered count agrees.
+	 *  nutshell: `promises` + `proofs_used`, joined through `keysets`. */
+	countsWindow(
+		config: ConfigInfo,
+		options: {unit: MintUnit; last_processed_at: number},
+	): {promises: number; proofs: number; window: {effective_end: number}} {
+		const effective_end = options.last_processed_at + 3600;
+		if (effective_end <= 0) return {promises: 0, proofs: 0, window: {effective_end}};
+
+		const isNutshellPostgres = config.mint === 'nutshell' && config.db === 'postgres';
+		const timeCol = (column: string): string => (isNutshellPostgres ? `EXTRACT(EPOCH FROM ${column})` : column);
+		const unit = options.unit;
+
+		const promises_sql =
+			config.mint === 'cdk'
+				? `SELECT COUNT(*) FROM blind_signature bs JOIN keyset k ON k.id = bs.keyset_id WHERE k.unit = '${unit}' AND bs.created_time < ${effective_end}`
+				: `SELECT COUNT(*) FROM promises p JOIN keysets k ON k.id = p.id WHERE k.unit = '${unit}' AND ${timeCol('p.created')} < ${effective_end}`;
+		const proofs_sql =
+			config.mint === 'cdk'
+				? `SELECT COUNT(*) FROM proof p JOIN keyset k ON k.id = p.keyset_id WHERE k.unit = '${unit}' AND p.created_time < ${effective_end}`
+				: `SELECT COUNT(*) FROM proofs_used p JOIN keysets k ON k.id = p.id WHERE k.unit = '${unit}' AND ${timeCol('p.created')} < ${effective_end}`;
+
+		const promises = parseInt(mintDbQuery(config, promises_sql), 10);
+		const proofs = parseInt(mintDbQuery(config, proofs_sql), 10);
+		return {promises, proofs, window: {effective_end}};
 	},
 
 	/** Differential oracle for `orc-mint-general-activity`. Mirrors the

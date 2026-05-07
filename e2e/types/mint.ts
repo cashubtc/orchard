@@ -7,7 +7,9 @@ export type MintNutInfo = {
 	description?: string | null;
 	description_long?: string | null;
 	icon_url?: string | null;
+	motd?: string | null;
 	urls?: string[] | null;
+	contact?: Array<{method: string; info: string}> | null;
 	version?: string;
 	nuts?: MintNutsBlock;
 };

@@ -30,6 +30,9 @@ export type DeviceSettingValues = {
 	timezone?: string;
 	currency_btc?: 'code' | 'glyph';
 	currency_fiat?: 'code' | 'glyph';
+	/** Exact model name as returned by `ai_models` (e.g. `llama3.2`). Only
+	 *  meaningful on AI-enabled stacks — device setting, localStorage-persisted. */
+	ai_model?: string;
 };
 
 /** Named LN peer within a config's topology. `far` is always LND. */
