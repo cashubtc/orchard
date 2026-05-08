@@ -259,8 +259,8 @@ export const mint = {
 	 *      (mirrors nutshell.service.ts:478-498).
 	 *  - `fees_amount`:
 	 *      cdk: `completed_operations.fee_collected WHERE fee_collected > 0`, joined to keyset via
-	 *      blind_signature.operation_id (cdk.service.ts:534-544 wraps a derived subquery for the
-	 *      same reason; mirror that join structure here).
+	 *      proof.operation_id (cdk.service.ts:534-544 — fees are input-side in Cashu, so the unit
+	 *      comes from the spent proofs' keyset, not the output blind sigs).
 	 *      nutshell: derived from `balance_log.keyset_fees_paid` LAG-diffed per unit (the table
 	 *      stores cumulative fees-paid per unit per timestamp; the per-op delta is what backfill
 	 *      consumes via `listFees`). The window function below mirrors the server's SQL.
@@ -305,10 +305,14 @@ export const mint = {
 			// fees_amount
 			sql =
 				config.mint === 'cdk'
-					? // cdk fee: `completed_operations.fee_collected` per op (>0). Join to keyset via the op's
-					  // blind sig (same path the server's `listFees` walks). Postgres can't infer the FD
-					  // through the derived subquery — group_by lists all non-aggregated columns.
-					  `SELECT COALESCE(SUM(co.fee_collected), 0) FROM (SELECT * FROM completed_operations WHERE fee_collected > 0) co LEFT JOIN blind_signature bs ON bs.operation_id = co.operation_id LEFT JOIN keyset k ON k.id = bs.keyset_id WHERE k.unit = '${unit}' AND co.completed_at < ${effective_end}`
+					? // cdk fee: `completed_operations.fee_collected` per op (>0). Cashu fees are charged on
+					  // inputs, so the unit comes from the proofs being spent — not the blind sigs. Mirrors
+					  // `listFees` (cdk.service.ts:534-544) which INNER JOINs `proof` then `keyset` and
+					  // GROUP BYs (operation_id, completed_at, fee_collected, unit) to dedupe the row
+					  // multiplication from N proofs per op. Mint ops are excluded by the `fee_collected > 0`
+					  // filter (mints don't charge fees); swap and melt ops both have proof rows, so the
+					  // inner join keeps every fee-bearing op without a NULL-unit fallback.
+					  `SELECT COALESCE(SUM(fee), 0) FROM (SELECT co.operation_id, co.fee_collected AS fee, k.unit FROM (SELECT * FROM completed_operations WHERE fee_collected > 0) co INNER JOIN proof p ON p.operation_id = co.operation_id INNER JOIN keyset k ON k.id = p.keyset_id WHERE k.unit = '${unit}' AND co.completed_at < ${effective_end} GROUP BY co.operation_id, co.fee_collected, k.unit) deduped`
 					: // nutshell fee: `balance_log.keyset_fees_paid` is cumulative per unit; LAG-diff to recover
 					  // per-event deltas, filter positive, sum within the window. Mirrors nutshell.service.ts:565-575.
 					  `SELECT COALESCE(SUM(fee), 0) FROM (SELECT unit, time AS created_time, keyset_fees_paid - LAG(keyset_fees_paid, 1, 0) OVER (PARTITION BY unit ORDER BY time) AS fee FROM balance_log) deltas WHERE unit = '${unit}' AND fee > 0 AND ${timeCol('created_time')} < ${effective_end}`;

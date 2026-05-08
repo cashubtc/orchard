@@ -537,8 +537,8 @@ export class CdkService {
 				co.completed_at AS created_time,
 				co.fee_collected AS fee
 			FROM (SELECT * FROM completed_operations WHERE fee_collected > 0) co
-			LEFT JOIN blind_signature bs ON bs.operation_id = co.operation_id
-			LEFT JOIN keyset k ON k.id = bs.keyset_id`;
+			INNER JOIN proof p ON p.operation_id = co.operation_id
+			INNER JOIN keyset k ON k.id = p.keyset_id`;
 
 		// All non-aggregated SELECT columns listed: Postgres can't infer PK functional dependency through the derived `co` subquery.
 		const group_by = 'co.operation_id, co.completed_at, co.fee_collected, k.unit';
