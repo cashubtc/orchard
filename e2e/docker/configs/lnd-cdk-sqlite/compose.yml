@@ -140,6 +140,26 @@ services:
       timeout: 5s
       retries: 30
 
+  # Perpetual block miner. Mines a single regtest block every
+  # MINE_INTERVAL_SECONDS (default 30) against the existing `bitcoind`
+  # service. depends_on:setup so the 101-block bootstrap and channel
+  # confirmations finish first; reuses the bitcoind image purely for the
+  # bitcoin-cli binary — no second chain, no new ports.
+  block-miner:
+    image: polarlightning/bitcoind:${BITCOIND_VERSION}
+    container_name: lnd-cdk-sqlite-block-miner
+    restart: on-failure
+    networks: [net]
+    depends_on:
+      setup: { condition: service_completed_successfully }
+    volumes:
+      - ../../scripts:/scripts:ro
+    environment:
+      - BTC_RPC_USER=${BTC_RPC_USER}
+      - BTC_RPC_PASS=${BTC_RPC_PASS}
+      - MINE_INTERVAL_SECONDS=${MINE_INTERVAL_SECONDS:-30}
+    entrypoint: ["/scripts/block-miner.sh"]
+
   lnd-orchard:
     <<: *litd-defaults
     container_name: lnd-cdk-sqlite-lnd-orchard
