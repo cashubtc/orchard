@@ -27,6 +27,7 @@ COPY --from=build /app/dist/ ./dist
 COPY --from=build /app/proto/ ./proto
 COPY --from=build /app/public/ ./public
 COPY --from=build /app/scripts/ ./scripts
+RUN mkdir -p /app/data/tmp
 ARG SERVER_PORT=3321
 EXPOSE ${SERVER_PORT}
 CMD ["npm", "run", "start"]
@@ -42,6 +43,7 @@ COPY --from=build /app/dist/ ./dist
 COPY --from=build /app/proto/ ./proto
 COPY --from=build /app/public/ ./public
 COPY --from=build /app/scripts/ ./scripts
+RUN mkdir -p /app/data/tmp
 ARG SERVER_PORT=3321
 EXPOSE ${SERVER_PORT}
 CMD ["npm", "run", "start"]
