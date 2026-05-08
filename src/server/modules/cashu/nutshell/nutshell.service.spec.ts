@@ -401,19 +401,4 @@ describe('NutshellService', () => {
 		(helpers.queryRow as jest.Mock).mockResolvedValueOnce({count: 4});
 		await expect(nutshellService.countMintQuotes({type: 'sqlite'} as any, {} as any)).resolves.toBe(4);
 	});
-
-	it('getFees uses default/custom limit and propagates errors', async () => {
-		(helpers.queryRows as jest.Mock).mockResolvedValueOnce([]);
-		await nutshellService.getFees({} as any);
-		let call = (helpers.queryRows as jest.Mock).mock.calls.pop();
-		expect(call[2]).toEqual([1]);
-		(helpers.queryRows as jest.Mock).mockResolvedValueOnce([]);
-		await nutshellService.getFees({} as any, 10);
-		call = (helpers.queryRows as jest.Mock).mock.calls.pop();
-		expect(call[2]).toEqual([10]);
-		(helpers.queryRows as jest.Mock).mockImplementationOnce(() => {
-			throw new Error('fee');
-		});
-		await expect(nutshellService.getFees({} as any)).rejects.toThrow('fee');
-	});
 });

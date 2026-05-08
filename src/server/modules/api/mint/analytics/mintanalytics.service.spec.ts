@@ -243,10 +243,38 @@ describe('MintAnalyticsService', () => {
 			const day_one_hour_two = day_one_hour_one + 3600;
 			const day_two_hour_one = day_one_hour_one + 86400;
 			mock_cashu_analytics.getCachedAnalytics.mockResolvedValueOnce([
-				{metric: MintAnalyticsMetric.keyset_issued, unit: 'sat', amount: '500', date: day_two_hour_one, count: 3, keyset_id: 'ks-002'},
-				{metric: MintAnalyticsMetric.keyset_issued, unit: 'sat', amount: '300', date: day_one_hour_one, count: 2, keyset_id: 'ks-001'},
-				{metric: MintAnalyticsMetric.keyset_issued, unit: 'sat', amount: '200', date: day_one_hour_two, count: 1, keyset_id: 'ks-001'},
-				{metric: MintAnalyticsMetric.keyset_redeemed, unit: 'sat', amount: '100', date: day_one_hour_one, count: 1, keyset_id: 'ks-001'},
+				{
+					metric: MintAnalyticsMetric.keyset_issued,
+					unit: 'sat',
+					amount: '500',
+					date: day_two_hour_one,
+					count: 3,
+					keyset_id: 'ks-002',
+				},
+				{
+					metric: MintAnalyticsMetric.keyset_issued,
+					unit: 'sat',
+					amount: '300',
+					date: day_one_hour_one,
+					count: 2,
+					keyset_id: 'ks-001',
+				},
+				{
+					metric: MintAnalyticsMetric.keyset_issued,
+					unit: 'sat',
+					amount: '200',
+					date: day_one_hour_two,
+					count: 1,
+					keyset_id: 'ks-001',
+				},
+				{
+					metric: MintAnalyticsMetric.keyset_redeemed,
+					unit: 'sat',
+					amount: '100',
+					date: day_one_hour_one,
+					count: 1,
+					keyset_id: 'ks-001',
+				},
 			]);
 
 			const result = await service.getMintAnalyticsKeysets('test', {interval: AnalyticsInterval.day, timezone: 'UTC'});

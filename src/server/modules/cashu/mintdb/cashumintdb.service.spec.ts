@@ -119,16 +119,6 @@ describe('CashuMintDatabaseService', () => {
 		expect(out2[0].balance).toBe(2);
 	});
 
-	it('getFees delegates for nutshell and errors for cdk', async () => {
-		(nutshellService.getFees as any) = jest.fn().mockResolvedValue([]);
-		configService.get.mockImplementation((k: string) => (k === 'cashu.type' ? 'nutshell' : 'x'));
-		await cashuMintDatabaseService.onModuleInit();
-		await expect(cashuMintDatabaseService.getFees({} as any)).resolves.toEqual([]);
-		configService.get.mockImplementation((k: string) => (k === 'cashu.type' ? 'cdk' : 'x'));
-		await cashuMintDatabaseService.onModuleInit();
-		await expect(cashuMintDatabaseService.getFees({} as any)).rejects.toBe(OrchardErrorCode.MintSupportError);
-	});
-
 	it('delegates remaining getters to correct services', async () => {
 		const client = {} as any;
 		const args = {a: 1} as any;

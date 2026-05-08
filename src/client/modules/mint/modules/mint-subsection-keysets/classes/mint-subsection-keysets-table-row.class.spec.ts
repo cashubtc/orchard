@@ -23,8 +23,7 @@ describe('MintSubsectionKeysetsTableRow', () => {
 			...overrides,
 		} as any);
 
-	const analytic = (amount: string, date: number): MintAnalyticKeyset =>
-		new MintAnalyticKeyset({keyset_id: KEYSET_ID, amount, date});
+	const analytic = (amount: string, date: number): MintAnalyticKeyset => new MintAnalyticKeyset({keyset_id: KEYSET_ID, amount, date});
 
 	const buildCount = (proof_count = 43, promise_count = 83): MintKeysetCount =>
 		new MintKeysetCount({id: KEYSET_ID, proof_count, promise_count});

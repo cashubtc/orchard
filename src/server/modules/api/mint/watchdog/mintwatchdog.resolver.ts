@@ -12,7 +12,7 @@ export class MintWatchdogResolver {
 	constructor(private mintWatchdogService: MintWatchdogService) {}
 
 	@Query(() => OrchardMintWatchdogStatus, {
-		description: "Liveness of the nutshell balance_log watchdog. Throws on backends without a watchdog (e.g. cdk).",
+		description: 'Liveness of the nutshell balance_log watchdog. Throws on backends without a watchdog (e.g. cdk).',
 	})
 	async mint_watchdog_status(): Promise<OrchardMintWatchdogStatus> {
 		const tag = 'GET { mint_watchdog_status }';
