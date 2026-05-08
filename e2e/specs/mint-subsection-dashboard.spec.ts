@@ -10,19 +10,20 @@
  *     Balance Sheet & Ecash, Volume for Mints/Melts/Swaps/Fee Revenue).
  *   - `@mint`: structural that holds on every stack — Filters menu opens
  *     with one Units checkbox per provisioned unit and (default) no Oracle
- *     section, per-chart type toggle is independent, tertiary nav reorders
- *     the grid, mobile collapses the inline form fields into Filters.
- *   - `@analytics`: differential — driving the Interval Day → Hour change
- *     fires a fresh `mint_analytics_balances` GraphQL POST whose response
- *     for `unit=sat` is structurally consistent with the daemon DB
- *     (`mint.balance(config, 'sat')`). The chart's per-bucket value is
- *     opaque from the DOM — Chart.js renders to canvas — so the assertion
- *     is "the GraphQL pipeline returned non-empty SAT data AND the live
- *     daemon balance is non-zero", anchoring data accuracy at the request
- *     level. Per-bucket value fidelity is deferred to the Karma test on
- *     the chart helpers (`getAmountChartData`) and to the balance-sheet
- *     summary card spec which already asserts `mint.balance` against
- *     rendered text on the same page.
+ *     section, per-chart type toggle is independent, mobile collapses the
+ *     inline form fields into Filters.
+ *   - `@analytics`: per-chart differentials — for each chart the resolver
+ *     feeds, sum the GraphQL response over [0, cache ceiling] and assert
+ *     equality against the daemon-DB source-of-truth aggregation. Mint
+ *     side: `mint.balanceWindow` (Balance Sheet), `mint.metricWindow` ×4
+ *     (Mints/Melts/Swaps/Fees), `mint.countsWindow` (Ecash). LN side:
+ *     sign + order-of-magnitude only (no historical channel-balance view
+ *     to pivot on). Also asserts the Interval Day→Hour change fires a
+ *     fresh `mint_analytics_balances` POST with the new interval, proving
+ *     the control wired into `reloadDynamicData`.
+ *   - `@ai`: only on `cln-cdk-postgres` (the AI-enabled stack per
+ *     `featuresFor`/`tagsFor`). Drives the dashboard assistant input,
+ *     waits for an LLM reply.
  *
  * States the component supports but this spec does NOT cover (see
  * `mint-subsection-dashboard.md` → "Skip taxonomy"):
@@ -37,6 +38,12 @@
  *   - per-chart Totals/Volume canvas geometry differential (Chart.js
  *     canvas; covered by Karma `mintChartDataHelpers`)
  *   - oracle-converted axis labels (`synthetic`)
+ *   - tertiary-nav drag-drop reorder (`unit-better` — CDK drag visuals
+ *     are timing-sensitive; cover via direct host-handler call in Karma)
+ *   - LN cache value-fidelity to the live channel balance (`unit-better`
+ *     — no historical channel-balance view, so the pipeline test asserts
+ *     sign + magnitude only; live-balance fidelity is covered by the
+ *     `mint-general-balance-sheet` spec's Lightning local capacity test)
  * See `mint-subsection-dashboard.md` for the full state machine.
  */
 
@@ -45,7 +52,7 @@ import {test, expect, type Locator, type Page} from '@playwright/test';
 import {getConfig, mintUnitsFor} from '@e2e/helpers/config';
 import {ln, mint} from '@e2e/helpers/backend';
 import {matchGql} from '@e2e/helpers/ui/gql-intercept';
-import {getReadiness, lightningAnalyticsHasRows, mintAnalyticsHasRows, requireReady} from '@e2e/helpers/ui/readiness';
+import {aiIsHealthy, getReadiness, lightningAnalyticsHasRows, mintAnalyticsHasRows, requireReady} from '@e2e/helpers/ui/readiness';
 
 /** Each chart card lives in its own `grid-area`-bound div with a stable
  *  `chart-<key>` class. Mapping by key keeps the assertions readable. */
@@ -611,5 +618,29 @@ test.describe('mint-subsection-dashboard — lightning analytics pipeline', {tag
 			ratio,
 			`LN archive (${archive_sat} sat) should be within an order of magnitude of live balance (${live_balance_sat} sat) at ceiling ${ceiling}`,
 		).toBeLessThanOrEqual(2.0);
+	});
+});
+
+test.describe('mint-subsection-dashboard — ai assistant', {tag: '@ai'}, () => {
+	test.beforeEach(async ({page}) => {
+		await page.goto('/mint', {waitUntil: 'networkidle'});
+		await requireReady(page, aiIsHealthy);
+	});
+
+	test('mint dashboard assistant returns a response', async ({page}) => {
+		// LLM inference + the non-trivial `beforeEach` (goto + readiness probe)
+		// blow past the 30s default test timeout from playwright.config.ts:161.
+		// Bump to 70s so the 55s expect wait below has slack.
+		test.setTimeout(70_000);
+
+		const input = page.locator('orc-ai-input textarea.ai-input');
+		await expect(input).toBeVisible();
+		await input.fill('Hello');
+		await input.press('Enter');
+
+		// mat-sidenav always renders its content in the DOM even when closed,
+		// so we can assert on the chat log without opening the panel.
+		// Wait up to 55s for a non-empty assistant message (LLM inference).
+		await expect(page.locator('orc-ai-chat-message-assistant .orc-ai-marked').last()).not.toBeEmpty({timeout: 55_000});
 	});
 });

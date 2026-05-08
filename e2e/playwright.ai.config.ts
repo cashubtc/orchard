@@ -20,7 +20,7 @@ import {defineConfig, devices, type Project} from '@playwright/test';
 import {CONFIGS, portOf, tagsFor} from './helpers/config';
 import type {ConfigInfo} from './types/config';
 
-dotenv.config({path: './e2e/.env'});
+dotenv.config({path: './e2e/.env', quiet: true});
 
 function grepFor(config: ConfigInfo): RegExp {
 	return new RegExp(
