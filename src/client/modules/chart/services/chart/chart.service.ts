@@ -246,7 +246,7 @@ export class ChartService {
 				return this.formatBtcFull(amount, locale);
 			case 'usd':
 			case 'eur':
-				return this.formatFiatAmount(amount / 100, unit, locale, currency.type_fiat);
+				return this.formatFiatAmount(amount, unit, locale, currency.type_fiat);
 			default:
 				return amount.toLocaleString(locale);
 		}
