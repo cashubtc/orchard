@@ -554,7 +554,11 @@ export class NutshellService {
 	/** Emits per-snapshot fee deltas from nutshell's watchdog `balance_log`
 	 *  (cumulative `keyset_fees_paid`), LAG-diffed to cdk's per-op shape. The
 	 *  outer `SELECT * FROM (...) fee_events` wraps the inner `WHERE fee > 0` so
-	 *  buildDynamicQuery's appended `WHERE date_start` doesn't collide. */
+	 *  buildDynamicQuery's appended `WHERE date_start` doesn't collide. The
+	 *  LAG seed is NULL (not 0) so the first row per partition is treated as
+	 *  a baseline, not a delta from zero — otherwise a restored DB whose first
+	 *  snapshot already has non-zero `keyset_fees_paid` would emit one giant
+	 *  spurious fee event. `WHERE fee > 0` then drops the NULL baseline row. */
 	public async listFees(client: CashuMintDatabase, args?: CashuMintFeesArgs): Promise<CashuMintOperationFee[]> {
 		const field_mappings = {
 			units: 'unit',
@@ -568,7 +572,7 @@ export class NutshellService {
 					SELECT
 						unit,
 						time AS created_time,
-						keyset_fees_paid - LAG(keyset_fees_paid, 1, 0) OVER (PARTITION BY unit ORDER BY time) AS fee
+						keyset_fees_paid - LAG(keyset_fees_paid, 1, NULL) OVER (PARTITION BY unit ORDER BY time) AS fee
 					FROM balance_log
 				) deltas
 				WHERE fee > 0
