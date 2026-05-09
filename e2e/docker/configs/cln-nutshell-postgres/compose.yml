@@ -282,6 +282,15 @@ services:
       # Production defaults leave this off; e2e flips it on so Orchard's
       # watchdog-aware UI paths get covered.
       - MINT_WATCHDOG_ENABLED=true
+      # Ignore mismatch: in this stack the orchard server and the nutshell
+      # mint share cln-orchard as their LN backend, so cln's our_amount_msat
+      # moves on payments the mint never authored. Without this flag the
+      # watchdog reads those movements as a balance regression and stops
+      # writing balance_log rows, which silently freezes Orchard's fee-revenue
+      # analytics for SAT. We still want the watchdog enabled (warnings keep
+      # firing for genuine mismatches) — we just don't want it to gate the
+      # log on a false positive caused by a shared-node test topology.
+      - MINT_WATCHDOG_IGNORE_MISMATCH=true
       - MINT_RPC_SERVER_ENABLE=true
       - MINT_RPC_SERVER_ADDR=0.0.0.0
       - MINT_RPC_SERVER_MUTUAL_TLS=false

@@ -50,9 +50,20 @@
 import {test, expect, type Locator, type Page} from '@playwright/test';
 
 import {getConfig, mintUnitsFor} from '@e2e/helpers/config';
+import type {MintUnit} from '@e2e/types/config';
 import {ln, mint} from '@e2e/helpers/backend';
 import {matchGql} from '@e2e/helpers/ui/gql-intercept';
 import {aiIsHealthy, getReadiness, lightningAnalyticsHasRows, mintAnalyticsHasRows, requireReady} from '@e2e/helpers/ui/readiness';
+
+/** Every unit Orchard could conceivably advertise, plus every interval the
+ *  control exposes. Tests skip per-unit when the stack hasn't provisioned
+ *  the unit (`mintUnitsFor`), and loop intervals inside a single test —
+ *  the cumulative window total is invariant under bucket size, so the
+ *  assertion is "all intervals agree with the daemon DB", not "one
+ *  interval matches and we hope the others do too". */
+const ALL_UNITS: ReadonlyArray<MintUnit> = ['sat', 'usd', 'eur'];
+const ALL_INTERVALS = ['hour', 'day', 'week', 'month'] as const;
+type AnalyticsIntervalLiteral = (typeof ALL_INTERVALS)[number];
 
 /** Each chart card lives in its own `grid-area`-bound div with a stable
  *  `chart-<key>` class. Mapping by key keeps the assertions readable. */
@@ -128,6 +139,41 @@ function rowAmount(row: unknown): number {
 	const amount = (row as {amount: string}).amount;
 	return parseInt(amount, 10);
 }
+
+/** POST a window query against `/api` using the same shape `loadMintAnalytics`
+ *  uses, with explicit `interval` and `units` variables. Returns the rows for
+ *  the requested unit only (resolver may return rows for multiple units when
+ *  `units: null`, but we always pass an explicit `[unit]` filter here). The
+ *  `field` arg picks the wire field the chart reads — `amount` for amount
+ *  metrics, `count` for count metrics — so the helper covers both shapes. */
+async function fetchAnalyticsRows(
+	page: Page,
+	query: string,
+	unit: MintUnit,
+	interval: AnalyticsIntervalLiteral,
+	date_start: number,
+	date_end: number,
+	field: 'amount' | 'count',
+): Promise<Array<{date: number; unit: string; amount?: string; count?: number}>> {
+	const raw = await page.evaluate(() => localStorage.getItem('v0.auth.token'));
+	const token = raw ? (JSON.parse(raw) as string) : null;
+	const headers: Record<string, string> = token ? {Authorization: `Bearer ${token}`} : {};
+	const gql = `query Window($units: [MintUnit!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval) {
+		${query}(units: $units, date_start: $date_start, date_end: $date_end, interval: $interval) {
+			date unit ${field}
+		}
+	}`;
+	const response = await page.request.post('/api', {
+		headers,
+		data: {query: gql, variables: {units: [unit], date_start, date_end, interval}},
+	});
+	expect(response.ok(), `${query} should respond OK`).toBe(true);
+	const body = await response.json();
+	expect(body.errors, `${query} should not error`).toBeFalsy();
+	const rows = (body.data?.[query] ?? []) as Array<{date: number; unit: string; amount?: string; count?: number}>;
+	return rows.filter((r) => r.unit === unit);
+}
+
 
 test.describe('mint-subsection-dashboard — smoke', {tag: '@canary'}, () => {
 	test.beforeEach(async ({page}) => {
@@ -393,15 +439,20 @@ test.describe('mint-subsection-dashboard — analytics pipeline', {tag: '@analyt
 		).toBe(oracle.balance);
 	});
 
-	// One row per per-chart amount metric. Each test:
-	//   1. Reads the latest archived hour from `getReadiness`.
-	//   2. Asks Orchard for the chart's full historical window via the same
-	//      GraphQL resolver `loadMintAnalytics()` calls.
-	//   3. Sums response amounts for unit=sat across all buckets.
-	//   4. Asserts equality to `mint.metricWindow(_, {metric, unit, ceiling})`,
-	//      which mirrors the daemon-DB aggregation backfill consumes.
-	// Divergence here points at backfill's per-hour insert math (compare to
-	// `mintanalytics.service.ts` `insert{MintQuote,MeltQuote,Swap,Fee}Metrics`).
+	// Per-chart amount-metric matrix. Each test:
+	//   1. Skips if the unit isn't provisioned on this stack (`mintUnitsFor`).
+	//   2. Reads the latest archived hour from `getReadiness`.
+	//   3. Skips if the daemon DB has zero activity for this metric/unit.
+	//   4. For each interval (hour/day/week/month), asks Orchard for the
+	//      chart's full historical window via the same resolver
+	//      `loadMintAnalytics()` calls and sums the response.
+	//   5. Asserts every interval's cumulative sum equals the daemon-DB
+	//      total — the bucket size doesn't change the window total, so
+	//      a per-interval drift means the resolver's re-bin math is wrong.
+	// Divergence at one specific interval pinpoints the re-bin step;
+	// divergence at all intervals points at backfill's per-hour insert
+	// math (compare to `mintanalytics.service.ts`
+	// `insert{MintQuote,MeltQuote,Swap,Fee}Metrics`).
 	const AMOUNT_METRICS: ReadonlyArray<{
 		query: 'mint_analytics_mints' | 'mint_analytics_melts' | 'mint_analytics_swaps' | 'mint_analytics_fees';
 		metric: 'mints_amount' | 'melts_amount' | 'swaps_amount' | 'fees_amount';
@@ -414,114 +465,79 @@ test.describe('mint-subsection-dashboard — analytics pipeline', {tag: '@analyt
 	];
 
 	for (const {query, metric, label} of AMOUNT_METRICS) {
-		test(`${query} cumulative sum for sat equals daemon-DB ${metric} at the cache ceiling`, async ({page}, testInfo) => {
-			const config = getConfig(testInfo.project.name);
-			const readiness = await getReadiness(page);
-			const last_processed_at = readiness.mint_analytics_recent.reduce((max, row) => Math.max(max, row.date), 0);
-			const oracle = mint.metricWindow(config, {metric, unit: 'sat', last_processed_at});
-			test.skip(oracle.amount === 0, `no archived ${label.toLowerCase()} sat activity yet on this stack`);
+		for (const unit of ALL_UNITS) {
+			test(`${query} cumulative ${unit} sum equals daemon-DB ${metric} across every interval`, async ({page}, testInfo) => {
+				const config = getConfig(testInfo.project.name);
+				test.skip(!mintUnitsFor(config).includes(unit), `unit ${unit} not provisioned on ${config.name}`);
 
-			const raw = await page.evaluate(() => localStorage.getItem('v0.auth.token'));
-			const token = raw ? (JSON.parse(raw) as string) : null;
-			const headers: Record<string, string> = token ? {Authorization: `Bearer ${token}`} : {};
-			const gqlQuery = `query Window($date_start: UnixTimestamp, $date_end: UnixTimestamp) {
-				${query}(units: [sat], date_start: $date_start, date_end: $date_end, interval: hour) {
-					date unit amount
+				const readiness = await getReadiness(page);
+				const last_processed_at = readiness.mint_analytics_recent.reduce((max, row) => Math.max(max, row.date), 0);
+				const oracle = mint.metricWindow(config, {metric, unit, last_processed_at});
+				test.skip(oracle.amount === 0, `no archived ${label.toLowerCase()} ${unit} activity yet on this stack`);
+
+				for (const interval of ALL_INTERVALS) {
+					const rows = await fetchAnalyticsRows(page, query, unit, interval, 0, oracle.window.effective_end, 'amount');
+					const archive_sum = rows.reduce((acc, r) => acc + parseInt(r.amount ?? '0', 10), 0);
+					expect(
+						archive_sum,
+						`${label} ${unit} ${interval} archive sum should equal daemon DB ${metric} (${oracle.amount}) at ceiling ${oracle.window.effective_end}`,
+					).toBe(oracle.amount);
 				}
-			}`;
-			const response = await page.request.post('/api', {
-				headers,
-				data: {query: gqlQuery, variables: {date_start: 0, date_end: oracle.window.effective_end}},
 			});
-			expect(response.ok(), `${query} should respond OK`).toBe(true);
-			const body = await response.json();
-			expect(body.errors, `${query} should not error`).toBeFalsy();
-			const rows = (body.data[query] ?? []) as Array<{date: number; unit: string; amount: string}>;
-			const sat_rows = rows.filter((r) => r.unit === 'sat');
-			const archive_sum = sat_rows.reduce((acc, r) => acc + parseInt(r.amount, 10), 0);
-			expect(
-				archive_sum,
-				`${label} archive cumulative sat sum should equal daemon DB ${metric} (${oracle.amount}) at ceiling ${oracle.window.effective_end}`,
-			).toBe(oracle.amount);
-		});
+		}
 	}
 
-	// Ecash is a count-style chart, not amount-style — assert against
-	// `mint.countsWindow` instead of `mint.metricWindow`. The chart renders
-	// two stacked datasets per unit: Blind Signatures (from
-	// `mint_analytics_promises`) and Proofs (from `mint_analytics_proofs`),
-	// both with the resolver's `include_count: true` flag so the wire
-	// payload carries `amount=0` rows whose `count` is what the chart
-	// reads. Sum of `count` across visible buckets per unit equals the
-	// daemon DB row count up to the ceiling.
-	test('mint_analytics_promises cumulative sat count equals daemon-DB promise count at the cache ceiling', async ({page}, testInfo) => {
-		const config = getConfig(testInfo.project.name);
-		const readiness = await getReadiness(page);
-		const last_processed_at = readiness.mint_analytics_recent.reduce((max, row) => Math.max(max, row.date), 0);
-		const oracle = mint.countsWindow(config, {unit: 'sat', last_processed_at});
-		test.skip(oracle.promises === 0, 'no archived promises for sat yet on this stack');
+	// Ecash is a count-style chart, not amount-style — the resolver passes
+	// `include_count: true` so the wire payload carries `count` per bucket
+	// (mintanalytics.model.ts:13,19; chart reads via
+	// `getDataKeyedByTimestamp(data, 'count')` at
+	// analytics-chart-data.helpers.ts:56). Same matrix shape: per
+	// (count-metric, unit), assert every interval's cumulative count
+	// equals `mint.countsWindow`. cdk regtest only emits SPENT proofs, so
+	// the unfiltered count here agrees with the resolver's `states:
+	// [SPENT]` filter.
+	const COUNT_METRICS: ReadonlyArray<{
+		query: 'mint_analytics_promises' | 'mint_analytics_proofs';
+		field: 'promises' | 'proofs';
+		label: string;
+	}> = [
+		{query: 'mint_analytics_promises', field: 'promises', label: 'Promises'},
+		{query: 'mint_analytics_proofs', field: 'proofs', label: 'Proofs'},
+	];
 
-		const raw = await page.evaluate(() => localStorage.getItem('v0.auth.token'));
-		const token = raw ? (JSON.parse(raw) as string) : null;
-		const headers: Record<string, string> = token ? {Authorization: `Bearer ${token}`} : {};
-		// `OrchardMintAnalytics` carries `amount` AND `count` as separate fields
-		// (mintanalytics.model.ts:13,19). For count-style metrics the resolver
-		// passes `include_count: true` which populates the `count` field; the
-		// chart reads `.count` via `getDataKeyedByTimestamp(data, 'count')`
-		// (analytics-chart-data.helpers.ts:56). Sum that, not amount.
-		const gqlQuery = `query Window($date_start: UnixTimestamp, $date_end: UnixTimestamp) {
-			mint_analytics_promises(units: [sat], date_start: $date_start, date_end: $date_end, interval: hour) {
-				date unit count
-			}
-		}`;
-		const response = await page.request.post('/api', {
-			headers,
-			data: {query: gqlQuery, variables: {date_start: 0, date_end: oracle.window.effective_end}},
-		});
-		expect(response.ok(), 'mint_analytics_promises should respond OK').toBe(true);
-		const body = await response.json();
-		expect(body.errors, 'mint_analytics_promises should not error').toBeFalsy();
-		const rows = (body.data.mint_analytics_promises ?? []) as Array<{date: number; unit: string; count: number}>;
-		const sat_rows = rows.filter((r) => r.unit === 'sat');
-		const archive_count = sat_rows.reduce((acc, r) => acc + r.count, 0);
-		expect(
-			archive_count,
-			`promises archive cumulative sat count should equal daemon DB promise rows (${oracle.promises}) at ceiling ${oracle.window.effective_end}`,
-		).toBe(oracle.promises);
-	});
+	for (const {query, field, label} of COUNT_METRICS) {
+		for (const unit of ALL_UNITS) {
+			test(`${query} cumulative ${unit} count equals daemon-DB ${label.toLowerCase()} across every interval`, async ({page}, testInfo) => {
+				const config = getConfig(testInfo.project.name);
+				test.skip(!mintUnitsFor(config).includes(unit), `unit ${unit} not provisioned on ${config.name}`);
 
-	test('mint_analytics_proofs cumulative sat count equals daemon-DB proof count at the cache ceiling', async ({page}, testInfo) => {
-		const config = getConfig(testInfo.project.name);
-		const readiness = await getReadiness(page);
-		const last_processed_at = readiness.mint_analytics_recent.reduce((max, row) => Math.max(max, row.date), 0);
-		const oracle = mint.countsWindow(config, {unit: 'sat', last_processed_at});
-		test.skip(oracle.proofs === 0, 'no archived proofs for sat yet on this stack');
+				const readiness = await getReadiness(page);
+				const last_processed_at = readiness.mint_analytics_recent.reduce((max, row) => Math.max(max, row.date), 0);
+				const oracle = mint.countsWindow(config, {unit, last_processed_at});
+				const expected_count = oracle[field];
+				test.skip(expected_count === 0, `no archived ${label.toLowerCase()} for ${unit} yet on this stack`);
 
-		const raw = await page.evaluate(() => localStorage.getItem('v0.auth.token'));
-		const token = raw ? (JSON.parse(raw) as string) : null;
-		const headers: Record<string, string> = token ? {Authorization: `Bearer ${token}`} : {};
-		// Same `count` vs `amount` split as the promises test above.
-		const gqlQuery = `query Window($date_start: UnixTimestamp, $date_end: UnixTimestamp) {
-			mint_analytics_proofs(units: [sat], date_start: $date_start, date_end: $date_end, interval: hour) {
-				date unit count
-			}
-		}`;
-		const response = await page.request.post('/api', {
-			headers,
-			data: {query: gqlQuery, variables: {date_start: 0, date_end: oracle.window.effective_end}},
-		});
-		expect(response.ok(), 'mint_analytics_proofs should respond OK').toBe(true);
-		const body = await response.json();
-		expect(body.errors, 'mint_analytics_proofs should not error').toBeFalsy();
-		const rows = (body.data.mint_analytics_proofs ?? []) as Array<{date: number; unit: string; count: number}>;
-		const sat_rows = rows.filter((r) => r.unit === 'sat');
-		const archive_count = sat_rows.reduce((acc, r) => acc + r.count, 0);
-		expect(
-			archive_count,
-			`proofs archive cumulative sat count should equal daemon DB proof rows (${oracle.proofs}) at ceiling ${oracle.window.effective_end}`,
-		).toBe(oracle.proofs);
-	});
+				for (const interval of ALL_INTERVALS) {
+					const rows = await fetchAnalyticsRows(page, query, unit, interval, 0, oracle.window.effective_end, 'count');
+					const archive_count = rows.reduce((acc, r) => acc + (r.count ?? 0), 0);
+					expect(
+						archive_count,
+						`${label} ${unit} ${interval} archive count should equal daemon DB (${expected_count}) at ceiling ${oracle.window.effective_end}`,
+					).toBe(expected_count);
+				}
+			});
+		}
+	}
 });
+
+// Render-level tooltip formatting (cents/dollars conversion, glyph vs code
+// rendering, locale grouping) is covered in karma — the production bundle
+// strips Angular's `ng.getComponent` debug global and Chart.js draws its
+// tooltips into the canvas (no DOM text to assert), so reading the rendered
+// label from a Playwright page is not viable. See
+// `chart.service.spec.ts` for `formatTooltipAmount` / `formatOracleTooltip
+// Label` contract tests, and the chart-data helper specs for the
+// upstream conversion pipeline.
 
 test.describe('mint-subsection-dashboard — lightning analytics pipeline', {tag: '@analytics @lightning'}, () => {
 	test.beforeEach(async ({page}) => {
