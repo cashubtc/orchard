@@ -75,14 +75,14 @@
 					</ng-container>
 
 					<ng-container matColumnDef="proof_count">
-						<th mat-header-cell *matHeaderCellDef mat-sort-header class="keyset-table-sticky-header">Proofs</th>
+						<th mat-header-cell *matHeaderCellDef mat-sort-header class="keyset-table-sticky-header">Proof count</th>
 						<td mat-cell *matCellDef="let keyset">
 							<span class="font-size-m w-min-10">{{ keyset.proof_count | number: '1.0-0' }}</span>
 						</td>
 					</ng-container>
 
 					<ng-container matColumnDef="promise_count">
-						<th mat-header-cell *matHeaderCellDef mat-sort-header class="keyset-table-sticky-header">Promises</th>
+						<th mat-header-cell *matHeaderCellDef mat-sort-header class="keyset-table-sticky-header">Promise count</th>
 						<td mat-cell *matCellDef="let keyset">
 							<span class="font-size-m w-min-10">{{ keyset.promise_count | number: '1.0-0' }}</span>
 						</td>
@@ -161,11 +161,11 @@
 														></div>
 													</div>
 													<div class="flex flex-column flex-gap-0-5">
-														<div class="orc-outline-color font-weight-extra-light">Proofs</div>
+														<div class="orc-outline-color font-weight-extra-light">Proof count</div>
 														<div class="font-size-m w-min-10">{{ keyset.proof_count | number: '1.0-0' }}</div>
 													</div>
 													<div class="flex flex-column flex-gap-0-5">
-														<div class="orc-outline-color font-weight-extra-light">Promises</div>
+														<div class="orc-outline-color font-weight-extra-light">Promise count</div>
 														<div class="font-size-m w-min-10">{{ keyset.promise_count | number: '1.0-0' }}</div>
 													</div>
 													@if (keyset.active) {

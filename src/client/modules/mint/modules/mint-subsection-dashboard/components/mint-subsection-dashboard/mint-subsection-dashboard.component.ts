@@ -33,6 +33,7 @@ import {BitcoinService} from '@client/modules/bitcoin/services/bitcoin/bitcoin.s
 import {LightningBalance} from '@client/modules/lightning/classes/lightning-balance.class';
 import {LightningAnalytic} from '@client/modules/lightning/classes/lightning-analytic.class';
 import {AnalyticsBackfillStatus} from '@client/modules/analytics/classes/analytics-backfill-status.class';
+import {getPreRangeEnd} from '@client/modules/analytics/helpers/analytics.helpers';
 import {LightningAnalyticsArgs} from '@client/modules/lightning/types/lightning.types';
 import {OrchardError} from '@client/modules/error/types/error.types';
 import {NavTertiaryItem} from '@client/modules/nav/types/nav-tertiary-item.type';
@@ -45,7 +46,7 @@ import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
-import {MintFee} from '@client/modules/mint/classes/mint-fee.class';
+import {MintWatchdogStatus} from '@client/modules/mint/classes/mint-watchdog-status.class';
 import {MintKeysetCount} from '@client/modules/mint/classes/mint-keyset-count.class';
 import {MintDatabaseInfo} from '@client/modules/mint/classes/mint-database-info.class';
 import {MintAnalytic} from '@client/modules/mint/classes/mint-analytic.class';
@@ -90,7 +91,7 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 	public mint_keysets: MintKeyset[] = [];
 	public mint_keyset_counts: MintKeysetCount[] = [];
 	public mint_database_info: MintDatabaseInfo | null = null;
-	public mint_fees: MintFee[] = [];
+	public mint_watchdog_status: MintWatchdogStatus | null = null;
 	public mint_analytics_balances: MintAnalytic[] = [];
 	public mint_analytics_balances_pre: MintAnalytic[] = [];
 	public mint_analytics_mints: MintAnalytic[] = [];
@@ -208,7 +209,7 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 		this.initMintConnections();
 		this.setMintIcon();
 		this.orchardOptionalInit();
-		this.getMintFees();
+		if (this.mint_type === 'nutshell') this.getMintWatchdogStatus();
 		this.loadActivitySummary(MintActivityPeriod.Day);
 		await this.initAnalytics();
 		this.mint_fee_revenue.set(this.getMintFeeRevenueState());
@@ -351,11 +352,11 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 		Data                      
 	******************************************************** */
 
-	private async getMintFees(): Promise<void> {
+	private async getMintWatchdogStatus(): Promise<void> {
 		try {
-			this.mint_fees = await lastValueFrom(this.mintService.loadMintFees(1));
+			this.mint_watchdog_status = await lastValueFrom(this.mintService.loadMintWatchdogStatus());
 		} catch {
-			this.mint_fees = [];
+			this.mint_watchdog_status = null;
 		}
 	}
 
@@ -388,6 +389,7 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 			this.loading_mint.set(false);
 			this.cdr.detectChanges();
 		} catch (error) {
+			this.loading_mint.set(false);
 			console.error('ERROR IN INIT ANALYTICS:', error);
 		}
 	}
@@ -404,7 +406,7 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 		const pre_args = {
 			units: this.page_settings().units,
 			date_start: this.configService.config.constants.epoch_start,
-			date_end: this.page_settings().date_start - 1,
+			date_end: getPreRangeEnd(this.page_settings().date_start),
 			interval: AnalyticsInterval.Custom,
 			timezone,
 		};
@@ -432,7 +434,7 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 		this.mint_analytics_melts_pre = results[5];
 		this.mint_analytics_swaps = results[6];
 		this.mint_analytics_swaps_pre = results[7];
-		this.mint_analytics_fees = this.applyMintFees(results[8], results[9]);
+		this.mint_analytics_fees = results[8];
 		this.mint_analytics_fees_pre = results[9];
 		this.mint_analytics_proofs = results[10];
 		this.mint_analytics_proofs_pre = results[11];
@@ -455,7 +457,7 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 				this.lightningService.loadLightningAnalyticsLocalBalance({
 					...args,
 					date_start: this.configService.config.constants.epoch_start,
-					date_end: this.page_settings().date_start - 1,
+					date_end: getPreRangeEnd(this.page_settings().date_start),
 					interval: AnalyticsInterval.Custom,
 				}),
 				this.lightningService.loadLightningAnalyticsBackfillStatus(),
@@ -464,14 +466,6 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 		this.lightning_analytics = analytics;
 		this.lightning_analytics_pre = analytics_pre;
 		this.lightning_analytics_backfill_status.set(backfill_status);
-	}
-
-	private applyMintFees(analytics_fees: MintAnalytic[], analytics_fees_pre: MintAnalytic[]): MintAnalytic[] {
-		if (analytics_fees_pre.length > 0) return analytics_fees;
-		if (analytics_fees.length === 0) return analytics_fees;
-		if (this.mint_fees.length === 0) return analytics_fees;
-		analytics_fees[0].amount = String(BigInt(analytics_fees[0].amount) + BigInt(this.mint_fees[0].keyset_fees_paid));
-		return analytics_fees;
 	}
 
 	private loadActivitySummary(period: MintActivityPeriod): void {
@@ -512,6 +506,7 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 			this.loading_mint.set(false);
 			this.cdr.detectChanges();
 		} catch (error) {
+			this.loading_mint.set(false);
 			console.error('Error updating dynamic data:', error);
 		}
 	}

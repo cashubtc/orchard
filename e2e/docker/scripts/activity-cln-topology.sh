@@ -141,6 +141,18 @@ wallet() {
     docker exec -i "${CONFIG_NAME}-wallet" cdk-cli "$@"
 }
 
+# Run cdk-cli with a hard kill after N seconds. cdk-cli's `mint` keeps a
+# NUT-17 websocket subscription open after returning the quote (and after
+# proof redemption) and ignores SIGTERM. A host-side `kill` of the
+# `docker exec` wrapper would orphan it — signals don't cross the docker
+# exec PID-namespace boundary. `timeout` runs alongside cdk-cli inside the
+# container; `-k 1` escalates to SIGKILL one second after the SIGTERM, which
+# cdk-cli does honor.
+wallet_bounded() {
+    secs="$1"; shift
+    docker exec -i "${CONFIG_NAME}-wallet" timeout -k 1 "$secs" cdk-cli "$@"
+}
+
 rand_sat() {
     min="${1:-100}"; max="${2:-5000}"
     range=$((max - min))
@@ -193,8 +205,10 @@ if [ "$ACTIVITY_OUTBOUND" -gt 0 ]; then
 fi
 
 # ───── 4. Wallet mints ─────
-# Run `cdk-cli mint` backgrounded, extract the bolt11 from stdout, pay it
-# from alice, wait for cdk-cli to redeem the proofs.
+# Two-phase: ask the mint for a quote (phase 1), pay externally (phase 2),
+# redeem proofs by quote id (phase 3). cdk-cli's `mint` lingers on its
+# NUT-17 subscription after each phase, so each cdk-cli call is bounded by
+# `wallet_bounded` to force a clean SIGKILL inside the container.
 if [ "$ACTIVITY_MINTS" -gt 0 ]; then
     log "wallet mints: $ACTIVITY_MINTS"
     i=0
@@ -202,35 +216,27 @@ if [ "$ACTIVITY_MINTS" -gt 0 ]; then
         amt=$(rand_sat 100 2000)
         tmp=$(mktemp)
 
-        wallet mint "$MINT_URL" "$amt" > "$tmp" 2>&1 &
-        pid=$!
+        wallet_bounded 5 mint "$MINT_URL" "$amt" --wait-duration=0 > "$tmp" 2>&1 || true
+        bolt11=$(grep -oE 'lnbcrt[0-9a-z]+' "$tmp" 2>/dev/null | head -1 || true)
+        quote_id=$(grep -oE 'id=[A-Za-z0-9_-]+' "$tmp" 2>/dev/null | head -1 | cut -d= -f2)
 
-        bolt11=""
-        tries=30
-        while [ "$tries" -gt 0 ]; do
-            bolt11=$(grep -oE 'lnbcrt[0-9a-z]+' "$tmp" 2>/dev/null | head -1 || true)
-            [ -n "$bolt11" ] && break
-            sleep 0.5
-            tries=$((tries - 1))
-        done
-
-        if [ -z "$bolt11" ]; then
-            log "  mint ${amt} FAILED (no invoice in cdk-cli output)"
+        if [ -z "$bolt11" ] || [ -z "$quote_id" ]; then
+            log "  mint ${amt} FAILED (no invoice/quote_id in cdk-cli output)"
             sed 's/^/    /' "$tmp" || true
-            kill "$pid" 2>/dev/null || true
             rm -f "$tmp"
             i=$((i + 1))
             continue
         fi
 
-        cln_pay alice "$bolt11" || true
-
-        if wait "$pid"; then
-            log "  mint ${amt} sat"
-        else
-            log "  mint ${amt} FAILED (redeem)"
-            sed 's/^/    /' "$tmp" || true
+        if ! cln_pay alice "$bolt11"; then
+            log "  mint ${amt} FAILED (pay)"
+            rm -f "$tmp"
+            i=$((i + 1))
+            continue
         fi
+
+        wallet_bounded 5 mint "$MINT_URL" --quote-id "$quote_id" --wait-duration=0 > "$tmp" 2>&1 || true
+        log "  mint ${amt} sat"
         rm -f "$tmp"
         i=$((i + 1))
     done
@@ -275,53 +281,47 @@ if [ "$ACTIVITY_MELTS" -gt 0 ]; then
 fi
 
 # ───── 7. Wallet bolt12 mints ─────
-# cdk-cli with --method bolt12 asks the mint for a bolt12 offer. Alice's CLN
-# resolves the offer to a fresh bolt12 invoice via fetchinvoice (bolt12
-# requires an invoice_request handshake over LN onion messages), then pays it.
-# cdk-cli's NUT-17 subscription redeems proofs on arrival.
-#
-# cdk-cli keeps its websocket open indefinitely after a bolt12 mint rather
-# than exiting on proof receipt — we sleep briefly to let redemption land,
-# then SIGTERM. Proofs are already stored locally before we kill.
+# Same two-phase pattern as bolt11: phase 1 obtains the offer + quote id,
+# alice fetchinvoice's a bolt12 invoice and pays it (phase 2), phase 3 redeems
+# proofs by quote id. cdk-cli's NUT-17 subscription means it never exits on
+# its own, so each call is bounded by `wallet_bounded`.
 if [ "$ACTIVITY_BOLT12_MINTS" -gt 0 ]; then
     log "wallet bolt12 mints: $ACTIVITY_BOLT12_MINTS"
     i=0
     while [ "$i" -lt "$ACTIVITY_BOLT12_MINTS" ]; do
         amt=$(rand_sat 100 2000)
         tmp=$(mktemp)
-        cleanup() { kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; rm -f "$tmp"; }
 
-        wallet mint "$MINT_URL" "$amt" --method bolt12 > "$tmp" 2>&1 &
-        pid=$!
+        wallet_bounded 5 mint "$MINT_URL" "$amt" --method bolt12 --wait-duration=0 > "$tmp" 2>&1 || true
+        offer=$(grep -oE 'lno1[0-9a-z]+' "$tmp" 2>/dev/null | head -1 || true)
+        quote_id=$(grep -oE 'id=[A-Za-z0-9_-]+' "$tmp" 2>/dev/null | head -1 | cut -d= -f2)
 
-        offer=""
-        tries=30
-        while [ "$tries" -gt 0 ]; do
-            offer=$(grep -oE 'lno1[0-9a-z]+' "$tmp" 2>/dev/null | head -1 || true)
-            [ -n "$offer" ] && break
-            sleep 0.5
-            tries=$((tries - 1))
-        done
-
-        if [ -z "$offer" ]; then
+        if [ -z "$offer" ] || [ -z "$quote_id" ]; then
             log "  bolt12 mint ${amt} FAILED (no offer)"
-            cleanup; i=$((i + 1)); continue
+            rm -f "$tmp"
+            i=$((i + 1))
+            continue
         fi
 
         msat=$((amt * 1000))
         invoice=$(cln alice fetchinvoice "offer=$offer" "amount_msat=$msat" 2>/dev/null | jq -r '.invoice // ""')
         if [ -z "$invoice" ] || [ "$invoice" = "null" ]; then
             log "  bolt12 mint ${amt} FAILED (fetchinvoice)"
-            cleanup; i=$((i + 1)); continue
+            rm -f "$tmp"
+            i=$((i + 1))
+            continue
         fi
 
-        if cln_pay alice "$invoice"; then
-            sleep 2
-            log "  bolt12 mint ${amt} sat"
-        else
+        if ! cln_pay alice "$invoice"; then
             log "  bolt12 mint ${amt} FAILED (pay)"
+            rm -f "$tmp"
+            i=$((i + 1))
+            continue
         fi
-        cleanup
+
+        wallet_bounded 5 mint "$MINT_URL" --method bolt12 --quote-id "$quote_id" --wait-duration=0 > "$tmp" 2>&1 || true
+        log "  bolt12 mint ${amt} sat"
+        rm -f "$tmp"
         i=$((i + 1))
     done
 fi

@@ -16,3 +16,12 @@ export function cached<T>(key: string, getter: () => T): T {
 	_cache.set(key, v);
 	return v;
 }
+
+/** Re-run `getter` and overwrite the cached value at `key`. Use after a
+ *  UI-driven mutation has changed the upstream truth so the next plain
+ *  `cached(key, …)` read sees the new value too. */
+export function recache<T>(key: string, getter: () => T): T {
+	const v = getter();
+	_cache.set(key, v);
+	return v;
+}

@@ -118,12 +118,22 @@ async function applyCurrency(page: Page, mode: 'btc' | 'fiat', currency: 'code' 
 	await page.getByRole('option', {name: CURRENCY_OPTION_DETAILS[mode][currency]}).click();
 }
 
+/** Select an AI model from the mat-autocomplete on the device settings page.
+ *  Requires AI to be enabled (app setting) before this page load or the card
+ *  won't render. Value is saved to localStorage on option click — no commit. */
+async function applyAiModel(page: Page, model: string): Promise<void> {
+	const input = page.locator('orc-settings-subsection-device-ai').locator('input[aria-label="Model"]');
+	await input.fill(model);
+	await page.getByRole('option', {name: model, exact: true}).click();
+}
+
 async function applyDeviceSettings(page: Page, device: DeviceSettingValues): Promise<void> {
 	if (device.theme) await applyTheme(page, device.theme);
 	if (device.timezone) await applyTimezone(page, device.timezone);
 	if (device.locale) await applyLocale(page, device.locale);
 	if (device.currency_btc) await applyCurrency(page, 'btc', device.currency_btc);
 	if (device.currency_fiat) await applyCurrency(page, 'fiat', device.currency_fiat);
+	if (device.ai_model) await applyAiModel(page, device.ai_model);
 }
 
 /** Drive `/settings/app` then `/settings/device` per the config's matrix.

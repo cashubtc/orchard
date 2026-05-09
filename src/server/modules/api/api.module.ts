@@ -37,7 +37,7 @@ import {MintProofModule} from './mint/proof/mintproof.module';
 import {MintSwapModule} from './mint/swap/mintswap.module';
 import {MintAnalyticsModule} from './mint/analytics/mintanalytics.module';
 import {MintCountModule} from './mint/count/mintcount.module';
-import {MintFeeModule} from './mint/fee/mintfee.module';
+import {MintWatchdogModule} from './mint/watchdog/mintwatchdog.module';
 import {MintActivityModule} from './mint/activity/mintactivity.module';
 // AI Endpoints
 import {AiModelModule} from './ai/model/aimodel.module';
@@ -95,7 +95,7 @@ import './api.enums';
 		MintSwapModule,
 		MintAnalyticsModule,
 		MintCountModule,
-		MintFeeModule,
+		MintWatchdogModule,
 		MintActivityModule,
 		AiModelModule,
 		AiAssistantModule,

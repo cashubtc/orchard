@@ -20,7 +20,7 @@ import {
 	CashuMintPromise,
 	CashuMintSwap,
 	CashuMintCount,
-	CashuMintFee,
+	CashuMintOperationFee,
 } from '@server/modules/cashu/mintdb/cashumintdb.types';
 import {
 	CashuMintMintQuotesArgs,
@@ -28,6 +28,7 @@ import {
 	CashuMintProofsArgs,
 	CashuMintPromiseArgs,
 	CashuMintSwapsArgs,
+	CashuMintFeesArgs,
 } from '@server/modules/cashu/mintdb/cashumintdb.interfaces';
 import {
 	buildDynamicQuery,
@@ -550,10 +551,57 @@ export class NutshellService {
 		}
 	}
 
-	public async getFees(client: CashuMintDatabase, limit: number = 1): Promise<CashuMintFee[]> {
-		const sql = `SELECT * FROM balance_log ORDER BY time ASC LIMIT ?;`;
+	/** Emits per-snapshot fee deltas from nutshell's watchdog `balance_log`
+	 *  (cumulative `keyset_fees_paid`), LAG-diffed to cdk's per-op shape. The
+	 *  outer `SELECT * FROM (...) fee_events` wraps the inner `WHERE fee > 0` so
+	 *  buildDynamicQuery's appended `WHERE date_start` doesn't collide. The
+	 *  LAG seed is NULL (not 0) so the first row per partition is treated as
+	 *  a baseline, not a delta from zero — otherwise a restored DB whose first
+	 *  snapshot already has non-zero `keyset_fees_paid` would emit one giant
+	 *  spurious fee event. `WHERE fee > 0` then drops the NULL baseline row. */
+	public async listFees(client: CashuMintDatabase, args?: CashuMintFeesArgs): Promise<CashuMintOperationFee[]> {
+		const field_mappings = {
+			units: 'unit',
+			date_start: 'created_time',
+			date_end: 'created_time',
+		};
+
+		const select_statement = `
+			SELECT * FROM (
+				SELECT unit, created_time, fee FROM (
+					SELECT
+						unit,
+						time AS created_time,
+						keyset_fees_paid - LAG(keyset_fees_paid, 1, NULL) OVER (PARTITION BY unit ORDER BY time) AS fee
+					FROM balance_log
+				) deltas
+				WHERE fee > 0
+			) fee_events`;
+
+		const {sql, params} = buildDynamicQuery({
+			db_type: client.type,
+			table_name: 'balance_log',
+			args,
+			field_mappings,
+			select_statement,
+		});
 		try {
-			return queryRows<CashuMintFee>(client, sql, [limit]);
+			const rows = await queryRows<CashuMintOperationFee>(client, sql, params);
+			return rows.map((row) => ({
+				...row,
+				created_time: convertDateToUnixTimestamp(row.created_time) ?? row.created_time,
+			}));
+		} catch (err) {
+			throw err;
+		}
+	}
+
+	public async getWatchdogLastSeen(client: CashuMintDatabase): Promise<number | null> {
+		const sql = 'SELECT MAX(time) AS last_seen FROM balance_log;';
+		try {
+			const row = await queryRow<{last_seen: number | string | Date | null}>(client, sql);
+			if (row?.last_seen === null || row?.last_seen === undefined) return null;
+			return convertDateToUnixTimestamp(row.last_seen);
 		} catch (err) {
 			throw err;
 		}

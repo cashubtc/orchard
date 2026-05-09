@@ -75,6 +75,12 @@ export type CashuMintSwap = {
 	fee: number | null;
 };
 
+export type CashuMintOperationFee = {
+	unit: MintUnit;
+	created_time: number;
+	fee: number;
+};
+
 export type CashuMintProofGroup = {
 	amount: number;
 	created_time: number;
@@ -86,14 +92,6 @@ export type CashuMintProofGroup = {
 
 export type CashuMintCount = {
 	count: number;
-};
-
-export type CashuMintFee = {
-	unit: MintUnit;
-	keyset_balance: number;
-	keyset_fees_paid: number;
-	backend_balance: number;
-	time: number;
 };
 
 export type CashuMintProof = {

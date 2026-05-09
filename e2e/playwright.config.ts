@@ -107,6 +107,7 @@ import type {ConfigInfo} from './types/config';
 function grepFor(config: ConfigInfo): RegExp {
 	return new RegExp(
 		tagsFor(config)
+			.filter((t) => t !== '@ai') // AI tests run only via `npm run e2e:test:ai`
 			.map((t) => `(${t})`)
 			.join('|'),
 	);

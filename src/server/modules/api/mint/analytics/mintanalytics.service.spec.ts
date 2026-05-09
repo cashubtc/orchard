@@ -187,7 +187,7 @@ describe('MintAnalyticsService', () => {
 	******************************************************** */
 
 	describe('getMintAnalyticsKeysets', () => {
-		it('should return keyset-level analytics for hourly interval', async () => {
+		it('should return issued amount when only issued data is present', async () => {
 			mock_cashu_analytics.getCachedAnalytics.mockResolvedValueOnce([
 				{metric: MintAnalyticsMetric.keyset_issued, unit: 'sat', amount: '500', date: 1700000000, count: 3, keyset_id: 'ks-001'},
 			]);
@@ -197,6 +197,95 @@ describe('MintAnalyticsService', () => {
 			expect(result).toHaveLength(1);
 			expect(result[0].keyset_id).toBe('ks-001');
 			expect(result[0].amount).toBe('500');
+		});
+
+		it('should net issued − redeemed per keyset per bucket', async () => {
+			const hour = 1700000000;
+			mock_cashu_analytics.getCachedAnalytics.mockResolvedValueOnce([
+				{metric: MintAnalyticsMetric.keyset_issued, unit: 'sat', amount: '6501', date: hour, count: 83, keyset_id: 'ks-001'},
+				{metric: MintAnalyticsMetric.keyset_redeemed, unit: 'sat', amount: '1821', date: hour, count: 43, keyset_id: 'ks-001'},
+			]);
+
+			const result = await service.getMintAnalyticsKeysets('test', {interval: AnalyticsInterval.hour});
+
+			expect(result).toHaveLength(1);
+			expect(result[0].keyset_id).toBe('ks-001');
+			expect(result[0].amount).toBe('4680');
+		});
+
+		it('should produce a negative amount when redeemed exceeds issued in a bucket', async () => {
+			const hour = 1700000000;
+			mock_cashu_analytics.getCachedAnalytics.mockResolvedValueOnce([
+				{metric: MintAnalyticsMetric.keyset_issued, unit: 'sat', amount: '100', date: hour, count: 1, keyset_id: 'ks-001'},
+				{metric: MintAnalyticsMetric.keyset_redeemed, unit: 'sat', amount: '700', date: hour, count: 5, keyset_id: 'ks-001'},
+			]);
+
+			const result = await service.getMintAnalyticsKeysets('test', {interval: AnalyticsInterval.hour});
+
+			expect(result).toHaveLength(1);
+			expect(result[0].amount).toBe('-600');
+		});
+
+		it('should drop buckets where issued equals redeemed', async () => {
+			const hour = 1700000000;
+			mock_cashu_analytics.getCachedAnalytics.mockResolvedValueOnce([
+				{metric: MintAnalyticsMetric.keyset_issued, unit: 'sat', amount: '1000', date: hour, count: 5, keyset_id: 'ks-001'},
+				{metric: MintAnalyticsMetric.keyset_redeemed, unit: 'sat', amount: '1000', date: hour, count: 5, keyset_id: 'ks-001'},
+			]);
+
+			const result = await service.getMintAnalyticsKeysets('test', {interval: AnalyticsInterval.hour});
+
+			expect(result).toHaveLength(0);
+		});
+
+		it('should net per (keyset, bucket) and sort by date when aggregating to day', async () => {
+			const day_one_hour_one = 1700000000;
+			const day_one_hour_two = day_one_hour_one + 3600;
+			const day_two_hour_one = day_one_hour_one + 86400;
+			mock_cashu_analytics.getCachedAnalytics.mockResolvedValueOnce([
+				{
+					metric: MintAnalyticsMetric.keyset_issued,
+					unit: 'sat',
+					amount: '500',
+					date: day_two_hour_one,
+					count: 3,
+					keyset_id: 'ks-002',
+				},
+				{
+					metric: MintAnalyticsMetric.keyset_issued,
+					unit: 'sat',
+					amount: '300',
+					date: day_one_hour_one,
+					count: 2,
+					keyset_id: 'ks-001',
+				},
+				{
+					metric: MintAnalyticsMetric.keyset_issued,
+					unit: 'sat',
+					amount: '200',
+					date: day_one_hour_two,
+					count: 1,
+					keyset_id: 'ks-001',
+				},
+				{
+					metric: MintAnalyticsMetric.keyset_redeemed,
+					unit: 'sat',
+					amount: '100',
+					date: day_one_hour_one,
+					count: 1,
+					keyset_id: 'ks-001',
+				},
+			]);
+
+			const result = await service.getMintAnalyticsKeysets('test', {interval: AnalyticsInterval.day, timezone: 'UTC'});
+
+			expect(result).toHaveLength(2);
+			// ks-001 day 1: (300 + 200) − 100 = 400
+			expect(result[0].keyset_id).toBe('ks-001');
+			expect(result[0].amount).toBe('400');
+			// ks-002 day 2: 500 − 0 = 500
+			expect(result[1].keyset_id).toBe('ks-002');
+			expect(result[1].amount).toBe('500');
 		});
 
 		it('should exclude entries with empty keyset_id', async () => {

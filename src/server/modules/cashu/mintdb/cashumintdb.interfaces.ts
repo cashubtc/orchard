@@ -51,3 +51,12 @@ export interface CashuMintProofsArgs {
 	page_size?: number;
 	sort_order?: 'ASC' | 'DESC';
 }
+
+export interface CashuMintFeesArgs {
+	date_start?: number;
+	date_end?: number;
+	units?: MintUnit[];
+	page?: number;
+	page_size?: number;
+	sort_order?: 'ASC' | 'DESC';
+}

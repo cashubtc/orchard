@@ -45,6 +45,10 @@ export interface Readiness {
 	 *  bitcoin analytics backfill hasn't yet produced wallet/asset rows
 	 *  (specs that read on-chain analytics should gate on this). */
 	bitcoin_analytics_recent: AnalyticsCacheRow[];
+	/** `ai_health.status` from the AI health resolver. False on non-AI stacks
+	 *  (resolver errors → probe falls back to false) or when the configured
+	 *  vendor (Ollama/OpenRouter) is unreachable. Gate `@ai` specs on this. */
+	ai_health: boolean;
 }
 
 export interface ReadinessPredicate {

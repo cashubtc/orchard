@@ -123,7 +123,7 @@ export class MintAnalyticsService {
 		}
 	}
 
-	/** Gets keyset-level analytics */
+	/** Gets keyset-level analytics (issued − redeemed per keyset per bucket) */
 	async getMintAnalyticsKeysets(tag: string, args: MintAnalyticsApiArgs): Promise<OrchardMintKeysetsAnalytics[]> {
 		try {
 			const {interval, date_start, cached_end} = this.resolveQueryParams(args);
@@ -133,7 +133,21 @@ export class MintAnalyticsService {
 				metrics: [MintAnalyticsMetric.keyset_issued, MintAnalyticsMetric.keyset_redeemed],
 			});
 			const keyset_data = cached.filter((d) => d.keyset_id !== '' && d.amount !== '0');
-			return this.aggregateKeysetsByInterval(keyset_data, interval, args.timezone, date_start);
+			const issued = keyset_data.filter((d) => d.metric === MintAnalyticsMetric.keyset_issued);
+			const redeemed = keyset_data.filter((d) => d.metric === MintAnalyticsMetric.keyset_redeemed);
+			const issued_map = this.aggregateKeysetsForMetric(issued, interval, args.timezone, date_start);
+			const redeemed_map = this.aggregateKeysetsForMetric(redeemed, interval, args.timezone, date_start);
+
+			const all_keys = new Set([...Array.from(issued_map.keys()), ...Array.from(redeemed_map.keys())]);
+			return Array.from(all_keys)
+				.map((key) => {
+					const iss = issued_map.get(key) ?? {amount: BigInt(0), keyset_id: '', date: 0};
+					const red = redeemed_map.get(key) ?? {amount: BigInt(0), keyset_id: '', date: 0};
+					const ref = issued_map.get(key) ?? redeemed_map.get(key)!;
+					return new OrchardMintKeysetsAnalytics(ref.keyset_id, (iss.amount - red.amount).toString(), ref.date);
+				})
+				.filter((d) => d.amount !== '0')
+				.sort((a, b) => a.date - b.date);
 		} catch (error) {
 			throw this.handleError(tag, error);
 		}
@@ -263,23 +277,22 @@ export class MintAnalyticsService {
 			.map((b) => new OrchardMintAnalyticsMetric(b.unit, b.metric, b.amount.toString(), b.date, b.count));
 	}
 
-	/** Aggregates keyset-level data by interval */
-	private aggregateKeysetsByInterval(
+	/** Aggregates same-metric keyset rows into a {keyset_id:bucket_date → bucket} map */
+	private aggregateKeysetsForMetric(
 		data: MintAnalytics[],
 		interval: AnalyticsInterval,
 		timezone?: string,
 		date_start?: number,
-	): OrchardMintKeysetsAnalytics[] {
-		if (interval === AnalyticsInterval.hour) {
-			return data.map((d) => new OrchardMintKeysetsAnalytics(d.keyset_id, d.amount, d.date));
-		}
-
+	): Map<string, {keyset_id: string; amount: bigint; date: number}> {
 		const tz = timezone ?? 'UTC';
 		type Bucket = {keyset_id: string; amount: bigint; date: number};
 
-		const buckets = data.reduce((acc, d) => {
-			const bucket_date = getBucketDate(d.date, interval, tz, date_start, data);
-			const key = interval === AnalyticsInterval.custom ? `${d.keyset_id}:${d.metric}` : `${d.keyset_id}:${d.metric}:${bucket_date}`;
+		return data.reduce((acc, d) => {
+			let bucket_date: number;
+			if (interval === AnalyticsInterval.hour) bucket_date = d.date;
+			else if (interval === AnalyticsInterval.custom) bucket_date = date_start ?? 0;
+			else bucket_date = getBucketDate(d.date, interval, tz, date_start, data);
+			const key = interval === AnalyticsInterval.custom ? d.keyset_id : `${d.keyset_id}:${bucket_date}`;
 			const existing = acc.get(key);
 
 			if (existing) {
@@ -289,10 +302,6 @@ export class MintAnalyticsService {
 			}
 			return acc;
 		}, new Map<string, Bucket>());
-
-		return Array.from(buckets.values())
-			.sort((a, b) => a.date - b.date)
-			.map((b) => new OrchardMintKeysetsAnalytics(b.keyset_id, b.amount.toString(), b.date));
 	}
 
 	/** Wraps errors in OrchardApiError */

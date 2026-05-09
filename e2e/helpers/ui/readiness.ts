@@ -43,6 +43,7 @@ const BITCOIN_ANALYTICS_PROBE_QUERY = `{
 		date
 	}
 }`;
+const AI_HEALTH_QUERY = `{ ai_health { status } }`;
 
 const SECONDS_PER_DAY = 86_400;
 
@@ -90,7 +91,7 @@ async function probe<T>(page: Page, query: string, field: string, fallback: T): 
 export async function getReadiness(page: Page): Promise<Readiness> {
 	const now_unix = Math.floor(Date.now() / 1000);
 	const start = now_unix - 7 * SECONDS_PER_DAY;
-	const [bitcoin_data, oracle_data, mint_probe, ln_probe, btc_probe] = await Promise.all([
+	const [bitcoin_data, oracle_data, mint_probe, ln_probe, btc_probe, ai_health_data] = await Promise.all([
 		// Bitcoin chain-info errors on no-bitcoin stacks (`fake-cdk-postgres`),
 		// so wrap in `probe` and fall back to a safe default; the
 		// `mainchainSynced` predicate is only used on bitcoin-enabled stacks
@@ -104,6 +105,7 @@ export async function getReadiness(page: Page): Promise<Readiness> {
 		probe<AnalyticsCacheRow[]>(page, MINT_ANALYTICS_PROBE_QUERY, 'mint_analytics_metrics', []),
 		probe<AnalyticsCacheRow[]>(page, LIGHTNING_ANALYTICS_PROBE_QUERY, 'lightning_analytics_metrics', []),
 		probe<AnalyticsCacheRow[]>(page, BITCOIN_ANALYTICS_PROBE_QUERY, 'bitcoin_analytics_metrics', []),
+		probe<{status: boolean}>(page, AI_HEALTH_QUERY, 'ai_health', {status: false}),
 	]);
 	return {
 		bitcoin: bitcoin_data,
@@ -111,6 +113,7 @@ export async function getReadiness(page: Page): Promise<Readiness> {
 		mint_analytics_recent: mint_probe,
 		lightning_analytics_recent: ln_probe,
 		bitcoin_analytics_recent: btc_probe,
+		ai_health: ai_health_data.status,
 	};
 }
 
@@ -163,6 +166,14 @@ export const mintAnalyticsHasRows: ReadinessPredicate = (r) => ({
 export const lightningAnalyticsHasRows: ReadinessPredicate = (r) => ({
 	ok: r.lightning_analytics_recent.length > 0,
 	reason: `lightning_analytics_has_rows rows=${r.lightning_analytics_recent.length}`,
+});
+
+/** AI vendor (Ollama or OpenRouter) is reachable and the model responds.
+ *  False on non-AI stacks and when the configured vendor is unreachable.
+ *  Gate all `@ai` specs on this to skip cleanly rather than hanging. */
+export const aiIsHealthy: ReadinessPredicate = (r) => ({
+	ok: r.ai_health,
+	reason: `ai_healthy=${r.ai_health}`,
 });
 
 /** `analytics_bitcoin` has at least one row — the on-chain analytics

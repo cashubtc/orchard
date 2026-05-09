@@ -1,18 +1,21 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
+/* Vendor Dependencies */
+import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
-import {CashuMintFee} from '@server/modules/cashu/mintdb/cashumintdb.types';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 import {MintService} from '@server/modules/api/mint/mint.service';
 import {ErrorService} from '@server/modules/error/error.service';
 /* Local Dependencies */
-import {OrchardMintFee} from './mintfee.model';
+import {OrchardMintWatchdogStatus} from './mintwatchdog.model';
+
+const WATCHDOG_FRESHNESS_SECONDS = 90000; // 25 hours
 
 @Injectable()
-export class MintfeeService {
-	private readonly logger = new Logger(MintfeeService.name);
+export class MintWatchdogService {
+	private readonly logger = new Logger(MintWatchdogService.name);
 
 	constructor(
 		private cashuMintDatabaseService: CashuMintDatabaseService,
@@ -20,11 +23,13 @@ export class MintfeeService {
 		private errorService: ErrorService,
 	) {}
 
-	async getMintFees(tag: string, limit?: number): Promise<OrchardMintFee[]> {
+	async getWatchdogStatus(tag: string): Promise<OrchardMintWatchdogStatus> {
 		return this.mintService.withDbClient(async (client) => {
 			try {
-				const cashu_fees: CashuMintFee[] = await this.cashuMintDatabaseService.getFees(client, limit);
-				return cashu_fees.map((cf) => new OrchardMintFee(cf));
+				const last_seen = await this.cashuMintDatabaseService.getWatchdogLastSeen(client);
+				const now = DateTime.utc().toUnixInteger();
+				const is_alive = last_seen !== null && now - last_seen < WATCHDOG_FRESHNESS_SECONDS;
+				return new OrchardMintWatchdogStatus(is_alive, last_seen);
 			} catch (error) {
 				const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
 					errord: OrchardErrorCode.MintDatabaseSelectError,

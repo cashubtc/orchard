@@ -190,7 +190,7 @@ test.describe('mint-general-activity card — structure', {tag: '@mint'}, () => 
 	});
 });
 
-test.describe('mint-general-activity card — cache↔DB differential', {tag: '@mint'}, () => {
+test.describe('mint-general-activity card — cache↔DB differential', {tag: '@analytics'}, () => {
 	test.beforeEach(async ({page}) => {
 		await page.goto('/');
 		// Skip if `analytics_mint` is empty — backfill either hasn't run yet

@@ -41,6 +41,9 @@ LIGHTNING_RPC_PORT=11001
 MINT_TYPE=nutshell
 MINT_API=http://nutshell:3338
 # MINT_DATABASE (postgres URL) set inline in compose
+MINT_RPC_HOST=nutshell
+MINT_RPC_PORT=8086
+MINT_RPC_MTLS=false
 
 # ----- Nutshell mint private key -----
 NUTSHELL_PRIVATE_KEY=e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0e2e0

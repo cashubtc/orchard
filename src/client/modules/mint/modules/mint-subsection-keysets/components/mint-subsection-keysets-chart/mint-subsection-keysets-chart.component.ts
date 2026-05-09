@@ -140,7 +140,7 @@ export class MintSubsectionKeysetsChartComponent implements OnDestroy {
 			(groups, analytic) => {
 				const id = analytic.keyset_id;
 				groups[id] = groups[id] || [];
-				groups[id].push(analytic);
+				groups[id].push({...analytic});
 				return groups;
 			},
 			{} as Record<string, MintAnalyticKeyset[]>,

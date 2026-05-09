@@ -270,7 +270,7 @@
 						></orc-mint-subsection-dashboard-chart>
 
 						@if (!loading_analytics()) {
-							@if (mint_type === 'nutshell' && mint_fees.length === 0 && mint_fee_revenue()) {
+							@if (mint_type === 'nutshell' && mint_fee_revenue() && mint_watchdog_status?.is_alive === false) {
 								<div
 									class="absolute top-0 right-0 bottom-0 left-0 flex flex-justify-center flex-items-center orc-surface-bg"
 								>
@@ -280,7 +280,7 @@
 									</div>
 								</div>
 							}
-							@if (mint_fees.length === 0 && !mint_fee_revenue()) {
+							@if (!mint_fee_revenue()) {
 								<div
 									class="absolute top-0 right-0 bottom-0 left-0 flex flex-justify-center flex-items-center orc-surface-bg"
 								>

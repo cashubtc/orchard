@@ -112,13 +112,13 @@ function convertDateArgument(date_arg: number, db_type: MintDatabaseType): numbe
 }
 
 export async function queryRows<T>(client: CashuMintDatabase, sql: string, params?: any[]): Promise<T[]> {
-	if (client.type === MintDatabaseType.sqlite) return client.database.prepare(sql).all(params) as T[];
+	if (client.type === MintDatabaseType.sqlite) return client.database.prepare(sql).all(params ?? []) as T[];
 	const pg_sql = convertSqlToType(sql, MintDatabaseType.postgres);
 	return client.database.query(pg_sql, params).then((res) => res.rows as T[]);
 }
 
 export async function queryRow<T>(client: CashuMintDatabase, sql: string, params?: any[]): Promise<T> {
-	if (client.type === MintDatabaseType.sqlite) return client.database.prepare(sql).get(params) as T;
+	if (client.type === MintDatabaseType.sqlite) return client.database.prepare(sql).get(params ?? []) as T;
 	const pg_sql = convertSqlToType(sql, MintDatabaseType.postgres);
 	return client.database.query(pg_sql, params).then((res) => res.rows[0] as T);
 }

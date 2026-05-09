@@ -455,14 +455,11 @@ query MintProofGroupStats($unit: MintUnit!) {
 	}
 }`;
 
-export const MINT_FEES_QUERY = `
-query MintFees($limit: Int) {
-	mint_fees(limit: $limit) {
-		unit
-		keyset_balance
-		keyset_fees_paid
-		backend_balance
-		time
+export const MINT_WATCHDOG_STATUS_QUERY = `
+query MintWatchdogStatus {
+	mint_watchdog_status {
+		is_alive
+		last_seen
 	}
 }`;
 

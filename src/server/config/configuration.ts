@@ -23,6 +23,8 @@ const getMintRpcMtls = (): boolean => {
 export const config = (): Config => {
 	const setup_key = process.env.SETUP_KEY || process.env.ADMIN_PASSWORD;
 	const crypto_key = process.env.SCHEMA_ONLY === 'true' ? '' : loadOrCreateCryptoKey();
+	const jwt_mode = process.env.DEV_AUTH_BYPASS === 'true' && process.env.SCHEMA_ONLY !== 'true' ? 'persistent' : 'ephemeral';
+	const jwt_secret = jwt_mode === 'persistent' ? crypto_key : generateEphemeralJwtSecret();
 
 	const mode = {
 		production: process.env.NODE_ENV === 'production',
@@ -39,7 +41,7 @@ export const config = (): Config => {
 		log: process.env.LOG_LEVEL || 'warn',
 		setup_key,
 		crypto_key,
-		jwt_secret: mode.dev_auth_bypass ? crypto_key : generateEphemeralJwtSecret(),
+		jwt_secret,
 		ttl: process.env.THROTTLE_TTL || '60000',
 		limit: process.env.THROTTLE_LIMIT || '20',
 		compression: process.env.SERVER_COMPRESSION === 'true',

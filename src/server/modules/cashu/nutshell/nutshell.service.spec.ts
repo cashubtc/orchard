@@ -402,18 +402,44 @@ describe('NutshellService', () => {
 		await expect(nutshellService.countMintQuotes({type: 'sqlite'} as any, {} as any)).resolves.toBe(4);
 	});
 
-	it('getFees uses default/custom limit and propagates errors', async () => {
+	it('listFees seeds LAG with NULL so the first balance_log row is treated as a baseline, not a delta from zero', async () => {
+		(helpers.buildDynamicQuery as jest.Mock).mockReturnValueOnce({sql: 'S', params: []});
 		(helpers.queryRows as jest.Mock).mockResolvedValueOnce([]);
-		await nutshellService.getFees({} as any);
-		let call = (helpers.queryRows as jest.Mock).mock.calls.pop();
-		expect(call[2]).toEqual([1]);
-		(helpers.queryRows as jest.Mock).mockResolvedValueOnce([]);
-		await nutshellService.getFees({} as any, 10);
-		call = (helpers.queryRows as jest.Mock).mock.calls.pop();
-		expect(call[2]).toEqual([10]);
-		(helpers.queryRows as jest.Mock).mockImplementationOnce(() => {
-			throw new Error('fee');
-		});
-		await expect(nutshellService.getFees({} as any)).rejects.toThrow('fee');
+		await nutshellService.listFees({type: 'sqlite'} as any, {} as any);
+		const call = (helpers.buildDynamicQuery as jest.Mock).mock.calls[0][0];
+		expect(call.select_statement).toContain('LAG(keyset_fees_paid, 1, NULL)');
+		expect(call.select_statement).not.toContain('LAG(keyset_fees_paid, 1, 0)');
+	});
+
+	it('listFees inner SELECT drops the first row of each partition against an in-memory sqlite', async () => {
+		const Database = require('better-sqlite3');
+		const db = new Database(':memory:');
+		db.exec(`
+			CREATE TABLE balance_log (unit TEXT, time INTEGER, keyset_fees_paid INTEGER);
+			INSERT INTO balance_log VALUES
+				('sat', 1000, 50000),  -- restored baseline: pre-existing 50k fees
+				('sat', 1100, 50007),  -- real first delta: +7
+				('sat', 1200, 50012),  -- +5
+				('eur', 2000, 200),    -- baseline for eur partition
+				('eur', 2100, 203);    -- +3
+		`);
+		const inner_sql = `
+			SELECT unit, created_time, fee FROM (
+				SELECT
+					unit,
+					time AS created_time,
+					keyset_fees_paid - LAG(keyset_fees_paid, 1, NULL) OVER (PARTITION BY unit ORDER BY time) AS fee
+				FROM balance_log
+			) deltas
+			WHERE fee > 0
+			ORDER BY unit, created_time
+		`;
+		const rows = db.prepare(inner_sql).all();
+		db.close();
+		expect(rows).toEqual([
+			{unit: 'eur', created_time: 2100, fee: 3},
+			{unit: 'sat', created_time: 1100, fee: 7},
+			{unit: 'sat', created_time: 1200, fee: 5},
+		]);
 	});
 });

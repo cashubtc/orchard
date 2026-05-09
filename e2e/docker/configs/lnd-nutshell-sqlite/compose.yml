@@ -102,6 +102,26 @@ services:
       timeout: 5s
       retries: 30
 
+  # Perpetual block miner. Mines a single regtest block every
+  # MINE_INTERVAL_SECONDS (default 30) against the existing `bitcoind`
+  # service. depends_on:setup so the 101-block bootstrap and channel
+  # confirmations finish first; reuses the bitcoind image purely for the
+  # bitcoin-cli binary — no second chain, no new ports.
+  block-miner:
+    image: polarlightning/bitcoind:${BITCOIND_VERSION}
+    container_name: lnd-nutshell-sqlite-block-miner
+    restart: on-failure
+    networks: [net]
+    depends_on:
+      setup: { condition: service_completed_successfully }
+    volumes:
+      - ../../scripts:/scripts:ro
+    environment:
+      - BTC_RPC_USER=${BTC_RPC_USER}
+      - BTC_RPC_PASS=${BTC_RPC_PASS}
+      - MINE_INTERVAL_SECONDS=${MINE_INTERVAL_SECONDS:-30}
+    entrypoint: ["/scripts/block-miner.sh"]
+
   lnd-orchard:
     <<: *lnd-defaults
     container_name: lnd-nutshell-sqlite-lnd-orchard
@@ -206,6 +226,9 @@ services:
       # Disabled for e2e: Playwright fires ~25 `/v1/info` reads per spec run,
       # tripping nutshell's per-IP limiter into `MintPublicApiError` (40001).
       - MINT_RATE_LIMIT=false
+      - MINT_RPC_SERVER_ENABLE=true
+      - MINT_RPC_SERVER_ADDR=0.0.0.0
+      - MINT_RPC_SERVER_MUTUAL_TLS=false
     command: >
       poetry run mint
     healthcheck:

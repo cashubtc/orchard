@@ -16,6 +16,7 @@ import {
 	CashuMintSwap,
 	CashuMintProof,
 	CashuMintPromise,
+	CashuMintOperationFee,
 } from '@server/modules/cashu/mintdb/cashumintdb.types';
 import {MintQuoteState, MeltQuoteState, MintProofState} from '@server/modules/cashu/cashu.enums';
 import {AnalyticsBackfillStatus} from '@server/modules/analytics/analytics.interfaces';
@@ -30,8 +31,8 @@ const MAX_PENDING_RECORDS = 100_000;
 const FORCE_FLUSH_COUNT = 10;
 const RESCAN_SECONDS = 86400 * 7;
 
-type CheckpointDataType = 'mint_quotes' | 'melt_quotes' | 'swaps' | 'proofs' | 'promises';
-const CHECKPOINT_DATA_TYPES: CheckpointDataType[] = ['mint_quotes', 'melt_quotes', 'swaps', 'proofs', 'promises'];
+type CheckpointDataType = 'mint_quotes' | 'melt_quotes' | 'swaps' | 'fees' | 'proofs' | 'promises';
+const CHECKPOINT_DATA_TYPES: CheckpointDataType[] = ['mint_quotes', 'melt_quotes', 'swaps', 'fees', 'proofs', 'promises'];
 
 @Injectable()
 export class CashuMintAnalyticsService implements OnApplicationBootstrap {
@@ -100,7 +101,7 @@ export class CashuMintAnalyticsService implements OnApplicationBootstrap {
 			return;
 		}
 
-		this.backfill_status = {is_running: true, total_streams: 5, streams_completed: 0, errors: 0};
+		this.backfill_status = {is_running: true, total_streams: 6, streams_completed: 0, errors: 0};
 
 		let client: CashuMintDatabase;
 		try {
@@ -143,6 +144,14 @@ export class CashuMintAnalyticsService implements OnApplicationBootstrap {
 				({page_size, sort_order, date_start}) =>
 					this.cashuMintDatabaseService.listSwaps(client, {page_size, sort_order, date_start}),
 				(h, records) => this.insertSwapMetrics(h, records),
+			);
+			this.backfill_status.streams_completed++;
+			await this.streamAndBucket<CashuMintOperationFee>(
+				current_hour,
+				'fees',
+				({page_size, sort_order, date_start}) =>
+					this.cashuMintDatabaseService.listFees(client, {page_size, sort_order, date_start}),
+				(h, records) => this.insertFeeMetrics(h, records),
 			);
 			this.backfill_status.streams_completed++;
 			await this.streamAndBucket<CashuMintProof>(
@@ -379,26 +388,24 @@ export class CashuMintAnalyticsService implements OnApplicationBootstrap {
 				amount: swaps_amount,
 				count: unit_swaps.length,
 			});
+		}
+	}
 
-			const swaps_fee = unit_swaps.reduce((sum, s) => sum + BigInt(s.fee || 0), BigInt(0));
-			await this.upsertMetric({
-				mint_pubkey,
-				keyset_id: '',
-				unit,
-				metric: MintAnalyticsMetric.swaps_fee,
-				hour,
-				amount: swaps_fee,
-				count: unit_swaps.length,
-			});
+	/** Inserts fee metrics for a specific hour from the unified operation-fee stream */
+	private async insertFeeMetrics(hour: number, fees: CashuMintOperationFee[]): Promise<void> {
+		const mint_pubkey = this.mint_pubkey!;
+		const by_unit = this.groupByUnit(fees, (f) => f.unit);
 
+		for (const [unit, unit_fees] of by_unit) {
+			const total = unit_fees.reduce((sum, f) => sum + BigInt(f.fee || 0), BigInt(0));
 			await this.upsertMetric({
 				mint_pubkey,
 				keyset_id: '',
 				unit,
 				metric: MintAnalyticsMetric.fees_amount,
 				hour,
-				amount: swaps_fee,
-				count: unit_swaps.length,
+				amount: total,
+				count: unit_fees.length,
 			});
 		}
 	}

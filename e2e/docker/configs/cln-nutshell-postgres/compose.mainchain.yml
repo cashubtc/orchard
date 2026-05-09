@@ -20,6 +20,9 @@ services:
       - mainchain-data:/home/bitcoin/.bitcoin
       # Read-only mount of the host-generated UTXO snapshot.
       - ../../../.mainchain:/snapshot:ro
+    # IBD throttle knobs default to bitcoind's own fast defaults (par=0=auto,
+    # dbcache=450 MiB, blocksonly=0, maxmempool=300 MiB). Override in e2e/.env
+    # to soften CPU/RAM during IBD on a battery-bound laptop. See e2e/.env.example.
     command: >
       -server=1
       -rpcbind=0.0.0.0
@@ -30,7 +33,14 @@ services:
       -prune=5000
       -listen=0
       -connect=host.docker.internal:${HOST_BITCOIN_P2P_PORT:-8333}
+      -rpcthreads=8
+      -rpcworkqueue=64
+      -rpcservertimeout=120
       -debug=0
+      -par=${MAINCHAIN_PAR:-0}
+      -dbcache=${MAINCHAIN_DBCACHE:-450}
+      -blocksonly=${MAINCHAIN_BLOCKSONLY:-0}
+      -maxmempool=${MAINCHAIN_MAXMEMPOOL:-300}
     healthcheck:
       test: >
         bitcoin-cli

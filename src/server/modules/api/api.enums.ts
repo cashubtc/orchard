@@ -184,7 +184,6 @@ registerEnumType(MintAnalyticsMetric, {
 		melts_created: {description: 'Number of melt quotes created'},
 		melts_completion_time: {description: 'Average melt completion time'},
 		swaps_amount: {description: 'Total swap amount'},
-		swaps_fee: {description: 'Total swap fees collected'},
 		issued_amount: {description: 'Total tokens issued'},
 		redeemed_amount: {description: 'Total tokens redeemed'},
 		fees_amount: {description: 'Total fees collected'},

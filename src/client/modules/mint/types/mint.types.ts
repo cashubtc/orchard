@@ -31,7 +31,7 @@ import {
 	OrchardMintDatabaseInfo,
 	OrchardMintDatabaseRestore,
 	OrchardMintProofGroupStats,
-	OrchardMintFee,
+	OrchardMintWatchdogStatus,
 	OrchardMintKeysetCount,
 } from '@shared/generated.types';
 
@@ -242,8 +242,8 @@ export type MintProofGroupStatsResponse = {
 	mint_proof_group_stats: OrchardMintProofGroupStats;
 };
 
-export type MintFeesResponse = {
-	mint_fees: OrchardMintFee[];
+export type MintWatchdogStatusResponse = {
+	mint_watchdog_status: OrchardMintWatchdogStatus;
 };
 
 export type MintNut04QuoteUpdateResponse = {

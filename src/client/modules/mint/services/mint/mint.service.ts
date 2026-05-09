@@ -47,7 +47,7 @@ import {
 	MintDatabaseBackupResponse,
 	MintDatabaseRestoreResponse,
 	MintProofGroupStatsResponse,
-	MintFeesResponse,
+	MintWatchdogStatusResponse,
 	MintActivitySummaryResponse,
 } from '@client/modules/mint/types/mint.types';
 import {ApiService} from '@client/modules/api/services/api/api.service';
@@ -62,10 +62,10 @@ import {MintMeltQuote} from '@client/modules/mint/classes/mint-melt-quote.class'
 import {MintAnalytic, MintAnalyticKeyset} from '@client/modules/mint/classes/mint-analytic.class';
 import {AnalyticsBackfillStatus} from '@client/modules/analytics/classes/analytics-backfill-status.class';
 import {MintSwap} from '@client/modules/mint/classes/mint-swap.class';
-import {MintFee} from '@client/modules/mint/classes/mint-fee.class';
 import {MintKeysetCount} from '@client/modules/mint/classes/mint-keyset-count.class';
 import {MintDatabaseInfo} from '@client/modules/mint/classes/mint-database-info.class';
 import {MintActivitySummary} from '@client/modules/mint/classes/mint-activity-summary.class';
+import {MintWatchdogStatus} from '@client/modules/mint/classes/mint-watchdog-status.class';
 /* Shared Dependencies */
 import {AnalyticsInterval, MintActivityPeriod, OrchardContact, OrchardMintAnalytics, MintUnit} from '@shared/generated.types';
 /* Local Dependencies */
@@ -110,7 +110,7 @@ import {
 	MINT_DATABASE_BACKUP_MUTATION,
 	MINT_DATABASE_RESTORE_MUTATION,
 	MINT_PROOF_GROUP_STATS_QUERY,
-	MINT_FEES_QUERY,
+	MINT_WATCHDOG_STATUS_QUERY,
 	MINT_ACTIVITY_SUMMARY_QUERY,
 } from './mint.queries';
 
@@ -145,7 +145,7 @@ export class MintService {
 		MINT_KEYSET_COUNTS: 'mint-keyset-counts',
 		MINT_MINT_QUOTES: 'mint-mint-quotes',
 		MINT_MELT_QUOTES: 'mint-melt-quotes',
-		MINT_FEES: 'mint-fees',
+		MINT_WATCHDOG_STATUS: 'mint-watchdog-status',
 		MINT_DATABASE_INFO: 'mint-database-info',
 		MINT_ACTIVITY_SUMMARY: 'mint-activity-summary',
 	};
@@ -173,7 +173,7 @@ export class MintService {
 		[this.CACHE_KEYS.MINT_KEYSET_COUNTS]: 5 * 60 * 1000, // 5 minutes
 		[this.CACHE_KEYS.MINT_MINT_QUOTES]: 5 * 60 * 1000, // 5 minutes
 		[this.CACHE_KEYS.MINT_MELT_QUOTES]: 5 * 60 * 1000, // 5 minutes
-		[this.CACHE_KEYS.MINT_FEES]: 60 * 60 * 1000, // 60 minutes
+		[this.CACHE_KEYS.MINT_WATCHDOG_STATUS]: 60 * 60 * 1000, // 60 minutes
 		[this.CACHE_KEYS.MINT_DATABASE_INFO]: 60 * 60 * 1000, // 60 minutes
 		[this.CACHE_KEYS.MINT_ACTIVITY_SUMMARY]: 5 * 60 * 1000, // 5 minutes
 	};
@@ -201,7 +201,7 @@ export class MintService {
 	private readonly mint_keyset_counts_subject: BehaviorSubject<MintKeysetCount[] | null>;
 	private readonly mint_mint_quotes_subject: BehaviorSubject<MintMintQuote[] | null>;
 	private readonly mint_melt_quotes_subject: BehaviorSubject<MintMeltQuote[] | null>;
-	private readonly mint_fees_subject: BehaviorSubject<MintFee[] | null>;
+	private readonly mint_watchdog_status_subject: BehaviorSubject<MintWatchdogStatus | null>;
 	private readonly mint_database_info_subject: BehaviorSubject<MintDatabaseInfo | null>;
 	private readonly mint_activity_summary_subject: BehaviorSubject<MintActivitySummary | null>;
 
@@ -302,9 +302,9 @@ export class MintService {
 			this.CACHE_KEYS.MINT_MELT_QUOTES,
 			this.CACHE_DURATIONS[this.CACHE_KEYS.MINT_MELT_QUOTES],
 		);
-		this.mint_fees_subject = this.cache.createCache<MintFee[]>(
-			this.CACHE_KEYS.MINT_FEES,
-			this.CACHE_DURATIONS[this.CACHE_KEYS.MINT_FEES],
+		this.mint_watchdog_status_subject = this.cache.createCache<MintWatchdogStatus>(
+			this.CACHE_KEYS.MINT_WATCHDOG_STATUS,
+			this.CACHE_DURATIONS[this.CACHE_KEYS.MINT_WATCHDOG_STATUS],
 		);
 		this.mint_database_info_subject = this.cache.createCache<MintDatabaseInfo>(
 			this.CACHE_KEYS.MINT_DATABASE_INFO,
@@ -798,25 +798,25 @@ export class MintService {
 		);
 	}
 
-	public loadMintFees(limit: number): Observable<MintFee[]> {
-		if (this.mint_fees_subject.value && this.cache.isCacheValid(this.CACHE_KEYS.MINT_FEES)) {
-			return of(this.mint_fees_subject.value);
+	public loadMintWatchdogStatus(): Observable<MintWatchdogStatus> {
+		if (this.mint_watchdog_status_subject.value && this.cache.isCacheValid(this.CACHE_KEYS.MINT_WATCHDOG_STATUS)) {
+			return of(this.mint_watchdog_status_subject.value);
 		}
 
-		const query = getApiQuery(MINT_FEES_QUERY, {limit});
+		const query = getApiQuery(MINT_WATCHDOG_STATUS_QUERY);
 
-		return this.http.post<OrchardRes<MintFeesResponse>>(this.apiService.api, query).pipe(
+		return this.http.post<OrchardRes<MintWatchdogStatusResponse>>(this.apiService.api, query).pipe(
 			map((response) => {
 				if (response.errors) throw new OrchardErrors(response.errors);
-				return response.data.mint_fees;
+				return response.data.mint_watchdog_status;
 			}),
-			map((mint_fees) => mint_fees.map((mint_fee) => new MintFee(mint_fee))),
-			tap((mint_fees) => {
-				this.cache.updateCache(this.CACHE_KEYS.MINT_FEES, mint_fees);
-				this.mint_fees_subject.next(mint_fees);
+			map((status) => new MintWatchdogStatus(status)),
+			tap((status) => {
+				this.cache.updateCache(this.CACHE_KEYS.MINT_WATCHDOG_STATUS, status);
+				this.mint_watchdog_status_subject.next(status);
 			}),
 			catchError((error) => {
-				console.error('Error loading mint fees:', error);
+				console.error('Error loading mint watchdog status:', error);
 				return throwError(() => error);
 			}),
 		);

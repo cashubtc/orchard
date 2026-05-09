@@ -23,7 +23,7 @@ const mock_schema = makeExecutableSchema({
 		enum MintAnalyticsMetric {
 			mints_amount mints_created mints_completion_time
 			melts_amount melts_created melts_completion_time
-			swaps_amount swaps_fee
+			swaps_amount
 			issued_amount redeemed_amount fees_amount
 			keyset_issued keyset_redeemed
 		}

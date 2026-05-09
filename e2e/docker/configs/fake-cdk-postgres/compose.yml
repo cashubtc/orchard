@@ -23,7 +23,6 @@ volumes:
   postgres-data:
   orchard-data:
   wallet-data:
-  shared:
 
 services:
   postgres:
@@ -115,33 +114,20 @@ services:
       - MINT_URL=http://cdk-mintd:3341
     entrypoint: ["sleep", "infinity"]
 
-  # One-shot: emits /shared/fake-bolt11s.json for activity-fake.
-  bolt11-gen:
-    build:
-      context: ../..
-      dockerfile: bolt11-gen.Dockerfile
-    container_name: fake-cdk-postgres-bolt11-gen
-    networks: [net]
-    volumes:
-      - shared:/shared
-      - ../../scripts/gen-bolt11s.js:/app/gen-bolt11s.js:ro
-    entrypoint: ["node", "/app/gen-bolt11s.js", "/shared/fake-bolt11s.json"]
-    restart: "no"
-
-  # One-shot. See activity-fake.sh for per-unit knobs.
+  # One-shot. See activity-fake.sh for per-unit knobs. No LN node on this
+  # stack — activity-fake.sh self-signs melt invoices via /scripts/gen-one-bolt11.js
+  # (the activity-fake image bundles node + the bolt11 npm package).
   activity:
     build:
       context: ../..
-      dockerfile: setup.Dockerfile
+      dockerfile: activity-fake.Dockerfile
     container_name: fake-cdk-postgres-activity
     networks: [net]
     depends_on:
-      orchard:    { condition: service_healthy }
-      wallet:     { condition: service_started }
-      bolt11-gen: { condition: service_completed_successfully }
+      orchard: { condition: service_healthy }
+      wallet:  { condition: service_started }
     volumes:
       - ../../scripts:/scripts:ro
-      - shared:/shared:ro
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - CONFIG_NAME=fake-cdk-postgres

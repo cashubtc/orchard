@@ -37,6 +37,7 @@ describe('CashuMintAnalyticsService', () => {
 						listMintQuotes: jest.fn(),
 						listMeltQuotes: jest.fn(),
 						listSwaps: jest.fn(),
+						listFees: jest.fn(),
 						listProofs: jest.fn(),
 						listPromises: jest.fn(),
 					},
@@ -112,6 +113,7 @@ describe('CashuMintAnalyticsService', () => {
 		cashuMintDatabaseService.listMintQuotes.mockResolvedValue([]);
 		cashuMintDatabaseService.listMeltQuotes.mockResolvedValue([]);
 		cashuMintDatabaseService.listSwaps.mockResolvedValue([]);
+		cashuMintDatabaseService.listFees.mockResolvedValue([]);
 		cashuMintDatabaseService.listProofs.mockResolvedValue([]);
 		cashuMintDatabaseService.listPromises.mockResolvedValue([]);
 

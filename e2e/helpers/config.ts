@@ -47,7 +47,7 @@ export function featuresFor(config: ConfigInfo): string[] {
 /** Tags that match this stack's `grep`. Shared between `playwright.config.ts`
  *  and reporters so the rules live in one place. */
 export function tagsFor(config: ConfigInfo): string[] {
-	const tags = ['@all', '@mint', `@${config.mint}`, `@${config.db}`];
+	const tags = ['@all', '@mint', '@analytics', `@${config.mint}`, `@${config.db}`];
 	if (config.ln === false) {
 		tags.push('@no-lightning');
 	} else {

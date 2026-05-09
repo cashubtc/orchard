@@ -9,6 +9,10 @@
 #   down  — tear down and remove volumes
 #   logs  — follow logs (not supported with 'all')
 #   ps    — list service state
+#   activity <start|stop|status|logs> — cadence simulator control
+#
+# Optional global overrides: e2e/.env (gitignored, create from e2e/.env.example).
+# Loaded for host-side actions and passed to docker compose as an env file.
 #
 # The mainchain overlay is always included when a config ships one
 # (`compose.mainchain.yml` present in the config dir). Running any
@@ -17,11 +21,21 @@
 set -eu
 
 ACTION="${1:-}"
-CONFIG="${2:-all}"
+SUBACTION=""
+if [ "${ACTION}" = "activity" ]; then
+    SUBACTION="${2:-}"
+    CONFIG="${3:-all}"
+else
+    CONFIG="${2:-all}"
+fi
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 CONFIGS_DIR="${HERE}/configs"
 VERSIONS_ENV="${HERE}/versions.env"
+RUNTIME_DIR="${HERE}/../.runtime"
+ACTIVITY_RUNNER="${HERE}/scripts/activity-cadence.sh"
+GLOBAL_E2E_ENV="${HERE}/../.env"
+GLOBAL_E2E_ENV_FLAG=""
 
 list_configs() {
     (cd "$CONFIGS_DIR" && ls -1 -d */) 2>/dev/null | sed 's|/$||'
@@ -29,9 +43,164 @@ list_configs() {
 
 if [ -z "$ACTION" ]; then
     echo "usage: $0 <up|down|logs|ps> [config-name|all]  (default: all)" >&2
+    echo "       $0 activity <start|stop|status|logs> [config-name|all]  (default: all)" >&2
     echo "configs:" >&2
     list_configs | sed 's|^|  |' >&2
     exit 1
+fi
+
+# Optional global e2e env: e2e/.env
+# - sourced for host-side actions (activity cadence runner)
+# - passed to docker compose for stack vars/default overrides
+if [ -f "$GLOBAL_E2E_ENV" ]; then
+    # shellcheck disable=SC1090
+    set -a; . "$GLOBAL_E2E_ENV"; set +a
+    GLOBAL_E2E_ENV_FLAG="--env-file $GLOBAL_E2E_ENV"
+fi
+
+# cadence runner helpers (host-level, no docker compose context needed)
+pid_file() {
+    config="$1"
+    printf '%s/activity-%s.pid' "$RUNTIME_DIR" "$config"
+}
+
+log_file() {
+    config="$1"
+    printf '%s/activity-%s.log' "$RUNTIME_DIR" "$config"
+}
+
+pid_is_running() {
+    pid="$1"
+    kill -0 "$pid" 2>/dev/null
+}
+
+activity_start_one() {
+    config="$1"
+    mkdir -p "$RUNTIME_DIR"
+    pidfile="$(pid_file "$config")"
+    logfile="$(log_file "$config")"
+    if [ -f "$pidfile" ]; then
+        pid="$(cat "$pidfile" 2>/dev/null || true)"
+        if [ -n "${pid:-}" ] && pid_is_running "$pid"; then
+            echo "==> activity cadence already running for $config (pid $pid)"
+            echo "==> logs: $logfile"
+            return 0
+        fi
+        rm -f "$pidfile"
+    fi
+
+    if [ ! -x "$ACTIVITY_RUNNER" ]; then
+        echo "activity runner is missing or not executable: $ACTIVITY_RUNNER" >&2
+        return 1
+    fi
+
+    echo "==> starting activity cadence for $config"
+    "$ACTIVITY_RUNNER" "$config" >>"$logfile" 2>&1 &
+    pid=$!
+    printf '%s' "$pid" >"$pidfile"
+    sleep 0.2
+    if ! pid_is_running "$pid"; then
+        echo "activity cadence failed to start for $config (see $logfile)" >&2
+        rm -f "$pidfile"
+        return 1
+    fi
+    echo "==> activity cadence started for $config (pid $pid)"
+    echo "==> logs: $logfile"
+}
+
+activity_stop_one() {
+    config="$1"
+    pidfile="$(pid_file "$config")"
+    if [ ! -f "$pidfile" ]; then
+        echo "==> activity cadence not running for $config"
+        return 0
+    fi
+    pid="$(cat "$pidfile" 2>/dev/null || true)"
+    if [ -z "${pid:-}" ] || ! pid_is_running "$pid"; then
+        echo "==> activity cadence not running for $config (stale pid file)"
+        rm -f "$pidfile"
+        return 0
+    fi
+
+    echo "==> stopping activity cadence for $config (pid $pid)"
+    kill -TERM "$pid" 2>/dev/null || true
+    tries=30
+    while [ "$tries" -gt 0 ]; do
+        if ! pid_is_running "$pid"; then
+            break
+        fi
+        sleep 0.2
+        tries=$((tries - 1))
+    done
+    if pid_is_running "$pid"; then
+        echo "==> force-killing activity cadence for $config (pid $pid)"
+        kill -KILL "$pid" 2>/dev/null || true
+    fi
+    rm -f "$pidfile"
+    echo "==> activity cadence stopped for $config"
+}
+
+activity_status_one() {
+    config="$1"
+    pidfile="$(pid_file "$config")"
+    logfile="$(log_file "$config")"
+    if [ ! -f "$pidfile" ]; then
+        echo "$config: stopped (no pid file)"
+        return 0
+    fi
+    pid="$(cat "$pidfile" 2>/dev/null || true)"
+    if [ -n "${pid:-}" ] && pid_is_running "$pid"; then
+        echo "$config: running (pid $pid, logs $logfile)"
+    else
+        echo "$config: stopped (stale pid file)"
+    fi
+}
+
+activity_logs_one() {
+    config="$1"
+    logfile="$(log_file "$config")"
+    if [ ! -f "$logfile" ]; then
+        echo "log file not found for $config: $logfile" >&2
+        return 1
+    fi
+    tail -f "$logfile"
+}
+
+if [ "$ACTION" = "activity" ]; then
+    if [ -z "$SUBACTION" ]; then
+        echo "usage: $0 activity <start|stop|status|logs> [config-name|all]" >&2
+        exit 1
+    fi
+    status=0
+    if [ "$CONFIG" = "all" ]; then
+        for c in $(list_configs); do
+            case "$SUBACTION" in
+                start)  activity_start_one "$c" || status=$? ;;
+                stop)   activity_stop_one "$c" || status=$? ;;
+                status) activity_status_one "$c" || status=$? ;;
+                logs)
+                    echo "activity logs against 'all' would interleave — run against a single config" >&2
+                    exit 1
+                    ;;
+                *)
+                    echo "unknown activity subaction: $SUBACTION (valid: start, stop, status, logs)" >&2
+                    exit 1
+                    ;;
+            esac
+        done
+    else
+        case "$SUBACTION" in
+            start)  activity_start_one "$CONFIG" || status=$? ;;
+            stop)   activity_stop_one "$CONFIG" || status=$? ;;
+            status) activity_status_one "$CONFIG" || status=$? ;;
+            logs)   activity_logs_one "$CONFIG" || status=$? ;;
+            *)
+                echo "unknown activity subaction: $SUBACTION (valid: start, stop, status, logs)" >&2
+                exit 1
+                ;;
+        esac
+    fi
+    exit "$status"
 fi
 
 # `all` iterates every config; overlays load automatically per config.
@@ -75,32 +244,21 @@ cd "$DIR"
 # it without touching the LN/mint stack. Today only cln-nutshell-postgres
 # ships an overlay.
 COMPOSE_FILES="-f $COMPOSE"
-MAINCHAIN_ENV_FLAG=""
 UP_TIMEOUT=300
 if [ -f "${DIR}/compose.mainchain.yml" ]; then
     echo "==> including compose.mainchain.yml overlay"
     COMPOSE_FILES="$COMPOSE_FILES -f ${DIR}/compose.mainchain.yml"
-    # Optional host-specific config: e2e/.mainchain/.env (gitignored).
-    # Named with a leading dot so editors apply dotenv syntax highlighting.
-    # Layered last so it overrides anything in versions.env/per-config env
-    # for mainchain vars — e.g. HOST_BITCOIN_P2P_PORT when the user's host
-    # bitcoind isn't on the default 8333.
-    MAINCHAIN_ENV="$(cd "$HERE/../.." && pwd)/.mainchain/.env"
-    if [ -f "$MAINCHAIN_ENV" ]; then
-        echo "==> sourcing host config from $MAINCHAIN_ENV"
-        MAINCHAIN_ENV_FLAG="--env-file $MAINCHAIN_ENV"
-    fi
     # loadtxoutset + header sync from host can push setup-mainchain past
     # the default 300s window. Bump for mainchain runs only.
     UP_TIMEOUT=900
 fi
 
-# Layer versions.env first, then the per-config env, finally the optional
-# host-specific mainchain env. Later --env-file entries override earlier
+# Layer versions.env first, then per-config env, then optional global e2e env.
+# Later --env-file entries override earlier
 # ones, so a config can pin its own tag and a user can pin per-host values.
 compose() {
     # shellcheck disable=SC2086
-    docker compose --env-file "$VERSIONS_ENV" --env-file "$ENVFILE" $MAINCHAIN_ENV_FLAG $COMPOSE_FILES "$@"
+    docker compose --env-file "$VERSIONS_ENV" --env-file "$ENVFILE" $GLOBAL_E2E_ENV_FLAG $COMPOSE_FILES "$@"
 }
 
 case "$ACTION" in

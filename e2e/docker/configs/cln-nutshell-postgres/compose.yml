@@ -107,6 +107,26 @@ services:
       timeout: 5s
       retries: 30
 
+  # Perpetual block miner. Mines a single regtest block every
+  # MINE_INTERVAL_SECONDS (default 30) against the existing `bitcoind`
+  # service. depends_on:setup so the 101-block bootstrap and channel
+  # confirmations finish first; reuses the bitcoind image purely for the
+  # bitcoin-cli binary — no second chain, no new ports.
+  block-miner:
+    image: polarlightning/bitcoind:${BITCOIND_VERSION}
+    container_name: cln-nutshell-postgres-block-miner
+    restart: on-failure
+    networks: [net]
+    depends_on:
+      setup: { condition: service_completed_successfully }
+    volumes:
+      - ../../scripts:/scripts:ro
+    environment:
+      - BTC_RPC_USER=${BTC_RPC_USER}
+      - BTC_RPC_PASS=${BTC_RPC_PASS}
+      - MINE_INTERVAL_SECONDS=${MINE_INTERVAL_SECONDS:-30}
+    entrypoint: ["/scripts/block-miner.sh"]
+
   postgres:
     image: postgres:${POSTGRES_VERSION}
     container_name: cln-nutshell-postgres-postgres
@@ -262,6 +282,18 @@ services:
       # Production defaults leave this off; e2e flips it on so Orchard's
       # watchdog-aware UI paths get covered.
       - MINT_WATCHDOG_ENABLED=true
+      # Ignore mismatch: in this stack the orchard server and the nutshell
+      # mint share cln-orchard as their LN backend, so cln's our_amount_msat
+      # moves on payments the mint never authored. Without this flag the
+      # watchdog reads those movements as a balance regression and stops
+      # writing balance_log rows, which silently freezes Orchard's fee-revenue
+      # analytics for SAT. We still want the watchdog enabled (warnings keep
+      # firing for genuine mismatches) — we just don't want it to gate the
+      # log on a false positive caused by a shared-node test topology.
+      - MINT_WATCHDOG_IGNORE_MISMATCH=true
+      - MINT_RPC_SERVER_ENABLE=true
+      - MINT_RPC_SERVER_ADDR=0.0.0.0
+      - MINT_RPC_SERVER_MUTUAL_TLS=false
     # Rune is created at runtime by the setup service; read it from the
     # shared volume and inject as env var before poetry runs the mint.
     entrypoint: ["/bin/sh", "-c"]
@@ -373,22 +405,10 @@ services:
     entrypoint: ["/scripts/activity-cln-topology.sh"]
     restart: "no"
 
-  # One-shot: emits /shared/fake-bolt11s.json for activity-fake (usd+eur).
-  bolt11-gen:
-    build:
-      context: ../..
-      dockerfile: bolt11-gen.Dockerfile
-    container_name: cln-nutshell-postgres-bolt11-gen
-    networks: [net]
-    volumes:
-      - shared:/shared
-      - ../../scripts/gen-bolt11s.js:/app/gen-bolt11s.js:ro
-    entrypoint: ["node", "/app/gen-bolt11s.js", "/shared/fake-bolt11s.json"]
-    restart: "no"
-
   # USD+EUR activity via nutshell FakeWallet. Runs alongside `activity`
   # (which owns SAT + mempool); SAT and mempool counts pinned to 0 here
-  # to avoid double-dipping.
+  # to avoid double-dipping. Melt invoices come from cln-alice via
+  # LN_INVOICE_NODE; no fixture sidecar needed.
   activity-fake:
     build:
       context: ../..
@@ -396,17 +416,16 @@ services:
     container_name: cln-nutshell-postgres-activity-fake
     networks: [net]
     depends_on:
-      orchard:    { condition: service_healthy }
-      wallet:     { condition: service_started }
-      bolt11-gen: { condition: service_completed_successfully }
+      orchard: { condition: service_healthy }
+      wallet:  { condition: service_started }
     volumes:
       - ../../scripts:/scripts:ro
-      - shared:/shared:ro
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - CONFIG_NAME=cln-nutshell-postgres
       - MINT_SERVICE=nutshell
       - MINT_PORT=3338
+      - LN_INVOICE_NODE=cln-alice
       - BTC_RPC_USER=${BTC_RPC_USER}
       - BTC_RPC_PASS=${BTC_RPC_PASS}
       - ACTIVITY_MINTS_SAT=0
