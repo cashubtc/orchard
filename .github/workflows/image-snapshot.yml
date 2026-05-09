@@ -16,14 +16,6 @@ permissions:
 jobs:
   docker:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        flavor: [mintdb-sqlite, mintdb-postgres]
-        include:
-          - flavor: mintdb-sqlite
-            image: ghcr.io/${{ github.repository }}-mintdb-sqlite
-          - flavor: mintdb-postgres
-            image: ghcr.io/${{ github.repository }}-mintdb-postgres
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
@@ -41,11 +33,11 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          target: final-${{ matrix.flavor }}
+          target: final
           platforms: linux/amd64,linux/arm64
           push: ${{ inputs.push }}
           tags: |
-            ${{ matrix.image }}:sha-${{ github.sha }}
-            ${{ matrix.image }}:${{ github.ref_name }}-snapshot
+            ghcr.io/${{ github.repository }}:sha-${{ github.sha }}
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}-snapshot
           cache-from: type=gha
           cache-to: type=gha,mode=max

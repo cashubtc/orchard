@@ -241,7 +241,7 @@ services:
     build:
       context: ../../../..
       dockerfile: Dockerfile
-      target: final-mintdb-sqlite
+      target: final
     container_name: lnd-nutshell-sqlite-orchard
     restart: on-failure
     networks: [net]

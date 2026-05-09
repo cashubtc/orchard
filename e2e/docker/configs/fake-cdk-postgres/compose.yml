@@ -72,7 +72,7 @@ services:
     build:
       context: ../../../..
       dockerfile: Dockerfile
-      target: final-mintdb-postgres
+      target: final
     container_name: fake-cdk-postgres-orchard
     restart: on-failure
     networks: [net]
