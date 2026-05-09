@@ -4,6 +4,7 @@ import {HttpClient} from '@angular/common/http';
 import {Router} from '@angular/router';
 /* Vendor Dependencies */
 import {BehaviorSubject, catchError, map, Observable, of, shareReplay, tap, throwError, Subject, finalize} from 'rxjs';
+import {v4 as uuidv4} from 'uuid';
 /* Application Dependencies */
 import {getApiQuery, hasGqlWsErrorCode} from '@client/modules/api/helpers/api.helpers';
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
@@ -364,7 +365,7 @@ export class BitcoinService {
 	 * @param {number} end_date - Unix timestamp for end date
 	 */
 	public openBackfillSocket(start_date: number, end_date?: number | null): void {
-		const subscription_id = crypto.randomUUID();
+		const subscription_id = uuidv4();
 		this.backfill_subscription_id = subscription_id;
 		this.backfill_active_subject.next(true);
 

@@ -120,11 +120,16 @@ async function applyCurrency(page: Page, mode: 'btc' | 'fiat', currency: 'code' 
 
 /** Select an AI model from the mat-autocomplete on the device settings page.
  *  Requires AI to be enabled (app setting) before this page load or the card
- *  won't render. Value is saved to localStorage on option click — no commit. */
+ *  won't render. Asserts the option exists (loud-fail if `AI_MODEL` isn't
+ *  pulled into ollama on this stack) and that the input commits the value. */
 async function applyAiModel(page: Page, model: string): Promise<void> {
-	const input = page.locator('orc-settings-subsection-device-ai').locator('input[aria-label="Model"]');
+	const card = page.locator('orc-settings-subsection-device-ai');
+	const input = card.locator('input[aria-label="Model"]');
 	await input.fill(model);
-	await page.getByRole('option', {name: model, exact: true}).click();
+	const option = page.locator('mat-option').filter({hasText: model});
+	await expect(option, `AI_MODEL "${model}" not present in ollama autocomplete on this stack`).toHaveCount(1);
+	await option.click();
+	await expect(input, `AI_MODEL "${model}" did not commit to the model input`).toHaveValue(model);
 }
 
 async function applyDeviceSettings(page: Page, device: DeviceSettingValues): Promise<void> {

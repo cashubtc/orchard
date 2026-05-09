@@ -1,3 +1,5 @@
+/* Vendor Dependencies */
+import {v4 as uuidv4} from 'uuid';
 /* Native Dependencies */
 import {AiChatChunk, AiChatMessage, AiChatToolCall} from '@client/modules/ai/classes/ai-chat-chunk.class';
 /* Shared Dependencies */
@@ -13,7 +15,7 @@ export class AiChatCompiledMessage {
 	public done: boolean;
 
 	constructor(id_conversation: string, message: AiChatMessage) {
-		this.id = crypto.randomUUID();
+		this.id = uuidv4();
 		this.id_conversation = id_conversation;
 		this.content = message.content;
 		this.thinking = message.thinking;
