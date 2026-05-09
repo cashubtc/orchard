@@ -1,3 +1,6 @@
+/* Vendor Dependencies */
+import {v4 as uuidv4} from 'uuid';
+
 interface EventDataSeed {
 	type: 'PENDING' | 'SAVING' | 'SUBSCRIBED' | 'SUCCESS' | 'WARNING' | 'ERROR';
 	message?: string;
@@ -25,7 +28,7 @@ export class EventData {
 
 	constructor(data: EventDataSeed) {
 		this.type = data.type;
-		this.id = crypto.randomUUID();
+		this.id = uuidv4();
 		this.message = data.message;
 		this.created_at = Math.floor(Date.now() / 1000);
 		this.duration = data.duration || DURATION[this.type];

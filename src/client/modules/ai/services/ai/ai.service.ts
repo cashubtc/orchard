@@ -4,6 +4,7 @@ import {HttpClient} from '@angular/common/http';
 import {Router} from '@angular/router';
 /* Vendor Dependencies */
 import {Observable, catchError, Subject, BehaviorSubject, of, map, tap, throwError, shareReplay, finalize} from 'rxjs';
+import {v4 as uuidv4} from 'uuid';
 /* Application Dependencies */
 import {CacheService} from '@client/modules/cache/services/cache/cache.service';
 import {ApiService} from '@client/modules/api/services/api/api.service';
@@ -139,7 +140,7 @@ export class AiService {
 	}
 
 	public openAiSocket(assistant: AiAssistant, content: string | null, context?: string): void {
-		const subscription_id = crypto.randomUUID();
+		const subscription_id = uuidv4();
 		const ai_model = this.settingDeviceService.getModel();
 		this.subscription_id = subscription_id;
 		this.active_subject.next(true);

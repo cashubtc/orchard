@@ -1,3 +1,5 @@
+/* Vendor Dependencies */
+import {v4 as uuidv4} from 'uuid';
 /* Shared Dependencies */
 import {OrchardMintSwap, MintUnit} from '@shared/generated.types';
 
@@ -11,7 +13,7 @@ export class MintSwap implements OrchardMintSwap {
 	public fee: number | null;
 
 	constructor(swap: OrchardMintSwap) {
-		this.id = crypto.randomUUID();
+		this.id = uuidv4();
 		this.operation_id = swap.operation_id ?? null;
 		this.keyset_ids = swap.keyset_ids;
 		this.unit = swap.unit;
