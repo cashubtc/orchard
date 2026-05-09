@@ -44,7 +44,7 @@ describe('MintWatchdogService', () => {
 	});
 
 	it('reports is_alive=false when last_seen is older than the freshness window', async () => {
-		const stale = DateTime.utc().toUnixInteger() - 600; // 10m ago
+		const stale = DateTime.utc().toUnixInteger() - 100000; // ~27.8h ago
 		mintDbService.getWatchdogLastSeen.mockResolvedValue(stale);
 		const result = await mintWatchdogService.getWatchdogStatus('TAG');
 		expect(result.is_alive).toBe(false);

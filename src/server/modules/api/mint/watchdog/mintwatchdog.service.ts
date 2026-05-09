@@ -11,7 +11,7 @@ import {ErrorService} from '@server/modules/error/error.service';
 /* Local Dependencies */
 import {OrchardMintWatchdogStatus} from './mintwatchdog.model';
 
-const WATCHDOG_FRESHNESS_SECONDS = 300;
+const WATCHDOG_FRESHNESS_SECONDS = 90000; // 25 hours
 
 @Injectable()
 export class MintWatchdogService {
