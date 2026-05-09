@@ -412,7 +412,6 @@ describe('NutshellService', () => {
 	});
 
 	it('listFees inner SELECT drops the first row of each partition against an in-memory sqlite', async () => {
-		// eslint-disable-next-line @typescript-eslint/no-require-imports
 		const Database = require('better-sqlite3');
 		const db = new Database(':memory:');
 		db.exec(`
