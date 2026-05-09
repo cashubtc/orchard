@@ -524,6 +524,9 @@ export class CdkService {
 		}
 	}
 
+	/** Per-op fee rows. The op→proof→keyset fan-out is collapsed by GROUP BY (op × unit); safe
+	 *  because Cashu spec requires every proof in one op to share a unit. group_by lists all
+	 *  non-aggregated columns since Postgres can't infer PK FD through the derived `co` subquery. */
 	public async listFees(client: CashuMintDatabase, args?: CashuMintFeesArgs): Promise<CashuMintOperationFee[]> {
 		const field_mappings = {
 			units: 'k.unit',
@@ -539,8 +542,6 @@ export class CdkService {
 			FROM (SELECT * FROM completed_operations WHERE fee_collected > 0) co
 			INNER JOIN proof p ON p.operation_id = co.operation_id
 			INNER JOIN keyset k ON k.id = p.keyset_id`;
-
-		// All non-aggregated SELECT columns listed: Postgres can't infer PK functional dependency through the derived `co` subquery.
 		const group_by = 'co.operation_id, co.completed_at, co.fee_collected, k.unit';
 		const {sql, params} = buildDynamicQuery({
 			db_type: client.type,
