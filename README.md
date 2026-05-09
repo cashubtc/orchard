@@ -19,10 +19,10 @@
 | Protocol       | Implementation                     | Version                    |
 | -------------- | ---------------------------------- | -------------------------- |
 | Bitcoin        | core (knots compatible)            | (^Satoshi:28.0.0)          |
-| Lightning      | lnd, cln                           | (^v0.19.0-beta), (^v25.02) |
+| Lightning      | lnd, cln                           | (^v0.20.0-beta), (^v25.12) |
 | Cashu Mint     | cdk, nutshell                      | (^v0.16.0), (^0.20.0)      |
-| Taproot Assets | tapd                               | (^v0.6.1-alpha)            |
-| AI             | ollama                             | (^0.21.0)                  |
+| Taproot Assets | tapd                               | (^v0.7.0-alpha)            |
+| AI             | ollama                             | (^0.23.2)                  |
 
 <br>
 <br>
