@@ -288,7 +288,10 @@ export class MintAnalyticsService {
 		type Bucket = {keyset_id: string; amount: bigint; date: number};
 
 		return data.reduce((acc, d) => {
-			const bucket_date = interval === AnalyticsInterval.hour ? d.date : getBucketDate(d.date, interval, tz, date_start, data);
+			let bucket_date: number;
+			if (interval === AnalyticsInterval.hour) bucket_date = d.date;
+			else if (interval === AnalyticsInterval.custom) bucket_date = date_start ?? 0;
+			else bucket_date = getBucketDate(d.date, interval, tz, date_start, data);
 			const key = interval === AnalyticsInterval.custom ? d.keyset_id : `${d.keyset_id}:${bucket_date}`;
 			const existing = acc.get(key);
 
