@@ -33,6 +33,7 @@ import {BitcoinService} from '@client/modules/bitcoin/services/bitcoin/bitcoin.s
 import {LightningBalance} from '@client/modules/lightning/classes/lightning-balance.class';
 import {LightningAnalytic} from '@client/modules/lightning/classes/lightning-analytic.class';
 import {AnalyticsBackfillStatus} from '@client/modules/analytics/classes/analytics-backfill-status.class';
+import {getPreRangeEnd} from '@client/modules/analytics/helpers/analytics.helpers';
 import {LightningAnalyticsArgs} from '@client/modules/lightning/types/lightning.types';
 import {OrchardError} from '@client/modules/error/types/error.types';
 import {NavTertiaryItem} from '@client/modules/nav/types/nav-tertiary-item.type';
@@ -405,7 +406,7 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 		const pre_args = {
 			units: this.page_settings().units,
 			date_start: this.configService.config.constants.epoch_start,
-			date_end: DateTime.fromSeconds(this.page_settings().date_start, {zone: 'UTC'}).startOf('hour').toUnixInteger() - 1,
+			date_end: getPreRangeEnd(this.page_settings().date_start),
 			interval: AnalyticsInterval.Custom,
 			timezone,
 		};
@@ -456,7 +457,7 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 				this.lightningService.loadLightningAnalyticsLocalBalance({
 					...args,
 					date_start: this.configService.config.constants.epoch_start,
-					date_end: DateTime.fromSeconds(this.page_settings().date_start, {zone: 'UTC'}).startOf('hour').toUnixInteger() - 1,
+					date_end: getPreRangeEnd(this.page_settings().date_start),
 					interval: AnalyticsInterval.Custom,
 				}),
 				this.lightningService.loadLightningAnalyticsBackfillStatus(),

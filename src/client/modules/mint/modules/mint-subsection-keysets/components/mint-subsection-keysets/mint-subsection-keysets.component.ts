@@ -32,6 +32,7 @@ import {DeviceType} from '@client/modules/layout/types/device.types';
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 import {resolveDateRangePreset} from '@client/modules/form/helpers/form-daterange.helpers';
 import {eligibleForOracleConversion, oracleConvertToUSDCents, findNearestOraclePrice} from '@client/modules/bitcoin/helpers/oracle.helpers';
+import {getPreRangeEnd} from '@client/modules/analytics/helpers/analytics.helpers';
 /* Native Dependencies */
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
@@ -235,7 +236,7 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 		});
 		const analytics_keysets_pre_obs = this.mintService.loadMintAnalyticsKeysets({
 			date_start: this.configService.config.constants.epoch_start,
-			date_end: DateTime.fromSeconds(this.page_settings.date_start, {zone: 'UTC'}).startOf('hour').toUnixInteger() - 1,
+			date_end: getPreRangeEnd(this.page_settings.date_start),
 			interval: AnalyticsInterval.Custom,
 			timezone: timezone,
 		});
