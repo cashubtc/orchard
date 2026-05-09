@@ -1,7 +1,7 @@
-/* Native Dependencies */
-import {AiChatChunk, AiChatMessage, AiChatToolCall} from '@client/modules/ai/classes/ai-chat-chunk.class';
 /* Vendor Dependencies */
 import {v4 as uuidv4} from 'uuid';
+/* Native Dependencies */
+import {AiChatChunk, AiChatMessage, AiChatToolCall} from '@client/modules/ai/classes/ai-chat-chunk.class';
 /* Shared Dependencies */
 import {AiMessageRole} from '@shared/generated.types';
 
