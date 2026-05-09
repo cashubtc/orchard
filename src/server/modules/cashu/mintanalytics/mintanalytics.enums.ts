@@ -6,7 +6,6 @@ export enum MintAnalyticsMetric {
 	melts_created = 'melts_created',
 	melts_completion_time = 'melts_completion_time',
 	swaps_amount = 'swaps_amount',
-	swaps_fee = 'swaps_fee',
 	issued_amount = 'issued_amount',
 	redeemed_amount = 'redeemed_amount',
 	fees_amount = 'fees_amount',
