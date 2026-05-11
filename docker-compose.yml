@@ -34,6 +34,10 @@ services:
         read_only: false
         bind:
           create_host_path: true
+      # Mint data dir:
+      #   MINT_DATADIR set                            → use it (sqlite with explicit host dir)
+      #   MINT_DATANAME set but MINT_DATADIR unset    → fail compose with actionable message
+      #   both unset (postgres)                       → fall back to ./data/mint (mount unused)
       - type: bind
         source: ${MINT_DATADIR:-${MINT_DATANAME:+${MINT_DATADIR:?MINT_DATADIR is required when using sqlite (directory containing the mint SQLite file)}}./data/mint}
         target: /app/data/mint-data
