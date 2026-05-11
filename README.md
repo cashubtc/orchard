@@ -38,7 +38,7 @@
 Always check out the latest release tag before installing or updating. Running from `master` is unsupported and may leave your database in a state that cannot be cleanly upgraded.
 ```bash
 git fetch --tags
-git checkout v1.8.4
+git checkout v1.9.0
 ```
 
 ## Environment Variables
