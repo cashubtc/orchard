@@ -76,48 +76,34 @@ npm run start
 
 ## Run the application (docker)
 
+Configure access to your mints database in `.env`:
+
+```bash
+# Postgres
+MINT_DATABASE=postgres://user:pass@host:5432/db
+
+# SQLite
+MINT_DATANAME=mint.sqlite3
+MINT_DATADIR=/path/to/mint-dir
+```
+
 **Note:** The nutshell mint rpc can be run in insecure mode, omitting the need for certs.<br>
 To allow this in a docker container set `MINT_RPC_MTLS=false` in .env
 
-### Docker images from source
+### From source
 
-#### Sqlite Cashu Mint
 ```bash
-# Additional env vars
-MINT_DATANAME=mint.sqlite3
-MINT_DATADIR=/path/to/data/directory
-```
-```bash
-docker compose build orchard
-docker compose -f docker-compose.yml -f docker-compose.sqlite.yml up -d
-```
-
-#### Postgres Cashu Mint
-```bash
-docker compose build orchard
+docker compose build
 docker compose up -d
 ```
 
-### Docker images from registery
+### From registry image
 
-**Note:** When using registry images, you can specify a version using the `VERSION` environment variable. If not specified, it defaults to `latest` which may not be compatible with older versions of the codebase.
-
-#### Sqlite Cashu Mint
 ```bash
-# Additional env vars
-MINT_DATANAME=mint.sqlite3
-MINT_DATADIR=/path/to/data/directory
-```
-```bash
-VERSION=latest FLAVOR=sqlite \
-docker compose -f docker-compose.yml -f docker-compose.sqlite.yml -f compose.image.yml up -d
-```
-
-#### Postgres Cashu Mint
-```bash
-VERSION=latest FLAVOR=postgres \
 docker compose -f docker-compose.yml -f compose.image.yml up -d
 ```
+
+Pin a version with `VERSION=1.2.3` in `.env` or inline (defaults to `latest`).
 
 <br>
 <br>
