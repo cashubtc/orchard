@@ -40,6 +40,11 @@ x-cln-defaults: &cln-defaults
     timeout: 5s
     retries: 30
 
+x-orchard-build: &orchard-build
+  context: ../../../..
+  dockerfile: Dockerfile
+  target: final
+
 services:
   bitcoind:
     image: polarlightning/bitcoind:${BITCOIND_VERSION}
@@ -308,10 +313,7 @@ services:
       retries: 30
 
   orchard:
-    build:
-      context: ../../../..
-      dockerfile: Dockerfile
-      target: final
+    build: *orchard-build
     container_name: cln-nutshell-postgres-orchard
     restart: on-failure
     networks: [net]
