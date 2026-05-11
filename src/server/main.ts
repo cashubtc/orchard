@@ -2,6 +2,7 @@
 import {NestFactory} from '@nestjs/core';
 import {ConfigService} from '@nestjs/config';
 import {Logger, ConsoleLogger, LogLevel, INestApplication} from '@nestjs/common';
+import {existsSync} from 'node:fs';
 import compression from 'compression';
 /* Vendor Dependencies */
 import * as express from 'express';
@@ -25,6 +26,15 @@ const log_levels: Record<string, LogLevel[]> = {
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
 	const configService = app.get(ConfigService);
+	const loglevel = configService.get<string>('server.log') || 'info';
+	app.useLogger(
+		new ConsoleLogger('OrchardApplication', {
+			logLevels: log_levels[loglevel],
+			timestamp: loglevel === 'verbose' || loglevel === 'debug' ? true : false,
+		}),
+	);
+	const logger = new Logger('OrchardApplication');
+	validation(app, configService, logger);
 	const is_production = configService.get<boolean>('mode.production') ?? false;
 	app.use(securityHeaders(is_production));
 	if (is_production) app.use(indexHtml());
@@ -33,21 +43,12 @@ async function bootstrap() {
 	if (compression_enabled) app.use(compression());
 	app.use(express.json({limit: '10mb'}));
 	app.use(express.urlencoded({limit: '10mb', extended: true}));
-	const loglevel = configService.get<string>('server.log') || 'info';
-	app.useLogger(
-		new ConsoleLogger('OrchardApplication', {
-			logLevels: log_levels[loglevel],
-			timestamp: loglevel === 'verbose' || loglevel === 'debug' ? true : false,
-		}),
-	);
 	const port = configService.get<number>('server.port');
 	const path = configService.get<string>('server.path');
 	const host = configService.get<string>('server.host');
 	const version = configService.get<string>('mode.version');
 	app.setGlobalPrefix(path);
 	await app.listen(port, host);
-	const logger = new Logger('OrchardApplication');
-	validation(app, configService, logger);
 	const dev_auth_bypass = configService.get<boolean>('mode.dev_auth_bypass');
 	if (dev_auth_bypass) logger.warn('DEV_AUTH_BYPASS is enabled — all unauthenticated requests get admin access');
 	logger.log(`Application version ${version}`);
@@ -72,11 +73,20 @@ function validation(app: INestApplication, configService: ConfigService, logger:
 	// validate MINT_DATABASE
 	const mint_database = configService.get<string>('cashu.database');
 	if (mint_type && !mint_database) shutdown(app, logger, 'MINT_DATABASE not configured');
+	const mint_database_type = configService.get<string>('cashu.database_type');
+	if (mint_type && mint_database && mint_database_type === 'sqlite' && !existsSync(mint_database)) {
+		const is_docker = configService.get<boolean>('mode.docker') ?? false;
+		const hint = is_docker
+			? ' Host paths are not visible inside the container — set MINT_DATANAME (filename) and MINT_DATADIR (host directory) so the sqlite file is mounted automatically.'
+			: '';
+		shutdown(app, logger, `MINT_DATABASE file not found at "${mint_database}".${hint}`);
+	}
 }
 
-function shutdown(app: INestApplication, logger: Logger, error: string): void {
+function shutdown(app: INestApplication, logger: Logger, error: string): never {
 	logger.error(error);
-	app.close();
+	void app.close();
+	process.exit(1);
 }
 
 bootstrap();

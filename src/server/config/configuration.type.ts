@@ -3,6 +3,7 @@ export type Config = {
 		production: boolean;
 		dev_auth_bypass: boolean;
 		schema_only: boolean;
+		docker: boolean;
 		version: string;
 	};
 	server: {
