@@ -73,6 +73,11 @@ x-litd-defaults: &litd-defaults
     timeout: 5s
     retries: 30
 
+x-orchard-build: &orchard-build
+  context: ../../../..
+  dockerfile: Dockerfile
+  target: final
+
 services:
   bitcoind:
     image: polarlightning/bitcoind:${BITCOIND_VERSION}
@@ -418,10 +423,7 @@ services:
       retries: 30
 
   orchard:
-    build:
-      context: ../../../..
-      dockerfile: Dockerfile
-      target: final-mintdb-sqlite
+    build: *orchard-build
     container_name: lnd-cdk-sqlite-orchard
     restart: on-failure
     networks: [net]

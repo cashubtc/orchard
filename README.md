@@ -18,11 +18,11 @@
 
 | Protocol       | Implementation                     | Version                    |
 | -------------- | ---------------------------------- | -------------------------- |
-| Bitcoin        | core (knots compatible)            | (^Satoshi:28.0.0)          |
-| Lightning      | lnd, cln                           | (^v0.19.0-beta), (^v25.02) |
+| Bitcoin        | core (knots compatible)            | (^Satoshi:30.0.0)          |
+| Lightning      | lnd, cln                           | (^v0.20.0-beta), (^v25.12) |
 | Cashu Mint     | cdk, nutshell                      | (^v0.16.0), (^0.20.0)      |
-| Taproot Assets | tapd                               | (^v0.6.1-alpha)            |
-| AI             | ollama                             | (^0.21.0)                  |
+| Taproot Assets | tapd                               | (^v0.7.0-alpha)            |
+| AI             | ollama                             | (^0.23.2)                  |
 
 <br>
 <br>
@@ -38,7 +38,7 @@
 Always check out the latest release tag before installing or updating. Running from `master` is unsupported and may leave your database in a state that cannot be cleanly upgraded.
 ```bash
 git fetch --tags
-git checkout v1.8.4
+git checkout v1.9.0
 ```
 
 ## Environment Variables
@@ -76,48 +76,34 @@ npm run start
 
 ## Run the application (docker)
 
+Configure access to your mints database in `.env`:
+
+```bash
+# Postgres
+MINT_DATABASE=postgres://user:pass@host:5432/db
+
+# SQLite
+MINT_DATANAME=mint.sqlite3
+MINT_DATADIR=/path/to/mint-dir
+```
+
 **Note:** The nutshell mint rpc can be run in insecure mode, omitting the need for certs.<br>
 To allow this in a docker container set `MINT_RPC_MTLS=false` in .env
 
-### Docker images from source
+### From source
 
-#### Sqlite Cashu Mint
 ```bash
-# Additional env vars
-MINT_DATANAME=mint.sqlite3
-MINT_DATADIR=/path/to/data/directory
-```
-```bash
-docker compose build orchard
-docker compose -f docker-compose.yml -f docker-compose.sqlite.yml up -d
-```
-
-#### Postgres Cashu Mint
-```bash
-docker compose build orchard
+docker compose build
 docker compose up -d
 ```
 
-### Docker images from registery
+### From registry image
 
-**Note:** When using registry images, you can specify a version using the `VERSION` environment variable. If not specified, it defaults to `latest` which may not be compatible with older versions of the codebase.
-
-#### Sqlite Cashu Mint
 ```bash
-# Additional env vars
-MINT_DATANAME=mint.sqlite3
-MINT_DATADIR=/path/to/data/directory
-```
-```bash
-VERSION=latest FLAVOR=sqlite \
-docker compose -f docker-compose.yml -f docker-compose.sqlite.yml -f compose.image.yml up -d
-```
-
-#### Postgres Cashu Mint
-```bash
-VERSION=latest FLAVOR=postgres \
 docker compose -f docker-compose.yml -f compose.image.yml up -d
 ```
+
+Pin a version with `VERSION=1.2.3` in `.env` or inline (defaults to `latest`).
 
 <br>
 <br>

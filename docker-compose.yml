@@ -18,6 +18,7 @@ services:
       - TAPROOT_ASSETS_MACAROON=/app/certs/taproot/orchard.macaroon
       - TAPROOT_ASSETS_CERT=/app/certs/taproot/tls.cert
       # Mint (container paths)
+      - MINT_DATABASE=${MINT_DATABASE:-/app/data/mint-data/${MINT_DATANAME:?Set MINT_DATABASE (postgres URL) or MINT_DATANAME (sqlite filename) in .env}}
       - MINT_DATABASE_CA=/app/certs/mint/database.ca.pem
       - MINT_DATABASE_CERT=/app/certs/mint/database.cert.pem
       - MINT_DATABASE_KEY=/app/certs/mint/database.key.pem
@@ -30,6 +31,16 @@ services:
       - type: bind
         source: ${DATABASE_DIR:-./data}
         target: /app/data
+        read_only: false
+        bind:
+          create_host_path: true
+      # Mint data dir:
+      #   MINT_DATADIR set                            → use it (sqlite with explicit host dir)
+      #   MINT_DATANAME set but MINT_DATADIR unset    → fail compose with actionable message
+      #   both unset (postgres)                       → fall back to ./data/mint (mount unused)
+      - type: bind
+        source: ${MINT_DATADIR:-${MINT_DATANAME:+${MINT_DATADIR:?MINT_DATADIR is required when using sqlite (directory containing the mint SQLite file)}}./data/mint}
+        target: /app/data/mint-data
         read_only: false
         bind:
           create_host_path: true

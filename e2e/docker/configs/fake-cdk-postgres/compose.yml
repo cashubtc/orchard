@@ -24,6 +24,11 @@ volumes:
   orchard-data:
   wallet-data:
 
+x-orchard-build: &orchard-build
+  context: ../../../..
+  dockerfile: Dockerfile
+  target: final
+
 services:
   postgres:
     image: postgres:${POSTGRES_VERSION}
@@ -69,10 +74,7 @@ services:
       retries: 30
 
   orchard:
-    build:
-      context: ../../../..
-      dockerfile: Dockerfile
-      target: final-mintdb-postgres
+    build: *orchard-build
     container_name: fake-cdk-postgres-orchard
     restart: on-failure
     networks: [net]
