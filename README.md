@@ -18,7 +18,7 @@
 
 | Protocol       | Implementation                     | Version                    |
 | -------------- | ---------------------------------- | -------------------------- |
-| Bitcoin        | core (knots compatible)            | (^Satoshi:28.0.0)          |
+| Bitcoin        | core (knots compatible)            | (^Satoshi:30.0.0)          |
 | Lightning      | lnd, cln                           | (^v0.20.0-beta), (^v25.12) |
 | Cashu Mint     | cdk, nutshell                      | (^v0.16.0), (^0.20.0)      |
 | Taproot Assets | tapd                               | (^v0.7.0-alpha)            |
