@@ -26,8 +26,11 @@ for i in $(seq 1 $ATTEMPTS); do
         break
     fi
 
-    # Already-loaded chainstates: don't keep retrying.
-    if echo "$OUT" | grep -qiE 'already (loaded|active|have)'; then
+    # Already-loaded chainstates: don't keep retrying. Bitcoin Core phrases
+    # this as "Can't activate a snapshot-based chainstate more than once" when
+    # the volume already has the snapshot loaded (e.g. a re-`up` after the
+    # node container survived but the one-shot setup was recreated).
+    if echo "$OUT" | grep -qiE 'already (loaded|active|have)|more than once'; then
         log "snapshot already loaded — skipping"
         break
     fi
