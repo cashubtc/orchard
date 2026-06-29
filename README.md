@@ -1,135 +1,36 @@
-<h1 align="center">Orchard</h1>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/orchard-github-readme-dark.svg">
+    <img src="public/orchard-github-readme.svg" alt="Orchard" width="300">
+  </picture>
+</p>
+
+<p align="center"><em>Your sovereign bank in cyberspace</em></p>
+
+<p align="center"><a href="https://orchard.space"><strong>orchard.space</strong></a></p>
 
 <p align="center">
-  <br>
-  <img src="src/client/assets/img/orchard-logo.svg" alt="orchard-logo" width="150px"/>
-  <br>
-  <br>
-  <em>Your sovereign bank in cyberspace</em>
-  <p align="center">
-    <img src="public/orchard-readme.jpg" alt="Orchard screenshot" style="max-width: 100%; height: auto;" />
-  </p>
-  <br>
+  <a href="https://github.com/cashubtc/orchard/actions/workflows/ci.yml"><img src="https://github.com/cashubtc/orchard/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
+  <a href="https://github.com/cashubtc/orchard/releases"><img src="https://img.shields.io/github/v/release/cashubtc/orchard" alt="Release"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/cashubtc/orchard" alt="License: MIT"></a>
 </p>
 
 <hr>
 
-# Implementation support
+## Documentation
 
-| Protocol       | Implementation                     | Version                    |
-| -------------- | ---------------------------------- | -------------------------- |
-| Bitcoin        | core (knots compatible)            | (^Satoshi:30.0.0)          |
-| Lightning      | lnd, cln                           | (^v0.20.0-beta), (^v25.12) |
-| Cashu Mint     | cdk, nutshell                      | (^v0.16.0), (^0.20.0)      |
-| Taproot Assets | tapd                               | (^v0.7.0-alpha)            |
-| AI             | ollama                             | (^0.23.2)                  |
+For full documentation, visit [docs.orchard.space](https://docs.orchard.space).
 
-<br>
-<br>
+## Community
 
-# Setup
+For help, questions, and feature ideas, open an issue:
+[GitHub Issues](https://github.com/cashubtc/orchard/issues).
 
-## Prerequisites
+## Contributing
 
-- Install [Node.js] which includes [Node Package Manager][npm]
-  - Recommended version (v22)
+If you're interested in contributing to Orchard, please read the
+[development guide](https://docs.orchard.space/development/) before submitting a pull request.
 
-## Versioning
-Always check out the latest release tag before installing or updating. Running from `master` is unsupported and may leave your database in a state that cannot be cleanly upgraded.
-```bash
-git fetch --tags
-git checkout v1.9.0
-```
+## License
 
-## Environment Variables
-```bash
-cp .env.example .env
-# edit .env file
-nano .env
-```
-
-## Configuration Options
-|           | Orchard | Bitcoin | Lightning  | Taproot Assets | Cashu Mint | AI |
-| --------- | ------- | ------- | ---------- | -------------- | ---------- | -- |
-| Required  | ✅      |         |            |                |            |     |
-| Optional  |         | ✅      | ✅          | ✅             | ✅         | ✅  |
-
-<br>
-<br>
-
-# Production Setup
-
-## Run the application (standard)
-```bash
-npm install
-npm run build
-npm run start
-```
-
-## Updating
-```bash
-git pull
-npm install
-npm run build
-npm run start
-```
-
-## Run the application (docker)
-
-Configure access to your mints database in `.env`:
-
-```bash
-# Postgres
-MINT_DATABASE=postgres://user:pass@host:5432/db
-
-# SQLite
-MINT_DATANAME=mint.sqlite3
-MINT_DATADIR=/path/to/mint-dir
-```
-
-**Note:** The nutshell mint rpc can be run in insecure mode, omitting the need for certs.<br>
-To allow this in a docker container set `MINT_RPC_MTLS=false` in .env
-
-### From source
-
-```bash
-docker compose build
-docker compose up -d
-```
-
-### From registry image
-
-```bash
-docker compose -f docker-compose.yml -f compose.image.yml up -d
-```
-
-Pin a version with `VERSION=1.2.3` in `.env` or inline (defaults to `latest`).
-
-<br>
-<br>
-
-# Development Setup
-
-## Run the application
-
-### Package Management 
-```bash
-npm install
-```
-
-### Client
-```bash
-npm run start:client
-```
-
-### Server
-```bash
-npm run start:server
-```
-
-### Tests
-```bash
-npm run format
-npm run lint
-npm run test
-```
+Orchard is open source software [licensed as MIT](./LICENSE).
