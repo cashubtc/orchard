@@ -22,8 +22,17 @@ engine = "postgres"
 url = "postgresql://cashu:cashu@postgres:5432/cdk"
 tls_mode = "disable"
 
+# cdk-mintd 0.17 made min/max mint+melt bounds required on each [ln] backend
+# and reworked [ln] into a single-or-many enum. Single cln backend → keep one
+# [ln] table; omitting the bounds fails parse with "data did not match any
+# variant of untagged enum LnOneOrMany".
 [ln]
 ln_backend = "cln"
+unit = "sat"
+min_mint = 1
+max_mint = 500000
+min_melt = 1
+max_melt = 500000
 
 [cln]
 rpc_path = "/cln/regtest/lightning-rpc"

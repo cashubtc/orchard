@@ -104,13 +104,19 @@ async function typeInto(field: Locator, value: string): Promise<void> {
 	if (value.length > 0) await field.pressSequentially(value, {delay: 0});
 }
 
-/** Wait for a save round-trip to complete: the GraphQL mutation resolves,
- *  then the SUCCESS toast appears with the parent's "Information updated!"
- *  message. The toast auto-clears after 3s — callers that need to start
- *  clean for the next assertion should wait for it to clear via
- *  `expectChipIdle` if the next assertion would race the fade. */
-async function expectSuccessAndSettle(page: Page, mutationName: string): Promise<void> {
-	await page.waitForResponse(matchGql(mutationName));
+/** Fire `action` (the save trigger — an Enter press or delete click) and
+ *  wait for the round-trip to complete: the GraphQL mutation resolves, then
+ *  the SUCCESS toast appears with the parent's "Information updated!" message.
+ *  The response waiter is registered *before* `action` runs — a fast daemon
+ *  (e.g. nutshell) can answer the mutation before a post-action waiter would
+ *  be attached, and the missed response then hangs `waitForResponse`. The
+ *  toast auto-clears after 3s — callers that need to start clean for the next
+ *  assertion should wait for it to clear via `expectChipIdle` if the next
+ *  assertion would race the fade. */
+async function expectSuccessAndSettle(page: Page, mutationName: string, action: () => Promise<void>): Promise<void> {
+	const response = page.waitForResponse(matchGql(mutationName));
+	await action();
+	await response;
 	await expect(eventToast(page).filter({hasText: 'Information updated'})).toBeVisible();
 }
 
@@ -202,15 +208,13 @@ test.describe('mint-subsection-info — pristine differential', {tag: '@canary'}
 		// `1 update` chip should appear — the dirty count is the structural proof
 		// that the form-value subscription wired correctly into EventService.
 		await expect(eventChip(page)).toContainText(/1 update/);
-		await nameInput.press('Enter');
-		await expectSuccessAndSettle(page, 'mint_name_update');
+		await expectSuccessAndSettle(page, 'mint_name_update', () => nameInput.press('Enter'));
 
 		expect(mint.getInfo(config, {fresh: true}).name).toBe(probe);
 
 		// Revert.
 		await typeInto(nameInput, original);
-		await nameInput.press('Enter');
-		await expectSuccessAndSettle(page, 'mint_name_update');
+		await expectSuccessAndSettle(page, 'mint_name_update', () => nameInput.press('Enter'));
 		expect(mint.getInfo(config, {fresh: true}).name).toBe(original);
 	});
 });
@@ -328,12 +332,10 @@ test.describe('mint-subsection-info — per-field saves', {tag: '@mint'}, () => 
 			const input = fieldInput(host, scenario.child);
 			await typeInto(input, probe);
 			await expect(eventChip(page)).toContainText(/1 update/);
-			await input.press('Enter');
-			await expectSuccessAndSettle(page, scenario.mutation);
+			await expectSuccessAndSettle(page, scenario.mutation, () => input.press('Enter'));
 			expect(scenario.read(mint.getInfo(config, {fresh: true})) ?? '').toBe(probe);
 
-			await revertField(page, host, scenario.child, original || null);
-			await expectSuccessAndSettle(page, scenario.mutation);
+			await expectSuccessAndSettle(page, scenario.mutation, () => revertField(page, host, scenario.child, original || null));
 			expect(scenario.read(mint.getInfo(config, {fresh: true})) ?? '').toBe(original);
 		});
 	}
@@ -355,8 +357,7 @@ test.describe('mint-subsection-info — array-field saves', {tag: '@mint'}, () =
 		const newRow = host.locator('orc-mint-subsection-info-form-url').last();
 		await typeInto(newRow.locator('input'), probeUrl);
 		await expect(eventChip(page)).toContainText(/1 update/);
-		await newRow.locator('input').press('Enter');
-		await expectSuccessAndSettle(page, 'mint_url_add');
+		await expectSuccessAndSettle(page, 'mint_url_add', () => newRow.locator('input').press('Enter'));
 
 		// Daemon side: URL list grew by one and includes the probe.
 		const after = mint.getInfo(config, {fresh: true}).urls ?? [];
@@ -365,8 +366,7 @@ test.describe('mint-subsection-info — array-field saves', {tag: '@mint'}, () =
 
 		// Cleanup: delete the row we just added. The mat-suffix delete button
 		// inside the new row triggers `mint_url_remove` directly.
-		await newRow.locator('button[matSuffix]').click();
-		await expectSuccessAndSettle(page, 'mint_url_remove');
+		await expectSuccessAndSettle(page, 'mint_url_remove', () => newRow.locator('button[matSuffix]').click());
 		const restored = mint.getInfo(config, {fresh: true}).urls ?? [];
 		expect(restored).not.toContain(probeUrl);
 		expect(restored.length).toBe(before.length);
@@ -391,16 +391,14 @@ test.describe('mint-subsection-info — array-field saves', {tag: '@mint'}, () =
 
 		const probeInfo = `e2e-probe@example.test`;
 		await typeInto(newRow.locator('input[formControlName="info"]'), probeInfo);
-		await newRow.locator('input[formControlName="info"]').press('Enter');
-		await expectSuccessAndSettle(page, 'mint_contact_add');
+		await expectSuccessAndSettle(page, 'mint_contact_add', () => newRow.locator('input[formControlName="info"]').press('Enter'));
 
 		const afterContacts = mint.getInfo(config, {fresh: true}).contact ?? [];
 		expect(afterContacts.some((c) => c.method === next_unused && c.info === probeInfo)).toBe(true);
 		expect(afterContacts.length).toBe(before.length + 1);
 
 		// Cleanup.
-		await newRow.locator('button[matSuffix]').click();
-		await expectSuccessAndSettle(page, 'mint_contact_remove');
+		await expectSuccessAndSettle(page, 'mint_contact_remove', () => newRow.locator('button[matSuffix]').click());
 		const restored = mint.getInfo(config, {fresh: true}).contact ?? [];
 		expect(restored.some((c) => c.method === next_unused && c.info === probeInfo)).toBe(false);
 		expect(restored.length).toBe(before.length);
@@ -534,8 +532,7 @@ test.describe('mint-subsection-info — validation', {tag: '@mint'}, () => {
 
 		// Restore: type the original back and save.
 		await typeInto(nameInput, original);
-		await nameInput.press('Enter');
-		await expectSuccessAndSettle(page, 'mint_name_update');
+		await expectSuccessAndSettle(page, 'mint_name_update', () => nameInput.press('Enter'));
 	});
 
 	test('duplicate contact methods surface an error event and block save', async ({page}, testInfo) => {
