@@ -125,6 +125,45 @@
 								</mat-card>
 							</div>
 						}
+
+						<!-- NUT 04 ONCHAIN -->
+						@if (method_index.includes(`nut4:${unit}:onchain`)) {
+							<div class="sticky-config z-index-1">
+								<div class="flex flex-items-center flex-gap-0-5 p-b-0-5">
+									<div class="font-size-xs orc-outline-color">{{ unit | localUnit: true }} Configuration</div>
+									<orc-graphic-asset [unit]="unit" [height]="'1rem'"> </orc-graphic-asset>
+									<div class="font-size-xs orc-outline-color">Onchain</div>
+									<mat-icon class="icon-sm orc-outline-color">deployed_code</mat-icon>
+								</div>
+							</div>
+							<div class="nut-wrapper">
+								<mat-card appearance="outlined" class="relative overflow-hidden">
+									<mat-card-content class="orc-surface-container-low-bg">
+										<orc-mint-subsection-config-form-onchain
+											class="flex-1"
+											[nut]="'nut4'"
+											[unit]="unit"
+											[method]="'onchain'"
+											[form_group]="form_minting"
+											[locale]="locale"
+											[loading]="data_loading"
+											[quotes]="mint_quotes_onchain"
+											(update)="onMethodUpdate($event)"
+											(cancel)="onMethodCancel($event)"
+										></orc-mint-subsection-config-form-onchain>
+										@if (mint_info?.nuts?.nut4?.disabled) {
+											<div
+												class="disabled-overlay"
+												animate.enter="orc-animation-fadein-fast"
+												animate.leave="orc-animation-fadeout-fast"
+											>
+												<div class="orc-outline-color font-weight-bold">MINTING DISABLED</div>
+											</div>
+										}
+									</mat-card-content>
+								</mat-card>
+							</div>
+						}
 					}
 				</div>
 
@@ -236,6 +275,46 @@
 											(cancel)="onMethodCancel($event)"
 										></orc-mint-subsection-config-form-bolt12>
 
+										@if (mint_info?.nuts?.nut5?.disabled) {
+											<div
+												class="disabled-overlay"
+												animate.enter="orc-animation-fadein-fast"
+												animate.leave="orc-animation-fadeout-fast"
+											>
+												<div class="orc-outline-color font-weight-bold">MELTING DISABLED</div>
+											</div>
+										}
+									</mat-card-content>
+								</mat-card>
+							</div>
+						}
+
+						<!-- NUT 05 ONCHAIN -->
+						@if (method_index.includes(`nut5:${unit}:onchain`)) {
+							<div class="sticky-config z-index-1">
+								<div class="flex flex-items-center flex-gap-0-5 p-b-0-5">
+									<div class="font-size-xs orc-outline-color">{{ unit | localUnit: true }} Configuration</div>
+									<orc-graphic-asset [unit]="unit" [height]="'1rem'"> </orc-graphic-asset>
+									<div class="font-size-xs orc-outline-color">Onchain</div>
+									<mat-icon class="icon-sm orc-outline-color">deployed_code</mat-icon>
+								</div>
+							</div>
+
+							<div class="nut-wrapper">
+								<mat-card appearance="outlined" class="relative overflow-hidden">
+									<mat-card-content class="orc-surface-container-low-bg">
+										<orc-mint-subsection-config-form-onchain
+											class="flex-1"
+											[nut]="'nut5'"
+											[unit]="unit"
+											[method]="'onchain'"
+											[form_group]="form_melting"
+											[locale]="locale"
+											[loading]="data_loading"
+											[quotes]="melt_quotes_onchain"
+											(update)="onMethodUpdate($event)"
+											(cancel)="onMethodCancel($event)"
+										></orc-mint-subsection-config-form-onchain>
 										@if (mint_info?.nuts?.nut5?.disabled) {
 											<div
 												class="disabled-overlay"

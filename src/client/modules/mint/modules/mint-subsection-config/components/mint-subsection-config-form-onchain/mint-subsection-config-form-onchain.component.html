@@ -1,0 +1,90 @@
+<div class="flex flex-wrap-reverse flex-gap-column-2">
+	<div class="flex flex-column flex-gap-2 flex-1">
+		<div class="flex flex-row flex-gap-1 flex-wrap">
+			<div class="flex flex-column flex-gap-1 p-l-1">
+				<orc-mint-subsection-config-form-max
+					[form_group]="form_onchain()"
+					[control_name]="'max_amount'"
+					[control_dirty]="form_onchain().get('max_amount')?.dirty"
+					[control_invalid]="form_onchain().get('max_amount')?.invalid"
+					[control_errors]="form_onchain().get('max_amount')?.errors"
+					[unit]="unit()"
+					[nut]="nut()"
+					[stat_amounts]="stat_amounts()"
+					(update)="onUpdate($event)"
+					(cancel)="onCancel($event)"
+					(hot)="onMaxHot($event)"
+				></orc-mint-subsection-config-form-max>
+				<orc-mint-subsection-config-form-min
+					[form_group]="form_onchain()"
+					[control_name]="'min_amount'"
+					[control_dirty]="form_onchain().get('min_amount')?.dirty"
+					[control_invalid]="form_onchain().get('min_amount')?.invalid"
+					[control_errors]="form_onchain().get('min_amount')?.errors"
+					[unit]="unit()"
+					[nut]="nut()"
+					[stat_amounts]="stat_amounts()"
+					(update)="onUpdate($event)"
+					(cancel)="onCancel($event)"
+					(hot)="onMinHot($event)"
+				></orc-mint-subsection-config-form-min>
+			</div>
+
+			@if (nut() === 'nut4') {
+				<div class="flex flex-column p-l-1">
+					<div class="flex flex-items-center flex-gap-1">
+						<div class="orc-small-form-field-wrapper">
+							<mat-form-field appearance="fill" hideRequiredMarker="true" class="w-full orc-dynamic-form-field">
+								<mat-label>Confirmations</mat-label>
+								<mat-select [value]="confirmations()" disabled>
+									@for (option of confirmation_options; track option) {
+										<mat-option [value]="option">{{ option }}</mat-option>
+									}
+								</mat-select>
+							</mat-form-field>
+						</div>
+						<button
+							type="button"
+							tabindex="-1"
+							mat-icon-button
+							class="orc-icon-button"
+							(click)="help_status.set(!help_status())"
+						>
+							<mat-icon class="orc-outline-color">info</mat-icon>
+						</button>
+					</div>
+					<div class="orc-animation-expand-collapse" [class.animation-expanded]="help_status()">
+						<div class="orc-animation-expand-collapse-inner">
+							<div class="flex p-t-1 p-b-1">
+								<orc-form-help-text class="orc-surface-container-high-bg">
+									<div>
+										The number of block confirmations an onchain payment needs before the quote is considered paid.<br />
+										Not configurable here. Set in the mint's configuration file.
+									</div>
+								</orc-form-help-text>
+							</div>
+						</div>
+					</div>
+				</div>
+			}
+		</div>
+	</div>
+	<div class="flex-1">
+		<orc-mint-subsection-config-chart-method
+			[nut]="nut()"
+			[loading]="loading()"
+			[quotes]="valid_quotes()"
+			[locale]="locale()"
+			[unit]="unit()"
+			[method]="method()"
+			[min_amount]="form_onchain().get('min_amount')?.value"
+			[max_amount]="form_onchain().get('max_amount')?.value"
+			[min_hot]="min_hot()"
+			[max_hot]="max_hot()"
+			[amounts]="stat_amounts()"
+			[stats]="stats()"
+		>
+			<orc-mint-subsection-config-stats [loading]="loading()" [stats]="stats()" [unit]="unit()"></orc-mint-subsection-config-stats>
+		</orc-mint-subsection-config-chart-method>
+	</div>
+</div>
