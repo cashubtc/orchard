@@ -53,10 +53,9 @@
  *   - `mint-general-icon` `'error'` branch (parent never binds [error]
  *     on the icon child — dead from this parent's perspective)
  *   - `mint-general-name` `'error'` branch (parent never binds [error]
- *     on the name child — same; documented as dead in the spec md)
+ *     on the name child — same; dead from this parent)
  *   - QR style slider + image toggle inside the dialog (raster timing-
  *     sensitive — covered in `network-connection.component.spec.ts`)
- * See `mint-general-info.md` for the full state machine.
  */
 
 import {test, expect, type Locator, type Page} from '@playwright/test';
@@ -229,9 +228,6 @@ test.describe('mint-general-info card', {tag: '@mint'}, () => {
 		                                      resolve from the e2e network,
 		                                      so the probe always fails ⇒
 		                                      subtitle "Not reachable"
-
-		See mint-general-info.md → "Child components → orc-network-connection"
-		for the full enumeration of child states.
 	******************************************************** */
 
 	test('clicking the URI chip opens the NetworkConnection dialog', async ({page}, testInfo) => {

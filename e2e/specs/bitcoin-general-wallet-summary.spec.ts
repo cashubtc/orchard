@@ -191,9 +191,6 @@ test.describe('bitcoin-general-wallet-summary — bitcoin row', {tag: '@lightnin
 		so the overflow-chip and multi-glyph branches are not reachable live
 		from this parent. Coverage here asserts the colour-class contract and
 		that the parent piped unit/group_key correctly into the child.
-
-		See bitcoin-general-wallet-summary.md → "Child components →
-		orc-bitcoin-general-utxo-stack" for the full enumeration.
 	******************************************************** */
 
 	test('bitcoin row utxo-stack carries the utxo-asset-btc class', async ({page}) => {

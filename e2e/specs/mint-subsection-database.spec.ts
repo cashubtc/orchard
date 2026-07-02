@@ -42,8 +42,7 @@
  * project with `workers: 1` for that project, or be implemented as a
  * server-side integration test against a dedicated stack.
  *
- * States the component supports but this spec does NOT cover (see
- * `mint-subsection-database.md` → "Skip taxonomy"):
+ * States the component supports but this spec does NOT cover:
  *   - Backup ERROR (`disruptive` — needs `docker pause` of the mint
  *     daemon, knocks out sibling specs).
  *   - Restore SUCCESS round-trip (see "Round-trip skip" above).

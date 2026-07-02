@@ -26,8 +26,7 @@
  *     event chip; bulk cancel; validation (>200-char name, duplicate
  *     contact methods, empty required URL).
  *
- * States the component supports but this spec does NOT cover (see
- * `mint-subsection-info.md` → "Skip taxonomy"):
+ * States the component supports but this spec does NOT cover:
  *   - Mutation error (`disruptive` — would need `docker pause` of the
  *     mint daemon, which knocks out sibling specs).
  *   - AI tool-call mutation (`unit-better` — needs `ai_enabled=true` and
@@ -40,7 +39,6 @@
  *   - `canDeactivate` dialog interior (`dead-branch` — the dialog UI
  *     lives in `event-general-unsaved-dialog`, with its own spec).
  *   - MOTD autogrow geometry (`unit-better` — pixel-fragile).
- * See `mint-subsection-info.md` for the full state machine.
  */
 
 import {test, expect, type Locator, type Page} from '@playwright/test';

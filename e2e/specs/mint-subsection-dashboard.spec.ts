@@ -25,8 +25,7 @@
  *     `featuresFor`/`tagsFor`). Drives the dashboard assistant input,
  *     waits for an LLM reply.
  *
- * States the component supports but this spec does NOT cover (see
- * `mint-subsection-dashboard.md` → "Skip taxonomy"):
+ * States the component supports but this spec does NOT cover:
  *   - archiving progress bar (`disruptive` — backfill is a daemon cron,
  *     no admin endpoint to trigger on demand)
  *   - analytics fetch error → silent UI (`disruptive` — `docker pause`
@@ -44,7 +43,6 @@
  *     — no historical channel-balance view, so the pipeline test asserts
  *     sign + magnitude only; live-balance fidelity is covered by the
  *     `mint-general-balance-sheet` spec's Lightning local capacity test)
- * See `mint-subsection-dashboard.md` for the full state machine.
  */
 
 import {test, expect, type Locator, type Page} from '@playwright/test';

@@ -1,8 +1,7 @@
 /**
  * Feature spec: `orc-index-subsection-dashboard-bitcoin-enabled-blockchain` —
  * the "mempool-style" block visualization on the dashboard (template block,
- * divider, confirmed tip). See `bitcoin-blockchain.md` for the full state
- * machine.
+ * divider, confirmed tip).
  *
  * Covers the states reachable from a healthy regtest fixture:
  *   - structure: template column, divider, confirmed column, chained half
