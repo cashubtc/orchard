@@ -1,0 +1,35 @@
+<div class="mint-data-mint-reusable-container">
+	<div class="flex flex-row flex-gap-2">
+		<div class="flex flex-column flex-gap-1">
+			<div class="flex flex-column flex-gap-0-5">
+				<div class="w-6 orc-outline-color font-weight-extra-light">Paid Amount:</div>
+				<span class="font-size-m text-nowrap" [innerHTML]="quote().amount_paid | localAmount: quote().unit : 'mint'"></span>
+			</div>
+			<div class="flex flex-column flex-gap-0-5">
+				<div class="w-6 orc-outline-color text-nowrap font-weight-extra-light">Issued Amount:</div>
+				<span class="font-size-m text-nowrap" [innerHTML]="quote().amount_issued | localAmount: quote().unit : 'mint'"></span>
+			</div>
+		</div>
+        <div class="z-index-0">
+            <orc-progress-circle
+                [value]="percentage_issued()"
+                background_color="orc-default-progress-spinner"
+                [progress_color]="spinner_class()"
+                [diameter]="120"
+                [stroke_width]="15"
+            >
+                <div class="flex flex-column flex-items-center flex-gap-0-25">
+                    @if (quote().amount_paid === 0) {
+                        <div class="orc-outline-variant-color">No</div>
+                        <div class="orc-outline-variant-color">Payments</div>
+                    } @else {
+                        <div class="text-nowrap">{{ percentage_issued() | number: '1.0-0' }}%</div>
+                        <div>Issued</div>
+                    }
+                </div>
+            </orc-progress-circle>
+        </div>
+
+		
+	</div>
+</div>

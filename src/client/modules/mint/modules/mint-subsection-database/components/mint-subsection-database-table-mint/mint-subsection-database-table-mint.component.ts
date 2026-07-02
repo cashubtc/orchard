@@ -41,6 +41,19 @@ export class MintSubsectionDatabaseTableMintComponent implements AfterViewInit {
 		return this.quote().state === MintQuoteState.Unpaid;
 	});
 
+	public request_label = computed(() => {
+		switch (this.quote().payment_method) {
+			case 'bolt11':
+				return 'Bolt 11 Invoice';
+			case 'bolt12':
+				return 'Bolt 12 Offer';
+			case 'onchain':
+				return 'Onchain Address';
+			default:
+				return 'Payment Request';
+		}
+	});
+
 	private expired_state = computed((): ExpiredState => {
 		const lr = this.lightning_request();
 		const quote = this.quote();

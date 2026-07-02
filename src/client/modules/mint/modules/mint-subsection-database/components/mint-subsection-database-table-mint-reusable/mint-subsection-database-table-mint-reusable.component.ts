@@ -6,13 +6,13 @@ import {MintMintQuote} from '@client/modules/mint/classes/mint-mint-quote.class'
 import {MintQuoteState} from '@shared/generated.types';
 
 @Component({
-	selector: 'orc-mint-subsection-database-table-mint-bolt12',
+	selector: 'orc-mint-subsection-database-table-mint-reusable',
 	standalone: false,
-	templateUrl: './mint-subsection-database-table-mint-bolt12.component.html',
-	styleUrl: './mint-subsection-database-table-mint-bolt12.component.scss',
+	templateUrl: './mint-subsection-database-table-mint-reusable.component.html',
+	styleUrl: './mint-subsection-database-table-mint-reusable.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MintSubsectionDatabaseTableMintBolt12Component {
+export class MintSubsectionDatabaseTableMintReusableComponent {
 	public quote = input.required<MintMintQuote>();
 
 	public percentage_issued = computed(() => {

@@ -61,6 +61,12 @@
 					</button>
 
 					<mat-menu #advanced_menu="matMenu" yPosition="below" class="orc-sticky-menu orc-more-menu">
+                        <button mat-menu-item (click)="onRefresh()">
+							<div class="flex flex-items-center flex-gap-0-5">
+								<mat-icon>refresh</mat-icon>
+								<span>Refresh Data</span>
+							</div>
+						</button>
 						@if (device_type() === 'mobile') {
 							<button mat-menu-item (click)="onCreate()">
 								<div class="flex flex-items-center flex-gap-0-5">
@@ -73,12 +79,6 @@
 							<div class="flex flex-items-center flex-gap-0-5">
 								<mat-icon>restore</mat-icon>
 								<span>Restore Backup</span>
-							</div>
-						</button>
-						<button mat-menu-item (click)="onRefresh()">
-							<div class="flex flex-items-center flex-gap-0-5">
-								<mat-icon>refresh</mat-icon>
-								<span>Refresh Data</span>
 							</div>
 						</button>
 					</mat-menu>

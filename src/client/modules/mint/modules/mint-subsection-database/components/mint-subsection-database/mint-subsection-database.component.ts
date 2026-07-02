@@ -507,10 +507,10 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 
 	private calculateBitcoinOraclePrice(entity: MintMintQuote | MintMeltQuote | MintSwap): void {
 		if (!this.bitcoin_oracle_price_map) return;
-		if (!entity.amount) return;
+		const amount = entity.amount ?? ('amount_paid' in entity ? entity.amount_paid : null);
+		if (!amount) return;
 		if (!entity.unit) return;
 		if (!entity.created_time) return;
-		const amount = entity.amount;
 		const unit = entity.unit;
 		const oracle_price = findNearestOraclePrice(this.bitcoin_oracle_price_map, entity.created_time);
 		const price = oracle_price?.price || null;
