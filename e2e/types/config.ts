@@ -49,6 +49,8 @@ interface BaseConfigInfo {
 	tapd: boolean;
 	/** Mint + LN backend both speak offers. */
 	bolt12: boolean;
+	/** Mint advertises NUT-30 onchain mint/melt (cdk-mintd bdk backend). */
+	onchain: boolean;
 	/** Stack ships a `compose.mainchain.yml` overlay. The overlay is always
 	 *  loaded when present, and `@mainchain` is always in this stack's grep. */
 	mainchain: boolean;

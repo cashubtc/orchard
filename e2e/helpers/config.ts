@@ -38,6 +38,7 @@ export function featuresFor(config: ConfigInfo): string[] {
 	const features: string[] = [];
 	if (config.tapd) features.push('tapd');
 	if (config.bolt12) features.push('bolt12');
+	if (config.onchain) features.push('onchain');
 	if (config.mainchain) features.push('mainchain');
 	if (config.appSettings?.ai_enabled === true) features.push('ai');
 	if (config.appSettings?.bitcoin_oracle === true) features.push('oracle');
@@ -76,6 +77,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bitcoin: true,
 		tapd: false,
 		bolt12: false,
+		onchain: false,
 		mainchain: false,
 		orchardUrl: 'http://localhost:3322',
 		...BASE,
@@ -96,6 +98,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bitcoin: true,
 		tapd: true,
 		bolt12: false,
+		onchain: false,
 		mainchain: false,
 		orchardUrl: 'http://localhost:3324',
 		...BASE,
@@ -123,6 +126,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bitcoin: true,
 		tapd: false,
 		bolt12: true,
+		onchain: true,
 		mainchain: false,
 		orchardUrl: 'http://localhost:3323',
 		...BASE,
@@ -153,6 +157,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bitcoin: true,
 		tapd: false,
 		bolt12: false,
+		onchain: false,
 		mainchain: true,
 		orchardUrl: 'http://localhost:3325',
 		...BASE,
@@ -183,6 +188,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bitcoin: false,
 		tapd: false,
 		bolt12: false,
+		onchain: false,
 		mainchain: false,
 		orchardUrl: 'http://localhost:3326',
 		...BASE,
