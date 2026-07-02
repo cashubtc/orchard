@@ -8,6 +8,10 @@
 			<div class="text-nowrap">BOLT 12</div>
 			<mat-icon [class]="icon_size()" [svgIcon]="'double_bolt'"></mat-icon>
 		}
+        @case ('onchain') {
+			<div class="text-nowrap">ONCHAIN</div>
+			<mat-icon [class]="icon_size()">deployed_code</mat-icon>
+		}
 		@default {
 			<div>{{ payment_method() }}</div>
 		}

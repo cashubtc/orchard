@@ -38,11 +38,11 @@ export class MintGeneralConfigComponent {
 			});
 	});
 
-	/** Whether minting is disabled. */
-	public minting_status = computed(() => (this.info()?.nuts?.nut4?.disabled ? 'inactive' : 'active'));
-
-	/** Whether melting is disabled. */
-	public melting_status = computed(() => (this.info()?.nuts?.nut5?.disabled ? 'inactive' : 'active'));
+	/** Deduped payment methods supported across minting (NUT4) and melting (NUT5). */
+	public supported_methods = computed<string[]>(() => {
+		const methods = [...(this.info()?.nuts?.nut4?.methods ?? []), ...(this.info()?.nuts?.nut5?.methods ?? [])];
+		return [...new Set(methods.map((m) => m.method))];
+	});
 
 	/** Minting method limits from NUT4. */
 	public minting_limits = computed<MethodLimit[]>(() => {
