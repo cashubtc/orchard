@@ -69,7 +69,9 @@ export class MintSubsectionConfigFormBolt12Component implements OnChanges {
 		const quotes = this.nut() === 'nut4' ? (this.quotes() as MintMintQuote[]) : (this.quotes() as MintMeltQuote[]);
 		const valid_states: string[] = this.nut() === 'nut4' ? [MintQuoteState.Paid, MintQuoteState.Issued] : [MeltQuoteState.Paid];
 		return quotes
-			.filter((quote) => valid_states.includes(quote.state) && quote.created_time && quote.created_time > 0 && quote.unit === this.unit())
+			.filter(
+				(quote) => valid_states.includes(quote.state) && quote.created_time && quote.created_time > 0 && quote.unit === this.unit(),
+			)
 			.sort((a, b) => (a.created_time ?? 0) - (b.created_time ?? 0)) as MintMintQuote[] | MintMeltQuote[];
 	});
 

@@ -111,11 +111,11 @@
 					</div>
 				}
 			</div>
-            <div class="flex flex-column flex-gap-2">
-                @if (quote().payment_method == 'bolt12' || quote().payment_method == 'onchain') {
+			<div class="flex flex-column flex-gap-2">
+				@if (quote().payment_method == 'bolt12' || quote().payment_method == 'onchain') {
 					<orc-mint-subsection-database-table-mint-reusable [quote]="quote()"></orc-mint-subsection-database-table-mint-reusable>
 				}
-            </div>
+			</div>
 		</div>
 	</div>
 </div>

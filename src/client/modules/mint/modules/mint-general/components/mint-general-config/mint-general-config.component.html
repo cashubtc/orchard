@@ -4,7 +4,7 @@
 		<mat-card-content class="orc-surface-container-low-bg">
 			<div class="flex flex-column flex-gap-1">
 				<div class="flex flex-column flex-gap-0-5">
-                    <div class="font-size-xs orc-outline-color">Supported Nuts</div>
+					<div class="font-size-xs orc-outline-color">Supported Nuts</div>
 					<div class="flex flex-row flex-gap-0-5 flex-wrap">
 						@for (nut of nuts(); track nut.number) {
 							<div class="nut-card orc-high-card" (click)="onNutClick(nut.number)">
@@ -16,7 +16,7 @@
 				</div>
 
 				<div class="flex flex-column flex-gap-0-25">
-                    <div class="font-size-xs orc-outline-color">Supported Methods</div>
+					<div class="font-size-xs orc-outline-color">Supported Methods</div>
 					<mat-chip-set>
 						@for (method of supported_methods(); track method) {
 							<mat-chip>
