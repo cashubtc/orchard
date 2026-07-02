@@ -7,7 +7,7 @@
                     <div class="font-size-xs orc-outline-color">Supported Nuts</div>
 					<div class="flex flex-row flex-gap-0-5 flex-wrap">
 						@for (nut of nuts(); track nut.number) {
-							<div class="nut-card orc-high-card">
+							<div class="nut-card orc-high-card" (click)="onNutClick(nut.number)">
 								<orc-graphic-status [status]="nut.status" size="0.5rem"></orc-graphic-status>
 								<div class="font-size-xs font-weight-semi-bold">{{ nut.number }}</div>
 							</div>

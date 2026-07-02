@@ -1,5 +1,6 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {Router} from '@angular/router';
 /* Native Dependencies */
 import {OrcMintGeneralModule} from '@client/modules/mint/modules/mint-general/mint-general.module';
 import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
@@ -141,6 +142,17 @@ describe('MintGeneralConfigComponent', () => {
 			fixture.detectChanges();
 
 			expect(component.supported_methods()).toEqual(['bolt11', 'onchain', 'bolt12']);
+		});
+	});
+
+	describe('onNutClick', () => {
+		it('should navigate to the config page with the nut scroll target', () => {
+			const router = TestBed.inject(Router);
+			const navigate_spy = spyOn(router, 'navigate');
+
+			component.onNutClick(4);
+
+			expect(navigate_spy).toHaveBeenCalledWith(['mint', 'config'], {state: {scroll_to: 'nav4'}});
 		});
 	});
 

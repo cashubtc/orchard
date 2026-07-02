@@ -14,7 +14,7 @@ import {
 	ViewChildren,
 	QueryList,
 } from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {FormGroup, FormControl, Validators} from '@angular/forms';
 import {toObservable} from '@angular/core/rxjs-interop';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
@@ -189,6 +189,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 	private active_event: EventData | null = null;
 	private dirty_count: WritableSignal<number> = signal(0);
 	private dirty_count$ = toObservable(this.dirty_count);
+	private scroll_to: string | null = null;
 
 	constructor(
 		private settingAppService: SettingAppService,
@@ -199,7 +200,11 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 		public settingDeviceService: SettingDeviceService,
 		public breakpointObserver: BreakpointObserver,
 		public cdr: ChangeDetectorRef,
-	) {}
+		private router: Router,
+	) {
+		const nav = this.router.currentNavigation();
+		this.scroll_to = nav?.extras.state?.['scroll_to'] ?? null;
+	}
 
 	/* *******************************************************
 	   Initalization                      
@@ -232,6 +237,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 
 	ngAfterViewInit(): void {
 		this.updateTertiaryNav();
+		if (this.scroll_to) setTimeout(() => this.scrollToChart(this.scroll_to as TertiaryNav));
 	}
 
 	orchardOptionalInit(): void {

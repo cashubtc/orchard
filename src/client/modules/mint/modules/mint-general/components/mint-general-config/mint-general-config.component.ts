@@ -1,5 +1,6 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, input} from '@angular/core';
+import {Router} from '@angular/router';
 /* Application Dependencies */
 import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
 import {GraphicStatusState} from '@client/modules/graphic/types/graphic-status.types';
@@ -21,6 +22,8 @@ type MethodLimit = {
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintGeneralConfigComponent {
+	private readonly router = inject(Router);
+
 	public info = input.required<MintInfo | null>();
 
 	/** Simplified list of nut numbers and their support status. */
@@ -68,6 +71,13 @@ export class MintGeneralConfigComponent {
 		});
 		return result;
 	});
+
+	/** Navigates to the mint config page and scrolls to the selected nut's section. */
+	public onNutClick(nut_number: number): void {
+		this.router.navigate(['mint', 'config'], {
+			state: {scroll_to: `nav${nut_number}`},
+		});
+	}
 
 	/** Returns the track width percentage for a limit, scaled relative to the largest max_amount in its unit. */
 	public getTrackWidthPercent(limit: MethodLimit): number {

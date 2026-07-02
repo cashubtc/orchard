@@ -6,7 +6,13 @@
 	@extend %flex-items-center;
 	@extend %flex-gap-0-25;
 	@extend %p-0-25;
+	@extend %cursor-pointer;
+	@extend %trans-bg-fast;
 	min-width: 1.75rem;
+
+	&:hover {
+		@extend %orc-surface-container-highest-bg;
+	}
 }
 
 .limit-range {
