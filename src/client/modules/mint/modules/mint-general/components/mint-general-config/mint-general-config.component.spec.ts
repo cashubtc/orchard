@@ -1,6 +1,7 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {Router} from '@angular/router';
+import {MatIconTestingModule} from '@angular/material/icon/testing';
 /* Native Dependencies */
 import {OrcMintGeneralModule} from '@client/modules/mint/modules/mint-general/mint-general.module';
 import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
@@ -48,7 +49,7 @@ describe('MintGeneralConfigComponent', () => {
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			imports: [OrcMintGeneralModule],
+			imports: [OrcMintGeneralModule, MatIconTestingModule],
 		}).compileComponents();
 
 		fixture = TestBed.createComponent(MintGeneralConfigComponent);

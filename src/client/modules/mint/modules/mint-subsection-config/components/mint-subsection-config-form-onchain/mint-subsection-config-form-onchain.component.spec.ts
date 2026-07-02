@@ -4,6 +4,7 @@ import {FormControl, FormGroup} from '@angular/forms';
 /* Application Dependencies */
 import {MintMintQuote} from '@client/modules/mint/classes/mint-mint-quote.class';
 import {MintMeltQuote} from '@client/modules/mint/classes/mint-melt-quote.class';
+import {provideChartConfig} from '@client/modules/chart/chart.providers';
 /* Native Dependencies */
 import {OrcMintSubsectionConfigModule} from '@client/modules/mint/modules/mint-subsection-config/mint-subsection-config.module';
 /* Local Dependencies */
@@ -39,6 +40,7 @@ describe('MintSubsectionConfigFormOnchainComponent', () => {
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
 			imports: [OrcMintSubsectionConfigModule],
+			providers: [provideChartConfig()],
 		}).compileComponents();
 
 		fixture = TestBed.createComponent(MintSubsectionConfigFormOnchainComponent);
