@@ -495,23 +495,45 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 		}
 	});
 
-	test('limit row track bar renders at 100% width on every fixture', async ({page}, testInfo) => {
-		// `getTrackWidthPercent` runs the bar to 100% in three live cases:
-		//   - the row's own `max_amount` is null (nutshell, both rows)
-		//   - the unit's largest max in the union is null (same case)
-		//   - the row IS the unit's largest (cdk, single sat row hits 100)
-		// All current fixtures have one method per direction in the `sat`
-		// unit, so every visible bar should render at 100%. Asserts the
-		// inline style is set by Angular (the `[style.width.%]` binding
-		// produces `width: 100%`) — guards against a regression that
-		// silently leaves the bar unbound.
+	test('limit row track bars scale each row against the unit max published by the daemon', async ({page}, testInfo) => {
+		// `getTrackWidthPercent` scales every bar against the largest
+		// `max_amount` in its unit across the union of minting and melting
+		// rows: a null row max (or a null/absent unit max) pins the bar to
+		// 100%, otherwise width = max/unit_max·100 floored at 5%. Fixtures
+		// may publish several methods per unit with different maxes (e.g.
+		// cln-cdk-postgres: bolt11 500k + onchain 1M ⇒ 50% and 100%), so
+		// expected widths are derived per-row from the daemon's own numbers.
+		// Asserting the inline style also guards against a regression that
+		// silently leaves the `[style.width.%]` binding unbound.
 		const config = getConfig(testInfo.project.name);
 		const info = mint.getInfo(config);
 		const nut4 = nutBlock(info.nuts, 4);
+		const nut5 = nutBlock(info.nuts, 5);
 		test.skip(!nut4 || nut4.methods.length === 0, 'daemon publishes no nut4 methods');
 
+		const max_by_unit = new Map<string, number | null>();
+		for (const method of [...nut4!.methods, ...(nut5?.methods ?? [])]) {
+			const current = max_by_unit.get(method.unit);
+			if (method.max_amount === null) max_by_unit.set(method.unit, null);
+			else if (current !== null) max_by_unit.set(method.unit, Math.max(current ?? 0, method.max_amount));
+		}
+		const expectedWidth = (method: MintNutLimitMethod): number => {
+			if (method.max_amount === null) return 100;
+			const unit_max = max_by_unit.get(method.unit);
+			if (unit_max === null || unit_max === undefined || unit_max === 0) return 100;
+			return Math.max(5, (method.max_amount / unit_max) * 100);
+		};
+
 		const card = await openConfigCard(page);
-		const bars = card.locator('.limit-range-bar');
-		await expect(bars.first()).toHaveAttribute('style', /width:\s*100%/);
+		const columns: {label: string; methods: MintNutLimitMethod[]}[] = [{label: 'Minting Limits', methods: nut4!.methods}];
+		if (nut5 && nut5.methods.length > 0) columns.push({label: 'Melting Limits', methods: nut5.methods});
+		for (const column of columns) {
+			const bars = card.getByText(column.label, {exact: true}).locator('..').locator('.limit-range-bar');
+			for (let i = 0; i < column.methods.length; i++) {
+				const style = (await bars.nth(i).getAttribute('style')) ?? '';
+				const width = parseFloat(/width:\s*([\d.]+)%/.exec(style)?.[1] ?? 'NaN');
+				expect(width).toBeCloseTo(expectedWidth(column.methods[i]), 1);
+			}
+		}
 	});
 });
