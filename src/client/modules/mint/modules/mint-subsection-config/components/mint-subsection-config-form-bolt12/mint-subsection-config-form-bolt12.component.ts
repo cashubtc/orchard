@@ -67,9 +67,9 @@ export class MintSubsectionConfigFormBolt12Component implements OnChanges {
 
 	public valid_quotes = computed(() => {
 		const quotes = this.nut() === 'nut4' ? (this.quotes() as MintMintQuote[]) : (this.quotes() as MintMeltQuote[]);
-		const valid_state = this.nut() === 'nut4' ? MintQuoteState.Issued : MeltQuoteState.Paid;
+		const valid_states: string[] = this.nut() === 'nut4' ? [MintQuoteState.Paid, MintQuoteState.Issued] : [MeltQuoteState.Paid];
 		return quotes
-			.filter((quote) => quote.state === valid_state && quote.created_time && quote.created_time > 0 && quote.unit === this.unit())
+			.filter((quote) => valid_states.includes(quote.state) && quote.created_time && quote.created_time > 0 && quote.unit === this.unit())
 			.sort((a, b) => (a.created_time ?? 0) - (b.created_time ?? 0)) as MintMintQuote[] | MintMeltQuote[];
 	});
 
@@ -99,7 +99,7 @@ export class MintSubsectionConfigFormBolt12Component implements OnChanges {
 	}
 
 	private getEffectiveAmount(entity: MintMintQuote | MintMeltQuote): number {
-		if (entity instanceof MintMintQuote) return entity.amount_issued;
+		if (entity instanceof MintMintQuote) return entity.amount_paid;
 		return entity.amount;
 	}
 
