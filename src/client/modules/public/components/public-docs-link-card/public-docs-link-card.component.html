@@ -1,0 +1,21 @@
+<mat-card appearance="outlined" class="relative overflow-hidden docs-link-card">
+	<mat-card-content class="orc-surface-container-low-bg">
+		<div class="docs-link-card-content">
+			<div class="docs-link-card-icon">
+				<ng-content select="[card-icon]"></ng-content>
+			</div>
+			<div class="docs-link-card-copy">
+				<div class="title-m">
+					<ng-content select="[card-title]"></ng-content>
+				</div>
+				<div class="font-size-s orc-outline-color line-height-l">
+					<ng-content select="[card-body]"></ng-content>
+				</div>
+				<button mat-button class="docs-link-button p-h-1" (click)="onDocsLink()">
+					<span>{{ link_title() }}</span>
+					<mat-icon class="mat-symbol-outline">open_in_new</mat-icon>
+				</button>
+			</div>
+		</div>
+	</mat-card-content>
+</mat-card>

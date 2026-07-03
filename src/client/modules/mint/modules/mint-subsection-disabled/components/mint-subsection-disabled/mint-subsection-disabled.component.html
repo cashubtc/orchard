@@ -1,12 +1,10 @@
 <div class="mint-disabled-container p-1">
-	<div class="config-container">
-		<mat-form-field>
-			<mat-label>Mint Type</mat-label>
-			<mat-select [(value)]="type">
-				<mat-option value="cdk">cdk</mat-option>
-				<mat-option value="nutshell">nutshell</mat-option>
-			</mat-select>
-		</mat-form-field>
-		<orc-settings-general-env [env_config]="env_config"></orc-settings-general-env>
-	</div>
+	<orc-public-docs-link-card [docs_link]="docs_link" link_title="Mint configuration docs">
+		<mat-icon card-icon class="mat-symbol-outline">account_balance</mat-icon>
+		<div card-title>Mint Configuration</div>
+		<div card-body>
+			Cashu Mint configuration instructions now live in the official Orchard docs. Use the guide to connect cdk or Nutshell
+			through the mint API, database, and management RPC settings.
+		</div>
+	</orc-public-docs-link-card>
 </div>

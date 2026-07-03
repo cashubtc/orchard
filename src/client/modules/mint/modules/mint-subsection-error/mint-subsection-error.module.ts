@@ -7,7 +7,6 @@ import {ReactiveFormsModule as CoreReactiveFormsModule} from '@angular/forms';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatSelectModule} from '@angular/material/select';
 /* Application Dependencies */
-import {OrcSettingsGeneralModule} from '@client/modules/settings/modules/settings-general/settings-general.module';
 import {OrcErrorModule} from '@client/modules/error/error.module';
 /* Local Dependencies */
 import {MintSubsectionErrorComponent} from './components/mint-subsection-error/mint-subsection-error.component';
@@ -25,7 +24,6 @@ import {MintSubsectionErrorComponent} from './components/mint-subsection-error/m
 		CoreReactiveFormsModule,
 		MatFormFieldModule,
 		MatSelectModule,
-		OrcSettingsGeneralModule,
 		OrcErrorModule,
 	],
 	exports: [],
