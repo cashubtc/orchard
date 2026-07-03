@@ -6,6 +6,7 @@ import {RouterModule as CoreRouterModule} from '@angular/router';
 /* Vendor Dependencies */
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
+import {MatSelectModule} from '@angular/material/select';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatIconModule} from '@angular/material/icon';
 import {MatDialogModule} from '@angular/material/dialog';
@@ -30,6 +31,7 @@ import {MintSubsectionConfigFormEnabledDialogComponent} from './components/mint-
 import {MintSubsectionConfigFormQuoteTtlComponent} from './components/mint-subsection-config-form-quote-ttl/mint-subsection-config-form-quote-ttl.component';
 import {MintSubsectionConfigFormBolt11Component} from './components/mint-subsection-config-form-bolt11/mint-subsection-config-form-bolt11.component';
 import {MintSubsectionConfigFormBolt12Component} from './components/mint-subsection-config-form-bolt12/mint-subsection-config-form-bolt12.component';
+import {MintSubsectionConfigFormOnchainComponent} from './components/mint-subsection-config-form-onchain/mint-subsection-config-form-onchain.component';
 import {MintSubsectionConfigFormMinComponent} from './components/mint-subsection-config-form-min/mint-subsection-config-form-min.component';
 import {MintSubsectionConfigFormMaxComponent} from './components/mint-subsection-config-form-max/mint-subsection-config-form-max.component';
 import {MintSubsectionConfigChartQuoteTtlComponent} from './components/mint-subsection-config-chart-quote-ttl/mint-subsection-config-chart-quote-ttl.component';
@@ -56,6 +58,7 @@ import {MintSubsectionConfigNut29Component} from './components/mint-subsection-c
 		MintSubsectionConfigChartQuoteTtlComponent,
 		MintSubsectionConfigFormBolt11Component,
 		MintSubsectionConfigFormBolt12Component,
+		MintSubsectionConfigFormOnchainComponent,
 		MintSubsectionConfigFormMinComponent,
 		MintSubsectionConfigFormMaxComponent,
 		MintSubsectionConfigChartMethodComponent,
@@ -85,6 +88,7 @@ import {MintSubsectionConfigNut29Component} from './components/mint-subsection-c
 		MatCardModule,
 		MatFormFieldModule,
 		MatInputModule,
+		MatSelectModule,
 		MatSlideToggleModule,
 		MatDialogModule,
 		MatIconModule,

@@ -38,6 +38,7 @@ export function featuresFor(config: ConfigInfo): string[] {
 	const features: string[] = [];
 	if (config.tapd) features.push('tapd');
 	if (config.bolt12) features.push('bolt12');
+	if (config.onchain) features.push('onchain');
 	if (config.mainchain) features.push('mainchain');
 	if (config.appSettings?.ai_enabled === true) features.push('ai');
 	if (config.appSettings?.bitcoin_oracle === true) features.push('oracle');
@@ -76,6 +77,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bitcoin: true,
 		tapd: false,
 		bolt12: false,
+		onchain: false,
 		mainchain: false,
 		orchardUrl: 'http://localhost:3322',
 		...BASE,
@@ -96,6 +98,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bitcoin: true,
 		tapd: true,
 		bolt12: false,
+		onchain: false,
 		mainchain: false,
 		orchardUrl: 'http://localhost:3324',
 		...BASE,
@@ -123,6 +126,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bitcoin: true,
 		tapd: false,
 		bolt12: true,
+		onchain: true,
 		mainchain: false,
 		orchardUrl: 'http://localhost:3323',
 		...BASE,
@@ -153,6 +157,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bitcoin: true,
 		tapd: false,
 		bolt12: false,
+		onchain: false,
 		mainchain: true,
 		orchardUrl: 'http://localhost:3325',
 		...BASE,
@@ -183,6 +188,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bitcoin: false,
 		tapd: false,
 		bolt12: false,
+		onchain: false,
 		mainchain: false,
 		orchardUrl: 'http://localhost:3326',
 		...BASE,
@@ -263,7 +269,7 @@ export function lndDirForNode(config: ConfigInfo, node: LnNode): string {
  *  `mintd.toml` (cdk) or `compose.yml` (nutshell) so this stays correct
  *  when operators change mint configs. `sat` is always the first unit —
  *  both cdk and nutshell provision it by default; `usd` / `eur` are
- *  opt-in via `supported_units` (cdk fake_wallet) or
+ *  opt-in via a per-unit `[[ln]]` entry (cdk, since mintd 0.17) or
  *  `MINT_BACKEND_BOLT11_USD` / `_EUR` in the nutshell service env.
  *  Run from the repo root (playwright's cwd). */
 export function mintUnitsFor(config: ConfigInfo): MintUnit[] {
@@ -273,12 +279,18 @@ export function mintUnitsFor(config: ConfigInfo): MintUnit[] {
 
 	if (config.mint === 'cdk') {
 		const toml = stripComments(fs.readFileSync(path.join(dir, 'mintd.toml'), 'utf8'));
-		// [fake_wallet] supported_units = ["sat", "usd"] — real-LN cdk stacks
-		// omit this block and serve only sat.
-		const listed = [...toml.matchAll(/supported_units\s*=\s*\[([^\]]+)\]/g)].flatMap((m) =>
-			[...m[1].matchAll(/"(sat|usd|eur)"/g)].map((mm) => mm[1] as MintUnit),
-		);
-		for (const u of listed) if (!units.includes(u)) units.push(u);
+		// mintd 0.17 provisions one unit per `[ln]` / `[[ln]]` backend entry
+		// via its `unit` field. Collect only those in-section — `unit` also
+		// appears under [fake_wallet] custom methods / keyset rotations, which
+		// don't provision keysets. Real-LN cdk stacks serve only sat.
+		let in_ln = false;
+		for (const line of toml.split('\n')) {
+			const header = line.match(/^\s*\[\[?([^\]]+)\]\]?/);
+			if (header) in_ln = header[1] === 'ln';
+			if (!in_ln) continue;
+			const unit = line.match(/^\s*unit\s*=\s*"(sat|usd|eur)"/);
+			if (unit && !units.includes(unit[1] as MintUnit)) units.push(unit[1] as MintUnit);
+		}
 	} else {
 		const compose = stripComments(fs.readFileSync(path.join(dir, 'compose.yml'), 'utf8'));
 		if (/MINT_BACKEND_BOLT11_USD\s*=/.test(compose)) units.push('usd');

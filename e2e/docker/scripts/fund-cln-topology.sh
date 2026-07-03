@@ -109,6 +109,13 @@ check_lnd_carol_channel_active() {
     [ -n "$count" ] && [ "$count" -ge 1 ]
 }
 
+# Carol's p2p listener only binds at SERVER_ACTIVE; getinfo passes at RPC_ACTIVE already.
+check_lnd_carol_server_active() {
+    local state
+    state=$(lnd_carol GET /v1/state 2>/dev/null | jq -r '.state')
+    [ "$state" = "SERVER_ACTIVE" ]
+}
+
 log "creating bitcoind wallet"
 bcli listwallets 2>/dev/null | jq -e '.[] | select(. == "default")' >/dev/null 2>&1 \
     || bcli createwallet '["default"]' >/dev/null
@@ -146,6 +153,8 @@ ORCHARD_ID=$(cln orchard getinfo | jq -r '.id')
 CAROL_ID=$(lnd_carol GET /v1/getinfo | jq -r '.identity_pubkey')
 log "orchard id: ${ORCHARD_ID}"
 log "carol id:   ${CAROL_ID}"
+
+wait_for "lnd-carol server active" check_lnd_carol_server_active
 
 log "peering alice → orchard"
 cln alice connect "${ORCHARD_ID}@cln-orchard:9735" > /dev/null

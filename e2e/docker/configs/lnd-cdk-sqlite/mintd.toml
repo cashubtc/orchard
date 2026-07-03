@@ -16,8 +16,18 @@ urls = ["https://cdk-sat-lite.cash"]
 [database]
 engine = "sqlite"
 
+# cdk-mintd 0.17 made min/max mint+melt bounds required on each [ln] backend
+# (the example config shows them commented as optional, but the Ln struct has no
+# serde defaults — omitting them fails config parse with "data did not match any
+# variant of untagged enum LnOneOrMany"). 0.17 also reworked [ln] into a
+# single-or-many enum: keep a single [ln] table here for the one sat backend.
 [ln]
 ln_backend = "lnd"
+unit = "sat"
+min_mint = 1
+max_mint = 500000
+min_melt = 1
+max_melt = 500000
 
 [lnd]
 address = "https://lnd-orchard:10009"

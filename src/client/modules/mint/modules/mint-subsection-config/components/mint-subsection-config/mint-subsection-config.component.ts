@@ -14,7 +14,7 @@ import {
 	ViewChildren,
 	QueryList,
 } from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {FormGroup, FormControl, Validators} from '@angular/forms';
 import {toObservable} from '@angular/core/rxjs-interop';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
@@ -91,9 +91,11 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 	public mint_quotes: MintMintQuote[] = [];
 	public mint_quotes_bolt11: MintMintQuote[] = [];
 	public mint_quotes_bolt12: MintMintQuote[] = [];
+	public mint_quotes_onchain: MintMintQuote[] = [];
 	public melt_quotes: MintMeltQuote[] = [];
 	public melt_quotes_bolt11: MintMeltQuote[] = [];
 	public melt_quotes_bolt12: MintMeltQuote[] = [];
+	public melt_quotes_onchain: MintMeltQuote[] = [];
 	public nut15_methods: Nut15Method[] = [];
 	public nut17_commands: Nut17Commands[] = [];
 	public method_index: string[] = [];
@@ -189,6 +191,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 	private active_event: EventData | null = null;
 	private dirty_count: WritableSignal<number> = signal(0);
 	private dirty_count$ = toObservable(this.dirty_count);
+	private scroll_to: string | null = null;
 
 	constructor(
 		private settingAppService: SettingAppService,
@@ -199,7 +202,11 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 		public settingDeviceService: SettingDeviceService,
 		public breakpointObserver: BreakpointObserver,
 		public cdr: ChangeDetectorRef,
-	) {}
+		private router: Router,
+	) {
+		const nav = this.router.currentNavigation();
+		this.scroll_to = nav?.extras.state?.['scroll_to'] ?? null;
+	}
 
 	/* *******************************************************
 	   Initalization                      
@@ -232,6 +239,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 
 	ngAfterViewInit(): void {
 		this.updateTertiaryNav();
+		if (this.scroll_to) setTimeout(() => this.scrollToChart(this.scroll_to as TertiaryNav));
 	}
 
 	orchardOptionalInit(): void {
@@ -467,13 +475,14 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 		const melt_quotes_obs = this.mintService.loadMintMeltQuotes();
 
 		const [mint_quotes, melt_quotes] = await lastValueFrom(forkJoin([mint_quotes_obs, melt_quotes_obs]));
-
 		this.mint_quotes = mint_quotes;
 		this.mint_quotes_bolt11 = mint_quotes.filter((quote) => quote.payment_method === 'bolt11');
 		this.mint_quotes_bolt12 = mint_quotes.filter((quote) => quote.payment_method === 'bolt12');
+		this.mint_quotes_onchain = mint_quotes.filter((quote) => quote.payment_method === 'onchain');
 		this.melt_quotes = melt_quotes;
 		this.melt_quotes_bolt11 = melt_quotes.filter((quote) => quote.payment_method === 'bolt11');
 		this.melt_quotes_bolt12 = melt_quotes.filter((quote) => quote.payment_method === 'bolt12');
+		this.melt_quotes_onchain = melt_quotes.filter((quote) => quote.payment_method === 'onchain');
 	}
 
 	/* *******************************************************

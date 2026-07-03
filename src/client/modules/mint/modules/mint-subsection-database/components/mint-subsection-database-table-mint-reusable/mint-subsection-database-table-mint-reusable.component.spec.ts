@@ -4,19 +4,19 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {OrcMintSubsectionDatabaseModule} from '@client/modules/mint/modules/mint-subsection-database/mint-subsection-database.module';
 import {MintQuoteState} from '@shared/generated.types';
 /* Local Dependencies */
-import {MintSubsectionDatabaseTableMintBolt12Component} from './mint-subsection-database-table-mint-bolt12.component';
+import {MintSubsectionDatabaseTableMintReusableComponent} from './mint-subsection-database-table-mint-reusable.component';
 
-describe('MintSubsectionDatabaseTableMintBolt12Component', () => {
-	let component: MintSubsectionDatabaseTableMintBolt12Component;
-	let fixture: ComponentFixture<MintSubsectionDatabaseTableMintBolt12Component>;
+describe('MintSubsectionDatabaseTableMintReusableComponent', () => {
+	let component: MintSubsectionDatabaseTableMintReusableComponent;
+	let fixture: ComponentFixture<MintSubsectionDatabaseTableMintReusableComponent>;
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
 			imports: [OrcMintSubsectionDatabaseModule],
-			declarations: [MintSubsectionDatabaseTableMintBolt12Component],
+			declarations: [MintSubsectionDatabaseTableMintReusableComponent],
 		}).compileComponents();
 
-		fixture = TestBed.createComponent(MintSubsectionDatabaseTableMintBolt12Component);
+		fixture = TestBed.createComponent(MintSubsectionDatabaseTableMintReusableComponent);
 		component = fixture.componentInstance;
 		fixture.componentRef.setInput('quote', {
 			amount_paid: 0,

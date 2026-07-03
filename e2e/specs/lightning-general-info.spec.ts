@@ -25,7 +25,6 @@
  *     returns `'inactive'` for the private-range container IP)
  *   - empty-URIs branch (LND/CLN always emit at least one address on regtest)
  *   - `backend === false` (every e2e config feeds its mint off this LN node)
- * See `lightning-general-info.md` for the full state machine.
  */
 
 import {test, expect, type Locator, type Page} from '@playwright/test';
@@ -180,9 +179,6 @@ test.describe('lightning-general-info card', {tag: '@lightning'}, () => {
 		  - type:    'clearnet' (regtest)    → title reads "… clearnet connection"
 		  - uri:     full pubkey@address     → shown untruncated in .mega-string
 		  - status:  'inactive' (regtest)    → subtitle reads "Not reachable"
-
-		See lightning-general-info.md → "Child components → orc-network-connection"
-		for the full enumeration of child states.
 	******************************************************** */
 
 	test('clicking a URI chip opens the NetworkConnection dialog', async ({page}) => {

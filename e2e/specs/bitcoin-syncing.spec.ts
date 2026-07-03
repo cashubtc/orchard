@@ -24,8 +24,6 @@
  *     in CI)
  *   - degenerate `block: null` empty-cell render (mid-flight first-paint
  *     state, hard to reach without query-timing manipulation)
- * See `bitcoin-syncing.md` for the full
- * state machine.
  */
 
 import {test, expect, type Locator, type Page} from '@playwright/test';

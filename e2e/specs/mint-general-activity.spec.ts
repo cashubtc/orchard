@@ -43,7 +43,6 @@
  *     helper, exhaustive coverage in the Karma spec
  *   - chart.js gradient colour fidelity — `unit-better` (canvas pixel
  *     diffing is flaky in headless Chrome)
- * See `mint-general-activity.md` for the full state machine.
  */
 
 import {test, expect, type Locator, type Page} from '@playwright/test';

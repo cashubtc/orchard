@@ -71,6 +71,13 @@ check_lnd_channel_active() {
     [ -n "$count" ] && [ "$count" -ge 1 ]
 }
 
+# ConnectPeer/OpenChannel need SERVER_ACTIVE; getinfo passes at RPC_ACTIVE already.
+check_lnd_server_active() {
+    local state
+    state=$(lnd "$1" GET /v1/state 2>/dev/null | jq -r '.state')
+    [ "$state" = "SERVER_ACTIVE" ]
+}
+
 log "creating bitcoind wallet"
 bcli listwallets 2>/dev/null | jq -e '.[] | select(. == "default")' >/dev/null 2>&1 \
     || bcli createwallet '["default"]' >/dev/null
@@ -93,6 +100,10 @@ bcli generatetoaddress "[6, \"${MINER_ADDR}\"]" >/dev/null
 # 10 BTC = 1_000_000_000 sat; require ≥ 900M to allow fee buffer.
 for node in orchard alice bob; do
     wait_for "lnd-${node} confirmed balance ≥ 9 BTC" check_lnd_balance "$node" 900000000
+done
+
+for node in orchard alice bob; do
+    wait_for "lnd-${node} server active" check_lnd_server_active "$node"
 done
 
 ORCHARD_PK=$(lnd orchard GET /v1/getinfo | jq -r '.identity_pubkey')

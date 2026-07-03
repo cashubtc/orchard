@@ -253,8 +253,7 @@ test.describe('lightning-general-channel-summary card', {tag: '@lightning'}, () 
 		and a `check` mat-icon; the other item has the icon element but no
 		glyph text.
 
-		See lightning-general-channel-summary.md → "Child components → mat-menu"
-		for the full contract. Tests here assert: both items always present,
+		Tests here assert: both items always present,
 		selection indicator flips, backdrop-click dismissal is non-mutating.
 	******************************************************** */
 

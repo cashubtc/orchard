@@ -22,11 +22,51 @@ engine = "postgres"
 url = "postgresql://cashu:cashu@postgres:5432/cdk"
 tls_mode = "disable"
 
+# cdk-mintd 0.17 made min/max mint+melt bounds required on each [ln] backend
+# and reworked [ln] into a single-or-many enum. Single cln backend → keep one
+# [ln] table; omitting the bounds fails parse with "data did not match any
+# variant of untagged enum LnOneOrMany".
 [ln]
 ln_backend = "cln"
+unit = "sat"
+min_mint = 1
+max_mint = 500000
+min_melt = 1
+max_melt = 500000
 
 [cln]
 rpc_path = "/cln/regtest/lightning-rpc"
+
+# cdk-mintd 0.17 added onchain (NUT-30) mint+melt via a BDK backend that talks
+# straight to Bitcoin Core RPC — independent of the [ln] cln backend above, so
+# the mint advertises bolt11/bolt12 (cln) AND onchain (bdk) at once. Points at
+# the same regtest bitcoind the LN nodes use. Regtest only — the mnemonic is a
+# throwaway BIP39 test seed (distinct from the mint's info seed). DO NOT reuse.
+[onchain]
+onchain_backend = "bdk"
+min_mint = 1000
+max_mint = 1000000
+min_melt = 1000
+max_melt = 1000000
+
+[bdk]
+mnemonic = "zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong"
+network = "regtest"
+num_confs = 1
+min_receive_amount_sat = 1000
+min_send_amount_sat = 546
+chain_source_type = "bitcoinrpc"
+bitcoind_rpc_host = "bitcoind"
+bitcoind_rpc_port = 18443
+# Mirrors BTC_RPC_USER / BTC_RPC_PASS from the stack env (regtest polar/polar).
+bitcoind_rpc_user = "polar"
+bitcoind_rpc_password = "polar"
+
+# Regtest sits at ~1 sat/vB, so shrink the mainnet-tuned safety margins or every
+# onchain melt quote massively over-reserves (see cdk example.config.toml notes).
+[bdk.batch_config]
+quote_fixed_safety_sat = 100
+quote_safety_multiplier = 1.10
 
 [mint_management_rpc]
 enabled = true

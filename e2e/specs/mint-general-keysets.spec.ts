@@ -30,8 +30,7 @@
  *     archive); both percentage labels live in [0, 100] and agree with
  *     the sub-bar widths
  *
- * States the component supports but this spec does NOT cover (see
- * `mint-general-keysets.md` → "Skip taxonomy"):
+ * States the component supports but this spec does NOT cover:
  *   - mixed active/inactive after rotation (`disruptive` — would mutate
  *     downstream specs that assume one active keyset per unit)
  *   - empty `keysets()` (`dead-branch` — daemons auto-provision sat)
@@ -39,7 +38,6 @@
  *     specs that share the resolver)
  *   - multi-unit chip rendering (sat + usd / eur) — `stack-only`, only
  *     reachable on `fake-cdk-postgres` which isn't in today's matrix
- * See `mint-general-keysets.md` for the full state machine.
  */
 
 import {test, expect, type Locator, type Page} from '@playwright/test';

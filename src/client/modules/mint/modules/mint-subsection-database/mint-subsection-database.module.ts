@@ -40,7 +40,7 @@ import {MintSubsectionDatabaseChartComponent} from './components/mint-subsection
 import {MintSubsectionDatabaseChartLegendComponent} from './components/mint-subsection-database-chart-legend/mint-subsection-database-chart-legend.component';
 import {MintSubsectionDatabaseTableComponent} from './components/mint-subsection-database-table/mint-subsection-database-table.component';
 import {MintSubsectionDatabaseTableMintComponent} from './components/mint-subsection-database-table-mint/mint-subsection-database-table-mint.component';
-import {MintSubsectionDatabaseTableMintBolt12Component} from './components/mint-subsection-database-table-mint-bolt12/mint-subsection-database-table-mint-bolt12.component';
+import {MintSubsectionDatabaseTableMintReusableComponent} from './components/mint-subsection-database-table-mint-reusable/mint-subsection-database-table-mint-reusable.component';
 import {MintSubsectionDatabaseTableMeltComponent} from './components/mint-subsection-database-table-melt/mint-subsection-database-table-melt.component';
 import {MintSubsectionDatabaseDialogQuoteComponent} from './components/mint-subsection-database-dialog-quote/mint-subsection-database-dialog-quote.component';
 import {MintSubsectionDatabaseTableSwapComponent} from './components/mint-subsection-database-table-swap/mint-subsection-database-table-swap.component';
@@ -55,7 +55,7 @@ import {MintSubsectionDatabaseTableSwapComponent} from './components/mint-subsec
 		MintSubsectionDatabaseChartLegendComponent,
 		MintSubsectionDatabaseTableComponent,
 		MintSubsectionDatabaseTableMintComponent,
-		MintSubsectionDatabaseTableMintBolt12Component,
+		MintSubsectionDatabaseTableMintReusableComponent,
 		MintSubsectionDatabaseTableMeltComponent,
 		MintSubsectionDatabaseDialogQuoteComponent,
 		MintSubsectionDatabaseTableSwapComponent,

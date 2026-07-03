@@ -14,6 +14,7 @@ import {LightningInfoService} from './lninfo.service';
 import {OrchardLightningInfo} from './lninfo.model';
 
 describe('LightningInfoService', () => {
+	let module_ref: TestingModule;
 	let lightningInfoService: LightningInfoService;
 	let lightningService: jest.Mocked<LightningService>;
 	let errorService: jest.Mocked<ErrorService>;
@@ -30,6 +31,7 @@ describe('LightningInfoService', () => {
 			],
 		}).compile();
 
+		module_ref = module;
 		lightningInfoService = module.get<LightningInfoService>(LightningInfoService);
 		lightningService = module.get(LightningService);
 		errorService = module.get(ErrorService);
@@ -71,6 +73,29 @@ describe('LightningInfoService', () => {
 		// Assert
 		expect(result).toBeInstanceOf(OrchardLightningInfo);
 		expect(lightningService.getLightningInfo).toHaveBeenCalledTimes(1);
+	});
+
+	it('determines the mint backend from the most recent lightning quote, skipping onchain quotes', async () => {
+		// Arrange
+		const rpc_info: any = {identity_pubkey: 'pub', chains: [], uris: [], features: {}};
+		lightningService.getLightningInfo.mockResolvedValue(rpc_info);
+		const config_service = module_ref.get(ConfigService) as jest.Mocked<ConfigService>;
+		(config_service.get as jest.Mock).mockReturnValue('set');
+		const mint_db = module_ref.get(CashuMintDatabaseService) as jest.Mocked<CashuMintDatabaseService>;
+		(mint_db.listMintQuotes as jest.Mock).mockResolvedValue([
+			{payment_method: 'onchain', request: 'bcrt1qexampleonchainaddress'},
+			{payment_method: 'bolt12', request: 'lno1exampleoffer'},
+			{payment_method: 'bolt11', request: 'lnbcrt500n1examplebolt11'},
+		]);
+		lightningService.getLightningRequest.mockResolvedValue({destination: 'pub'} as any);
+
+		// Act
+		const result = await lightningInfoService.getLightningInfo('TAG');
+
+		// Assert
+		expect(result.backend).toBe(true);
+		expect(lightningService.getLightningRequest).toHaveBeenCalledTimes(1);
+		expect(lightningService.getLightningRequest).toHaveBeenCalledWith('lno1exampleoffer');
 	});
 
 	it('wraps errors via resolveError and throws OrchardApiError', async () => {

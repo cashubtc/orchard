@@ -1,5 +1,7 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {Router} from '@angular/router';
+import {MatIconTestingModule} from '@angular/material/icon/testing';
 /* Native Dependencies */
 import {OrcMintGeneralModule} from '@client/modules/mint/modules/mint-general/mint-general.module';
 import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
@@ -47,7 +49,7 @@ describe('MintGeneralConfigComponent', () => {
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			imports: [OrcMintGeneralModule],
+			imports: [OrcMintGeneralModule, MatIconTestingModule],
 		}).compileComponents();
 
 		fixture = TestBed.createComponent(MintGeneralConfigComponent);
@@ -112,37 +114,46 @@ describe('MintGeneralConfigComponent', () => {
 		});
 	});
 
-	describe('minting_status', () => {
-		it('should return active when nut4 is not disabled', () => {
+	describe('supported_methods', () => {
+		it('should return empty array when info is null', () => {
+			expect(component.supported_methods()).toEqual([]);
+		});
+
+		it('should dedupe methods shared by nut4 and nut5', () => {
 			fixture.componentRef.setInput('info', buildMockInfo());
 			fixture.detectChanges();
 
-			expect(component.minting_status()).toBe('active');
+			expect(component.supported_methods()).toEqual(['bolt11']);
 		});
 
-		it('should return inactive when nut4 is disabled', () => {
-			const info = buildMockInfo({nuts: buildNuts({nut4: {disabled: true, methods: []}})});
+		it('should include methods unique to either nut', () => {
+			const info = buildMockInfo({
+				nuts: buildNuts({
+					nut4: {
+						disabled: false,
+						methods: [
+							{method: 'bolt11', unit: 'sat', min_amount: 1, max_amount: 100000},
+							{method: 'onchain', unit: 'sat', min_amount: 1000, max_amount: null},
+						],
+					},
+					nut5: {disabled: false, methods: [{method: 'bolt12', unit: 'sat', min_amount: 1, max_amount: 50000}]},
+				}),
+			});
 			fixture.componentRef.setInput('info', info);
 			fixture.detectChanges();
 
-			expect(component.minting_status()).toBe('inactive');
+			expect(component.supported_methods()).toEqual(['bolt11', 'onchain', 'bolt12']);
 		});
 	});
 
-	describe('melting_status', () => {
-		it('should return active when nut5 is not disabled', () => {
-			fixture.componentRef.setInput('info', buildMockInfo());
-			fixture.detectChanges();
+	describe('onNutClick', () => {
+		it('should navigate to the config page with the nut scroll target', () => {
+			const router = TestBed.inject(Router);
+			const navigate_spy = spyOn(router, 'navigate');
 
-			expect(component.melting_status()).toBe('active');
-		});
+			component.onNutClick(4);
 
-		it('should return inactive when nut5 is disabled', () => {
-			const info = buildMockInfo({nuts: buildNuts({nut5: {disabled: true, methods: []}})});
-			fixture.componentRef.setInput('info', info);
-			fixture.detectChanges();
-
-			expect(component.melting_status()).toBe('inactive');
+			expect(navigate_spy).toHaveBeenCalledWith(['mint', 'config'], {state: {scroll_to: 'nav4'}});
 		});
 	});
 

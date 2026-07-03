@@ -14,9 +14,7 @@
 					</orc-button-copy>
 				</div>
 				<div class="flex flex-column flex-gap-0-5">
-					<div class="orc-outline-color font-weight-extra-light text-nowrap">
-						{{ quote().payment_method == 'bolt11' ? 'Bolt 11 Invoice' : 'Bolt 12 Offer' }}
-					</div>
+					<div class="orc-outline-color font-weight-extra-light text-nowrap">{{ request_label() }}</div>
 					<div class="w-max-36">
 						<orc-button-copy [text]="quote().request" size="sm">
 							<span class="mega-string">{{ quote().request }}</span>
@@ -33,7 +31,7 @@
 						}
 					</div>
 				}
-				@if (bitcoin_oracle_data(); as data) {
+				@if ((quote().amount || quote().amount_paid) && bitcoin_oracle_data(); as data) {
 					<div class="flex flex-column flex-gap-0-5">
 						<div class="flex flex-items-center flex-gap-0-5">
 							<orc-graphic-oracle-icon [size]="2"></orc-graphic-oracle-icon>
@@ -112,9 +110,10 @@
 						</div>
 					</div>
 				}
-
-				@if (quote().payment_method == 'bolt12') {
-					<orc-mint-subsection-database-table-mint-bolt12 [quote]="quote()"></orc-mint-subsection-database-table-mint-bolt12>
+			</div>
+			<div class="flex flex-column flex-gap-2">
+				@if (quote().payment_method == 'bolt12' || quote().payment_method == 'onchain') {
+					<orc-mint-subsection-database-table-mint-reusable [quote]="quote()"></orc-mint-subsection-database-table-mint-reusable>
 				}
 			</div>
 		</div>

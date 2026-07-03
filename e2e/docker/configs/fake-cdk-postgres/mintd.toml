@@ -1,11 +1,12 @@
 # cdk-mintd config for Orchard e2e fake-cdk-postgres. Regtest only — mnemonic
 # is the famous BIP39 test seed, DO NOT reuse in any real deployment.
 #
-# Multi-unit fake_wallet: cdk-mintd only supports one ln_backend at runtime,
-# but fake_wallet is the one backend that can serve multiple units in a
-# single mint. Sat + usd keysets are auto-provisioned from supported_units.
-# Delay values are zeroed so quotes auto-confirm immediately — there is no
-# real LN node behind this mint.
+# Multi-unit fake_wallet: cdk-mintd 0.17 reworked [ln] into a single-or-many
+# enum and dropped [fake_wallet].supported_units — supported units are now
+# expressed as one [[ln]] array entry per unit (sat + usd here). Each entry
+# also requires min/max mint+melt bounds, else config parse fails with "data
+# did not match any variant of untagged enum LnOneOrMany". Delay values are
+# zeroed so quotes auto-confirm immediately — there is no real LN node here.
 
 [info]
 url = "http://cdk-mintd:3341"
@@ -22,11 +23,23 @@ urls = ["https://cdk-multi-pro.cash"]
 [database]
 engine = "postgres"
 
-[ln]
+[[ln]]
 ln_backend = "fakewallet"
+unit = "sat"
+min_mint = 1
+max_mint = 500000
+min_melt = 1
+max_melt = 500000
+
+[[ln]]
+ln_backend = "fakewallet"
+unit = "usd"
+min_mint = 1
+max_mint = 500000
+min_melt = 1
+max_melt = 500000
 
 [fake_wallet]
-supported_units = ["sat", "usd"]
 fee_percent = 0.0
 reserve_fee_min = 0
 min_delay_time = 0

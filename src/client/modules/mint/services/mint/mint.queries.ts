@@ -230,6 +230,7 @@ query MintMintQuotes($units: [MintUnit!], $states: [MintQuoteState!], $date_star
 		id
 		amount
 		amount_issued
+		amount_paid
 		unit
 		state
 		issued_time

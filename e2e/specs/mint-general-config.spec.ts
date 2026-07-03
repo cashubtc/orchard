@@ -31,31 +31,30 @@
  *   - chip set: 16 chips in schema order, dot palette per
  *     `getNutStatus()`'s rules (active for NUT-04/05 not-disabled,
  *     enabled for any other supported NUT, disabled for `null`)
- *   - status pills: "Minting enabled|disabled" and
- *     "Melting enabled|disabled" reflect `nut4.disabled` / `nut5.disabled`
+ *   - supported methods: one mat-chip per distinct `method` across
+ *     `nut4.methods` + `nut5.methods` (deduped, first-seen order),
+ *     labelled by the `orc-mint-general-payment-method` badge
+ *     (BOLT 11 / BOLT 12 / ONCHAIN, raw string fallback). Replaced
+ *     the old "Minting/Melting enabled|disabled" pills, whose state
+ *     was redundant with the NUT-04/05 chip dot palette.
  *   - limit rows: one row per `nut4.methods[]` / `nut5.methods[]` entry,
  *     each rendering `orc-graphic-asset` for the unit, an
  *     `orc-mint-general-payment-method` badge for the method, and the
- *     min → max numeric range (with `1` / `∞` fallbacks for null)
+ *     min → max numeric range (with `1` / `∞` fallbacks for null).
+ *     cdk fixtures publish multiple methods per direction (bolt11 +
+ *     bolt12 + onchain, plus paypal and a usd unit on fake-cdk), so
+ *     multi-method bar scaling and mixed-unit rows are exercised live.
  *
- * States the component supports but this spec does NOT cover (see
- * `mint-general-config.md` → "Skip taxonomy"):
+ * States the component supports but this spec does NOT cover:
  *   - `nut4.disabled`/`nut5.disabled` red palettes (no fixture toggles
  *     these — would need a dedicated minting-disabled docker config)
- *   - BOLT 12 method rendering (no fixture publishes `bolt12` in
- *     `nuts.nut4.methods`/`nuts.nut5.methods`; the LN backend on
- *     cln-cdk-postgres speaks bolt12 but its mintd.toml advertises only
- *     `bolt11` to the cashu API)
- *   - multi-method bar-width scaling with the 5% floor (only one row
- *     per direction on every fixture; covered in unit tests instead)
- *   - mixed-units rendering (sat + usd) — only fake-cdk-postgres
- *     advertises usd and that stack is not in the e2e mint matrix
+ *   - the 5% bar-width floor (no fixture publishes a >20:1 max ratio
+ *     within one unit; covered in unit tests instead)
  *   - NUT-21 / NUT-22 populated chip palette (`enabled` branch) — no
  *     fixture publishes auth-enabled nut21/22 today, so only the `null`
  *     → `disabled` branch is reachable here
  *   - `info()` null fallthrough — parent only mounts the card after
  *     the resolver succeeds, so this is dead from production parents
- * See `mint-general-config.md` for the full state machine.
  */
 
 import {test, expect, type Locator, type Page} from '@playwright/test';
@@ -178,12 +177,14 @@ function expectedMaxDisplay(method: MintNutLimitMethod): number | '∞' {
 	return method.max_amount ?? '∞';
 }
 
-/** Map `bolt11` → `BOLT 11`, `bolt12` → `BOLT 12`, anything else →
- *  the raw method string. Mirrors `mint-general-payment-method`'s
- *  template `@switch` so the assertion is unambiguous. */
+/** Map `bolt11` → `BOLT 11`, `bolt12` → `BOLT 12`, `onchain` → `ONCHAIN`,
+ *  anything else (e.g. fakewallet's `paypal`) → the raw method string.
+ *  Mirrors `mint-general-payment-method`'s template `@switch` so the
+ *  assertion is unambiguous. */
 function expectedMethodLabel(method: string): string {
 	if (method === 'bolt11') return 'BOLT 11';
 	if (method === 'bolt12') return 'BOLT 12';
+	if (method === 'onchain') return 'ONCHAIN';
 	return method;
 }
 
@@ -328,53 +329,29 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 		expect(new Set(parsed).size).toBe(parsed.length);
 	});
 
-	test('minting status pill reflects nut4.disabled', async ({page}, testInfo) => {
-		const config = getConfig(testInfo.project.name);
-		const info = mint.getInfo(config);
-		const nut4 = nutBlock(info.nuts, 4);
-		test.skip(!nut4, 'daemon does not publish nut4 — pill block contract not assertable');
-
+	test('renders the "Supported Methods" caption above the chip set', async ({page}) => {
 		const card = await openConfigCard(page);
-		const expected_text = nut4!.disabled ? 'Minting disabled' : 'Minting enabled';
-		await expect(card.getByText(expected_text, {exact: true})).toBeVisible();
+		await expect(card.getByText('Supported Methods', {exact: true})).toBeVisible();
 	});
 
-	test('minting pill dot carries the active palette when nut4.disabled is false', async ({page}, testInfo) => {
-		// Pill dot uses the same `active`/`inactive` palette as the
-		// NUT-04 chip — green when minting is on. Asserts the pill
-		// graphic and the chip stay coherent (both bound to the same
-		// `nut4.disabled` source) so a regression that flips one but
-		// not the other surfaces here.
+	test('supported-methods chip set lists the deduped union of nut4/nut5 methods', async ({page}, testInfo) => {
+		// The card renders one mat-chip per distinct `method` string across
+		// `nut4.methods` then `nut5.methods`, in first-seen order (the
+		// component dedupes via `new Set`). This block replaced the old
+		// "Minting/Melting enabled" pills — the pill state was redundant
+		// with the NUT-04/05 chip dot palette asserted above.
 		const config = getConfig(testInfo.project.name);
 		const info = mint.getInfo(config);
-		const nut4 = nutBlock(info.nuts, 4);
-		test.skip(!nut4 || nut4.disabled, 'fixture toggles nut4.disabled — covered in karma');
+		const methods = [...(nutBlock(info.nuts, 4)?.methods ?? []), ...(nutBlock(info.nuts, 5)?.methods ?? [])];
+		const expected = [...new Set(methods.map((m) => m.method))];
+		test.skip(expected.length === 0, 'daemon publishes no nut4/nut5 methods — chip set collapses');
 
 		const card = await openConfigCard(page);
-		const pill = card.getByText('Minting enabled', {exact: true}).locator('..');
-		await expect(pill.locator('.indicator-circle')).toHaveClass(/orc-status-active-bg/);
-	});
-
-	test('melting status pill reflects nut5.disabled', async ({page}, testInfo) => {
-		const config = getConfig(testInfo.project.name);
-		const info = mint.getInfo(config);
-		const nut5 = nutBlock(info.nuts, 5);
-		test.skip(!nut5, 'daemon does not publish nut5');
-
-		const card = await openConfigCard(page);
-		const expected_text = nut5!.disabled ? 'Melting disabled' : 'Melting enabled';
-		await expect(card.getByText(expected_text, {exact: true})).toBeVisible();
-	});
-
-	test('melting pill dot carries the active palette when nut5.disabled is false', async ({page}, testInfo) => {
-		const config = getConfig(testInfo.project.name);
-		const info = mint.getInfo(config);
-		const nut5 = nutBlock(info.nuts, 5);
-		test.skip(!nut5 || nut5.disabled, 'fixture toggles nut5.disabled — covered in karma');
-
-		const card = await openConfigCard(page);
-		const pill = card.getByText('Melting enabled', {exact: true}).locator('..');
-		await expect(pill.locator('.indicator-circle')).toHaveClass(/orc-status-active-bg/);
+		const chips = card.getByText('Supported Methods', {exact: true}).locator('..').locator('mat-chip');
+		await expect(chips).toHaveCount(expected.length);
+		for (let i = 0; i < expected.length; i++) {
+			await expect(chips.nth(i)).toContainText(expectedMethodLabel(expected[i]));
+		}
 	});
 
 	test('renders one minting-limit row per `nut4.methods[]` entry', async ({page}, testInfo) => {
@@ -495,23 +472,49 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 		}
 	});
 
-	test('limit row track bar renders at 100% width on every fixture', async ({page}, testInfo) => {
-		// `getTrackWidthPercent` runs the bar to 100% in three live cases:
-		//   - the row's own `max_amount` is null (nutshell, both rows)
-		//   - the unit's largest max in the union is null (same case)
-		//   - the row IS the unit's largest (cdk, single sat row hits 100)
-		// All current fixtures have one method per direction in the `sat`
-		// unit, so every visible bar should render at 100%. Asserts the
-		// inline style is set by Angular (the `[style.width.%]` binding
-		// produces `width: 100%`) — guards against a regression that
-		// silently leaves the bar unbound.
+	test('limit row track bars scale each row against the unit max published by the daemon', async ({page}, testInfo) => {
+		// `getTrackWidthPercent` scales every bar against the largest
+		// `max_amount` in its unit across the union of minting and melting
+		// rows: a null row max (or a null/absent unit max) pins the bar to
+		// 100%, otherwise width = max/unit_max·100 floored at 5%. Fixtures
+		// may publish several methods per unit with different maxes (e.g.
+		// cln-cdk-postgres: bolt11 500k + onchain 1M ⇒ 50% and 100%), so
+		// expected widths are derived per-row from the daemon's own numbers.
+		// Asserting the inline style also guards against a regression that
+		// silently leaves the `[style.width.%]` binding unbound.
 		const config = getConfig(testInfo.project.name);
 		const info = mint.getInfo(config);
 		const nut4 = nutBlock(info.nuts, 4);
+		const nut5 = nutBlock(info.nuts, 5);
 		test.skip(!nut4 || nut4.methods.length === 0, 'daemon publishes no nut4 methods');
 
+		// `== null` throughout: cdk publishes unbounded maxes as literal
+		// `null`, nutshell omits the key entirely (`undefined`). The
+		// component normalizes both to `null` in `mapMethodLimits` before
+		// `getTrackWidthPercent` runs, so the mirror must too.
+		const max_by_unit = new Map<string, number | null>();
+		for (const method of [...nut4!.methods, ...(nut5?.methods ?? [])]) {
+			const current = max_by_unit.get(method.unit);
+			if (method.max_amount == null) max_by_unit.set(method.unit, null);
+			else if (current !== null) max_by_unit.set(method.unit, Math.max(current ?? 0, method.max_amount));
+		}
+		const expectedWidth = (method: MintNutLimitMethod): number => {
+			if (method.max_amount == null) return 100;
+			const unit_max = max_by_unit.get(method.unit);
+			if (unit_max === null || unit_max === undefined || unit_max === 0) return 100;
+			return Math.max(5, (method.max_amount / unit_max) * 100);
+		};
+
 		const card = await openConfigCard(page);
-		const bars = card.locator('.limit-range-bar');
-		await expect(bars.first()).toHaveAttribute('style', /width:\s*100%/);
+		const columns: {label: string; methods: MintNutLimitMethod[]}[] = [{label: 'Minting Limits', methods: nut4!.methods}];
+		if (nut5 && nut5.methods.length > 0) columns.push({label: 'Melting Limits', methods: nut5.methods});
+		for (const column of columns) {
+			const bars = card.getByText(column.label, {exact: true}).locator('..').locator('.limit-range-bar');
+			for (let i = 0; i < column.methods.length; i++) {
+				const style = (await bars.nth(i).getAttribute('style')) ?? '';
+				const width = parseFloat(/width:\s*([\d.]+)%/.exec(style)?.[1] ?? 'NaN');
+				expect(width).toBeCloseTo(expectedWidth(column.methods[i]), 1);
+			}
+		}
 	});
 });

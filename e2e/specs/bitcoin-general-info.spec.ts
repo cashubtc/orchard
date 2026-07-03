@@ -16,7 +16,6 @@
  *   - `offline` (requires `docker pause bitcoind`, disruptive to sibling specs)
  *   - `syncing` (regtest can't produce IBD without a synthetic stall)
  *   - URI chip rendering + QR dialog (regtest never emits localaddresses)
- * See `bitcoin-general-info.md` for the full state machine.
  */
 
 import {test, expect, type Locator, type Page} from '@playwright/test';

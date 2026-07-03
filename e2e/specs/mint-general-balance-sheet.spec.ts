@@ -30,9 +30,7 @@
  *   - reserve `< 1` insolvent state (regtest fund-topology never sets up)
  *   - amount-fidelity differential against the LN node's channel local
  *     balance (`ln.localChannelBalance(config)` helper not in
- *     e2e/helpers/backend.ts yet — see mint-general-balance-sheet.md
- *     "Differential oracles" for the gap).
- * See `mint-general-balance-sheet.md` for the full state machine.
+ *     e2e/helpers/backend.ts yet).
  */
 
 import {test, expect, type Locator, type Page} from '@playwright/test';

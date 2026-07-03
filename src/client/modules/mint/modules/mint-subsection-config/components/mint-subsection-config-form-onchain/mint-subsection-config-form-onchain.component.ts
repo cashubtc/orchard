@@ -1,7 +1,6 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, input, output, signal, computed, SimpleChanges, OnChanges} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, input, output, signal, SimpleChanges, OnChanges} from '@angular/core';
 import {FormGroup} from '@angular/forms';
-import {MatSlideToggleChange} from '@angular/material/slide-toggle';
 /* Application Dependencies */
 import {MintMintQuote} from '@client/modules/mint/classes/mint-mint-quote.class';
 import {MintMeltQuote} from '@client/modules/mint/classes/mint-melt-quote.class';
@@ -12,21 +11,21 @@ import {MintConfigStats} from '@client/modules/mint/modules/mint-subsection-conf
 import {MintQuoteState, MeltQuoteState, OrchardNut4Method, OrchardNut5Method} from '@shared/generated.types';
 
 @Component({
-	selector: 'orc-mint-subsection-config-form-bolt12',
+	selector: 'orc-mint-subsection-config-form-onchain',
 	standalone: false,
-	templateUrl: './mint-subsection-config-form-bolt12.component.html',
-	styleUrl: './mint-subsection-config-form-bolt12.component.scss',
+	templateUrl: './mint-subsection-config-form-onchain.component.html',
+	styleUrl: './mint-subsection-config-form-onchain.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MintSubsectionConfigFormBolt12Component implements OnChanges {
-	public nut = input.required<'nut4' | 'nut5'>();
-	public unit = input.required<string>();
-	public method = input.required<string>();
-	public form_group = input.required<FormGroup>();
-	public form_status = input<boolean>(false);
-	public locale = input.required<string>();
-	public loading = input.required<boolean>();
-	public quotes = input.required<MintMintQuote[] | MintMeltQuote[]>();
+export class MintSubsectionConfigFormOnchainComponent implements OnChanges {
+	public nut = input.required<'nut4' | 'nut5'>(); // which nut configuration this controls
+	public unit = input.required<string>(); // unit to display (e.g. 'sat')
+	public method = input.required<string>(); // payment method (e.g. 'onchain')
+	public form_group = input.required<FormGroup>(); // form group containing the onchain controls
+	public locale = input.required<string>(); // locale for number formatting
+	public loading = input.required<boolean>(); // whether data is loading
+	public quotes = input.required<MintMintQuote[] | MintMeltQuote[]>(); // quotes to display in chart
+	public confirmations = input<number>(1); // required confirmations for incoming payments (set in mint config)
 
 	public update = output<{
 		nut: 'nut4' | 'nut5';
@@ -34,35 +33,30 @@ export class MintSubsectionConfigFormBolt12Component implements OnChanges {
 		method: string;
 		control_name: keyof OrchardNut4Method | keyof OrchardNut5Method;
 		form_group: FormGroup;
-	}>();
+	}>(); // emitted when form is submitted
 	public cancel = output<{
 		nut: 'nut4' | 'nut5';
 		unit: string;
 		method: string;
 		control_name: keyof OrchardNut4Method | keyof OrchardNut5Method;
 		form_group: FormGroup;
-	}>();
+	}>(); // emitted when form is cancelled
 
-	public min_hot = signal<boolean>(false);
-	public max_hot = signal<boolean>(false);
+	public confirmation_options: number[] = Array.from({length: 12}, (_, index) => index + 1); // selectable confirmation counts
+
+	public min_hot = signal<boolean>(false); // tracks if min input is hot
+	public max_hot = signal<boolean>(false); // tracks if max input is hot
+	public help_status = signal<boolean>(false); // tracks if the help is visible
 	public stat_amounts = signal<Record<string, number>[]>([]); // amounts for the stats
 	public stats = signal<MintConfigStats>({
 		avg: 0,
 		median: 0,
 		max: 0,
 		min: 0,
-	}); // stats for the quote ttl
+	}); // stats for the quotes
 
-	public form_bolt12 = computed<FormGroup>(() => {
+	public form_onchain = computed<FormGroup>(() => {
 		return this.form_group().get(this.unit())?.get(this.method()) as FormGroup;
-	});
-
-	public toggle_control = computed<keyof OrchardNut4Method | keyof OrchardNut5Method>(() => {
-		return this.nut() === 'nut4' ? 'description' : 'amountless';
-	});
-
-	public toggle_control_name = computed<string>(() => {
-		return this.nut() === 'nut4' ? 'Description' : 'Amountless';
 	});
 
 	public valid_quotes = computed(() => {
@@ -76,9 +70,6 @@ export class MintSubsectionConfigFormBolt12Component implements OnChanges {
 	});
 
 	ngOnChanges(changes: SimpleChanges): void {
-		if (changes['form_status'] && this.form_status() === true) {
-			this.form_bolt12().get(this.toggle_control())?.disable();
-		}
 		if (changes['loading'] && this.loading() === false) {
 			this.setStats();
 		}
@@ -140,11 +131,6 @@ export class MintSubsectionConfigFormBolt12Component implements OnChanges {
 			form_group: this.form_group(),
 			control_name: control_name,
 		});
-	}
-
-	public onToggle(event: MatSlideToggleChange): void {
-		this.form_bolt12().get(this.toggle_control())?.setValue(event.checked);
-		this.onUpdate(this.toggle_control());
 	}
 
 	public onCancel(control_name: keyof OrchardNut4Method | keyof OrchardNut5Method): void {

@@ -4,30 +4,26 @@
 		<mat-card-content class="orc-surface-container-low-bg">
 			<div class="flex flex-column flex-gap-1">
 				<div class="flex flex-column flex-gap-0-5">
+					<div class="font-size-xs orc-outline-color">Supported Nuts</div>
 					<div class="flex flex-row flex-gap-0-5 flex-wrap">
 						@for (nut of nuts(); track nut.number) {
-							<div class="nut-card orc-high-card">
+							<div class="nut-card orc-high-card" (click)="onNutClick(nut.number)">
 								<orc-graphic-status [status]="nut.status" size="0.5rem"></orc-graphic-status>
 								<div class="font-size-xs font-weight-semi-bold">{{ nut.number }}</div>
 							</div>
 						}
 					</div>
-					<div class="font-size-xs orc-outline-color">Supported Nuts</div>
 				</div>
 
-				<div class="flex flex-row flex-gap-1 flex-wrap">
-					<div class="orc-high-card p-0-5 p-h-1 flex-1">
-						<div class="flex flex-items-center flex-gap-0-5">
-							<orc-graphic-status [status]="minting_status()" size="0.5rem"></orc-graphic-status>
-							<span class="font-size-s"> Minting {{ minting_status() === 'inactive' ? 'disabled' : 'enabled' }} </span>
-						</div>
-					</div>
-					<div class="orc-high-card p-0-5 p-h-1 flex-1">
-						<div class="flex flex-items-center flex-gap-0-5">
-							<orc-graphic-status [status]="melting_status()" size="0.5rem"></orc-graphic-status>
-							<span class="font-size-s"> Melting {{ melting_status() === 'inactive' ? 'disabled' : 'enabled' }} </span>
-						</div>
-					</div>
+				<div class="flex flex-column flex-gap-0-25">
+					<div class="font-size-xs orc-outline-color">Supported Methods</div>
+					<mat-chip-set>
+						@for (method of supported_methods(); track method) {
+							<mat-chip>
+								<orc-mint-general-payment-method [payment_method]="method"></orc-mint-general-payment-method>
+							</mat-chip>
+						}
+					</mat-chip-set>
 				</div>
 
 				<div class="flex flex-row flex-gap-1">
