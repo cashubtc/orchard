@@ -21,6 +21,9 @@ export const MINT_INFO_QUERY = `{
 					description
 					min_amount
 					max_amount
+					options {
+						confirmations
+					}
 				}
 			}
 			nut5{

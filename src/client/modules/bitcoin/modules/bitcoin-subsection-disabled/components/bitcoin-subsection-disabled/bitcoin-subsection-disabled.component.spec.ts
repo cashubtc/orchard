@@ -1,5 +1,7 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
+/* Vendor Dependencies */
+import {MatIconTestingModule} from '@angular/material/icon/testing';
 /* Native Dependencies */
 import {OrcBitcoinSubsectionDisabledModule} from '@client/modules/bitcoin/modules/bitcoin-subsection-disabled/bitcoin-subsection-disabled.module';
 /* Local Dependencies */
@@ -11,7 +13,7 @@ describe('BitcoinSubsectionDisabledComponent', () => {
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			imports: [OrcBitcoinSubsectionDisabledModule],
+			imports: [MatIconTestingModule, OrcBitcoinSubsectionDisabledModule],
 		}).compileComponents();
 
 		fixture = TestBed.createComponent(BitcoinSubsectionDisabledComponent);

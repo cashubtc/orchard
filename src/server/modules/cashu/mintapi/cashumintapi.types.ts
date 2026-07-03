@@ -82,6 +82,11 @@ export type CashuNut4Method = {
 	description: boolean;
 	min_amount?: number;
 	max_amount?: number;
+	options?: CashuNut4MethodOptions;
+};
+
+export type CashuNut4MethodOptions = {
+	confirmations?: number;
 };
 
 export type CashuNut5Method = {

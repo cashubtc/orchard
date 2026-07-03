@@ -1,3 +1,10 @@
 <div class="bitcoin-disabled-container p-1">
-	<orc-settings-general-env [env_config]="env_config"></orc-settings-general-env>
+	<orc-public-docs-link-card [docs_link]="docs_link" link_title="Bitcoin configuration docs">
+		<mat-icon card-icon class="mat-symbol-outline" [svgIcon]="'bitcoin_outline'"></mat-icon>
+		<div card-title>Bitcoin Configuration</div>
+		<div card-body>
+			Bitcoin node configuration instructions now live in the official Orchard docs. Use the guide to connect Orchard to Bitcoin Core
+			or a compatible node over RPC.
+		</div>
+	</orc-public-docs-link-card>
 </div>

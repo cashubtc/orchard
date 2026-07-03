@@ -1,15 +1,10 @@
 <div class="lightning-disabled-container p-1">
-	<div class="flex flex-column flex-items-center flex-gap-2">
-		<div class="config-container">
-			<mat-form-field>
-				<mat-label>Lightning Type</mat-label>
-				<mat-select [(value)]="type">
-					<mat-option value="lnd">lnd</mat-option>
-					<mat-option value="cln">cln</mat-option>
-				</mat-select>
-			</mat-form-field>
-			<orc-settings-general-env [env_config]="env_config_lightning"></orc-settings-general-env>
+	<orc-public-docs-link-card [docs_link]="docs_link" link_title="Lightning configuration docs">
+		<mat-icon card-icon class="mat-symbol-outline">bolt</mat-icon>
+		<div card-title>Lightning Configuration</div>
+		<div card-body>
+			Lightning node configuration instructions now live in the official Orchard docs. Use the guide to connect lnd or CLN with the
+			credentials and certificates your node requires.
 		</div>
-		<orc-settings-general-env [env_config]="env_config_taproot_assets"></orc-settings-general-env>
-	</div>
+	</orc-public-docs-link-card>
 </div>
