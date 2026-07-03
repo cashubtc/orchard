@@ -16,6 +16,12 @@ import type {ConfigInfo, ConfigName, LnNode, MintUnit} from '@e2e/types/config';
  *  Password must be ≥6 chars — enforced by the auth-init + signup forms. */
 export const TEST_ADMIN = {name: 'admin', password: 'tester'} as const;
 
+/** Reader-role user provisioned by `setup/roles.setup.ts` (canary only) —
+ *  created through the real UI flow: admin invites via /crew, the reader
+ *  signs up via /auth/signup. Reader storage state persists to
+ *  `e2e/.auth/<config>.reader.json` for `*.reader.spec.ts` files. */
+export const TEST_READER = {name: 'reader', password: 'tester-read'} as const;
+
 const BASE = {
 	setupKey: 'orchard-e2e-admin-key',
 };
