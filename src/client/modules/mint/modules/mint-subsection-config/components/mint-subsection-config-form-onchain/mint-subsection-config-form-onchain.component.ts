@@ -25,7 +25,6 @@ export class MintSubsectionConfigFormOnchainComponent implements OnChanges {
 	public locale = input.required<string>(); // locale for number formatting
 	public loading = input.required<boolean>(); // whether data is loading
 	public quotes = input.required<MintMintQuote[] | MintMeltQuote[]>(); // quotes to display in chart
-	public confirmations = input<number>(1); // required confirmations for incoming payments (set in mint config)
 
 	public update = output<{
 		nut: 'nut4' | 'nut5';
@@ -42,8 +41,6 @@ export class MintSubsectionConfigFormOnchainComponent implements OnChanges {
 		form_group: FormGroup;
 	}>(); // emitted when form is cancelled
 
-	public confirmation_options: number[] = Array.from({length: 12}, (_, index) => index + 1); // selectable confirmation counts
-
 	public min_hot = signal<boolean>(false); // tracks if min input is hot
 	public max_hot = signal<boolean>(false); // tracks if max input is hot
 	public help_status = signal<boolean>(false); // tracks if the help is visible
@@ -58,6 +55,8 @@ export class MintSubsectionConfigFormOnchainComponent implements OnChanges {
 	public form_onchain = computed<FormGroup>(() => {
 		return this.form_group().get(this.unit())?.get(this.method()) as FormGroup;
 	});
+
+	public confirmation_options: number[] = Array.from({length: 12}, (_, index) => index + 1); // selectable confirmation counts
 
 	public valid_quotes = computed(() => {
 		const quotes = this.nut() === 'nut4' ? (this.quotes() as MintMintQuote[]) : (this.quotes() as MintMeltQuote[]);

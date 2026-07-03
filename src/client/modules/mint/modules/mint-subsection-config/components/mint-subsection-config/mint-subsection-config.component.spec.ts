@@ -1,6 +1,7 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {ActivatedRoute} from '@angular/router';
+import {FormGroup} from '@angular/forms';
 import {OrcMintSubsectionConfigModule} from '@client/modules/mint/modules/mint-subsection-config/mint-subsection-config.module';
 /* Vendor Dependencies */
 import {of} from 'rxjs';
@@ -63,5 +64,35 @@ describe('MintSubsectionConfigComponent', () => {
 
 	it('should create', () => {
 		expect(component).toBeTruthy();
+	});
+
+	describe('buildDynamicFormElements', () => {
+		it('should place NUT-4 onchain confirmations in the method form group', () => {
+			component.mint_info = {
+				nuts: {
+					nut4: {
+						disabled: false,
+						methods: [
+							{
+								method: 'onchain',
+								unit: 'sat',
+								min_amount: 1000,
+								max_amount: 1000000,
+								options: {confirmations: 6},
+							},
+						],
+					},
+					nut5: {disabled: false, methods: []},
+				},
+			} as any;
+			component.minting_units = ['sat'];
+			component.melting_units = [];
+
+			(component as any).buildDynamicFormElements();
+			const form_onchain = component.form_minting.get('sat')?.get('onchain') as FormGroup;
+
+			expect(form_onchain.get('confirmations')?.value).toBe(6);
+			expect(form_onchain.get('confirmations')?.disabled).toBeTrue();
+		});
 	});
 });
