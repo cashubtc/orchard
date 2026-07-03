@@ -345,10 +345,21 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 		}
 	}
 
+	/**
+	 * Decodes a Lightning payment request for the expanded quote details.
+	 * Decode failures clear the row loading state so malformed requests do not wedge the UI.
+	 * @param {string} request - bolt11 invoice or bolt12 offer to decode
+	 */
 	private async getLightningRequest(request: string): Promise<void> {
-		this.lightning_request = await lastValueFrom(this.lightningService.getLightningRequest(request));
-		this.loading_more = false;
-		this.cdr.detectChanges();
+		try {
+			this.lightning_request = await lastValueFrom(this.lightningService.getLightningRequest(request));
+		} catch (error) {
+			console.error('Error decoding lightning request:', error);
+			this.lightning_request = null;
+		} finally {
+			this.loading_more = false;
+			this.cdr.detectChanges();
+		}
 	}
 
 	/* *******************************************************
@@ -430,16 +441,22 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 		this.highlighted_entity_id.set(entity_id);
 	}
 
+	/**
+	 * Loads optional detail data when a database row is expanded.
+	 * Lightning decode is limited to Lightning payment methods so onchain addresses are not sent to LN decoders.
+	 * @param {MintMintQuote | MintMeltQuote | MintSwap} entity - expanded database entity
+	 */
 	public onMoreRequest(entity: MintMintQuote | MintMeltQuote | MintSwap): void {
+		this.lightning_request = null;
 		if (this.bitcoin_oracle_enabled) {
 			this.calculateBitcoinOraclePrice(entity);
 		}
-		if ('request' in entity && this.lightning_enabled) {
-			const request: string = entity.request;
-			this.loading_more = true;
-			this.cdr.detectChanges();
-			this.getLightningRequest(request);
-		}
+		if (!('request' in entity)) return;
+		if (!this.lightning_enabled) return;
+		if (entity.payment_method !== 'bolt11' && entity.payment_method !== 'bolt12') return;
+		this.loading_more = true;
+		this.cdr.detectChanges();
+		this.getLightningRequest(entity.request);
 	}
 
 	public onSetQuoteStatePaid(quote: MintMintQuote | MintMeltQuote): void {
