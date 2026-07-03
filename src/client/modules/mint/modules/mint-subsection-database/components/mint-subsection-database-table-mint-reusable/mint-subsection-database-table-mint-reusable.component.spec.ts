@@ -30,4 +30,15 @@ describe('MintSubsectionDatabaseTableMintReusableComponent', () => {
 	it('should create', () => {
 		expect(component).toBeTruthy();
 	});
+
+	it('should return zero percent when no amount has been paid', () => {
+		fixture.componentRef.setInput('quote', {
+			amount_paid: 0,
+			amount_issued: 0,
+			unit: 'sat',
+			state: MintQuoteState.Unpaid,
+		} as any);
+
+		expect(component.percentage_issued()).toBe(0);
+	});
 });

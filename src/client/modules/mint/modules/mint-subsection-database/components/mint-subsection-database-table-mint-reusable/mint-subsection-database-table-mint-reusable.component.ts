@@ -17,6 +17,7 @@ export class MintSubsectionDatabaseTableMintReusableComponent {
 
 	public percentage_issued = computed(() => {
 		const q = this.quote();
+		if (q.amount_paid <= 0) return 0;
 		const pct = (q.amount_issued / q.amount_paid) * 100;
 		return Math.max(0, Math.min(100, pct));
 	});
