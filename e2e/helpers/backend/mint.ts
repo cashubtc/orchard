@@ -33,6 +33,31 @@ export const mint = {
 		return cached(key, fetchInfo);
 	},
 
+	/** The cdk daemon's persisted quote TTLs (mint + melt, in seconds) — the
+	 *  authoritative store the `/mint/config` "Quote TTL" fields write to.
+	 *  These live in cdk-mintd's `kv_store` under key `quote_ttl` as a JSON
+	 *  blob, NOT in `/v1/info`, so this is the oracle for a TTL-save test.
+	 *  The value column is a blob on sqlite and bytea on postgres, decoded
+	 *  differently, so the SELECT branches on `config.db`. nutshell has no
+	 *  such key → returns `{mint_ttl: null, melt_ttl: null}`. Cached with a
+	 *  `{fresh}` bypass, matching `getInfo`, so a post-save read sees truth. */
+	getQuoteTtl(config: ConfigInfo, options: {fresh?: boolean} = {}): {mint_ttl: number | null; melt_ttl: number | null} {
+		if (config.mint !== 'cdk') return {mint_ttl: null, melt_ttl: null};
+		const fetchTtl = () => {
+			const select =
+				config.db === 'postgres'
+					? `SELECT convert_from(value, 'UTF8') FROM kv_store WHERE key = 'quote_ttl'`
+					: `SELECT CAST(value AS TEXT) FROM kv_store WHERE key = 'quote_ttl'`;
+			const out = mintDbQuery(config, select);
+			if (out === '') return {mint_ttl: null, melt_ttl: null};
+			const parsed = JSON.parse(out) as {mint_ttl?: number; melt_ttl?: number};
+			return {mint_ttl: parsed.mint_ttl ?? null, melt_ttl: parsed.melt_ttl ?? null};
+		};
+		const key = `mint.getQuoteTtl:${config.name}`;
+		if (options.fresh) return recache(key, fetchTtl);
+		return cached(key, fetchTtl);
+	},
+
 	/** Outstanding ecash liability for the given mint unit, summed across all
 	 *  keysets of that unit, straight from the mint database — what
 	 *  `orc-mint-general-balance-sheet` displays as the row's liabilities

@@ -12,3 +12,4 @@ export {ln} from './lightning';
 export {mint} from './mint';
 export {orchard} from './orchard';
 export {tap} from './tapd';
+export {ollamaIdle, waitForOllamaIdle} from './ai';
