@@ -24,8 +24,6 @@
  *     the disabled-subsections spec on fake-cdk-postgres via @no-lightning)
  *   - Logout menu item click (`disruptive` — revokes the storageState token
  *     every sibling spec shares; belongs to an isolated-context auth spec)
- *   - "Dashboard" nav item click (known-bug — `navroute="mint"` sends the
- *     user to `/mint`; assert the destination only after the fix lands)
  */
 
 import {test, expect, type Locator, type Page} from '@playwright/test';
@@ -94,12 +92,11 @@ test.describe('lightning subsection dashboard — /lightning', {tag: '@lightning
 		await expect(section.locator('.section-implementation')).toHaveText(identity.version);
 	});
 
-	test('header dot renders the node colour (lnd)', async ({page}, testInfo) => {
-		// cln's `mapClnInfo` strips the `#` from getinfo's colour, so the
-		// client binds an invalid CSS value and the dot renders transparent
-		// on cln stacks — skip there until the server normalizes the format.
-		const config = getConfig(testInfo.project.name);
-		test.skip(config.ln !== 'lnd', 'known bug: cln colour arrives without # and the dot renders transparent');
+	test('header dot renders the node colour', async ({page}, testInfo) => {
+		// Both impls normalize to '#rrggbb' server-side: lnd's getinfo emits
+		// the '#' and passes through; cln's getinfo emits bare hex and
+		// `mapClnInfo` prepends the '#'. The oracle reads the raw getinfo
+		// colour and hexToRgb tolerates both forms.
 		const identity = nodeIdentity(testInfo.project.name);
 		const section = await openSection(page);
 		// The dot's background-color binds to `lightning_info.color`, which
@@ -112,6 +109,25 @@ test.describe('lightning subsection dashboard — /lightning', {tag: '@lightning
 		await expect
 			.poll(async () => dot.evaluate((el) => getComputedStyle(el).backgroundColor))
 			.toBe(hexToRgb(identity.color));
+	});
+
+	test('clicking the Dashboard nav item stays on /lightning', async ({page}) => {
+		// Regression guard: navroute was "mint" for a stretch (copy-paste
+		// slip), silently bouncing users to /mint. Fixed — pin it.
+		//
+		// TRAP: this is a negative navigation assertion. A wrong-route click
+		// doesn't flip the URL until the target's lazy chunk + resolvers
+		// finish (~2s), so asserting toHaveURL right after the click matches
+		// the PRE-navigation URL and passes against broken code — and
+		// networkidle can resolve in the quiet gap before the navigation
+		// lands (verified empirically against a stale bundle). A fixed
+		// settle window is the honest tool here: 3s comfortably covers the
+		// mint chunk + resolver round-trip observed at ~2s.
+		const section = await openSection(page);
+		await section.locator('orc-nav-secondary-item .secondary-nav-item-container').click();
+		await page.waitForTimeout(3_000);
+		await expect(page).toHaveURL(/\/lightning$/);
+		await expect(page.locator('orc-lightning-subsection-dashboard')).toBeVisible();
 	});
 
 	test('the Dashboard nav item is highlighted on /lightning', async ({page}) => {

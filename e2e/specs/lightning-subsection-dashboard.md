@@ -64,10 +64,10 @@ Clicking the `more_vert` icon button in the toolbar opens a `mat-menu` (CDK over
 ### `orc-nav-secondary-item` ("Dashboard" tab)
 
 - Source: [nav-secondary-item.component.ts](../../src/client/modules/nav/components/nav-secondary-item/nav-secondary-item.component.ts) · [`.html`](../../src/client/modules/nav/components/nav-secondary-item/nav-secondary-item.component.html)
-- Inputs from this parent: `name="Dashboard"`, `navroute="mint"`, `[active]="active_sub_section() === 'dashboard'"`.
+- Inputs from this parent: `name="Dashboard"`, `navroute="lightning"`, `[active]="active_sub_section() === 'dashboard'"`.
 - `highlight = computed(() => active() || moused())` — the underline/highlight shows when active **or** hovered.
-- Interactions: hover toggles `moused`; click calls `router.navigate([navroute()])`.
-- **KNOWN BUG**: `navroute` is `"mint"` in [lightning-section.component.html:10](../../src/client/modules/lightning/modules/lightning-section/components/lightning-section/lightning-section.component.html#L10) — clicking "Dashboard" while on `/lightning` navigates to `/mint`. Do not assert the current (broken) destination; the click interaction is skipped until the fix lands (tracked as a separate fix task).
+- Interactions: hover toggles `moused`; click calls `router.navigate([navroute()])` — stays on `/lightning`.
+- History: `navroute` was `"mint"` for a stretch (copy-paste slip), bouncing Dashboard clicks to `/mint`. Fixed in [lightning-section.component.html:10](../../src/client/modules/lightning/modules/lightning-section/components/lightning-section/lightning-section.component.html#L10); the spec pins the destination as a regression guard.
 
 ### `orc-nav-secondary-more` (toolbar more-menu)
 
@@ -109,7 +109,7 @@ orc-lightning-section
 | Gesture | Target | Result |
 |---|---|---|
 | Hover | `orc-nav-secondary-item` container | Highlight underline animates in (`moused` signal) |
-| Click | `orc-nav-secondary-item` ("Dashboard") | `router.navigate(['mint'])` — **bug**, lands on `/mint`; do not assert |
+| Click | `orc-nav-secondary-item` ("Dashboard") | `router.navigate(['lightning'])` — stays on `/lightning` |
 | Click | `orc-nav-secondary-more button` | Opens mat-menu overlay with Logout |
 | Click | Logout menu item | Revokes token, clears crew cache, navigates `/auth` — disruptive |
 | Escape / backdrop click | open mat-menu | Closes menu, no side effect |
@@ -126,7 +126,7 @@ orc-lightning-section
 | Surface | Oracle |
 |---|---|
 | Header alias | `ln.getInfo(config).alias` ([backend/lightning.ts](../helpers/backend/lightning.ts)) — lnd and cln both emit `alias` |
-| Dot colour | `ln.getInfo(config).color` — lnd emits `#rrggbb` and renders correctly. **KNOWN BUG (cln)**: `mapClnInfo`'s `toHex` ([cln.service.ts:106-114](../../src/server/modules/lightning/cln/cln.service.ts#L106)) strips `#`, so the client binds an invalid CSS colour and the dot renders transparent on cln stacks. Assert the colour differentially on lnd only; on cln assert nothing until the normalization fix lands (tracked as a separate fix task). |
+| Dot colour | `ln.getInfo(config).color` — lnd emits `#rrggbb` (passthrough); cln emits bare `rrggbb` which `mapClnInfo` ([cln.service.ts:114-120](../../src/server/modules/lightning/cln/cln.service.ts#L114)) normalizes to `#rrggbb`. Canonical `OrchardLightningInfo.color` format is `#rrggbb`; the spec's `hexToRgb` tolerates both raw oracle forms. (History: cln's `toHex` used to strip the `#`, rendering the dot transparent on cln backends — fixed, asserted on all LN stacks.) |
 | Version string | `ln.getInfo(config).version` |
 | Stub text/icon | Static — no oracle needed |
 | Nav item active | Static expectation on `/lightning` |
@@ -156,12 +156,13 @@ All locators verified unique on a live `lnd-nutshell-sqlite` preview (`querySele
 ### Reusable interaction recipes
 
 - Material menu open: `page.locator('orc-lightning-section orc-nav-secondary-more button').click()` works in Playwright (real events) even though `preview_click` needed an eval fallback; close via `page.keyboard.press('Escape')`. Same pattern as the mint dashboard control's menus in [mint-subsection-dashboard.spec.ts](mint-subsection-dashboard.spec.ts).
+- **Negative navigation assertions need a settle window.** A wrong-route click doesn't flip the URL until the target's lazy chunk + resolvers finish (~2s), so `toHaveURL` immediately after the click matches the PRE-navigation URL and passes against broken code — and `waitForLoadState('networkidle')` can resolve in the quiet gap before the navigation lands (both verified empirically against a stale bundle). Use an explicit `waitForTimeout(3_000)` before asserting the URL didn't change. Positive navigation assertions (URL *did* change) are unaffected — `toHaveURL` retries until the new URL appears.
 - Inline style colour read: assert on `getAttribute('style')` containing the oracle colour (or `evaluate(getComputedStyle)`) — mirror `readWidthPercent` in [mint-general-keysets.spec.ts](mint-general-keysets.spec.ts) which reads inline bindings in preference to computed px.
 
 ### Skip taxonomy
 
 - State 3 (header blank): `unit-better` — a sub-second transient; deterministic only via signal override, which Playwright can't do against a prod bundle. The null-safety is trivially covered by optional chaining.
-- Nav item click destination: `known-bug` (`navroute="mint"`) — skipped until the fix lands; then assert it stays on `/lightning`.
+- ~~Nav item click destination~~: was `known-bug` (`navroute="mint"`); fixed and now covered — the spec asserts the click stays on `/lightning`.
 - Logout menu item click: `disruptive` — revokes the shared storageState token. Menu open/close is covered; the actual logout flow belongs to the auth spec with an isolated browser context.
 - State 5 (disabled redirect): `stack-only` — covered by the disabled-subsections spec on `fake-cdk-postgres`.
 
@@ -169,7 +170,7 @@ All locators verified unique on a live `lnd-nutshell-sqlite` preview (`querySele
 
 - No existing `lightning-subsection-dashboard.spec.ts` — this file is the first coverage of `/lightning` as a page. The sibling cards (`orc-lightning-general-info`, `orc-lightning-general-channel-summary`) are covered on `/` by their own specs and do not render here.
 - Covered by the planned spec: states 1, 2, 4 (+ menu close).
-- Not covered: state 3 (`unit-better`), state 5 (`stack-only`, other spec), logout click (`disruptive`), nav-item click (`known-bug`).
+- Not covered: state 3 (`unit-better`), state 5 (`stack-only`, other spec), logout click (`disruptive`).
 
 ## Notes for implementers
 

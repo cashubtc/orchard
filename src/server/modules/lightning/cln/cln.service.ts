@@ -112,7 +112,12 @@ export class ClnService {
 		};
 
 		const id_hex = toHex(info?.id);
-		const color_hex = toHex(info?.color).toLowerCase();
+		// Canonical color format is '#rrggbb' — lnd's getinfo already emits
+		// the leading '#' and passes through untouched; clients bind the
+		// string directly to CSS background-color, so bare hex renders
+		// transparent. Normalize cln (bare hex from getinfo) to match.
+		const color_bare = toHex(info?.color).toLowerCase();
+		const color_hex = color_bare === '' ? '' : `#${color_bare}`;
 		const network: string = info?.network ?? '';
 		const addresses: any[] = Array.isArray(info?.address) ? info.address : [];
 
