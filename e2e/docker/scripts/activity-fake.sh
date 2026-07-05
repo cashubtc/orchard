@@ -20,6 +20,10 @@
 #   - ACTIVITY_MINTS_SAT / ACTIVITY_MINTS_USD / ACTIVITY_MINTS_EUR
 #   - ACTIVITY_SWAPS_SAT / ACTIVITY_SWAPS_USD / ACTIVITY_SWAPS_EUR
 #   - ACTIVITY_MELTS_SAT / ACTIVITY_MELTS_USD / ACTIVITY_MELTS_EUR
+#   - ACTIVITY_BOLT12_MINTS / ACTIVITY_BOLT12_MELTS — sat-unit bolt12 quotes
+#     (fake_wallet auto-settles them; no LN node needed; default 0)
+#   - ACTIVITY_ONCHAIN_MINTS / ACTIVITY_ONCHAIN_MELTS — sat-unit onchain quotes
+#     (fake_wallet auto-settles them; no bitcoind needed; default 0)
 #   - ACTIVITY_MEMPOOL_PER_RATE
 #
 # Requires:
@@ -45,6 +49,10 @@ ACTIVITY_SWAPS_EUR=${ACTIVITY_SWAPS_EUR:-0}
 ACTIVITY_MELTS_SAT=${ACTIVITY_MELTS_SAT:-3}
 ACTIVITY_MELTS_USD=${ACTIVITY_MELTS_USD:-2}
 ACTIVITY_MELTS_EUR=${ACTIVITY_MELTS_EUR:-0}
+ACTIVITY_BOLT12_MINTS=${ACTIVITY_BOLT12_MINTS:-0}
+ACTIVITY_BOLT12_MELTS=${ACTIVITY_BOLT12_MELTS:-0}
+ACTIVITY_ONCHAIN_MINTS=${ACTIVITY_ONCHAIN_MINTS:-0}
+ACTIVITY_ONCHAIN_MELTS=${ACTIVITY_ONCHAIN_MELTS:-0}
 ACTIVITY_MEMPOOL_PER_RATE=${ACTIVITY_MEMPOOL_PER_RATE:-4}
 
 log() { printf '[activity-fake] %s\n' "$*"; }
@@ -162,6 +170,83 @@ run_unit sat "$ACTIVITY_MINTS_SAT" "$ACTIVITY_SWAPS_SAT" "$ACTIVITY_MELTS_SAT"
 run_unit usd "$ACTIVITY_MINTS_USD" "$ACTIVITY_SWAPS_USD" "$ACTIVITY_MELTS_USD"
 run_unit eur "$ACTIVITY_MINTS_EUR" "$ACTIVITY_SWAPS_EUR" "$ACTIVITY_MELTS_EUR"
 
+# ── bolt12 / onchain quotes (sat) — fake_wallet auto-settles ─────
+# fake_wallet advertises bolt12 + onchain and marks their quotes paid with no
+# LN node or bitcoind, so ONE cdk-cli call covers the whole quote→pay→redeem
+# flow. Melts need a payable target (offer / address): harvest it from a
+# throwaway mint quote's own output — the extra quote row is harmless sim data.
+# Runs BEFORE the SAT cap mint below so the newest mint_quote row stays bolt11.
+wallet_bounded() {
+    secs="$1"; shift
+    docker exec -i "${CONFIG_NAME}-wallet" timeout -k 1 "$secs" cdk-cli "$@"
+}
+
+if [ "$ACTIVITY_BOLT12_MINTS" -gt 0 ]; then
+    log "bolt12 mints (sat): $ACTIVITY_BOLT12_MINTS"
+    i=0
+    while [ "$i" -lt "$ACTIVITY_BOLT12_MINTS" ]; do
+        amt=$(rand_amount)
+        if wallet_bounded 20 mint "$MINT_URL" "$amt" --method bolt12 2>&1 | grep -q 'Minted'; then
+            log "  bolt12 mint ${amt}"
+        else
+            log "  bolt12 mint ${amt} FAILED"
+        fi
+        i=$((i + 1))
+    done
+fi
+
+if [ "$ACTIVITY_BOLT12_MELTS" -gt 0 ]; then
+    log "bolt12 melts (sat): $ACTIVITY_BOLT12_MELTS"
+    i=0
+    while [ "$i" -lt "$ACTIVITY_BOLT12_MELTS" ]; do
+        amt=$(rand_amount)
+        offer=$(wallet_bounded 20 mint "$MINT_URL" "$amt" --method bolt12 2>&1 | grep -oE 'lno1[0-9a-z]+' | head -1 || true)
+        if [ -z "$offer" ]; then
+            log "  bolt12 melt ${amt} FAILED (no offer)"
+            i=$((i + 1)); continue
+        fi
+        if wallet_bounded 20 melt --mint-url "$MINT_URL" --method bolt12 --offer "$offer" --amount "$amt" >/dev/null 2>&1; then
+            log "  bolt12 melt ${amt}"
+        else
+            log "  bolt12 melt ${amt} FAILED"
+        fi
+        i=$((i + 1))
+    done
+fi
+
+if [ "$ACTIVITY_ONCHAIN_MINTS" -gt 0 ]; then
+    log "onchain mints (sat): $ACTIVITY_ONCHAIN_MINTS"
+    i=0
+    while [ "$i" -lt "$ACTIVITY_ONCHAIN_MINTS" ]; do
+        amt=$(rand_amount)
+        if wallet_bounded 20 mint "$MINT_URL" "$amt" --method onchain 2>&1 | grep -q 'Minted'; then
+            log "  onchain mint ${amt}"
+        else
+            log "  onchain mint ${amt} FAILED"
+        fi
+        i=$((i + 1))
+    done
+fi
+
+if [ "$ACTIVITY_ONCHAIN_MELTS" -gt 0 ]; then
+    log "onchain melts (sat): $ACTIVITY_ONCHAIN_MELTS"
+    i=0
+    while [ "$i" -lt "$ACTIVITY_ONCHAIN_MELTS" ]; do
+        amt=$(rand_amount)
+        addr=$(wallet_bounded 20 mint "$MINT_URL" "$amt" --method onchain 2>&1 | grep -oE 'bcrt1[0-9a-z]+' | head -1 || true)
+        if [ -z "$addr" ]; then
+            log "  onchain melt ${amt} FAILED (no address)"
+            i=$((i + 1)); continue
+        fi
+        if wallet_bounded 20 melt --mint-url "$MINT_URL" --method onchain --address "$addr" --amount "$amt" >/dev/null 2>&1; then
+            log "  onchain melt ${amt}"
+        else
+            log "  onchain melt ${amt} FAILED"
+        fi
+        i=$((i + 1))
+    done
+fi
+
 # ── SAT cap mint ─────────────────────────────────────────────────
 # Ensures the most-recent mint_quotes row is SAT — LightningInfoService
 # inspects the last row to decide whether to render the "Mint backend"
@@ -224,4 +309,4 @@ if [ "$ACTIVITY_MEMPOOL_PER_RATE" -gt 0 ]; then
     done
 fi
 
-log "DONE — sat(mints=$ACTIVITY_MINTS_SAT swaps=$ACTIVITY_SWAPS_SAT melts=$ACTIVITY_MELTS_SAT) usd(mints=$ACTIVITY_MINTS_USD swaps=$ACTIVITY_SWAPS_USD melts=$ACTIVITY_MELTS_USD) eur(mints=$ACTIVITY_MINTS_EUR swaps=$ACTIVITY_SWAPS_EUR melts=$ACTIVITY_MELTS_EUR) mempool=$((ACTIVITY_MEMPOOL_PER_RATE * 6))"
+log "DONE — sat(mints=$ACTIVITY_MINTS_SAT swaps=$ACTIVITY_SWAPS_SAT melts=$ACTIVITY_MELTS_SAT) usd(mints=$ACTIVITY_MINTS_USD swaps=$ACTIVITY_SWAPS_USD melts=$ACTIVITY_MELTS_USD) eur(mints=$ACTIVITY_MINTS_EUR swaps=$ACTIVITY_SWAPS_EUR melts=$ACTIVITY_MELTS_EUR) bolt12(mints=$ACTIVITY_BOLT12_MINTS melts=$ACTIVITY_BOLT12_MELTS) onchain(mints=$ACTIVITY_ONCHAIN_MINTS melts=$ACTIVITY_ONCHAIN_MELTS) mempool=$((ACTIVITY_MEMPOOL_PER_RATE * 6))"

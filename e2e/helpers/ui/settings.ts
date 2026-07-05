@@ -80,20 +80,34 @@ async function applyTheme(page: Page, theme: 'dark-mode' | 'light-mode'): Promis
 
 /** Drive a "Sync with device + combobox" card. Sync defaults checked when no
  *  value is stored; the change-handler ignores values matching the system, so
- *  we uncheck it for a deterministic value regardless of the runner's env. */
+ *  we uncheck it for a deterministic value regardless of the runner's env.
+ *
+ *  Click the exact filtered mat-option — NEVER blind-Enter. Enter without an
+ *  active option commits nothing, and the card silently keeps the runner's
+ *  device value (this is how a seeded 'UTC' — absent from V8's timezone
+ *  list — left fake-cdk-postgres running on the host's zone for weeks).
+ *  Loud-fail instead when the requested value isn't offered. */
 async function applySyncedComboField(card: Locator, value: string): Promise<void> {
 	const sync = card.getByRole('checkbox', {name: /sync with device/i});
 	if (await sync.isChecked()) await sync.uncheck();
 	const input = card.getByRole('combobox');
 	await input.fill(value);
-	await input.press('Enter');
+	// Timezone options are the bare value; locale options are "code - Country"
+	// — anchor on the leading token for both.
+	const option = card
+		.page()
+		.locator('mat-option')
+		.filter({hasText: new RegExp(`^${value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`)})
+		.first();
+	await expect(option, `"${value}" is not offered by this combobox — fix the stack's deviceSettings matrix`).toBeVisible();
+	await option.click();
 }
 
-async function applyLocale(page: Page, locale: string): Promise<void> {
+export async function applyLocale(page: Page, locale: string): Promise<void> {
 	await applySyncedComboField(page.locator('orc-settings-subsection-device-locale'), locale);
 }
 
-async function applyTimezone(page: Page, tz: string): Promise<void> {
+export async function applyTimezone(page: Page, tz: string): Promise<void> {
 	await applySyncedComboField(page.locator('orc-settings-subsection-device-timezone'), tz);
 }
 
@@ -110,7 +124,7 @@ const CURRENCY_OPTION_DETAILS: Record<'btc' | 'fiat', Record<'code' | 'glyph', R
 
 /** Open the mat-select inside the "Bitcoin display" or "Fiat display" card
  *  and click the option whose helper text matches the requested currency. */
-async function applyCurrency(page: Page, mode: 'btc' | 'fiat', currency: 'code' | 'glyph'): Promise<void> {
+export async function applyCurrency(page: Page, mode: 'btc' | 'fiat', currency: 'code' | 'glyph'): Promise<void> {
 	const heading = mode === 'btc' ? 'Bitcoin display' : 'Fiat display';
 	const wrapper = page.locator('.flex-1', {hasText: heading});
 	const card = wrapper.locator('orc-settings-subsection-device-currency');

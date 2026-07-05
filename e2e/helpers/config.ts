@@ -203,7 +203,10 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		deviceSettings: {
 			theme: 'dark-mode',
 			locale: 'de-DE',
-			timezone: 'UTC',
+			// NOT 'UTC' — plain UTC is absent from V8's
+			// Intl.supportedValuesOf('timeZone'), so the settings UI can never
+			// select it and the app silently keeps the runner's device zone.
+			timezone: 'Europe/London',
 			currency_btc: 'glyph',
 			currency_fiat: 'code',
 		},
