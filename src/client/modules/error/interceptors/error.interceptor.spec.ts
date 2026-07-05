@@ -57,17 +57,36 @@ describe('errorInterceptor', () => {
 		req.flush({errors: [{extensions: {code: 10003}}]});
 	});
 
-	it('should attempt token refresh on auth error (code 10002)', () => {
+	it('should attempt token refresh on auth error (code 10002) when the request carried a token', () => {
 		authServiceSpy.getRefreshToken.and.returnValue('refresh-token');
 		authServiceSpy.getAuthHeaders.and.returnValue({Authorization: 'Bearer new-token'});
 		authServiceSpy.refreshToken.and.returnValue(of({} as any));
 
-		http.get('/api/test', {observe: 'response'}).subscribe();
+		http.get('/api/test', {observe: 'response', headers: {Authorization: 'Bearer stale-token'}}).subscribe();
 
 		const req = httpTesting.expectOne('/api/test');
 		req.flush({errors: [{extensions: {code: 10002}}]});
 
 		const retried_req = httpTesting.expectOne('/api/test');
 		retried_req.flush({data: 'ok'});
+	});
+
+	it('should propagate an auth error (code 10002) on an anonymous request without refreshing or redirecting', () => {
+		let errored = false;
+		http.get('/api/test', {observe: 'response'}).subscribe({
+			error: () => {
+				errored = true;
+			},
+		});
+
+		const req = httpTesting.expectOne('/api/test');
+		req.flush({errors: [{extensions: {code: 10002}}]});
+
+		// No token was on the request — not an expired session: no refresh
+		// attempt, no /auth redirect (would clobber pre-auth deep links like
+		// /auth/signup/:key), error surfaced to the caller.
+		expect(errored).toBeTrue();
+		expect(authServiceSpy.refreshToken).not.toHaveBeenCalled();
+		expect(routerSpy.navigate).not.toHaveBeenCalled();
 	});
 });
