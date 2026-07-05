@@ -55,6 +55,7 @@ export class SettingsSubsectionDeviceTimezoneComponent implements OnChanges {
 	ngOnChanges(changes: SimpleChanges): void {
 		if (changes['loading'] && this.loading === false) this.init();
 		if (changes['locale'] && !changes['locale'].firstChange) this.flashTimestamp();
+		if (changes['timezone'] && !changes['timezone'].firstChange) this.flashTimestamp();
 	}
 
 	private flashTimestamp(): void {
