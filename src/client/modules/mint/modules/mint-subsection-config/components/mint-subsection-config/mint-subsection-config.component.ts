@@ -342,6 +342,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 							min_amount: new FormControl(formatted_min, min_validators),
 							max_amount: new FormControl(formatted_max, max_validators),
 							description: new FormControl(method.description),
+							confirmations: new FormControl({value: method.options?.confirmations ?? null, disabled: true}),
 						}),
 					);
 				});

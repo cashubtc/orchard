@@ -18,7 +18,6 @@ import {OrcTimeModule} from '@client/modules/time/time.module';
 import {OrcFormModule} from '@client/modules/form/form.module';
 import {OrcGraphicModule} from '@client/modules/graphic/graphic.module';
 import {OrcProgressModule} from '@client/modules/progress/progress.module';
-import {OrcSettingsGeneralModule} from '@client/modules/settings/modules/settings-general/settings-general.module';
 /* Local Dependencies */
 import {BitcoinSubsectionOracleComponent} from './components/bitcoin-subsection-oracle/bitcoin-subsection-oracle.component';
 import {BitcoinSubsectionOracleControlComponent} from './components/bitcoin-subsection-oracle-control/bitcoin-subsection-oracle-control.component';
@@ -59,7 +58,6 @@ import {BitcoinSubsectionOracleRunProgressSummaryComponent} from './components/b
 		OrcFormModule,
 		OrcGraphicModule,
 		OrcProgressModule,
-		OrcSettingsGeneralModule,
 	],
 	providers: [
 		provideLuxonDateAdapter(),

@@ -2,12 +2,10 @@
 import {NgModule} from '@angular/core';
 import {CommonModule as CoreCommonModule} from '@angular/common';
 import {RouterModule as CoreRouterModule} from '@angular/router';
-import {ReactiveFormsModule as CoreReactiveFormsModule} from '@angular/forms';
 /* Vendor Dependencies */
-import {MatFormFieldModule} from '@angular/material/form-field';
-import {MatSelectModule} from '@angular/material/select';
+import {MatIconModule} from '@angular/material/icon';
 /* Application Dependencies */
-import {OrcSettingsGeneralModule} from '@client/modules/settings/modules/settings-general/settings-general.module';
+import {OrcPublicModule} from '@client/modules/public/public.module';
 /* Local Dependencies */
 import {MintSubsectionDisabledComponent} from './components/mint-subsection-disabled/mint-subsection-disabled.component';
 
@@ -21,10 +19,8 @@ import {MintSubsectionDisabledComponent} from './components/mint-subsection-disa
 			},
 		]),
 		CoreCommonModule,
-		CoreReactiveFormsModule,
-		MatFormFieldModule,
-		MatSelectModule,
-		OrcSettingsGeneralModule,
+		MatIconModule,
+		OrcPublicModule,
 	],
 	exports: [],
 })

@@ -34,11 +34,27 @@
 				<div class="flex flex-column p-l-1">
 					<div class="flex flex-items-center flex-gap-1">
 						<div class="orc-small-form-field-wrapper">
-							<mat-form-field appearance="fill" hideRequiredMarker="true" class="w-full orc-dynamic-form-field">
+							<mat-form-field
+								[formGroup]="form_onchain()"
+								appearance="fill"
+								hideRequiredMarker="true"
+								class="w-full orc-dynamic-form-field"
+							>
 								<mat-label>Confirmations</mat-label>
-								<mat-select [value]="confirmations()" disabled>
+								<mat-select formControlName="confirmations">
+									<mat-select-trigger>
+										{{ form_onchain().get('confirmations')?.value ?? 'Not advertised' }}
+									</mat-select-trigger>
 									@for (option of confirmation_options; track option) {
 										<mat-option [value]="option">{{ option }}</mat-option>
+									}
+									@if (
+										form_onchain().get('confirmations')?.value !== null &&
+										!confirmation_options.includes(form_onchain().get('confirmations')?.value)
+									) {
+										<mat-option [value]="form_onchain().get('confirmations')?.value">
+											{{ form_onchain().get('confirmations')?.value }}
+										</mat-option>
 									}
 								</mat-select>
 							</mat-form-field>

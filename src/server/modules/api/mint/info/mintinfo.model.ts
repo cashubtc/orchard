@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Field, ObjectType} from '@nestjs/graphql';
+import {Field, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
 import {
@@ -276,6 +276,16 @@ export class OrchardContact {
 	}
 }
 
+@ObjectType({description: 'NUT-04 method-specific minting options'})
+export class OrchardNut4MethodOptions {
+	@Field(() => Int, {nullable: true, description: 'Required block confirmations for onchain mint payments'})
+	confirmations?: number;
+
+	constructor(options: CashuNut4Method['options']) {
+		this.confirmations = options?.confirmations;
+	}
+}
+
 @ObjectType({description: 'NUT-04 minting method details'})
 export class OrchardNut4Method {
 	@Field(() => String, {description: 'Payment method identifier'})
@@ -293,12 +303,16 @@ export class OrchardNut4Method {
 	@Field({nullable: true, description: 'Maximum minting amount'})
 	max_amount?: number;
 
+	@Field(() => OrchardNut4MethodOptions, {nullable: true, description: 'Method-specific minting options'})
+	options?: OrchardNut4MethodOptions;
+
 	constructor(method: CashuNut4Method) {
 		this.method = method.method;
 		this.unit = method.unit;
 		this.description = method.description;
 		this.min_amount = method.min_amount;
 		this.max_amount = method.max_amount;
+		this.options = method.options ? new OrchardNut4MethodOptions(method.options) : null;
 	}
 }
 

@@ -55,6 +55,7 @@ describe('MintSubsectionConfigFormOnchainComponent', () => {
 					onchain: new FormGroup({
 						min_amount: new FormControl(0),
 						max_amount: new FormControl(0),
+						confirmations: new FormControl({value: null, disabled: true}),
 					}),
 				}),
 			}),
@@ -136,6 +137,25 @@ describe('MintSubsectionConfigFormOnchainComponent', () => {
 			expect(select).toBeTruthy();
 			expect(select.getAttribute('aria-disabled')).toBe('true');
 			expect(component.confirmation_options).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+		});
+
+		it('should render the configured confirmations from the form group', () => {
+			fixture.componentRef.setInput(
+				'form_group',
+				new FormGroup({
+					sat: new FormGroup({
+						onchain: new FormGroup({
+							min_amount: new FormControl(0),
+							max_amount: new FormControl(0),
+							confirmations: new FormControl({value: 18, disabled: true}),
+						}),
+					}),
+				}),
+			);
+			fixture.detectChanges();
+
+			expect(component.form_onchain().get('confirmations')?.value).toBe(18);
+			expect(component.form_onchain().get('confirmations')?.disabled).toBeTrue();
 		});
 
 		it('should not render the select for nut5', () => {

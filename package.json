@@ -1,6 +1,6 @@
 {
   "name": "orchard",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "Web application for Cashu mint management",
   "author": "shyguy",
   "private": true,
