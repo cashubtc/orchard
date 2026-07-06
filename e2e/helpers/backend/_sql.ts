@@ -66,6 +66,11 @@ function sqliteContainerQuery(config: ConfigInfo, db_path: string, sql: string):
 		'-noheader',
 		'-separator',
 		'|',
+		// Busy handler: under full-matrix load orchard/the mint write while
+		// we read, and a checkpoint-held lock otherwise bounces the query
+		// with "database is locked (5)". 3s covers any realistic writer burst.
+		'-cmd',
+		'.timeout 3000',
 		db_path,
 		sql,
 	]);

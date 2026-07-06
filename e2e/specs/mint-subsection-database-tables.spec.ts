@@ -100,16 +100,22 @@ async function settle(page: Page): Promise<void> {
  *  Callers assert the resulting paginator total via expect.poll, which
  *  doubles as the wait for the reload triggered by `onTypeChange`. */
 async function switchType(page: Page, label: 'Mints' | 'Melts' | 'Swaps'): Promise<void> {
-	await page.locator('orc-mint-subsection-database-control mat-select').click();
-	// mat-option only exists while the panel is open — no container qualifier
-	// (the panel is NOT under `.cdk-overlay-container` in this Material build;
-	// same bare pattern as helpers/ui/settings.ts `applyAiModel`). Native DOM
-	// click: the select panel repositions while the table behind it swaps
-	// between loading/loaded, so Playwright's stability gate can starve on
-	// slower stacks — same escape hatch the ai-job spec uses for its menu.
-	const option = page.locator('mat-option .option-main', {hasText: new RegExp(`^${label}$`)});
-	await expect(option).toBeVisible();
-	await option.evaluate((el) => (el as HTMLElement).click());
+	// Retry the whole open-and-pick: under full-matrix load the trigger click
+	// can land while the page is mid-hydration and the panel never opens (the
+	// option wait then starves) — re-clicking the trigger recovers.
+	await expect(async () => {
+		await page.locator('orc-mint-subsection-database-control mat-select').click();
+		// mat-option only exists while the panel is open — no container
+		// qualifier (the panel is NOT under `.cdk-overlay-container` in this
+		// Material build; same bare pattern as helpers/ui/settings.ts
+		// `applyAiModel`). Native DOM click: the select panel repositions
+		// while the table behind it swaps between loading/loaded, so
+		// Playwright's stability gate can starve on slower stacks — same
+		// escape hatch the ai-job spec uses for its menu.
+		const option = page.locator('mat-option .option-main', {hasText: new RegExp(`^${label}$`)});
+		await expect(option).toBeVisible({timeout: 2_000});
+		await option.evaluate((el) => (el as HTMLElement).click());
+	}).toPass({timeout: 20_000});
 }
 
 /** Count visible payment-method chips with an exact label. The chip's inner

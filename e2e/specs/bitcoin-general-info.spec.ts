@@ -93,10 +93,21 @@ test.describe('bitcoin-general-info card', {tag: '@canary'}, () => {
 
 	test('displays the block height reported by bitcoind', async ({page}, testInfo) => {
 		const config = getConfig(testInfo.project.name);
+		// The block-miner sidecar mines every 30s, so a strict equality races:
+		// the page's height snapshot can be one block behind an oracle read
+		// taken moments later (observed: UI 188 vs RPC 189). Bracket instead —
+		// take the oracle BEFORE the page fetches and again AFTER reading the
+		// UI; the displayed height must fall inside. Exact when no block lands
+		// mid-test, tolerant of precisely the real race when one does.
+		const height_before = btc.blockCount(config);
+		await page.reload();
 		const card = await openInfoCard(page);
 		const displayed = await metricValue(card, 'Block height');
+		const height_after = btc.blockCount(config);
 		// The `bitcoinGeneralBlock` pipe may add separators; compare digits only.
-		expect(parseInt(displayed.replace(/\D/g, ''), 10)).toBe(btc.blockCount(config));
+		const displayed_height = parseInt(displayed.replace(/\D/g, ''), 10);
+		expect(displayed_height).toBeGreaterThanOrEqual(height_before);
+		expect(displayed_height).toBeLessThanOrEqual(height_after);
 	});
 
 	test('displays chain weight from bitcoind size_on_disk', async ({page}, testInfo) => {

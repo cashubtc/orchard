@@ -27,6 +27,7 @@
 import {test, expect} from '@playwright/test';
 
 import {getConfig} from '@e2e/helpers/config';
+import {orchard} from '@e2e/helpers/backend';
 
 test.describe('settings device — /settings/device', {tag: '@all'}, () => {
 	test.beforeEach(async ({page}) => {
@@ -63,16 +64,19 @@ test.describe('settings app — /settings/app', {tag: '@all'}, () => {
 		await expect(page.locator('orc-settings-subsection-app-ai')).toBeVisible();
 	});
 
-	test('bitcoin-oracle toggle reflects the stack app-settings matrix', async ({page}, testInfo) => {
+	test('bitcoin-oracle toggle reflects the settings table', async ({page}, testInfo) => {
 		// The oracle card renders two `orc-form-toggle`s (Disabled / Enabled);
-		// exactly one carries `.selected`. It matches whether the matrix turned
-		// bitcoin_oracle on (cln-nutshell-postgres) — default off elsewhere.
+		// exactly one carries `.selected`. Differential: it must mirror the
+		// SERVER's `bitcoin.oracle` settings row (unset → default off) — NOT
+		// the static stack matrix, which only records what settings.setup
+		// seeded and goes stale the moment an operator (or a mutation spec)
+		// flips the toggle mid-life. Drift-proof by construction.
 		const config = getConfig(testInfo.project.name);
 		const oracle = page.locator('orc-settings-subsection-app-bitcoin-oracle');
 		await expect(oracle).toBeVisible();
 		const selected = oracle.locator('.form-toggle.selected');
 		await expect(selected).toHaveCount(1);
-		const expected_label = config.appSettings?.bitcoin_oracle ? 'Enabled' : 'Disabled';
+		const expected_label = orchard.setting(config, 'bitcoin.oracle') === 'true' ? 'Enabled' : 'Disabled';
 		await expect(selected).toContainText(expected_label);
 	});
 });
