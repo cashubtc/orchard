@@ -33,6 +33,31 @@ export const mint = {
 		return cached(key, fetchInfo);
 	},
 
+	/** The cdk daemon's persisted quote TTLs (mint + melt, in seconds) — the
+	 *  authoritative store the `/mint/config` "Quote TTL" fields write to.
+	 *  These live in cdk-mintd's `kv_store` under key `quote_ttl` as a JSON
+	 *  blob, NOT in `/v1/info`, so this is the oracle for a TTL-save test.
+	 *  The value column is a blob on sqlite and bytea on postgres, decoded
+	 *  differently, so the SELECT branches on `config.db`. nutshell has no
+	 *  such key → returns `{mint_ttl: null, melt_ttl: null}`. Cached with a
+	 *  `{fresh}` bypass, matching `getInfo`, so a post-save read sees truth. */
+	getQuoteTtl(config: ConfigInfo, options: {fresh?: boolean} = {}): {mint_ttl: number | null; melt_ttl: number | null} {
+		if (config.mint !== 'cdk') return {mint_ttl: null, melt_ttl: null};
+		const fetchTtl = () => {
+			const select =
+				config.db === 'postgres'
+					? `SELECT convert_from(value, 'UTF8') FROM kv_store WHERE key = 'quote_ttl'`
+					: `SELECT CAST(value AS TEXT) FROM kv_store WHERE key = 'quote_ttl'`;
+			const out = mintDbQuery(config, select);
+			if (out === '') return {mint_ttl: null, melt_ttl: null};
+			const parsed = JSON.parse(out) as {mint_ttl?: number; melt_ttl?: number};
+			return {mint_ttl: parsed.mint_ttl ?? null, melt_ttl: parsed.melt_ttl ?? null};
+		};
+		const key = `mint.getQuoteTtl:${config.name}`;
+		if (options.fresh) return recache(key, fetchTtl);
+		return cached(key, fetchTtl);
+	},
+
 	/** Outstanding ecash liability for the given mint unit, summed across all
 	 *  keysets of that unit, straight from the mint database — what
 	 *  `orc-mint-general-balance-sheet` displays as the row's liabilities
@@ -74,6 +99,79 @@ export const mint = {
 		return parseInt(out, 10);
 	},
 
+	/** Count of mint/melt quote rows in the mint database within a
+	 *  `created_time` window, optionally narrowed to one payment method — the
+	 *  differential oracle for the `/mint/database` quote tables (paginator
+	 *  length and per-row `orc-mint-general-payment-method` chips). Mirrors the
+	 *  resolvers' count semantics (`countMintQuotes` / `countMeltQuotes`):
+	 *  cdk windows epoch `created_time` on `mint_quote` / `melt_quote`;
+	 *  nutshell uses `mint_quotes` / `melt_quotes` (datetime on postgres →
+	 *  EXTRACT(EPOCH)). nutshell has no payment_method column — Orchard
+	 *  hardcodes 'bolt11' for every nutshell quote, so a non-bolt11 method
+	 *  filter short-circuits to 0. NOT cached: activity and tests append
+	 *  quotes mid-run. */
+	quoteCount(
+		config: ConfigInfo,
+		options: {kind: 'mint' | 'melt'; date_start: number; date_end: number; payment_method?: string},
+	): number {
+		const is_cdk = config.mint === 'cdk';
+		if (!is_cdk && options.payment_method !== undefined && options.payment_method !== 'bolt11') return 0;
+		const table = is_cdk ? `${options.kind}_quote` : `${options.kind}_quotes`;
+		const time_col = !is_cdk && config.db === 'postgres' ? 'EXTRACT(EPOCH FROM created_time)' : 'created_time';
+		const where: string[] = [`${time_col} >= ${Math.floor(options.date_start)}`, `${time_col} <= ${Math.floor(options.date_end)}`];
+		if (is_cdk && options.payment_method !== undefined) where.push(`lower(payment_method) = '${options.payment_method.toLowerCase()}'`);
+		const out = mintDbQuery(config, `SELECT COUNT(*) FROM ${table} WHERE ${where.join(' AND ')}`);
+		return parseInt(out, 10);
+	},
+
+	/** One quote row by id — the oracle for the expanded-row detail panel
+	 *  (`Mint Quote ID` mega-string ↔ DB bijection). Null when no such row.
+	 *  nutshell keys mint quotes on `quote` and has no payment_method column
+	 *  (constant 'bolt11', matching Orchard's nutshell service). NOT cached. */
+	quoteById(config: ConfigInfo, kind: 'mint' | 'melt', id: string): {unit: string; payment_method: string} | null {
+		const safe_id = id.replace(/'/g, "''");
+		const sql =
+			config.mint === 'cdk'
+				? `SELECT unit, lower(payment_method) FROM ${kind}_quote WHERE id = '${safe_id}'`
+				: `SELECT unit, 'bolt11' FROM ${kind}_quotes WHERE quote = '${safe_id}'`;
+		const out = mintDbQuery(config, sql);
+		if (out === '') return null;
+		const [unit, payment_method] = out.split('|');
+		return {unit, payment_method};
+	},
+
+	/** Earliest mint-quote `created_time` (unix seconds) in the mint DB, or
+	 *  null when no quotes exist — the "mint has activity since" floor that
+	 *  cache↔DB differentials compare against `orchard.mintArchiveFloor` to
+	 *  detect an analytics-archive hole. NOT cached. */
+	earliestQuoteTime(config: ConfigInfo): number | null {
+		const is_cdk = config.mint === 'cdk';
+		const table = is_cdk ? 'mint_quote' : 'mint_quotes';
+		const time_col = !is_cdk && config.db === 'postgres' ? 'EXTRACT(EPOCH FROM created_time)' : 'created_time';
+		const out = mintDbQuery(config, `SELECT MIN(${time_col}) FROM ${table}`);
+		if (out === '') return null;
+		return Math.floor(parseFloat(out));
+	},
+
+	/** Count of swap operations within a window — the `/mint/database` Swaps
+	 *  table's paginator oracle. Mirrors `countSwaps`:
+	 *  cdk: one row per `completed_operations` row with
+	 *  `operation_kind = 'swap'`, windowed on epoch `completed_at`.
+	 *  nutshell: swap inputs are `proofs_used` rows with `melt_quote IS NULL`,
+	 *  grouped by `created` — one group per swap (the count resolver groups by
+	 *  created only, unlike the list's created+unit). NOT cached. */
+	swapCount(config: ConfigInfo, options: {date_start: number; date_end: number}): number {
+		const ds = Math.floor(options.date_start);
+		const de = Math.floor(options.date_end);
+		if (config.mint === 'cdk') {
+			const sql = `SELECT COUNT(*) FROM completed_operations WHERE operation_kind = 'swap' AND completed_at >= ${ds} AND completed_at <= ${de}`;
+			return parseInt(mintDbQuery(config, sql), 10);
+		}
+		const time_col = config.db === 'postgres' ? 'EXTRACT(EPOCH FROM created)' : 'created';
+		const sql = `SELECT COUNT(*) FROM (SELECT created FROM proofs_used WHERE melt_quote IS NULL AND ${time_col} >= ${ds} AND ${time_col} <= ${de} GROUP BY created) g`;
+		return parseInt(mintDbQuery(config, sql), 10);
+	},
+
 	/** Provisioned keysets straight from the mint database, in the same shape
 	 *  the bs row-chip renders (`Gen N` + `NNN ppk`). NOT cached: rotation can
 	 *  add new keysets mid-test.
@@ -91,15 +189,24 @@ export const mint = {
 		active: boolean;
 		derivation_path_index: number;
 		input_fee_ppk: number;
+		valid_from: number | null;
 	}> {
+		// valid_from as epoch seconds — INTEGER everywhere except nutshell's
+		// postgres TIMESTAMP. Mirrors what the mint_keysets resolver hands the
+		// client (the /mint/database genesis derives from min(valid_from)).
+		// NOTE (nutshell): the daemon REWRITES valid_from when a keyset row is
+		// updated (rotation deactivation included) — upstream bug in nutshell
+		// crud.py update_keyset ("valid_from or now()" fallback on in-memory
+		// keysets that never carry the stored value).
+		const valid_from_col = config.mint !== 'cdk' && config.db === 'postgres' ? 'EXTRACT(EPOCH FROM valid_from)::bigint' : 'valid_from';
 		const sql =
 			config.mint === 'cdk'
-				? `SELECT id, unit, active, derivation_path_index, COALESCE(input_fee_ppk, 0) FROM keyset ORDER BY id`
-				: `SELECT id, unit, active, derivation_path, COALESCE(input_fee_ppk, 0) FROM keysets ORDER BY id`;
+				? `SELECT id, unit, active, derivation_path_index, COALESCE(input_fee_ppk, 0), ${valid_from_col} FROM keyset ORDER BY id`
+				: `SELECT id, unit, active, derivation_path, COALESCE(input_fee_ppk, 0), ${valid_from_col} FROM keysets ORDER BY id`;
 		const out = mintDbQuery(config, sql);
 		if (out === '') return [];
 		return out.split('\n').map((line) => {
-			const [id, unit, active_str, third, ppk_str] = line.split('|');
+			const [id, unit, active_str, third, ppk_str, valid_from_str] = line.split('|');
 			// cdk's third column is the parsed index; nutshell's is the full path
 			// and Orchard extracts the trailing `/N'?` segment as the index.
 			const nutshell_match = third.match(/\/(\d+)'?$/);
@@ -111,6 +218,7 @@ export const mint = {
 				active: parseSqlBoolean(active_str),
 				derivation_path_index,
 				input_fee_ppk: parseInt(ppk_str, 10),
+				valid_from: valid_from_str === '' || valid_from_str === undefined ? null : Math.floor(parseFloat(valid_from_str)),
 			};
 		});
 	},

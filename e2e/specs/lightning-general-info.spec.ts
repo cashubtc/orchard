@@ -101,16 +101,25 @@ test.describe('lightning-general-info card', {tag: '@lightning'}, () => {
 	});
 
 	test('renders a state dot + state label that matches the LN node sync flags', async ({page}, testInfo) => {
+		test.setTimeout(60_000);
 		// The component's `state` computed returns `'syncing'` when either
 		// `synced_to_chain` or `synced_to_graph` is false, else `'online'`.
 		// On regtest, idle LND legitimately reports `synced_to_chain=false`
 		// (no continuous block flow), so we differential against the LN node's
 		// own sync state rather than asserting a fixed `'online'`.
+		// Retried with FRESH flags per attempt: the flags flap legitimately —
+		// the block-miner (every 30s) briefly drops synced_to_chain after each
+		// block, and the cadence sim's disruption phase pauses containers —
+		// so the UI snapshot and a one-shot flag read can disagree for a few
+		// seconds. Both sides settle together within an attempt or two.
 		const config = getConfig(testInfo.project.name);
-		const card = await openInfoCard(page);
-		await expect(card.locator('orc-graphic-status')).toBeVisible();
-		const expected = ln.synced(config) ? 'online' : 'syncing';
-		await expect(card.getByText(expected, {exact: true})).toBeVisible();
+		await expect(async () => {
+			await page.reload();
+			const card = await openInfoCard(page);
+			await expect(card.locator('orc-graphic-status')).toBeVisible();
+			const expected = ln.synced(config) ? 'online' : 'syncing';
+			await expect(card.getByText(expected, {exact: true})).toBeVisible({timeout: 2_000});
+		}).toPass({timeout: 30_000});
 	});
 
 	test('displays the peer count reported by the LN node', async ({page}, testInfo) => {

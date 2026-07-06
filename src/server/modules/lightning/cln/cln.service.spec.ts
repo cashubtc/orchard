@@ -79,7 +79,9 @@ describe('ClnService', () => {
 		};
 		const out = await clnService.mapClnInfo(info);
 		expect(out.identity_pubkey).toBe('aabb');
-		expect(out.color).toBe('aabbcc');
+		// Canonical color format is '#rrggbb' (CSS-bindable, matching lnd's
+		// passthrough) regardless of whether cln emitted the leading '#'.
+		expect(out.color).toBe('#aabbcc');
 		expect(out.testnet).toBe(true);
 		expect(out.uris[0]).toMatch(/@127.0.0.1:9735$/);
 	});

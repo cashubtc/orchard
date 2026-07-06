@@ -49,7 +49,7 @@ import {test, expect, type Locator, type Page} from '@playwright/test';
 
 import {getConfig, mintUnitsFor} from '@e2e/helpers/config';
 import type {MintUnit} from '@e2e/types/config';
-import {ln, mint} from '@e2e/helpers/backend';
+import {ln, mint, waitForOllamaIdle} from '@e2e/helpers/backend';
 import {matchGql} from '@e2e/helpers/ui/gql-intercept';
 import {aiIsHealthy, getReadiness, lightningAnalyticsHasRows, mintAnalyticsHasRows, requireReady} from '@e2e/helpers/ui/readiness';
 
@@ -639,13 +639,16 @@ test.describe('mint-subsection-dashboard — ai assistant', {tag: '@ai'}, () => 
 	test.beforeEach(async ({page}) => {
 		await page.goto('/mint', {waitUntil: 'networkidle'});
 		await requireReady(page, aiIsHealthy);
+		// Wait for ollama to be idle — a fire-and-forget agent run from an
+		// earlier @ai test can still be generating and would starve this
+		// assistant prompt (ai_health reports reachable, not idle).
+		expect(await waitForOllamaIdle(180_000), 'ollama should be idle before the assistant prompt').toBe(true);
 	});
 
 	test('mint dashboard assistant returns a response', async ({page}) => {
-		// LLM inference + the non-trivial `beforeEach` (goto + readiness probe)
-		// blow past the 30s default test timeout from playwright.config.ts:161.
-		// Bump to 70s so the 55s expect wait below has slack.
-		test.setTimeout(70_000);
+		// LLM inference blows past the 30s default; the ollama-idle wait can add
+		// to that, so budget generously.
+		test.setTimeout(240_000);
 
 		const input = page.locator('orc-ai-input textarea.ai-input');
 		await expect(input).toBeVisible();

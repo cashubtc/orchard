@@ -27,6 +27,7 @@ export const errorInterceptor: HttpInterceptorFn = (request: HttpRequest<unknown
 
 			if (error.type === 'auth_error') {
 				const auth_header = request.headers.get('Authorization');
+				if (!auth_header) return throwError(() => error);
 				const refresh_token = authService.getRefreshToken();
 				const is_using_refresh_token = refresh_token ? auth_header?.includes(refresh_token) : false;
 

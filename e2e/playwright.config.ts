@@ -1,5 +1,5 @@
 import {defineConfig, devices, type Project} from '@playwright/test';
-import {CONFIGS, portOf, tagsFor} from './helpers/config';
+import {CANARY, CONFIGS, portOf, tagsFor} from './helpers/config';
 import type {ConfigInfo} from './types/config';
 
 /**
@@ -23,6 +23,20 @@ import type {ConfigInfo} from './types/config';
  *                             feature, completing instantly there.
  *   4. `<config>`           — depends on (3), loads the settings-augmented
  *                             state, runs the actual specs.
+ *
+ * The canary stack additionally gets a role tier:
+ *   5. `roles-<canary>`     — depends on (2), runs `roles.setup.ts`:
+ *                             provisions the READER user through the real UI
+ *                             flow (crew invite → signup) and writes
+ *                             `e2e/.auth/<config>.reader.json`. Idempotent —
+ *                             once the reader exists it just refreshes state.
+ *   6. `<canary> (reader)`  — depends on (5), runs `*.reader.spec.ts` files
+ *                             under the reader storage state. Roles live in
+ *                             Orchard's own user table, independent of the
+ *                             backend matrix, so canary-only coverage is
+ *                             intentional. Reader specs are testIgnore'd
+ *                             from the regular projects.
+ *
  * The auth split amortizes login across every spec — Orchard's auth throttler
  * (~4 req/10s) would otherwise trip around the 5th login per config. The
  * settings split keeps the operator-driven settings UI exercised once per
@@ -118,8 +132,15 @@ function projectsFor(config: ConfigInfo): Project[] {
 	const setupName = `setup-${projectName}`;
 	const settingsName = `settings-${projectName}`;
 	const oracleName = `oracle-${projectName}`;
+	const rolesName = `roles-${projectName}`;
 	const baseURL = config.orchardUrl;
 	const storageState = `e2e/.auth/${config.name}.json`;
+	const isCanary = config.name === CANARY;
+	// The default spec project waits on the oracle chain, and on canary also
+	// on roles setup — some canary specs (crew-user admin flow) depend on the
+	// READER user roles.setup provisions, and the e2e stacks reset their
+	// Orchard DB on recreation, so the reader must be re-provisioned each run.
+	const specDependencies = isCanary ? [oracleName, rolesName] : [oracleName];
 	return [
 		{
 			name: setupName,
@@ -148,10 +169,39 @@ function projectsFor(config: ConfigInfo): Project[] {
 			name: projectName,
 			testDir: './specs',
 			testMatch: /.*\.spec\.ts$/,
-			dependencies: [oracleName],
+			// Reader-role specs run in the dedicated reader project below
+			// with the reader storage state — never as the admin.
+			testIgnore: /.*\.reader\.spec\.ts$/,
+			dependencies: specDependencies,
 			grep: grepFor(config),
 			use: {...devices['Desktop Chrome'], baseURL, storageState},
 		},
+		// ── Role projects (canary only) ──
+		// Roles live in Orchard's own user table, independent of the
+		// bitcoin/LN/mint backends, so one stack's coverage is the coverage.
+		// `roles-<canary>` provisions the READER through the real UI flow
+		// (crew invite → signup) and persists `<config>.reader.json`;
+		// `<canary> (reader)` runs `*.reader.spec.ts` files under that state.
+		...(isCanary
+			? [
+					{
+						name: rolesName,
+						testDir: './setup',
+						testMatch: /roles\.setup\.ts$/,
+						dependencies: [settingsName],
+						grep: grepFor(config),
+						use: {...devices['Desktop Chrome'], baseURL, storageState},
+					},
+					{
+						name: `${projectName} (reader)`,
+						testDir: './specs',
+						testMatch: /.*\.reader\.spec\.ts$/,
+						dependencies: [`roles-${projectName}`],
+						grep: grepFor(config),
+						use: {...devices['Desktop Chrome'], baseURL, storageState: `e2e/.auth/${config.name}.reader.json`},
+					},
+				]
+			: []),
 	];
 }
 

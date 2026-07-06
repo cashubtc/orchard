@@ -597,6 +597,7 @@ export class IndexSubsectionCrewComponent implements OnInit, OnDestroy {
 		if (this.new_invite) {
 			const current_data = this.data().data;
 			this.data().data = [this.new_invite, ...current_data];
+			this.new_invite = null;
 		} else {
 			this.crewService.clearInvitesCache();
 			this.crewService.clearUserCache();
