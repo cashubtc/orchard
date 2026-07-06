@@ -18,7 +18,7 @@
  *   - supported-NUT status panels render
  *   - mobile viewport collapses the tertiary nav into a Features menu
  *
- * NOT covered (see skip taxonomy in the .md):
+ * NOT covered:
  *   - any Save / enabled-toggle / limit mutation (`disruptive`)
  *   - chart pixels (`unit-better`)
  *   - per-NUT detail values (owned by the mint-general-config card spec)

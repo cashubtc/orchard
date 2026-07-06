@@ -20,7 +20,7 @@
  *     "Stay on page" cancels
  *   - mobile viewport collapses to a single column
  *
- * NOT covered (see skip taxonomy in the .md):
+ * NOT covered:
  *   - rotation save/confirm (`disruptive`)
  *   - analytics column values (`unit-better` here — owned by the
  *     mint-general-keysets card spec's @analytics differential)

@@ -16,7 +16,7 @@
  *   - Sign up link navigates to /auth/signup
  *   - signup form renders its invite fields
  *
- * NOT covered (see skip taxonomy in the .md):
+ * NOT covered:
  *   - real login / signup submit (`disruptive` — setup owns login; signup
  *     needs a real invite + creates a user)
  *   - initialization /auth/setup (`stack-only` — covered by auth.setup.ts)

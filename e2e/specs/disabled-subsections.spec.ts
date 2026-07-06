@@ -21,7 +21,7 @@
  *   - the docs button surfaces the exit-warning dialog with the exact
  *     configuration-docs URL (anchored per section); Cancel stays in-app
  *
- * NOT covered (see skip taxonomy in the .md):
+ * NOT covered:
  *   - mint disabled (`dead-branch` — fake runs cdk-mintd, mint stays enabled)
  *   - the Proceed click (`unit-better` — it window.opens an external site;
  *     the dialog's own Karma spec owns that wiring)

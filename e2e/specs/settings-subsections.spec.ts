@@ -18,7 +18,7 @@
  *   - user page renders User + messaging sections
  *   - mobile viewport collapses the section nav into a Settings menu
  *
- * NOT covered (see skip taxonomy in the .md):
+ * NOT covered:
  *   - any control write (`disruptive` — covered by settings.setup.ts)
  *   - password dialog (`disruptive`)
  *   - AI live surfaces (`stack-only` — cln-cdk-postgres via e2e:test:ai)

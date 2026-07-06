@@ -5,9 +5,9 @@
  *
  * The form (`orc-auth-subsection-signup-form`): four controls in DOM order —
  * key (Invite Key, password-type), name (Username), password,
- * password_confirm. The formcontrols don't wire aria labels (see
- * auth-subsection-authentication.md), so this spec fills BY POSITION, same
- * as roles.setup.ts. Client validators: required on all; maxLength(50) on
+ * password_confirm. The formcontrols don't wire aria labels, so this spec
+ * fills BY POSITION, same as roles.setup.ts. Client validators: required on
+ * all; maxLength(50) on
  * name; minLength(6)/maxLength(100) on password; passwordMatch on confirm.
  * The Sign Up FAB is `[disabled]="form_group().invalid"`. Server errors map
  * back onto controls via `errorControl()`: code 80003 → 'Invalid invite key'
@@ -32,8 +32,6 @@
  *     admin state inside a logged-out spec (`unit-better`; the 80003 path
  *     pins the same errorControl mechanism).
  *   - expired-invite rejection (`fixture-only` — needs a time-warped invite).
- *   - the /auth/signup/:key prefill (skipped below until task_3c8d6b42's
- *     deep-link fix lands — the test body is the ready regression pin).
  *
  * Runs @canary: auth/signup lives entirely in Orchard's own user table,
  * independent of the backend matrix — same scoping as the role specs.

@@ -105,8 +105,7 @@ setup('provision reader role via the crew UI', {tag: '@canary'}, async ({page, b
 	await reader_page.getByRole('link', {name: 'Sign up'}).click();
 	const form = reader_page.locator('orc-auth-subsection-signup-form');
 	await expect(form).toBeVisible();
-	// The signup formcontrols don't wire aria labels (see
-	// auth-subsection-authentication.md) — fill by position: key, name,
+	// The signup formcontrols don't wire aria labels — fill by position: key, name,
 	// password, confirm.
 	const inputs = form.locator('input');
 	await inputs.nth(0).fill(token);

@@ -14,7 +14,7 @@
  *   - the person_add FAB toggles the create-invite collapsible form
  *   - the filter menu exposes State (×3) + Role (×3) checkboxes
  *
- * NOT covered (see skip taxonomy in the .md):
+ * NOT covered:
  *   - invite submit / user + invite edit dialogs (`disruptive` — mutate the
  *     shared user/invite tables)
  *   - own-admin role edit (`dead-branch` — server-guarded)
