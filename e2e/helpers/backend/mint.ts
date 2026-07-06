@@ -140,6 +140,19 @@ export const mint = {
 		return {unit, payment_method};
 	},
 
+	/** Earliest mint-quote `created_time` (unix seconds) in the mint DB, or
+	 *  null when no quotes exist — the "mint has activity since" floor that
+	 *  cache↔DB differentials compare against `orchard.mintArchiveFloor` to
+	 *  detect an analytics-archive hole. NOT cached. */
+	earliestQuoteTime(config: ConfigInfo): number | null {
+		const is_cdk = config.mint === 'cdk';
+		const table = is_cdk ? 'mint_quote' : 'mint_quotes';
+		const time_col = !is_cdk && config.db === 'postgres' ? 'EXTRACT(EPOCH FROM created_time)' : 'created_time';
+		const out = mintDbQuery(config, `SELECT MIN(${time_col}) FROM ${table}`);
+		if (out === '') return null;
+		return Math.floor(parseFloat(out));
+	},
+
 	/** Count of swap operations within a window — the `/mint/database` Swaps
 	 *  table's paginator oracle. Mirrors `countSwaps`:
 	 *  cdk: one row per `completed_operations` row with

@@ -81,6 +81,18 @@ export const orchard = {
 		return parseInt(out, 10);
 	},
 
+	/** Earliest hour bucket in the mint analytics archive (`analytics_mint`),
+	 *  unix seconds, or null when the archive is empty. Cache↔DB differentials
+	 *  are only meaningful when this floor covers the mint's earliest activity
+	 *  — a floor ABOVE it means the archive has a hole (seen after the 1.10
+	 *  boot wiped `analytics_mint` while `analytics_checkpoint` survived,
+	 *  chip task_32c3e61d) and both sides can never agree. NOT cached. */
+	mintArchiveFloor(config: ConfigInfo): number | null {
+		const out = orchardDbQuery(config, 'SELECT MIN(date) FROM analytics_mint');
+		if (out === '') return null;
+		return parseInt(out, 10);
+	},
+
 	/* *******************************************************
 		Settings — the `settings` key/value table.
 	******************************************************** */

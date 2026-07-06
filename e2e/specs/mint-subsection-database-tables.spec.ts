@@ -60,6 +60,9 @@ import type {ConfigInfo} from '@e2e/types/config';
  *  test so the next mount starts from the default Mints/genesis window. */
 const MINT_DATABASE_KEY = 'v1.mint.database.settings';
 
+/** The page's default page_size (`getPageSettings()` falls back to 100). */
+const DEFAULT_PAGE_SIZE = 100;
+
 /** Mirror of the component's default window: `getMintGenesisTime()` (min
  *  keyset `valid_from`) → `getDefaultDateEnd()` (end of today in the device
  *  timezone that settings.setup seeded). Both sides of the differential
@@ -142,79 +145,111 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 	});
 
 	test('Mints paginator total matches the mint DB quote count over the genesis window', async ({page}, testInfo) => {
+		test.setTimeout(60_000);
 		const config = getConfig(testInfo.project.name);
-		const window = defaultWindow(config);
 
-		// No >0 precondition: on nutshell the genesis window can be legitimately
-		// empty after a keyset rotation (valid_from drift — see header). The
-		// differential holds at any count, zero included.
-		const db_count = mint.quoteCount(config, {kind: 'mint', ...window});
-
-		await expect
-			.poll(() => paginatorTotal(page), {message: `paginator should equal DB mint_quote count (${db_count})`})
-			.toBe(db_count);
+		// Live-mutation safe: when the cadence sim runs, quotes append
+		// mid-test and a single-shot compare races the writer. Each attempt
+		// reloads the page and compares its paginator against a DB count read
+		// at attempt time — passing on the first attempt where no quote lands
+		// inside the tiny read gap (writes arrive ~90s apart; attempts ~1s).
+		// No >0 precondition either: on nutshell the genesis window can be
+		// legitimately empty after a keyset rotation (valid_from drift — see
+		// header). The differential holds at any count, zero included.
+		let db_count = 0;
+		await expect(async () => {
+			await page.reload();
+			await settle(page);
+			db_count = mint.quoteCount(config, {kind: 'mint', ...defaultWindow(config)});
+			expect(await paginatorTotal(page), `paginator should equal DB mint_quote count (${db_count})`).toBe(db_count);
+		}).toPass({timeout: 30_000});
 
 		// Page 1 renders one entity row per quote up to the page size (100
-		// default — every e2e stack is far below it, so rows == total).
-		expect(db_count, 'stacks should fit on one page for the row-count check').toBeLessThanOrEqual(100);
-		await expect(page.locator('orc-mint-subsection-database-table tr.entity-row')).toHaveCount(db_count);
+		// default — long-lived cadence-sim stacks accumulate past it). The
+		// rendered rows are the passing attempt's snapshot — no further race.
+		await expect(page.locator('orc-mint-subsection-database-table tr.entity-row')).toHaveCount(Math.min(db_count, DEFAULT_PAGE_SIZE));
 	});
 
 	test('switching to Melts and Swaps re-derives the paginator from the matching mint DB tables', async ({page}, testInfo) => {
+		test.setTimeout(120_000);
 		const config = getConfig(testInfo.project.name);
-		const window = defaultWindow(config);
 
-		const melt_count = mint.quoteCount(config, {kind: 'melt', ...window});
-		await switchType(page, 'Melts');
-		await expect
-			.poll(() => paginatorTotal(page), {message: `paginator should equal DB melt_quote count (${melt_count})`, timeout: 15_000})
-			.toBe(melt_count);
+		// Live-mutation safe per leg: after the type switch (persisted to
+		// device settings, so reloads keep the selected type), each attempt
+		// reloads and compares the paginator to a DB count read at attempt
+		// time — see the Mints test for the race rationale.
+		const legFor = async (label: 'Mints' | 'Melts' | 'Swaps', count: () => number) => {
+			await switchType(page, label);
+			await expect(async () => {
+				await page.reload();
+				await settle(page);
+				const db = count();
+				expect(await paginatorTotal(page), `paginator should equal DB ${label} count (${db})`).toBe(db);
+			}).toPass({timeout: 30_000});
+		};
 
-		const swap_count = mint.swapCount(config, window);
-		await switchType(page, 'Swaps');
-		await expect
-			.poll(() => paginatorTotal(page), {message: `paginator should equal DB swap count (${swap_count})`, timeout: 15_000})
-			.toBe(swap_count);
-
+		await legFor('Melts', () => mint.quoteCount(config, {kind: 'melt', ...defaultWindow(config)}));
+		await legFor('Swaps', () => mint.swapCount(config, defaultWindow(config)));
 		// Round-trip back to Mints so the in-page state matches what afterEach
 		// resets localStorage to.
-		const mint_count = mint.quoteCount(config, {kind: 'mint', ...window});
-		await switchType(page, 'Mints');
-		await expect.poll(() => paginatorTotal(page), {timeout: 15_000}).toBe(mint_count);
+		await legFor('Mints', () => mint.quoteCount(config, {kind: 'mint', ...defaultWindow(config)}));
 	});
 
 	test('payment-method chip distribution matches the DB payment_method column (both quote tables)', async ({page}, testInfo) => {
+		test.setTimeout(120_000);
 		const config = getConfig(testInfo.project.name);
-		const window = defaultWindow(config);
 
 		for (const kind of ['mint', 'melt'] as const) {
-			if (kind === 'melt') {
-				const melt_total = mint.quoteCount(config, {kind: 'melt', ...window});
-				await switchType(page, 'Melts');
-				await expect.poll(() => paginatorTotal(page), {timeout: 15_000}).toBe(melt_total);
-			}
-			const total = mint.quoteCount(config, {kind, ...window});
-			expect(total, 'per-method chip counting requires all rows on one page').toBeLessThanOrEqual(100);
+			if (kind === 'melt') await switchType(page, 'Melts');
 
-			// On nutshell stacks the bolt12/onchain DB counts are 0 by
-			// construction (no payment_method column, wire value hardcoded
-			// bolt11) — the assertions below then prove ZERO such chips render.
-			const expected = {
-				'BOLT 11': mint.quoteCount(config, {kind, ...window, payment_method: 'bolt11'}),
-				'BOLT 12': mint.quoteCount(config, {kind, ...window, payment_method: 'bolt12'}),
-				ONCHAIN: mint.quoteCount(config, {kind, ...window, payment_method: 'onchain'}),
-			} as const;
-			expect(
-				expected['BOLT 11'] + expected['BOLT 12'] + expected.ONCHAIN,
-				`${kind} per-method counts should partition the total (${total})`,
-			).toBe(total);
+			// Live-mutation safe: all DB reads (total + three per-method) and
+			// the rendered-chip counts happen inside ONE retried attempt after
+			// a reload — a cadence-sim quote landing mid-attempt fails that
+			// attempt and the next one sees a consistent snapshot.
+			await expect(async () => {
+				await page.reload();
+				await settle(page);
+				const window = defaultWindow(config);
+				const total = mint.quoteCount(config, {kind, ...window});
 
-			for (const [label, count] of Object.entries(expected)) {
-				await expect(
-					methodChips(page, label as 'BOLT 11' | 'BOLT 12' | 'ONCHAIN'),
-					`${kind} table should render ${count} "${label}" chips`,
-				).toHaveCount(count);
-			}
+				// On nutshell stacks the bolt12/onchain DB counts are 0 by
+				// construction (no payment_method column, wire value hardcoded
+				// bolt11) — the assertions below then prove ZERO such chips render.
+				const expected = {
+					'BOLT 11': mint.quoteCount(config, {kind, ...window, payment_method: 'bolt11'}),
+					'BOLT 12': mint.quoteCount(config, {kind, ...window, payment_method: 'bolt12'}),
+					ONCHAIN: mint.quoteCount(config, {kind, ...window, payment_method: 'onchain'}),
+				} as const;
+				expect(
+					expected['BOLT 11'] + expected['BOLT 12'] + expected.ONCHAIN,
+					`${kind} per-method counts should partition the total (${total})`,
+				).toBe(total);
+				expect(await paginatorTotal(page), `${kind} paginator should equal the snapshot total (${total})`).toBe(total);
+
+				if (total <= DEFAULT_PAGE_SIZE) {
+					// Everything fits on page 1 — the rendered chip distribution
+					// must equal the DB's method distribution exactly.
+					for (const [label, count] of Object.entries(expected)) {
+						await expect(
+							methodChips(page, label as 'BOLT 11' | 'BOLT 12' | 'ONCHAIN'),
+							`${kind} table should render ${count} "${label}" chips`,
+						).toHaveCount(count, {timeout: 2_000});
+					}
+				} else {
+					// Beyond one page (long-lived cadence-sim stacks) the exact
+					// page-1 slice can't be mirrored reliably — the resolver
+					// orders by second-precision created_time and burst-minted
+					// quotes tie at the page boundary. Degrade to structure:
+					// every rendered row carries exactly one valid method chip.
+					const counts = await Promise.all(
+						(['BOLT 11', 'BOLT 12', 'ONCHAIN'] as const).map((label) => methodChips(page, label).count()),
+					);
+					expect(
+						counts.reduce((a, b) => a + b, 0),
+						`${kind} page-1 rows should each carry one valid method chip`,
+					).toBe(DEFAULT_PAGE_SIZE);
+				}
+			}).toPass({timeout: 40_000});
 		}
 	});
 
