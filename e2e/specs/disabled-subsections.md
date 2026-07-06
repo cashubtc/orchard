@@ -6,37 +6,39 @@ Source:
 
 ## Purpose
 
-The "backend absent" pages. When Orchard boots without `BITCOIN_TYPE` / `LIGHTNING_TYPE`, `enabledGuard` redirects `/bitcoin` → `/bitcoin/disabled` and `/lightning` → `/lightning/disabled`. Each renders a **sample `.env` explainer** (`orc-settings-general-env`) so the operator knows exactly which variables to set. The lightning page adds a lnd/cln selector that swaps the sample config, plus a Taproot Assets sample. This is the AGENTS.md "errors are the support channel" principle made concrete: a self-hosting operator with a misconfigured stack lands here and gets a copy-pasteable config.
+The "backend absent" pages. When Orchard boots without `BITCOIN_TYPE` / `LIGHTNING_TYPE`, `enabledGuard` redirects `/bitcoin` → `/bitcoin/disabled` and `/lightning` → `/lightning/disabled`. Each renders a single **docs-link card** (`orc-public-docs-link-card`) that points the operator at the official configuration docs on docs.orchard.space — the copy-pasteable env samples that used to live inline moved to the docs site. Clicking the card's button does NOT navigate directly: it opens the `orc-public-exit-warning` dialog showing the exact external URL, and only Proceed leaves the app.
 
 ## Where it renders
 
 - Only on stacks booted without the backend. On the shipped matrix that is `fake-cdk-postgres` (no `BITCOIN_TYPE`, no `LIGHTNING_TYPE`). Every other stack wires both, so `enabledGuard` never redirects and these pages are unreachable.
-- Mint is enabled on `fake-cdk-postgres` (it runs cdk-mintd), so `orc-mint-subsection-disabled` is NOT reachable on the current matrix — dead-branch here.
+- Mint is enabled on `fake-cdk-postgres` (it runs cdk-mintd), so `orc-mint-subsection-disabled` is NOT reachable on the current matrix — dead-branch here (it renders the same docs-card shape with a `#mint`-anchored link).
 
 ## Inputs
 
-Neither page takes runtime inputs; both hold hard-coded `EnvConfig` samples.
+Neither page takes runtime inputs; each holds a hard-coded `docs_link` constant:
+- bitcoin: `https://docs.orchard.space/install/configuration/#bitcoin`
+- lightning: `https://docs.orchard.space/install/configuration/#lightning`
 
 ## Happy path (fake stack)
 
 1. Operator opens `/bitcoin` on a no-bitcoin stack. `enabledGuard` redirects to `/bitcoin/disabled`.
-2. `orc-bitcoin-subsection-disabled` renders one `orc-settings-general-env` with a sample bitcoin `.env`.
-3. `/lightning` → `/lightning/disabled`: a lnd/cln `mat-select` (default lnd) + an `orc-settings-general-env` for the selected impl + a second `orc-settings-general-env` for Taproot Assets.
-4. Switching the select to cln swaps the lightning sample config.
+2. `orc-bitcoin-subsection-disabled` renders one `orc-public-docs-link-card` (icon + "Bitcoin Configuration" title + body copy + "Bitcoin configuration docs" button).
+3. Clicking the button opens `orc-public-exit-warning` with the leave-the-app warning and the raw docs URL; Cancel closes it in-app, Proceed opens the external site.
+4. `/lightning` → `/lightning/disabled` renders the same shape with the Lightning card and `#lightning`-anchored link.
 
 ## Reachable states
 
 ### 1. Bitcoin disabled
 
-`/bitcoin/disabled`: one `orc-settings-general-env` (bitcoin sample). Observed live on fake.
+`/bitcoin/disabled`: one `orc-public-docs-link-card`, title "Bitcoin Configuration". Observed live on fake.
 
-### 2. Lightning disabled — lnd (default)
+### 2. Lightning disabled
 
-`/lightning/disabled`: lnd/cln select (value `lnd`), lightning env sample (lnd vars: `LIGHTNING_MACAROON`, `LIGHTNING_CERT`…), + tapd env sample. Two `orc-settings-general-env` total.
+`/lightning/disabled`: one `orc-public-docs-link-card`, title "Lightning Configuration". Observed live on fake.
 
-### 3. Lightning disabled — cln
+### 3. Exit-warning dialog
 
-Selecting cln swaps `env_config_lightning` to the cln sample (`LIGHTNING_KEY`, `LIGHTNING_CA`, `LIGHTNING_CERT`).
+Clicking either card's docs button opens `orc-public-exit-warning`: warning copy ("You are about to leave the app…"), the raw target URL, Cancel / Proceed buttons. Cancel returns to the page; Proceed opens the external docs.
 
 ### 4. Redirect from the enabled route
 
@@ -48,21 +50,20 @@ Dead-branch — fake runs cdk-mintd, so mint is enabled; no shipped stack disabl
 
 ## Child components
 
-- `orc-settings-general-env`: renders an `EnvConfig` (comment + key/value lines) with copy affordances. Shared with the mint/settings surfaces.
-- `mat-select` (lightning only): lnd/cln toggle driving `env_config_lightning`.
+- `orc-public-docs-link-card`: outlined mat-card with projected icon/title/body and a `docs-link-button`; `onDocsLink()` opens the exit-warning dialog with `{data: {link: docs_link}}`.
+- `orc-public-exit-warning` (dialog): renders the warning + `data.link`; Cancel is `mat-dialog-close`, Proceed calls `onProceed()` (external `window.open`).
 
 ## Unhappy / edge cases
 
 - These pages ARE the unhappy path (backend absent) — there is no further error state.
-- The samples are static; a wrong sample value would ship to every no-backend operator (a bad default per AGENTS.md), which is why the env content is worth asserting.
+- The `docs_link` constants are shipped defaults: a wrong or dead URL ships to every no-backend operator (a bad default per AGENTS.md), which is why the exact URL is worth asserting.
 
 ## Template structure (at a glance)
 
 ```
-/bitcoin/disabled   → orc-bitcoin-subsection-disabled → orc-settings-general-env (bitcoin sample)
-/lightning/disabled → orc-lightning-subsection-disabled
-                      ├─ mat-select (lnd | cln) → orc-settings-general-env (lightning sample)
-                      └─ orc-settings-general-env (taproot assets sample)
+/bitcoin/disabled   → orc-bitcoin-subsection-disabled   → orc-public-docs-link-card ("Bitcoin Configuration")
+/lightning/disabled → orc-lightning-subsection-disabled → orc-public-docs-link-card ("Lightning Configuration")
+   card button → orc-public-exit-warning dialog (Cancel | Proceed → external docs)
 ```
 
 ## Interaction summary
@@ -71,13 +72,15 @@ Dead-branch — fake runs cdk-mintd, so mint is enabled; no shipped stack disabl
 |---|---|---|
 | Navigate | `/bitcoin` (no backend) | redirect → `/bitcoin/disabled` |
 | Navigate | `/lightning` (no backend) | redirect → `/lightning/disabled` |
-| Select | lnd/cln (lightning) | swaps the lightning env sample |
+| Click | "… configuration docs" button | opens `orc-public-exit-warning` with the docs URL |
+| Click | dialog Cancel | closes dialog, stays in-app |
+| Click | dialog Proceed | opens the external docs site (not e2e-exercised) |
 
 ## Test-author handoff
 
 ### Host page + setup
 
-- `page.goto('/bitcoin/disabled')` / `/lightning/disabled`; storageState.
+- `page.goto('/bitcoin')` / `/lightning` (assert the redirect); storageState.
 - Tags: `@no-bitcoin` (bitcoin page) / `@no-lightning` (lightning page) — both match only `fake-cdk-postgres` (`config.bitcoin === false` / `config.ln === false`).
 
 ### Differential oracles
@@ -85,15 +88,15 @@ Dead-branch — fake runs cdk-mintd, so mint is enabled; no shipped stack disabl
 | Surface | Oracle |
 |---|---|
 | Reachability | `config.bitcoin` / `config.ln` — false only on fake |
-| Env sample content | static (the component's hard-coded `EnvConfig`) |
+| Docs URL | static (the component's hard-coded `docs_link`) — assert verbatim |
 
 ### State reachability matrix
 
 | State | lnd-nutshell-sqlite | lnd-cdk-sqlite | cln-cdk-postgres | cln-nutshell-postgres | fake-cdk-postgres |
 |---|---|---|---|---|---|
 | 1. Bitcoin disabled | — | — | — | — | ✓ live |
-| 2. Lightning disabled (lnd) | — | — | — | — | ✓ live |
-| 3. Lightning disabled (cln) | — | — | — | — | ✓ live (interaction) |
+| 2. Lightning disabled | — | — | — | — | ✓ live |
+| 3. Exit-warning dialog | — | — | — | — | ✓ live (interaction) |
 | 4. Redirect | — | — | — | — | ✓ live |
 | 5. Mint disabled | — | — | — | — | — (dead-branch) |
 
@@ -101,28 +104,27 @@ Dead-branch — fake runs cdk-mintd, so mint is enabled; no shipped stack disabl
 
 | State | Settled signal | Primary assert |
 |---|---|---|
-| 1 | `orc-bitcoin-subsection-disabled` visible | one `orc-settings-general-env`; `LIGHTNING_TYPE`-free bitcoin sample |
-| 2 | `orc-lightning-subsection-disabled` visible | lnd/cln select present; 2 `orc-settings-general-env`; select value `lnd` |
-| 3 | env swapped | after selecting cln, the lightning env sample shows `LIGHTNING_KEY` |
+| 1 | `orc-bitcoin-subsection-disabled` visible | one `orc-public-docs-link-card`; text "Bitcoin Configuration" |
+| 2 | `orc-lightning-subsection-disabled` visible | one `orc-public-docs-link-card`; text "Lightning Configuration" |
+| 3 | `orc-public-exit-warning` visible | contains the exact `docs_link` URL; Cancel closes it |
 | 4 | redirect settled | `/bitcoin` → URL `/bitcoin/disabled`; `/lightning` → `/lightning/disabled` |
 
 ### Reusable interaction recipes
 
-- Material select: open via trigger, click the option in the CDK overlay (never `preview_fill`).
 - Redirect assertion: `page.goto('/bitcoin')` then `expect(page).toHaveURL(/\/bitcoin\/disabled$/)`.
+- Dialog: `getByRole('button', {name: '<link_title>'})` → assert `orc-public-exit-warning` content → `getByRole('button', {name: 'Cancel'})`.
 
 ### Skip taxonomy
 
 - State 5 (mint disabled): `dead-branch` — no shipped stack disables the mint.
-- Env copy-button clipboard: `unit-better` — covered generically by the settings-env component tests.
+- Dialog Proceed: `unit-better` — opens an external site; the dialog's Karma spec owns the wiring.
 
 ## Test fidelity hooks
 
-- No prior disabled-subsections spec.
-- Planned: bitcoin disabled (1), lightning disabled lnd + cln swap (2, 3), redirects (4).
-- Skipped: mint disabled (dead-branch), clipboard.
+- Covered by `disabled-subsections.spec.ts`: states 1–4 (both cards, dialog round-trip with Cancel, both redirects).
+- Skipped: mint disabled (dead-branch), Proceed (unit-better).
 
 ## Notes for implementers
 
 - These pages exist ONLY on `fake-cdk-postgres` in the matrix — their coverage lives and dies with that stack. If a future matrix adds a no-mint stack, state 5 becomes live and needs a test.
-- The sample `.env` content is a shipped default: keep the keys accurate (they're what operators paste), and update this spec's `LIGHTNING_KEY`/`LIGHTNING_MACAROON` anchors if the samples change.
+- The `docs_link` URLs are shipped defaults and are asserted VERBATIM in the spec — moving/renaming the docs anchors is a breaking change for every deployed instance's disabled pages, and the spec will flag it.
