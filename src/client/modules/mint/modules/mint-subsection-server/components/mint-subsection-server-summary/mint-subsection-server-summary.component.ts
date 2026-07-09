@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core';
+import {ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, viewChildren} from '@angular/core';
 /* Native Dependencies */
 import {MintMetricSnapshot} from '@client/modules/mint/classes/mint-metric.class';
 
@@ -12,7 +12,8 @@ import {MintMetricSnapshot} from '@client/modules/mint/classes/mint-metric.class
 })
 export class MintSubsectionServerSummaryComponent {
 	public snapshots = input.required<MintMetricSnapshot[]>();
-	public pulsing = input<boolean>(false);
+
+	private readonly flash = viewChildren<ElementRef<HTMLElement>>('flash');
 
 	public readonly cpu_percent = computed(() => this.getValue('process_cpu_usage_percent'));
 	public readonly memory_bytes = computed(() => this.getValue('process_memory_bytes'));
@@ -27,6 +28,35 @@ export class MintSubsectionServerSummaryComponent {
 		if (!attempts) return null;
 		return ((successes ?? 0) / attempts) * 100;
 	});
+
+	private has_rendered = false;
+
+	constructor() {
+		// Flash the stats when the live snapshot updates, skipping the initial render
+		effect(() => {
+			this.snapshots();
+			if (!this.has_rendered) {
+				this.has_rendered = true;
+				return;
+			}
+			for (const ref of this.flash()) this.flashElement(ref.nativeElement);
+		});
+	}
+
+	/* *******************************************************
+		Animation
+	******************************************************** */
+
+	/** Dims then brightens the element to signal fresh data, matching the nav block-height flash */
+	private flashElement(el: HTMLElement): void {
+		for (const anim of el.getAnimations()) anim.cancel();
+		el
+			.animate([{opacity: 1}, {opacity: 0.1}], {duration: 200, easing: 'ease-out', fill: 'forwards'})
+			.finished.catch(() => {})
+			.finally(() => {
+				el.animate([{opacity: 0.1}, {opacity: 1}], {duration: 400, easing: 'ease-in', fill: 'forwards'});
+			});
+	}
 
 	/* *******************************************************
 		Data

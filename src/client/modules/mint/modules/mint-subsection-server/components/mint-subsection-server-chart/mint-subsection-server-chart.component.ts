@@ -35,7 +35,6 @@ export class MintSubsectionServerChartComponent implements OnChanges, OnDestroy 
 	public stacked = input<boolean>(false);
 	public color_index = input<number>(0);
 	public loading = input.required<boolean>();
-	public pulsing = input<boolean>(false);
 
 	public chart_type!: ChartJsType;
 	public chart_data: ChartConfiguration['data'] = {datasets: []};

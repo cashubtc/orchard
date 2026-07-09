@@ -1,7 +1,6 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {ActivatedRoute} from '@angular/router';
-import {provideNoopAnimations} from '@angular/platform-browser/animations';
 /* Vendor Dependencies */
 import {of} from 'rxjs';
 import {MatIconTestingModule} from '@angular/material/icon/testing';
@@ -21,7 +20,6 @@ describe('MintSubsectionServerComponent', () => {
 		await TestBed.configureTestingModule({
 			imports: [OrcMintSubsectionServerModule, MatIconTestingModule],
 			providers: [
-				provideNoopAnimations(),
 				{
 					provide: ActivatedRoute,
 					useValue: {snapshot: {data: {mint_metrics_snapshot: []}}},
@@ -65,11 +63,10 @@ describe('MintSubsectionServerComponent', () => {
 		expect(component.loading_metrics()).toBeFalse();
 	});
 
-	it('should clear cache, refetch and pulse on refresh', () => {
+	it('should clear cache and refetch on refresh', () => {
 		const mint_service = TestBed.inject(MintService) as unknown as {clearMetricsCache: jasmine.Spy};
 		component.onRefresh();
 		expect(mint_service.clearMetricsCache).toHaveBeenCalled();
 		expect(component.refreshing()).toBeFalse();
-		expect(component.pulsing()).toBeTrue();
 	});
 });

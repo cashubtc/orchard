@@ -27,7 +27,7 @@
 			<div class="category-rule"></div>
 		</div>
 
-		<orc-mint-subsection-server-summary [snapshots]="snapshots()" [pulsing]="pulsing()"></orc-mint-subsection-server-summary>
+		<orc-mint-subsection-server-summary [snapshots]="snapshots()"></orc-mint-subsection-server-summary>
 
 		<div class="grid mint-server-charts">
 			<div class="flex flex-column flex-gap-1">
@@ -42,7 +42,6 @@
 							type="bar"
 							[stacked]="true"
 							[loading]="loading_metrics()"
-							[pulsing]="pulsing()"
 						></orc-mint-subsection-server-chart>
 					</mat-card-content>
 				</mat-card>
@@ -60,7 +59,6 @@
 							type="line"
 							[color_index]="1"
 							[loading]="loading_metrics()"
-							[pulsing]="pulsing()"
 						></orc-mint-subsection-server-chart>
 					</mat-card-content>
 				</mat-card>
@@ -78,7 +76,6 @@
 							type="bar"
 							[stacked]="true"
 							[loading]="loading_metrics()"
-							[pulsing]="pulsing()"
 						></orc-mint-subsection-server-chart>
 					</mat-card-content>
 				</mat-card>
@@ -96,7 +93,6 @@
 							type="line"
 							[color_index]="1"
 							[loading]="loading_metrics()"
-							[pulsing]="pulsing()"
 						></orc-mint-subsection-server-chart>
 					</mat-card-content>
 				</mat-card>
@@ -114,7 +110,6 @@
 							type="bar"
 							[color_index]="3"
 							[loading]="loading_metrics()"
-							[pulsing]="pulsing()"
 						></orc-mint-subsection-server-chart>
 					</mat-card-content>
 				</mat-card>
@@ -132,7 +127,6 @@
 							type="line"
 							[color_index]="3"
 							[loading]="loading_metrics()"
-							[pulsing]="pulsing()"
 						></orc-mint-subsection-server-chart>
 					</mat-card-content>
 				</mat-card>
@@ -150,7 +144,6 @@
 							type="line"
 							[color_index]="0"
 							[loading]="loading_metrics()"
-							[pulsing]="pulsing()"
 						></orc-mint-subsection-server-chart>
 					</mat-card-content>
 				</mat-card>
@@ -168,7 +161,6 @@
 							type="line"
 							[color_index]="2"
 							[loading]="loading_metrics()"
-							[pulsing]="pulsing()"
 						></orc-mint-subsection-server-chart>
 					</mat-card-content>
 				</mat-card>
@@ -186,7 +178,6 @@
 							type="bar"
 							[color_index]="4"
 							[loading]="loading_metrics()"
-							[pulsing]="pulsing()"
 						></orc-mint-subsection-server-chart>
 					</mat-card-content>
 				</mat-card>

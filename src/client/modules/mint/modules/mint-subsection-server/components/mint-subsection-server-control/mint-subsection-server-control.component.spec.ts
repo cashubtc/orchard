@@ -1,6 +1,5 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {provideNoopAnimations} from '@angular/platform-browser/animations';
 /* Vendor Dependencies */
 import {MatIconTestingModule} from '@angular/material/icon/testing';
 /* Native Dependencies */
@@ -17,7 +16,6 @@ describe('MintSubsectionServerControlComponent', () => {
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
 			imports: [OrcMintSubsectionServerModule, MatIconTestingModule],
-			providers: [provideNoopAnimations()],
 		}).compileComponents();
 
 		fixture = TestBed.createComponent(MintSubsectionServerControlComponent);

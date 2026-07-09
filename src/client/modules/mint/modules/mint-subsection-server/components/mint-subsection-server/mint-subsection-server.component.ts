@@ -19,7 +19,6 @@ import {MintMetricsInterval} from '@shared/generated.types';
 
 const SNAPSHOT_POLL_INTERVAL_MS = 30000;
 const METRICS_RETENTION_DAYS = 90;
-const DATA_PULSE_DURATION_MS = 700;
 const CHART_METRIC_FAMILIES = [
 	'cdk_mint_operations_total',
 	'cdk_mint_operation_duration_seconds',
@@ -52,7 +51,6 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 	public readonly metrics = signal<MintMetric[]>([]);
 	public readonly loading_metrics = signal<boolean>(true);
 	public readonly refreshing = signal<boolean>(false);
-	public readonly pulsing = signal<boolean>(false);
 	public readonly device_type = signal<DeviceType>('desktop');
 
 	public readonly operations_metrics = computed(() => this.filterMetrics('cdk_mint_operations_total'));
@@ -66,7 +64,6 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 	public readonly memory_metrics = computed(() => this.filterMetrics('process_memory_bytes'));
 
 	private polling_active = true;
-	private pulse_timeout: ReturnType<typeof setTimeout> | null = null;
 	private subscriptions = new Subscription();
 
 	ngOnInit(): void {
@@ -208,7 +205,6 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 					if (snapshot) this.snapshots.set(snapshot);
 					this.loading_metrics.set(false);
 					this.refreshing.set(false);
-					this.triggerPulse();
 				},
 				error: () => {
 					this.loading_metrics.set(false);
@@ -216,14 +212,6 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 				},
 			}),
 		);
-	}
-
-	/** Flashes the data-updated overlay on charts and cards, re-firing on every refresh */
-	private triggerPulse(): void {
-		if (this.pulse_timeout) clearTimeout(this.pulse_timeout);
-		this.pulsing.set(false);
-		this.pulsing.set(true);
-		this.pulse_timeout = setTimeout(() => this.pulsing.set(false), DATA_PULSE_DURATION_MS);
 	}
 
 	/* *******************************************************
@@ -255,7 +243,6 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 
 	ngOnDestroy(): void {
 		this.polling_active = false;
-		if (this.pulse_timeout) clearTimeout(this.pulse_timeout);
 		this.subscriptions.unsubscribe();
 	}
 }

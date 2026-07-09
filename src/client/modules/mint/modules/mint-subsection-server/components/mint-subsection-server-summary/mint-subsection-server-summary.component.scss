@@ -23,14 +23,3 @@
 	@extend %font-size-xs;
 	@extend %orc-outline-color;
 }
-
-.orc-data-pulse {
-	@extend %absolute;
-	@extend %top-0;
-	@extend %left-0;
-	@extend %right-0;
-	@extend %bottom-0;
-	@extend %z-index-1;
-	pointer-events: none;
-	background: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
-}
