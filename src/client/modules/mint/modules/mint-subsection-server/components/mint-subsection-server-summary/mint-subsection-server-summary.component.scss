@@ -1,0 +1,36 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+.server-summary-grid {
+	@extend %flex-gap-1;
+	grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+
+.server-stat-tile {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-0-25;
+	@extend %p-0-5;
+	@extend %p-h-1;
+}
+
+.server-stat-value {
+	@extend %font-size-xl;
+	@extend %font-weight-semi-bold;
+}
+
+.server-stat-label {
+	@extend %font-size-xs;
+	@extend %orc-outline-color;
+}
+
+.orc-data-pulse {
+	@extend %absolute;
+	@extend %top-0;
+	@extend %left-0;
+	@extend %right-0;
+	@extend %bottom-0;
+	@extend %z-index-1;
+	pointer-events: none;
+	background: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+}

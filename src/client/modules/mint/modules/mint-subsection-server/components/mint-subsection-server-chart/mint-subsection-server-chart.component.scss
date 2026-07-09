@@ -1,0 +1,34 @@
+@use 'molecule/molecule';
+
+.mint-server-chart-container {
+	@extend %relative;
+	height: 280px;
+
+	canvas {
+		height: 100% !important;
+		width: 100% !important;
+	}
+}
+
+.chart-overlay {
+	@extend %absolute;
+	@extend %top-0;
+	@extend %left-0;
+	@extend %right-0;
+	@extend %bottom-0;
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-1;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+}
+
+.orc-data-pulse {
+	@extend %absolute;
+	@extend %top-0;
+	@extend %left-0;
+	@extend %right-0;
+	@extend %bottom-0;
+	pointer-events: none;
+	background: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+}

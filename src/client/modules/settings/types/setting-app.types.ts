@@ -9,6 +9,7 @@ export interface ParsedSetting<T = string | boolean | number> {
 
 export interface ParsedAppSettings {
 	bitcoin_oracle: ParsedSetting<boolean>;
+	mint_metrics_api: ParsedSetting<string>;
 	ai_enabled: ParsedSetting<boolean>;
 	ai_vendor: ParsedSetting<string>;
 	ai_ollama_api: ParsedSetting<string>;

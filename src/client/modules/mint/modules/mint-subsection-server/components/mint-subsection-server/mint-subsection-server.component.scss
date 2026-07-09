@@ -1,0 +1,36 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+.mint-server-container {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-2;
+    @extend %p-l-1;
+    @extend %p-r-1;
+    @extend %p-b-1;
+}
+
+.mint-server-control-panel {
+	@extend %orc-surface-bg;
+	@extend %sticky;
+	@extend %top-0;
+	@extend %z-index-2;
+}
+
+.mint-server-charts {
+	@extend %flex-gap-1;
+	grid-template-columns: repeat(auto-fit, minmax(min(30rem, 100%), 1fr));
+}
+
+.refresh-spinning {
+	animation: refresh-spin 1s linear infinite;
+}
+
+@keyframes refresh-spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}

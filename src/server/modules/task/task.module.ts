@@ -11,6 +11,7 @@ import {CashuMintAnalyticsModule} from '@server/modules/cashu/mintanalytics/mint
 import {AgentModule} from '@server/modules/ai/agent/agent.module';
 import {ConversationModule} from '@server/modules/ai/conversation/conversation.module';
 import {SystemMetricsModule} from '@server/modules/system/metrics/sysmetrics.module';
+import {MintMetricsModule} from '@server/modules/cashu/mintmetrics/mintmetrics.module';
 /* Local Dependencies */
 import {TaskService} from './task.service';
 
@@ -26,6 +27,7 @@ import {TaskService} from './task.service';
 		AgentModule,
 		ConversationModule,
 		SystemMetricsModule,
+		MintMetricsModule,
 	],
 	providers: [TaskService],
 })

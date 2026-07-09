@@ -2,6 +2,7 @@
 import {
 	BitcoinOracleSettings,
 	MintDashboardSettings,
+	MintServerSettings,
 	MintKeysetsSettings,
 	MintDatabaseSettings,
 	MintConfigSettings,
@@ -51,6 +52,14 @@ export type AllMintDatabaseSettings = MintDatabaseSettings & {
 export type NonNullableMintDatabaseSettings = {
 	[K in keyof Omit<AllMintDatabaseSettings, 'date_preset'>]: NonNullable<AllMintDatabaseSettings[K]>;
 } & Pick<AllMintDatabaseSettings, 'date_preset'>;
+
+/* Page: Mint Server */
+export type AllMintServerSettings = MintServerSettings & {
+	date_end: number | null;
+};
+export type NonNullableMintServerSettings = {
+	[K in keyof Omit<AllMintServerSettings, 'date_preset'>]: NonNullable<AllMintServerSettings[K]>;
+} & Pick<AllMintServerSettings, 'date_preset'>;
 
 /* Page: Settings App */
 export type AllSettingsAppSettings = SettingsAppSettings;

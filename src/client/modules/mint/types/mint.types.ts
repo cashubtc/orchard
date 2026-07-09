@@ -33,6 +33,9 @@ import {
 	OrchardMintProofGroupStats,
 	OrchardMintWatchdogStatus,
 	OrchardMintKeysetCount,
+	OrchardMintMetrics,
+	OrchardMintMetricsSnapshot,
+	MintMetricsInterval,
 } from '@shared/generated.types';
 
 export type MintActivitySummaryResponse = {
@@ -119,6 +122,14 @@ export type MintAnalyticsArgs = {
 	date_end?: number;
 	interval?: AnalyticsInterval;
 	timezone?: string;
+};
+
+export type MintMetricsArgs = {
+	date_start?: number;
+	date_end?: number;
+	interval?: MintMetricsInterval;
+	timezone?: string;
+	metrics?: string[];
 };
 
 export type MintMintQuotesArgs = {
@@ -244,6 +255,14 @@ export type MintProofGroupStatsResponse = {
 
 export type MintWatchdogStatusResponse = {
 	mint_watchdog_status: OrchardMintWatchdogStatus;
+};
+
+export type MintMetricsResponse = {
+	mint_metrics: OrchardMintMetrics[];
+};
+
+export type MintMetricsSnapshotResponse = {
+	mint_metrics_snapshot: OrchardMintMetricsSnapshot[];
 };
 
 export type MintNut04QuoteUpdateResponse = {

@@ -116,6 +116,17 @@ export const AI_ASSISTANTS = {
 		},
 		tools: [UpdateDateRangeTool, UpdateMintAnalyticsUnitsTool, UpdateMintAnalyticsIntervalTool],
 	},
+	[AiAssistant.MINT_SERVER]: {
+		name: 'Mint Server Agent',
+		icon: 'spa',
+		section: 'mint',
+		description: 'Control the filters of the mint server metrics',
+		system_message: {
+			role: 'system',
+			content: 'You are an agent designed to help adjust parameters used to explore mint server metrics.',
+		},
+		tools: [UpdateDateRangeTool],
+	},
 	[AiAssistant.MINT_INFO]: {
 		name: 'Mint Info Agent',
 		icon: 'spa',

@@ -10,6 +10,12 @@ export const DEFAULT_SETTINGS: Setting[] = [
 		description: 'Whether the bitcoin oracle is enabled',
 	},
 	{
+		key: SettingKey.MINT_METRICS_API,
+		value: '',
+		value_type: SettingValue.STRING,
+		description: 'The mint prometheus exporter base url',
+	},
+	{
 		key: SettingKey.AI_ENABLED,
 		value: 'false',
 		value_type: SettingValue.BOOLEAN,

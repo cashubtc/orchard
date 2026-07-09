@@ -29,6 +29,7 @@ import {
 	EventLogDetailStatus,
 } from '@server/modules/event/event.enums';
 import {SystemMetric, SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
+import {MintMetricType, MintMetricsInterval} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
 
 registerEnumType(MintUnit, {
 	name: 'MintUnit',
@@ -230,6 +231,7 @@ registerEnumType(AiAssistant, {
 		MINT_KEYSET_ROTATION: {description: 'Keyset rotation assistant'},
 		MINT_DATABASE: {description: 'Mint database management assistant'},
 		MINT_BACKUP: {description: 'Mint backup management assistant'},
+		MINT_SERVER: {description: 'Mint server metrics assistant'},
 		EVENT_LOG: {description: 'Event log assistant'},
 		SETTINGS_AGENT: {description: 'Agent settings configuration assistant'},
 	},
@@ -264,6 +266,7 @@ registerEnumType(SettingKey, {
 	description: 'Application setting configuration keys',
 	valuesMap: {
 		BITCOIN_ORACLE: {description: 'Bitcoin price oracle toggle'},
+		MINT_METRICS_API: {description: 'Mint prometheus exporter base url'},
 		AI_ENABLED: {description: 'AI features toggle'},
 		AI_VENDOR: {description: 'AI vendor selection'},
 		AI_OLLAMA_API: {description: 'Ollama API endpoint'},
@@ -381,5 +384,23 @@ registerEnumType(SystemMetricsInterval, {
 		minute: {description: 'Per-minute collection'},
 		hour: {description: 'Per-hour collection'},
 		day: {description: 'Per-day collection'},
+	},
+});
+registerEnumType(MintMetricType, {
+	name: 'MintMetricType',
+	description: 'Type of a mint prometheus metric',
+	valuesMap: {
+		gauge: {description: 'Point-in-time value'},
+		counter: {description: 'Monotonic cumulative value'},
+		histogram: {description: 'Distribution of observed values'},
+	},
+});
+registerEnumType(MintMetricsInterval, {
+	name: 'MintMetricsInterval',
+	description: 'Time interval for mint metrics aggregation',
+	valuesMap: {
+		minute: {description: 'Per-minute aggregation'},
+		hour: {description: 'Per-hour aggregation'},
+		day: {description: 'Per-day aggregation'},
 	},
 });

@@ -9,6 +9,7 @@ import {ThemeType, CurrencyType, Currency, AiFavorites} from '@client/modules/ca
 import {
 	AllBitcoinOracleSettings,
 	AllMintDashboardSettings,
+	AllMintServerSettings,
 	AllMintDatabaseSettings,
 	AllMintKeysetsSettings,
 	AllMintConfigSettings,
@@ -33,6 +34,9 @@ export class SettingDeviceService {
 	public mint_database_short_settings: Record<string, number | null> = {
 		date_end: null,
 		page: null,
+	};
+	public mint_server_short_settings: Record<string, number | null> = {
+		date_end: null,
 	};
 	public event_log_short_settings: Record<string, number | null> = {
 		date_end: null,
@@ -197,6 +201,22 @@ export class SettingDeviceService {
 		this.mint_database_short_settings = {
 			date_end: date_end,
 			page: page,
+		};
+	}
+
+	/* Page: Mint Server */
+	public getMintServerSettings(): AllMintServerSettings {
+		const long_term_settings = this.localStorageService.getMintServerSettings();
+		return {
+			...long_term_settings,
+			...this.mint_server_short_settings,
+		} as AllMintServerSettings;
+	}
+	public setMintServerSettings(settings: AllMintServerSettings): void {
+		const {date_end, ...long_settings} = settings;
+		this.localStorageService.setMintServerSettings(long_settings);
+		this.mint_server_short_settings = {
+			date_end: date_end,
 		};
 	}
 

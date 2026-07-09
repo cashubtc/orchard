@@ -1,22 +1,26 @@
 <section class="section-container">
 	<orc-nav-secondary>
 		<div nav-secondary-header class="nav-secondary-header">
-			<orc-mint-general-icon [icon_data]="icon_data" [loading]="loading" [error]="error"> </orc-mint-general-icon>
-			<orc-mint-general-name [name]="mint_info ? mint_info.name : null" [loading]="loading" [error]="error"> </orc-mint-general-name>
+			<orc-mint-general-icon [icon_data]="icon_data()" [loading]="loading()" [error]="error()"> </orc-mint-general-icon>
+			<orc-mint-general-name [name]="mint_info()?.name ?? null" [loading]="loading()" [error]="error()"> </orc-mint-general-name>
 		</div>
 		<div nav-secondary-items>
-			<orc-nav-secondary-item name="Dashboard" navroute="mint" [active]="active_sub_section === 'dashboard'">
+			<orc-nav-secondary-item name="Dashboard" navroute="mint" [active]="active_sub_section() === 'dashboard'">
 			</orc-nav-secondary-item>
-			<orc-nav-secondary-item name="Info" navroute="mint/info" [active]="active_sub_section === 'info'"> </orc-nav-secondary-item>
-			<orc-nav-secondary-item name="Config" navroute="mint/config" [active]="active_sub_section === 'config'">
+			<orc-nav-secondary-item name="Info" navroute="mint/info" [active]="active_sub_section() === 'info'"> </orc-nav-secondary-item>
+			<orc-nav-secondary-item name="Config" navroute="mint/config" [active]="active_sub_section() === 'config'">
 			</orc-nav-secondary-item>
-			<orc-nav-secondary-item name="Keysets" navroute="mint/keysets" [active]="active_sub_section === 'keysets'">
+			<orc-nav-secondary-item name="Keysets" navroute="mint/keysets" [active]="active_sub_section() === 'keysets'">
 			</orc-nav-secondary-item>
-			<orc-nav-secondary-item name="Database" navroute="mint/database" [active]="active_sub_section === 'database'">
+			<orc-nav-secondary-item name="Database" navroute="mint/database" [active]="active_sub_section() === 'database'">
 			</orc-nav-secondary-item>
+			@if (show_server) {
+				<orc-nav-secondary-item name="Server" navroute="mint/server" [active]="active_sub_section() === 'server'">
+				</orc-nav-secondary-item>
+			}
 		</div>
 		<div nav-secondary-toolbar class="nav-secondary-toolbar">
-			<div class="section-implementation">{{ mint_info?.version }}</div>
+			<div class="section-implementation">{{ mint_info()?.version }}</div>
 			<orc-nav-secondary-more></orc-nav-secondary-more>
 		</div>
 	</orc-nav-secondary>
