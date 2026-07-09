@@ -13,3 +13,6 @@
 		</div>
 	}
 </div>
+@if (legend() === 'below' && !loading() && has_data()) {
+	<orc-chart-legend [chart]="chart()" [chart_data]="chart_data"></orc-chart-legend>
+}

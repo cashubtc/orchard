@@ -92,19 +92,6 @@ const mintInfoRpcResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, stat
 	);
 };
 
-const mintMetricsSnapshotResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
-	const mintService = inject(MintService);
-	const router = inject(Router);
-	const errorService = inject(ErrorService);
-	return mintService.getMintMetricsSnapshot().pipe(
-		catchError((error) => {
-			errorService.resolve_errors.push(error);
-			router.navigate(['mint', 'error'], {state: {error, target: state.url, sub_section: route.data['sub_section']}});
-			return of([]);
-		}),
-	);
-};
-
 const mintQuoteTtlsResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
 	const mintService = inject(MintService);
 	const router = inject(Router);
@@ -227,9 +214,6 @@ const mintQuoteTtlsResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, st
 								(m) => m.OrcMintSubsectionServerModule,
 							),
 						title: 'Orchard | Mint Server',
-						resolve: {
-							mint_metrics_snapshot: mintMetricsSnapshotResolver,
-						},
 						canActivate: [enabledGuard],
 						data: {
 							section: 'mint',

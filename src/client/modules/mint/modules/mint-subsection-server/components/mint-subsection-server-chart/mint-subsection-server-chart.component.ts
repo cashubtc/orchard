@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, input, OnChanges, OnDestroy, SimpleChanges, ViewChild, computed, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, input, OnChanges, OnDestroy, SimpleChanges, computed, signal, viewChild} from '@angular/core';
 /* Vendor Dependencies */
 import {BaseChartDirective} from 'ng2-charts';
 import {ChartConfiguration, ChartType as ChartJsType, Plugin} from 'chart.js';
@@ -14,9 +14,6 @@ import {SystemMetricsInterval} from '@shared/generated.types';
 
 export type MintServerChartUnit = 'count' | 'percent' | 'bytes' | 'seconds';
 
-/** Number of colors in the shared chart palette */
-const PALETTE_SIZE = 5;
-
 @Component({
 	selector: 'orc-mint-subsection-server-chart',
 	standalone: false,
@@ -25,7 +22,7 @@ const PALETTE_SIZE = 5;
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSubsectionServerChartComponent implements OnChanges, OnDestroy {
-	@ViewChild(BaseChartDirective) chart?: BaseChartDirective;
+	public readonly chart = viewChild(BaseChartDirective);
 
 	public locale = input.required<string>();
 	public metrics = input.required<MintMetric[]>();
@@ -35,6 +32,7 @@ export class MintSubsectionServerChartComponent implements OnChanges, OnDestroy 
 	public stacked = input<boolean>(false);
 	public color_index = input<number>(0);
 	public percentiles = input<boolean>(false);
+	public legend = input<'below' | 'none'>('none');
 	public loading = input.required<boolean>();
 
 	public chart_type!: ChartJsType;
@@ -68,7 +66,7 @@ export class MintSubsectionServerChartComponent implements OnChanges, OnDestroy 
 		this.chart_options = this.getChartOptions();
 		this.chart_plugins = this.getChartPlugins();
 		setTimeout(() => {
-			this.chart?.chart?.resize();
+			this.chart()?.chart?.resize();
 		});
 		setTimeout(() => {
 			this.displayed.set(true);
@@ -79,7 +77,7 @@ export class MintSubsectionServerChartComponent implements OnChanges, OnDestroy 
 	private getChartData(): ChartConfiguration['data'] {
 		const series_map = new Map<string, MintMetric[]>();
 		for (const metric of this.metrics()) {
-			const key = metric.labels.map((label) => `${label.name}=${label.value}`).join(',');
+			const key = `${metric.metric}|${metric.labels.map((label) => `${label.name}=${label.value}`).join(',')}`;
 			const series = series_map.get(key);
 			if (series) series.push(metric);
 			else series_map.set(key, [metric]);
@@ -89,7 +87,7 @@ export class MintSubsectionServerChartComponent implements OnChanges, OnDestroy 
 
 		const is_line = this.type() === 'line';
 		const datasets = Array.from(series_map.values()).map((series, index) => {
-			const color = this.chartService.getThemeColor((this.color_index() + index) % PALETTE_SIZE);
+			const color = this.chartService.getCategoricalColor(this.color_index() + index);
 			const muted_color = this.chartService.getMutedColor(color.border);
 			return {
 				data: series.map((metric) => ({x: metric.date * 1000, y: this.convertValue(metric.value ?? null)})),
@@ -124,7 +122,7 @@ export class MintSubsectionServerChartComponent implements OnChanges, OnDestroy 
 		];
 
 		return Array.from(series_map.values()).flatMap((series, series_index) => {
-			const color = this.chartService.getThemeColor((this.color_index() + series_index) % PALETTE_SIZE);
+			const color = this.chartService.getCategoricalColor(this.color_index() + series_index);
 			const muted_color = this.chartService.getMutedColor(color.border);
 			return percentile_configs.map((config) => ({
 				data: series.map((metric) => ({x: metric.date * 1000, y: this.convertValue(metric[config.key] ?? null)})),
@@ -215,8 +213,7 @@ export class MintSubsectionServerChartComponent implements OnChanges, OnDestroy 
 					},
 				},
 				legend: {
-					display: this.chart_data.datasets.length > 1,
-					position: 'top',
+					display: false,
 				},
 			},
 			interaction: {

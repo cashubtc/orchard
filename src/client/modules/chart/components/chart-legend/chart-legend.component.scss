@@ -1,0 +1,52 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+.chart-legend {
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-justify-center;
+	@extend %flex-gap-0-5;
+	@extend %p-t-0-5;
+	max-height: 6rem;
+	overflow-y: auto;
+}
+
+.chart-legend-entry {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+	max-width: 14rem;
+	padding: 0.125rem 0.25rem;
+	border: none;
+	background: none;
+	cursor: pointer;
+}
+
+.chart-legend-entry-hidden {
+	opacity: 0.4;
+
+	.chart-legend-label {
+		text-decoration: line-through;
+	}
+}
+
+.chart-legend-swatch {
+	width: 0.75rem;
+	height: 0.75rem;
+	flex-shrink: 0;
+	border-radius: 2px;
+	background: var(--legend-color);
+}
+
+.chart-legend-swatch-dashed {
+	border-radius: 0;
+	background: repeating-linear-gradient(to right, var(--legend-color) 0 4px, transparent 4px 8px);
+}
+
+.chart-legend-label {
+	@extend %font-size-xs;
+	@extend %orc-outline-color;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}

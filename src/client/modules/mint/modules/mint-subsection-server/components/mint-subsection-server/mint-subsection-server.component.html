@@ -27,115 +27,9 @@
 			<div class="category-rule"></div>
 		</div>
 
-		<orc-mint-subsection-server-summary [snapshots]="snapshots()"></orc-mint-subsection-server-summary>
-
 		<div class="grid mint-server-charts">
-			<div class="flex flex-column flex-gap-1">
-				<div class="title-m">Mint Operations</div>
-				<mat-card appearance="outlined" class="relative overflow-hidden">
-					<mat-card-content class="orc-surface-container-low-bg">
-						<orc-mint-subsection-server-chart
-							[locale]="locale"
-							[metrics]="operations_metrics()"
-							[interval]="settings.interval"
-							unit="count"
-							type="bar"
-							[stacked]="true"
-							[loading]="loading_metrics()"
-						></orc-mint-subsection-server-chart>
-					</mat-card-content>
-				</mat-card>
-			</div>
-
-			<div class="flex flex-column flex-gap-1">
-				<div class="title-m">Operation Latency <small class="orc-outline-color">p50 · p95 · p99</small></div>
-				<mat-card appearance="outlined" class="relative overflow-hidden">
-					<mat-card-content class="orc-surface-container-low-bg">
-						<orc-mint-subsection-server-chart
-							[locale]="locale"
-							[metrics]="operation_duration_metrics()"
-							[interval]="settings.interval"
-							unit="seconds"
-							type="line"
-							[color_index]="1"
-							[percentiles]="true"
-							[loading]="loading_metrics()"
-						></orc-mint-subsection-server-chart>
-					</mat-card-content>
-				</mat-card>
-			</div>
-
-			<div class="flex flex-column flex-gap-1">
-				<div class="title-m">HTTP Requests</div>
-				<mat-card appearance="outlined" class="relative overflow-hidden">
-					<mat-card-content class="orc-surface-container-low-bg">
-						<orc-mint-subsection-server-chart
-							[locale]="locale"
-							[metrics]="http_requests_metrics()"
-							[interval]="settings.interval"
-							unit="count"
-							type="bar"
-							[stacked]="true"
-							[loading]="loading_metrics()"
-						></orc-mint-subsection-server-chart>
-					</mat-card-content>
-				</mat-card>
-			</div>
-
-			<div class="flex flex-column flex-gap-1">
-				<div class="title-m">HTTP Latency <small class="orc-outline-color">p50 · p95 · p99</small></div>
-				<mat-card appearance="outlined" class="relative overflow-hidden">
-					<mat-card-content class="orc-surface-container-low-bg">
-						<orc-mint-subsection-server-chart
-							[locale]="locale"
-							[metrics]="http_duration_metrics()"
-							[interval]="settings.interval"
-							unit="seconds"
-							type="line"
-							[color_index]="1"
-							[percentiles]="true"
-							[loading]="loading_metrics()"
-						></orc-mint-subsection-server-chart>
-					</mat-card-content>
-				</mat-card>
-			</div>
-
-			<div class="flex flex-column flex-gap-1">
-				<div class="title-m">Database Operations</div>
-				<mat-card appearance="outlined" class="relative overflow-hidden">
-					<mat-card-content class="orc-surface-container-low-bg">
-						<orc-mint-subsection-server-chart
-							[locale]="locale"
-							[metrics]="db_operations_metrics()"
-							[interval]="settings.interval"
-							unit="count"
-							type="bar"
-							[color_index]="3"
-							[loading]="loading_metrics()"
-						></orc-mint-subsection-server-chart>
-					</mat-card-content>
-				</mat-card>
-			</div>
-
-			<div class="flex flex-column flex-gap-1">
-				<div class="title-m">Database Latency <small class="orc-outline-color">p50 · p95 · p99</small></div>
-				<mat-card appearance="outlined" class="relative overflow-hidden">
-					<mat-card-content class="orc-surface-container-low-bg">
-						<orc-mint-subsection-server-chart
-							[locale]="locale"
-							[metrics]="db_duration_metrics()"
-							[interval]="settings.interval"
-							unit="seconds"
-							type="line"
-							[color_index]="3"
-							[percentiles]="true"
-							[loading]="loading_metrics()"
-						></orc-mint-subsection-server-chart>
-					</mat-card-content>
-				</mat-card>
-			</div>
-
-			<div class="flex flex-column flex-gap-1">
+			<!-- System -->
+			<div class="col-6 flex flex-column flex-gap-1">
 				<div class="title-m">CPU Usage</div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
@@ -152,7 +46,7 @@
 				</mat-card>
 			</div>
 
-			<div class="flex flex-column flex-gap-1">
+			<div class="col-3 flex flex-column flex-gap-1">
 				<div class="title-m">Memory Usage</div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
@@ -169,7 +63,236 @@
 				</mat-card>
 			</div>
 
-			<div class="flex flex-column flex-gap-1">
+			<div class="col-3 flex flex-column flex-gap-1">
+				<div class="title-m">Memory %</div>
+				<mat-card appearance="outlined" class="relative overflow-hidden">
+					<mat-card-content class="orc-surface-container-low-bg">
+						<orc-mint-subsection-server-chart
+							[locale]="locale"
+							[metrics]="memory_percent_metrics()"
+							[interval]="settings.interval"
+							unit="percent"
+							type="line"
+							[color_index]="2"
+							[loading]="loading_metrics()"
+						></orc-mint-subsection-server-chart>
+					</mat-card-content>
+				</mat-card>
+			</div>
+
+			<!-- HTTP -->
+			<div class="col-6 flex flex-column flex-gap-1">
+				<div class="title-m">HTTP Requests</div>
+				<mat-card appearance="outlined" class="relative overflow-hidden">
+					<mat-card-content class="orc-surface-container-low-bg">
+						<orc-mint-subsection-server-chart
+							[locale]="locale"
+							[metrics]="http_requests_metrics()"
+							[interval]="settings.interval"
+							unit="count"
+							type="bar"
+							[stacked]="true"
+							legend="below"
+							[loading]="loading_metrics()"
+						></orc-mint-subsection-server-chart>
+					</mat-card-content>
+				</mat-card>
+			</div>
+
+			<div class="col-3 flex flex-column flex-gap-1">
+				<div class="title-m">HTTP Error Rate</div>
+				<mat-card appearance="outlined" class="relative overflow-hidden">
+					<mat-card-content class="orc-surface-container-low-bg">
+						<div class="mint-server-viz">
+							<orc-chart-gauge [value]="http_error_rate()" unit="%" [locale]="locale"></orc-chart-gauge>
+						</div>
+					</mat-card-content>
+				</mat-card>
+			</div>
+
+			<div class="col-3 flex flex-column flex-gap-1">
+				<div class="title-m">HTTP Requests Distribution</div>
+				<mat-card appearance="outlined" class="relative overflow-hidden">
+					<mat-card-content class="orc-surface-container-low-bg">
+						<div class="mint-server-viz">
+							<orc-chart-pie [slices]="http_distribution()"></orc-chart-pie>
+						</div>
+					</mat-card-content>
+				</mat-card>
+			</div>
+
+			<!-- HTTP latency percentiles (full width) -->
+			<div class="col-12 flex flex-column flex-gap-1">
+				<div class="title-m">HTTP Request Duration <small class="orc-outline-color">p50 · p95 · p99</small></div>
+				<mat-card appearance="outlined" class="relative overflow-hidden">
+					<mat-card-content class="orc-surface-container-low-bg">
+						<orc-mint-subsection-server-chart
+							[locale]="locale"
+							[metrics]="http_duration_metrics()"
+							[interval]="settings.interval"
+							unit="seconds"
+							type="line"
+							[color_index]="1"
+							[percentiles]="true"
+							legend="below"
+							[loading]="loading_metrics()"
+						></orc-mint-subsection-server-chart>
+					</mat-card-content>
+				</mat-card>
+			</div>
+
+			<!-- Mint -->
+			<div class="col-6 flex flex-column flex-gap-1">
+				<div class="title-m">Mint Operations</div>
+				<mat-card appearance="outlined" class="relative overflow-hidden">
+					<mat-card-content class="orc-surface-container-low-bg">
+						<orc-mint-subsection-server-chart
+							[locale]="locale"
+							[metrics]="operations_metrics()"
+							[interval]="settings.interval"
+							unit="count"
+							type="bar"
+							[stacked]="true"
+							legend="below"
+							[loading]="loading_metrics()"
+						></orc-mint-subsection-server-chart>
+					</mat-card-content>
+				</mat-card>
+			</div>
+
+			<div class="col-6 flex flex-column flex-gap-1">
+				<div class="title-m">In-Flight Mint Requests</div>
+				<mat-card appearance="outlined" class="relative overflow-hidden">
+					<mat-card-content class="orc-surface-container-low-bg">
+						<orc-mint-subsection-server-chart
+							[locale]="locale"
+							[metrics]="in_flight_metrics()"
+							[interval]="settings.interval"
+							unit="count"
+							type="line"
+							[color_index]="3"
+							legend="below"
+							[loading]="loading_metrics()"
+						></orc-mint-subsection-server-chart>
+					</mat-card-content>
+				</mat-card>
+			</div>
+
+			<!-- Mint latency percentiles (full width) -->
+			<div class="col-12 flex flex-column flex-gap-1">
+				<div class="title-m">Mint Operation Duration <small class="orc-outline-color">p50 · p95 · p99</small></div>
+				<mat-card appearance="outlined" class="relative overflow-hidden">
+					<mat-card-content class="orc-surface-container-low-bg">
+						<orc-mint-subsection-server-chart
+							[locale]="locale"
+							[metrics]="operation_duration_metrics()"
+							[interval]="settings.interval"
+							unit="seconds"
+							type="line"
+							[color_index]="1"
+							[percentiles]="true"
+							legend="below"
+							[loading]="loading_metrics()"
+						></orc-mint-subsection-server-chart>
+					</mat-card-content>
+				</mat-card>
+			</div>
+
+			<!-- Database -->
+			<div class="col-6 flex flex-column flex-gap-1">
+				<div class="title-m">Database Operations</div>
+				<mat-card appearance="outlined" class="relative overflow-hidden">
+					<mat-card-content class="orc-surface-container-low-bg">
+						<orc-mint-subsection-server-chart
+							[locale]="locale"
+							[metrics]="db_operations_metrics()"
+							[interval]="settings.interval"
+							unit="count"
+							type="bar"
+							[color_index]="3"
+							legend="below"
+							[loading]="loading_metrics()"
+						></orc-mint-subsection-server-chart>
+					</mat-card-content>
+				</mat-card>
+			</div>
+
+			<div class="col-6 flex flex-column flex-gap-1">
+				<div class="title-m">Database Connections</div>
+				<mat-card appearance="outlined" class="relative overflow-hidden">
+					<mat-card-content class="orc-surface-container-low-bg">
+						<orc-mint-subsection-server-chart
+							[locale]="locale"
+							[metrics]="db_connections_metrics()"
+							[interval]="settings.interval"
+							unit="count"
+							type="line"
+							[color_index]="4"
+							[loading]="loading_metrics()"
+						></orc-mint-subsection-server-chart>
+					</mat-card-content>
+				</mat-card>
+			</div>
+
+			<!-- Database latency percentiles (full width) -->
+			<div class="col-12 flex flex-column flex-gap-1">
+				<div class="title-m">Database Operation Duration <small class="orc-outline-color">p50 · p95 · p99</small></div>
+				<mat-card appearance="outlined" class="relative overflow-hidden">
+					<mat-card-content class="orc-surface-container-low-bg">
+						<orc-mint-subsection-server-chart
+							[locale]="locale"
+							[metrics]="db_duration_metrics()"
+							[interval]="settings.interval"
+							unit="seconds"
+							type="line"
+							[color_index]="3"
+							[percentiles]="true"
+							legend="below"
+							[loading]="loading_metrics()"
+						></orc-mint-subsection-server-chart>
+					</mat-card-content>
+				</mat-card>
+			</div>
+
+			<!-- Activity -->
+			<div class="col-6 flex flex-column flex-gap-1">
+				<div class="title-m">Authentication Rate</div>
+				<mat-card appearance="outlined" class="relative overflow-hidden">
+					<mat-card-content class="orc-surface-container-low-bg">
+						<orc-mint-subsection-server-chart
+							[locale]="locale"
+							[metrics]="auth_metrics()"
+							[interval]="settings.interval"
+							unit="count"
+							type="line"
+							[color_index]="0"
+							legend="below"
+							[loading]="loading_metrics()"
+						></orc-mint-subsection-server-chart>
+					</mat-card-content>
+				</mat-card>
+			</div>
+
+			<div class="col-6 flex flex-column flex-gap-1">
+				<div class="title-m">Wallet &amp; Payment Operations</div>
+				<mat-card appearance="outlined" class="relative overflow-hidden">
+					<mat-card-content class="orc-surface-container-low-bg">
+						<orc-mint-subsection-server-chart
+							[locale]="locale"
+							[metrics]="wallet_metrics()"
+							[interval]="settings.interval"
+							unit="count"
+							type="bar"
+							[color_index]="2"
+							legend="below"
+							[loading]="loading_metrics()"
+						></orc-mint-subsection-server-chart>
+					</mat-card-content>
+				</mat-card>
+			</div>
+
+			<!-- Errors (full width) -->
+			<div class="col-12 flex flex-column flex-gap-1">
 				<div class="title-m">Errors</div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
@@ -180,6 +303,7 @@
 							unit="count"
 							type="bar"
 							[color_index]="4"
+							legend="below"
 							[loading]="loading_metrics()"
 						></orc-mint-subsection-server-chart>
 					</mat-card-content>

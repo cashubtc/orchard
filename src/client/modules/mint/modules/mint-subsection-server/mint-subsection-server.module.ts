@@ -14,19 +14,14 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {BaseChartDirective as ChartJsBaseChartDirective} from 'ng2-charts';
 /* Application Dependencies */
 import {OrcFormModule} from '@client/modules/form/form.module';
+import {OrcChartModule} from '@client/modules/chart/chart.module';
 /* Local Dependencies */
 import {MintSubsectionServerComponent} from './components/mint-subsection-server/mint-subsection-server.component';
 import {MintSubsectionServerControlComponent} from './components/mint-subsection-server-control/mint-subsection-server-control.component';
-import {MintSubsectionServerSummaryComponent} from './components/mint-subsection-server-summary/mint-subsection-server-summary.component';
 import {MintSubsectionServerChartComponent} from './components/mint-subsection-server-chart/mint-subsection-server-chart.component';
 
 @NgModule({
-	declarations: [
-		MintSubsectionServerComponent,
-		MintSubsectionServerControlComponent,
-		MintSubsectionServerSummaryComponent,
-		MintSubsectionServerChartComponent,
-	],
+	declarations: [MintSubsectionServerComponent, MintSubsectionServerControlComponent, MintSubsectionServerChartComponent],
 	imports: [
 		CoreRouterModule.forChild([
 			{
@@ -45,6 +40,7 @@ import {MintSubsectionServerChartComponent} from './components/mint-subsection-s
 		MatProgressSpinnerModule,
 		ChartJsBaseChartDirective,
 		OrcFormModule,
+		OrcChartModule,
 	],
 	exports: [],
 })

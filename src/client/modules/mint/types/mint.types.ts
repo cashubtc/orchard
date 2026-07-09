@@ -34,7 +34,6 @@ import {
 	OrchardMintWatchdogStatus,
 	OrchardMintKeysetCount,
 	OrchardMintMetrics,
-	OrchardMintMetricsSnapshot,
 	SystemMetricsInterval,
 } from '@shared/generated.types';
 
@@ -259,10 +258,6 @@ export type MintWatchdogStatusResponse = {
 
 export type MintMetricsResponse = {
 	mint_metrics: OrchardMintMetrics[];
-};
-
-export type MintMetricsSnapshotResponse = {
-	mint_metrics_snapshot: OrchardMintMetricsSnapshot[];
 };
 
 export type MintNut04QuoteUpdateResponse = {

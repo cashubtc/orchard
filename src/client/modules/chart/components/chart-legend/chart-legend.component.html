@@ -1,0 +1,19 @@
+@if (entries().length) {
+	<div class="chart-legend">
+		@for (entry of entries(); track entry.index) {
+			<button
+				type="button"
+				class="chart-legend-entry"
+				[class.chart-legend-entry-hidden]="isHidden(entry.index)"
+				(click)="onToggle(entry)"
+			>
+				<span
+					class="chart-legend-swatch"
+					[class.chart-legend-swatch-dashed]="entry.dashed"
+					[style.--legend-color]="entry.color"
+				></span>
+				<span class="chart-legend-label" [title]="entry.label">{{ entry.label }}</span>
+			</button>
+		}
+	</div>
+}

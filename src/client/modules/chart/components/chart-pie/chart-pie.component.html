@@ -1,0 +1,6 @@
+<div class="chart-pie">
+	<div class="chart-pie-canvas">
+		<canvas baseChart [data]="chart_data()" [options]="chart_options" [type]="chart_type"></canvas>
+	</div>
+	<orc-chart-legend [chart]="chart()" [chart_data]="chart_data()" [datapoint_mode]="true"></orc-chart-legend>
+</div>

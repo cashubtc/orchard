@@ -31,13 +31,12 @@ describe('MintSubsectionServerComponent', () => {
 			providers: [
 				{
 					provide: ActivatedRoute,
-					useValue: {snapshot: {data: {mint_metrics_snapshot: []}}},
+					useValue: {snapshot: {data: {}}},
 				},
 				{
 					provide: MintService,
 					useValue: {
 						loadMintMetrics: jasmine.createSpy('loadMintMetrics').and.returnValue(of([])),
-						getMintMetricsSnapshot: jasmine.createSpy('getMintMetricsSnapshot').and.returnValue(of([])),
 						clearMetricsCache: jasmine.createSpy('clearMetricsCache'),
 					},
 				},

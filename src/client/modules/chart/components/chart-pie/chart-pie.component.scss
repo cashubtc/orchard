@@ -1,0 +1,15 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+.chart-pie {
+	@extend %flex;
+	@extend %flex-column;
+	width: 100%;
+	height: 100%;
+}
+
+.chart-pie-canvas {
+	@extend %flex-grow;
+	position: relative;
+	min-height: 8rem;
+}

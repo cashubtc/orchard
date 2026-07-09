@@ -8,6 +8,7 @@
 	@extend %p-l-1;
 	@extend %p-r-1;
 	@extend %p-b-1;
+	container-type: inline-size;
 }
 
 .mint-server-control-panel {
@@ -19,7 +20,47 @@
 
 .mint-server-charts {
 	@extend %flex-gap-1;
-	grid-template-columns: repeat(auto-fit, minmax(min(30rem, 100%), 1fr));
+	grid-template-columns: repeat(12, 1fr);
+}
+
+.mint-server-charts > .col-3 {
+	grid-column: span 3;
+}
+
+.mint-server-charts > .col-6 {
+	grid-column: span 6;
+}
+
+.mint-server-charts > .col-12 {
+	grid-column: span 12;
+}
+
+// Tablet: collapse to a 6-column grid (halves stay half, wide/full panels become full)
+@container (max-width: 60rem) {
+	.mint-server-charts {
+		grid-template-columns: repeat(6, 1fr);
+	}
+
+	.mint-server-charts > .col-6,
+	.mint-server-charts > .col-12 {
+		grid-column: span 6;
+	}
+}
+
+// Mobile: single column
+@container (max-width: 36rem) {
+	.mint-server-charts {
+		grid-template-columns: repeat(1, 1fr);
+	}
+
+	.mint-server-charts > [class*='col-'] {
+		grid-column: 1 / -1;
+	}
+}
+
+// Fixed-height wrapper so gauge/pie panels align with the 280px chart panels
+.mint-server-viz {
+	height: 280px;
 }
 
 .refresh-spinning {

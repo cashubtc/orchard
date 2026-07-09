@@ -14,9 +14,8 @@ import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.
 import {MintMetrics} from '@server/modules/cashu/mintmetrics/mintmetrics.entity';
 import {MintMetricType} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
 import {SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
-import {flattenFamily} from '@server/modules/prometheus/prometheus.helpers';
 /* Local Dependencies */
-import {OrchardMintMetrics, OrchardMintMetricsSnapshot} from './mintmetrics.model';
+import {OrchardMintMetrics} from './mintmetrics.model';
 
 interface MintMetricsArgs {
 	date_start?: number;
@@ -50,35 +49,6 @@ export class ApiMintMetricsService {
 			const date_end = args.date_end ?? now;
 			const data = await this.mintMetricsService.getMetrics(date_start, date_end, args.metrics);
 			return this.aggregateByInterval(data, interval, args.timezone);
-		} catch (error) {
-			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
-				errord: OrchardErrorCode.MintMetricsError,
-			});
-			throw new OrchardApiError(orchard_error);
-		}
-	}
-
-	/**
-	 * Gets a live snapshot of the mint prometheus exporter
-	 */
-	async getSnapshot(tag: string): Promise<OrchardMintMetricsSnapshot[]> {
-		try {
-			await this.guardSupport();
-			const families = await this.mintMetricsService.scrapeMintMetrics();
-			return families.flatMap((family) => {
-				if (family.type !== 'gauge' && family.type !== 'counter' && family.type !== 'histogram') return [];
-				return flattenFamily(family).map(
-					(series) =>
-						new OrchardMintMetricsSnapshot(
-							series.name,
-							series.labels,
-							series.type as MintMetricType,
-							series.value,
-							series.sum,
-							series.count,
-						),
-				);
-			});
 		} catch (error) {
 			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
 				errord: OrchardErrorCode.MintMetricsError,

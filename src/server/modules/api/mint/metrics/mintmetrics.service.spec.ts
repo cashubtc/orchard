@@ -78,7 +78,7 @@ describe('ApiMintMetricsService', () => {
 
 		it('throws MintSupportError when the metrics endpoint setting is unset', async () => {
 			settingService.getStringSetting.mockResolvedValue(null);
-			await expect(apiMintMetricsService.getSnapshot('tag')).rejects.toBeInstanceOf(OrchardApiError);
+			await expect(apiMintMetricsService.getMetrics('tag', {})).rejects.toBeInstanceOf(OrchardApiError);
 		});
 	});
 
@@ -208,39 +208,6 @@ describe('ApiMintMetricsService', () => {
 		it('wraps data source errors in OrchardApiError', async () => {
 			mintMetricsService.getMetrics.mockRejectedValue(new Error('boom'));
 			await expect(apiMintMetricsService.getMetrics('tag', {})).rejects.toBeInstanceOf(OrchardApiError);
-		});
-	});
-
-	describe('getSnapshot', () => {
-		it('flattens families into snapshot models', async () => {
-			mintMetricsService.scrapeMintMetrics.mockResolvedValue([
-				{name: 'process_memory_bytes', type: 'gauge', samples: [{labels: {}, value: 1024}]},
-				{
-					name: 'cdk_mint_operation_duration_seconds',
-					type: 'histogram',
-					samples: [],
-					sum_samples: [{labels: {operation: 'swap'}, value: 0.2}],
-					count_samples: [{labels: {operation: 'swap'}, value: 4}],
-				},
-			]);
-
-			const out = await apiMintMetricsService.getSnapshot('tag');
-
-			expect(out).toHaveLength(2);
-			expect(out[0]).toMatchObject({metric: 'process_memory_bytes', type: 'gauge', value: 1024, sum: null, count: null});
-			expect(out[1]).toMatchObject({
-				metric: 'cdk_mint_operation_duration_seconds',
-				type: 'histogram',
-				value: null,
-				sum: 0.2,
-				count: 4,
-			});
-			expect(out[1].labels).toEqual([{name: 'operation', value: 'swap'}]);
-		});
-
-		it('wraps scrape errors in OrchardApiError', async () => {
-			mintMetricsService.scrapeMintMetrics.mockRejectedValue(new Error('ECONNREFUSED'));
-			await expect(apiMintMetricsService.getSnapshot('tag')).rejects.toBeInstanceOf(OrchardApiError);
 		});
 	});
 });

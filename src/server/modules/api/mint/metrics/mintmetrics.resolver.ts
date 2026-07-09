@@ -7,7 +7,7 @@ import {Timezone, TimezoneType} from '@server/modules/graphql/scalars/timezone.s
 /* Native Dependencies */
 import {SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
 /* Local Dependencies */
-import {OrchardMintMetrics, OrchardMintMetricsSnapshot} from './mintmetrics.model';
+import {OrchardMintMetrics} from './mintmetrics.model';
 import {ApiMintMetricsService} from './mintmetrics.service';
 
 @Resolver()
@@ -32,14 +32,5 @@ export class MintMetricsResolver {
 		const tag = 'GET { mint_metrics }';
 		this.logger.debug(tag);
 		return await this.apiMintMetricsService.getMetrics(tag, {date_start, date_end, interval, timezone, metrics});
-	}
-
-	@Query(() => [OrchardMintMetricsSnapshot], {
-		description: 'Get a live snapshot of the mint prometheus exporter. Throws on backends without metrics (e.g. nutshell).',
-	})
-	async mint_metrics_snapshot(): Promise<OrchardMintMetricsSnapshot[]> {
-		const tag = 'GET { mint_metrics_snapshot }';
-		this.logger.debug(tag);
-		return await this.apiMintMetricsService.getSnapshot(tag);
 	}
 }

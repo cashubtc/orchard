@@ -51,7 +51,6 @@ import {
 	MintActivitySummaryResponse,
 	MintMetricsArgs,
 	MintMetricsResponse,
-	MintMetricsSnapshotResponse,
 } from '@client/modules/mint/types/mint.types';
 import {ApiService} from '@client/modules/api/services/api/api.service';
 import {CacheService} from '@client/modules/cache/services/cache/cache.service';
@@ -69,7 +68,7 @@ import {MintKeysetCount} from '@client/modules/mint/classes/mint-keyset-count.cl
 import {MintDatabaseInfo} from '@client/modules/mint/classes/mint-database-info.class';
 import {MintActivitySummary} from '@client/modules/mint/classes/mint-activity-summary.class';
 import {MintWatchdogStatus} from '@client/modules/mint/classes/mint-watchdog-status.class';
-import {MintMetric, MintMetricSnapshot} from '@client/modules/mint/classes/mint-metric.class';
+import {MintMetric} from '@client/modules/mint/classes/mint-metric.class';
 /* Shared Dependencies */
 import {AnalyticsInterval, MintActivityPeriod, OrchardContact, OrchardMintAnalytics, MintUnit} from '@shared/generated.types';
 /* Local Dependencies */
@@ -117,7 +116,6 @@ import {
 	MINT_WATCHDOG_STATUS_QUERY,
 	MINT_ACTIVITY_SUMMARY_QUERY,
 	MINT_METRICS_QUERY,
-	MINT_METRICS_SNAPSHOT_QUERY,
 } from './mint.queries';
 
 @Injectable({
@@ -867,23 +865,6 @@ export class MintService {
 			}),
 			catchError((error) => {
 				console.error('Error loading mint metrics:', error);
-				return throwError(() => error);
-			}),
-		);
-	}
-
-	/** Gets a live snapshot of the mint prometheus exporter (uncached, polling target) */
-	public getMintMetricsSnapshot(): Observable<MintMetricSnapshot[]> {
-		const query = getApiQuery(MINT_METRICS_SNAPSHOT_QUERY);
-
-		return this.http.post<OrchardRes<MintMetricsSnapshotResponse>>(this.apiService.api, query).pipe(
-			map((response) => {
-				if (response.errors) throw new OrchardErrors(response.errors);
-				return response.data.mint_metrics_snapshot;
-			}),
-			map((snapshots) => snapshots.map((snapshot) => new MintMetricSnapshot(snapshot))),
-			catchError((error) => {
-				console.error('Error loading mint metrics snapshot:', error);
 				return throwError(() => error);
 			}),
 		);

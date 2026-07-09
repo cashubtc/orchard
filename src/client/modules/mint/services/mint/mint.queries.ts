@@ -545,18 +545,3 @@ query MintMetrics($date_start: UnixTimestamp, $date_end: UnixTimestamp, $interva
 		p99
 	}
 }`;
-
-export const MINT_METRICS_SNAPSHOT_QUERY = `
-query MintMetricsSnapshot {
-	mint_metrics_snapshot {
-		metric
-		labels {
-			name
-			value
-		}
-		type
-		value
-		sum
-		count
-	}
-}`;

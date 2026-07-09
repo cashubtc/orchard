@@ -78,33 +78,3 @@ export class OrchardMintMetrics {
 		this.p99 = options?.p99 ?? null;
 	}
 }
-
-@ObjectType({description: 'Live mint server metric sample'})
-export class OrchardMintMetricsSnapshot {
-	@Field({description: 'Prometheus metric family name'})
-	metric: string;
-
-	@Field(() => [OrchardMintMetricLabel], {description: 'Labels identifying the series'})
-	labels: OrchardMintMetricLabel[];
-
-	@Field(() => MintMetricType, {description: 'Type of metric'})
-	type: MintMetricType;
-
-	@Field(() => Float, {nullable: true, description: 'Current gauge value or cumulative counter value'})
-	value: number | null;
-
-	@Field(() => Float, {nullable: true, description: 'Histogram cumulative sum of observations'})
-	sum: number | null;
-
-	@Field(() => Float, {nullable: true, description: 'Histogram cumulative observation count'})
-	count: number | null;
-
-	constructor(metric: string, labels: string, type: MintMetricType, value: number | null, sum: number | null, count: number | null) {
-		this.metric = metric;
-		this.labels = parseCanonicalLabels(labels);
-		this.type = type;
-		this.value = value;
-		this.sum = sum;
-		this.count = count;
-	}
-}

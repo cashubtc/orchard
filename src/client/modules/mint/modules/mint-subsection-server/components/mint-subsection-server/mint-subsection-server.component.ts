@@ -1,10 +1,9 @@
 /* Core Dependencies */
 import {ChangeDetectionStrategy, Component, OnInit, OnDestroy, computed, inject, signal} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
-import {EMPTY, Subscription, catchError, forkJoin, of, timer, switchMap, takeWhile} from 'rxjs';
+import {Subscription} from 'rxjs';
 /* Application Dependencies */
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {SettingDeviceService} from '@client/modules/settings/services/setting-device/setting-device.service';
@@ -16,11 +15,11 @@ import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 import {resolveDateRangePreset} from '@client/modules/form/helpers/form-daterange.helpers';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 /* Native Dependencies */
-import {MintMetric, MintMetricSnapshot} from '@client/modules/mint/classes/mint-metric.class';
+import {MintMetric} from '@client/modules/mint/classes/mint-metric.class';
+import {computeHttpErrorRate, computeEndpointDistribution} from '@client/modules/mint/helpers/mint-http-metric.helpers';
 /* Shared Dependencies */
 import {AssistantToolName, SystemMetricsInterval} from '@shared/generated.types';
 
-const SNAPSHOT_POLL_INTERVAL_MS = 30000;
 const METRICS_RETENTION_DAYS = 90;
 const CHART_METRIC_FAMILIES = [
 	'cdk_mint_operations_total',
@@ -32,6 +31,13 @@ const CHART_METRIC_FAMILIES = [
 	'cdk_errors_total',
 	'process_cpu_usage_percent',
 	'process_memory_bytes',
+	'process_memory_percent',
+	'cdk_mint_in_flight_requests',
+	'cdk_db_connections_active',
+	'cdk_auth_attempts_total',
+	'cdk_auth_successes_total',
+	'cdk_wallet_operations_total',
+	'cdk_payments_total',
 ];
 
 @Component({
@@ -42,7 +48,6 @@ const CHART_METRIC_FAMILIES = [
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSubsectionServerComponent implements OnInit, OnDestroy {
-	private readonly route = inject(ActivatedRoute);
 	private readonly mintService = inject(MintService);
 	private readonly settingDeviceService = inject(SettingDeviceService);
 	private readonly settingAppService = inject(SettingAppService);
@@ -52,7 +57,6 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 	public locale!: string;
 
 	public readonly page_settings = signal<NonNullableMintServerSettings | null>(null);
-	public readonly snapshots = signal<MintMetricSnapshot[]>([]);
 	public readonly metrics = signal<MintMetric[]>([]);
 	public readonly loading_metrics = signal<boolean>(true);
 	public readonly refreshing = signal<boolean>(false);
@@ -67,16 +71,24 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 	public readonly errors_metrics = computed(() => this.filterMetrics('cdk_errors_total'));
 	public readonly cpu_metrics = computed(() => this.filterMetrics('process_cpu_usage_percent'));
 	public readonly memory_metrics = computed(() => this.filterMetrics('process_memory_bytes'));
+	public readonly memory_percent_metrics = computed(() => this.filterMetrics('process_memory_percent'));
+	public readonly in_flight_metrics = computed(() => this.filterMetrics('cdk_mint_in_flight_requests'));
+	public readonly db_connections_metrics = computed(() => this.filterMetrics('cdk_db_connections_active'));
+	public readonly auth_metrics = computed(() =>
+		this.metrics().filter((metric) => metric.metric === 'cdk_auth_attempts_total' || metric.metric === 'cdk_auth_successes_total'),
+	);
+	public readonly wallet_metrics = computed(() =>
+		this.metrics().filter((metric) => metric.metric === 'cdk_wallet_operations_total' || metric.metric === 'cdk_payments_total'),
+	);
+	public readonly http_error_rate = computed(() => computeHttpErrorRate(this.http_requests_metrics()));
+	public readonly http_distribution = computed(() => computeEndpointDistribution(this.http_requests_metrics()));
 
-	private polling_active = true;
 	private subscriptions = new Subscription();
 
 	ngOnInit(): void {
 		this.locale = this.settingDeviceService.getLocale();
-		this.snapshots.set(this.route.snapshot.data['mint_metrics_snapshot'] ?? []);
 		this.page_settings.set(this.getPageSettings());
 		this.subscriptions.add(this.getBreakpointSubscription());
-		this.subscriptions.add(this.getSnapshotPollingSubscription());
 		this.orchardOptionalInit();
 		this.loadMetrics();
 	}
@@ -129,26 +141,6 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 		Subscriptions
 	******************************************************** */
 
-	/** Polls the live metrics snapshot; stops polling if the endpoint becomes unreachable */
-	private getSnapshotPollingSubscription(): Subscription {
-		return timer(SNAPSHOT_POLL_INTERVAL_MS, SNAPSHOT_POLL_INTERVAL_MS)
-			.pipe(
-				takeWhile(() => this.polling_active),
-				switchMap(() =>
-					this.mintService.getMintMetricsSnapshot().pipe(
-						catchError((error) => {
-							console.error('Failed to fetch mint metrics snapshot, polling stopped:', error);
-							this.polling_active = false;
-							return EMPTY;
-						}),
-					),
-				),
-			)
-			.subscribe((snapshots: MintMetricSnapshot[]) => {
-				this.snapshots.set(snapshots);
-			});
-	}
-
 	private getBreakpointSubscription(): Subscription {
 		return this.breakpointObserver.observe([Breakpoints.XSmall, Breakpoints.Small, Breakpoints.Medium]).subscribe((result) => {
 			if (result.breakpoints[Breakpoints.XSmall]) {
@@ -196,7 +188,7 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 		return this.metrics().filter((m) => m.metric === metric);
 	}
 
-	/** Forces a fresh fetch of both the stored series and the live snapshot, then pulses the page */
+	/** Forces a fresh fetch of the stored series, then pulses the page */
 	public onRefresh(): void {
 		const settings = this.page_settings();
 		if (!settings || this.refreshing()) return;
@@ -204,27 +196,25 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 		this.loading_metrics.set(true);
 		this.mintService.clearMetricsCache();
 		this.subscriptions.add(
-			forkJoin({
-				metrics: this.mintService.loadMintMetrics({
+			this.mintService
+				.loadMintMetrics({
 					date_start: settings.date_start,
 					date_end: settings.date_end,
 					interval: settings.interval,
 					timezone: this.settingDeviceService.getTimezone(),
 					metrics: CHART_METRIC_FAMILIES,
+				})
+				.subscribe({
+					next: (metrics: MintMetric[]) => {
+						this.metrics.set(metrics);
+						this.loading_metrics.set(false);
+						this.refreshing.set(false);
+					},
+					error: () => {
+						this.loading_metrics.set(false);
+						this.refreshing.set(false);
+					},
 				}),
-				snapshot: this.mintService.getMintMetricsSnapshot().pipe(catchError(() => of(null))),
-			}).subscribe({
-				next: ({metrics, snapshot}) => {
-					this.metrics.set(metrics);
-					if (snapshot) this.snapshots.set(snapshot);
-					this.loading_metrics.set(false);
-					this.refreshing.set(false);
-				},
-				error: () => {
-					this.loading_metrics.set(false);
-					this.refreshing.set(false);
-				},
-			}),
 		);
 	}
 
@@ -295,7 +285,6 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 	******************************************************** */
 
 	ngOnDestroy(): void {
-		this.polling_active = false;
 		this.subscriptions.unsubscribe();
 	}
 }

@@ -1,12 +1,17 @@
 /* Core Dependencies */
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
+/* Vendor Dependencies */
+import {BaseChartDirective} from 'ng2-charts';
 /* Local Dependencies */
 import {ChartGraphicBarsComponent} from './components/chart-graphic-bars/chart-graphic-bars.component';
+import {ChartLegendComponent} from './components/chart-legend/chart-legend.component';
+import {ChartGaugeComponent} from './components/chart-gauge/chart-gauge.component';
+import {ChartPieComponent} from './components/chart-pie/chart-pie.component';
 
 @NgModule({
-	declarations: [ChartGraphicBarsComponent],
-	imports: [CommonModule],
-	exports: [ChartGraphicBarsComponent],
+	declarations: [ChartGraphicBarsComponent, ChartLegendComponent, ChartGaugeComponent, ChartPieComponent],
+	imports: [CommonModule, BaseChartDirective],
+	exports: [ChartGraphicBarsComponent, ChartLegendComponent, ChartGaugeComponent, ChartPieComponent],
 })
 export class OrcChartModule {}

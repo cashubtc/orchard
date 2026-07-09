@@ -168,4 +168,19 @@ describe('ChartService', () => {
 			expect(service.formatOracleTooltipLabel(ctx, false)).toBe('COUNT: 5');
 		});
 	});
+
+	describe('getCategoricalColor', () => {
+		it('returns the six base hues first, then derived shades, cycling by index', () => {
+			expect(service.categorical_palette_size).toBe(18);
+			// The first six indices are the user-supplied base palette
+			expect(service.getCategoricalColor(0).border).toBe('#4BE0D8');
+			expect(service.getCategoricalColor(5).border).toBe('#06B4EA');
+			// Later indices derive related shades (not one of the base hues)
+			expect(service.getCategoricalColor(6).border).not.toBe('#4BE0D8');
+			// Index wraps around the full palette
+			expect(service.getCategoricalColor(18).border).toBe(service.getCategoricalColor(0).border);
+			// bg is a translucent rgba of the border colour
+			expect(service.getCategoricalColor(0).bg).toContain('rgba(');
+		});
+	});
 });
