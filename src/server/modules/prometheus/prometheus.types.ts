@@ -12,3 +12,12 @@ export type PromFamily = {
 	sum_samples?: PromSample[];
 	count_samples?: PromSample[];
 };
+
+export type PromFlatSeries = {
+	name: string;
+	labels: string;
+	type: PromMetricType;
+	value: number | null;
+	sum: number | null;
+	count: number | null;
+};

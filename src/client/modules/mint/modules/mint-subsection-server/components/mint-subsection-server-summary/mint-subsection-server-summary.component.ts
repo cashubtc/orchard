@@ -12,7 +12,6 @@ import {MintMetricSnapshot} from '@client/modules/mint/classes/mint-metric.class
 })
 export class MintSubsectionServerSummaryComponent {
 	public snapshots = input.required<MintMetricSnapshot[]>();
-	public loading = input.required<boolean>();
 	public pulsing = input<boolean>(false);
 
 	public readonly cpu_percent = computed(() => this.getValue('process_cpu_usage_percent'));

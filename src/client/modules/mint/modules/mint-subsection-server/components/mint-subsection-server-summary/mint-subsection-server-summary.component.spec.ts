@@ -23,7 +23,6 @@ describe('MintSubsectionServerSummaryComponent', () => {
 		fixture = TestBed.createComponent(MintSubsectionServerSummaryComponent);
 		component = fixture.componentInstance;
 		fixture.componentRef.setInput('snapshots', []);
-		fixture.componentRef.setInput('loading', false);
 		fixture.detectChanges();
 	});
 

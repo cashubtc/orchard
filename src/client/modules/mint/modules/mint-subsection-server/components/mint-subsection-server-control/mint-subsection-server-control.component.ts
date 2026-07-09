@@ -26,10 +26,6 @@ type IntervalOption = {
 })
 export class MintSubsectionServerControlComponent {
 	public page_settings = input.required<NonNullableMintServerSettings>();
-	public date_start = input<number>();
-	public date_end = input<number>();
-	public date_preset = input<DateRangePreset | null>(null);
-	public interval = input<MintMetricsInterval>();
 	public loading = input.required<boolean>();
 	public device_type = input.required<DeviceType>();
 
@@ -66,28 +62,17 @@ export class MintSubsectionServerControlComponent {
 			untracked(() => this.initForm());
 		});
 
-		// Sync date_start input to form
+		// Sync page settings into the form when they change
 		effect(() => {
-			const date_start = this.date_start();
-			if (!date_start) return;
-			if (this.panel.controls.daterange.controls.date_start.value?.toSeconds() === date_start) return;
-			this.panel.controls.daterange.controls.date_start.setValue(DateTime.fromSeconds(date_start));
-		});
-
-		// Sync date_end input to form
-		effect(() => {
-			const date_end = this.date_end();
-			if (!date_end) return;
-			if (this.panel.controls.daterange.controls.date_end.value?.toSeconds() === date_end) return;
-			this.panel.controls.daterange.controls.date_end.setValue(DateTime.fromSeconds(date_end));
-		});
-
-		// Sync interval input to form
-		effect(() => {
-			const interval = this.interval();
-			if (!interval) return;
-			if (this.panel.controls.interval.value === interval) return;
-			this.panel.controls.interval.setValue(interval);
+			const settings = this.page_settings();
+			const date_start_control = this.panel.controls.daterange.controls.date_start;
+			const date_end_control = this.panel.controls.daterange.controls.date_end;
+			const interval_control = this.panel.controls.interval;
+			if (date_start_control.value?.toSeconds() !== settings.date_start)
+				date_start_control.setValue(DateTime.fromSeconds(settings.date_start));
+			if (date_end_control.value?.toSeconds() !== settings.date_end)
+				date_end_control.setValue(DateTime.fromSeconds(settings.date_end));
+			if (interval_control.value !== settings.interval) interval_control.setValue(settings.interval);
 		});
 	}
 

@@ -24,7 +24,7 @@
 						matIconSuffix
 						[date_start]="panel.controls.daterange.controls.date_start.value"
 						[date_end]="panel.controls.daterange.controls.date_end.value"
-						[active_preset]="date_preset()"
+						[active_preset]="page_settings().date_preset"
 						[device_type]="device_type()"
 						(presetChange)="onPresetChange($event)"
 						(dateRangeChange)="onDateRangeChange($event)"

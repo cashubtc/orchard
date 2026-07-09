@@ -42,7 +42,7 @@ export class LocalStorageService {
 		MINT_CONFIG_KEY: 'v1.mint.config.settings',
 		MINT_KEYSETS_KEY: 'v1.mint.keysets.settings',
 		MINT_DATABASE_KEY: 'v1.mint.database.settings',
-        MINT_SERVER_KEY: 'v0.mint.server.settings',
+		MINT_SERVER_KEY: 'v0.mint.server.settings',
 		/* Settings Settings */
 		SETTINGS_DEVICE_KEY: 'v1.settings.device.settings',
 		SETTINGS_APP_KEY: 'v0.settings.app.settings',

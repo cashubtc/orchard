@@ -5,10 +5,6 @@
 				<orc-mint-subsection-server-control
 					class="flex-grow"
 					[page_settings]="settings"
-					[date_start]="settings.date_start"
-					[date_end]="settings.date_end"
-					[date_preset]="settings.date_preset"
-					[interval]="settings.interval"
 					[loading]="loading_metrics()"
 					[device_type]="device_type()"
 					(dateChange)="onDateChange($event)"
@@ -31,11 +27,7 @@
 			<div class="category-rule"></div>
 		</div>
 
-		<orc-mint-subsection-server-summary
-			[snapshots]="snapshots()"
-			[loading]="false"
-			[pulsing]="pulsing()"
-		></orc-mint-subsection-server-summary>
+		<orc-mint-subsection-server-summary [snapshots]="snapshots()" [pulsing]="pulsing()"></orc-mint-subsection-server-summary>
 
 		<div class="grid mint-server-charts">
 			<div class="flex flex-column flex-gap-1">

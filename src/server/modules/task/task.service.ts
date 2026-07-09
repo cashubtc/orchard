@@ -304,7 +304,6 @@ export class TaskService {
 		}
 	}
 
-
 	/**
 	 * Collect mint prometheus metrics every minute
 	 * Runs only for cdk mints with a configured metrics endpoint
@@ -314,9 +313,7 @@ export class TaskService {
 		timeZone: 'UTC',
 	})
 	async collectMintMetrics() {
-		if (this.configService.get('cashu.type') !== MintType.CDK) return;
-        const mint_metrics_enabled = await this.settingService.getStringSetting(SettingKey.MINT_METRICS_API);
-		if (!mint_metrics_enabled) return;
+		if (!(await this.isMintMetricsEnabled())) return;
 
 		try {
 			await this.mintMetricsService.collectAndStore();
@@ -334,9 +331,7 @@ export class TaskService {
 		timeZone: 'UTC',
 	})
 	async cleanupMintMetrics() {
-		if (this.configService.get('cashu.type') !== MintType.CDK) return;
-		const mint_metrics_enabled = await this.settingService.getStringSetting(SettingKey.MINT_METRICS_API);
-		if (!mint_metrics_enabled) return;
+		if (!(await this.isMintMetricsEnabled())) return;
 
 		this.logger.log('Starting mint metrics cleanup...');
 		try {
@@ -345,6 +340,14 @@ export class TaskService {
 		} catch (error) {
 			this.logger.error(`Error cleaning up mint metrics: ${error.message}`, error.stack);
 		}
+	}
+
+	/**
+	 * Whether mint prometheus metrics are enabled — a cdk mint with a configured endpoint
+	 */
+	private async isMintMetricsEnabled(): Promise<boolean> {
+		if (this.configService.get('cashu.type') !== MintType.CDK) return false;
+		return !!(await this.settingService.getStringSetting(SettingKey.MINT_METRICS_API));
 	}
 
 	/**

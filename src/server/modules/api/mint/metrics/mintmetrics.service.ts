@@ -13,8 +13,7 @@ import {SettingKey} from '@server/modules/setting/setting.enums';
 import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 import {MintMetrics} from '@server/modules/cashu/mintmetrics/mintmetrics.entity';
 import {MintMetricType, MintMetricsInterval} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
-import {canonicalizeLabels} from '@server/modules/prometheus/prometheus.helpers';
-import {PromFamily} from '@server/modules/prometheus/prometheus.types';
+import {flattenFamily} from '@server/modules/prometheus/prometheus.helpers';
 /* Local Dependencies */
 import {OrchardMintMetrics, OrchardMintMetricsSnapshot} from './mintmetrics.model';
 
@@ -66,9 +65,18 @@ export class ApiMintMetricsService {
 			await this.guardSupport();
 			const families = await this.mintMetricsService.scrapeMintMetrics();
 			return families.flatMap((family) => {
-				if (family.type === 'gauge' || family.type === 'counter') return this.snapshotSampleFamily(family);
-				if (family.type === 'histogram') return this.snapshotHistogramFamily(family);
-				return [];
+				if (family.type !== 'gauge' && family.type !== 'counter' && family.type !== 'histogram') return [];
+				return flattenFamily(family).map(
+					(series) =>
+						new OrchardMintMetricsSnapshot(
+							series.name,
+							series.labels,
+							series.type as MintMetricType,
+							series.value,
+							series.sum,
+							series.count,
+						),
+				);
 			});
 		} catch (error) {
 			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
@@ -76,44 +84,6 @@ export class ApiMintMetricsService {
 			});
 			throw new OrchardApiError(orchard_error);
 		}
-	}
-
-	/**
-	 * Builds live snapshot samples for gauge/counter families
-	 */
-	private snapshotSampleFamily(family: PromFamily): OrchardMintMetricsSnapshot[] {
-		return family.samples.map(
-			(sample) =>
-				new OrchardMintMetricsSnapshot(
-					family.name,
-					canonicalizeLabels(sample.labels),
-					family.type as MintMetricType,
-					sample.value,
-					null,
-					null,
-				),
-		);
-	}
-
-	/**
-	 * Builds live snapshot samples for histogram families by zipping sum and count samples per label set
-	 */
-	private snapshotHistogramFamily(family: PromFamily): OrchardMintMetricsSnapshot[] {
-		const counts = new Map<string, number>();
-		for (const sample of family.count_samples ?? []) {
-			counts.set(canonicalizeLabels(sample.labels), sample.value);
-		}
-		return (family.sum_samples ?? []).map((sample) => {
-			const labels = canonicalizeLabels(sample.labels);
-			return new OrchardMintMetricsSnapshot(
-				family.name,
-				labels,
-				MintMetricType.histogram,
-				null,
-				sample.value,
-				counts.get(labels) ?? 0,
-			);
-		});
 	}
 
 	/**

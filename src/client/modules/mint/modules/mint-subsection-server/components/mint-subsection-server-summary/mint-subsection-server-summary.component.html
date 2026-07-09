@@ -7,29 +7,29 @@
 		<mat-card-content class="orc-surface-container-low-bg">
 			<div class="grid server-summary-grid">
 				<div class="orc-high-card server-stat-tile">
-					<div class="server-stat-value">{{ loading() ? '—' : formatNumber(cpu_percent(), '%') }}</div>
+					<div class="server-stat-value">{{ formatNumber(cpu_percent(), '%') }}</div>
 					<div class="server-stat-label">CPU</div>
 				</div>
 				<div class="orc-high-card server-stat-tile">
-					<div class="server-stat-value">{{ loading() ? '—' : formatBytes(memory_bytes()) }}</div>
+					<div class="server-stat-value">{{ formatBytes(memory_bytes()) }}</div>
 					<div class="server-stat-label">
-						Memory <small>{{ loading() ? '' : formatNumber(memory_percent(), '% of system') }}</small>
+						Memory <small>{{ formatNumber(memory_percent(), '% of system') }}</small>
 					</div>
 				</div>
 				<div class="orc-high-card server-stat-tile">
-					<div class="server-stat-value">{{ loading() ? '—' : formatNumber(db_connections()) }}</div>
+					<div class="server-stat-value">{{ formatNumber(db_connections()) }}</div>
 					<div class="server-stat-label">DB Connections</div>
 				</div>
 				<div class="orc-high-card server-stat-tile">
-					<div class="server-stat-value">{{ loading() ? '—' : formatNumber(in_flight_requests()) }}</div>
+					<div class="server-stat-value">{{ formatNumber(in_flight_requests()) }}</div>
 					<div class="server-stat-label">In-Flight Requests</div>
 				</div>
 				<div class="orc-high-card server-stat-tile">
-					<div class="server-stat-value">{{ loading() ? '—' : formatNumber(auth_success_percent(), '%') }}</div>
+					<div class="server-stat-value">{{ formatNumber(auth_success_percent(), '%') }}</div>
 					<div class="server-stat-label">Auth Success</div>
 				</div>
 				<div class="orc-high-card server-stat-tile">
-					<div class="server-stat-value">{{ loading() ? '—' : formatNumber(errors_total()) }}</div>
+					<div class="server-stat-value">{{ formatNumber(errors_total()) }}</div>
 					<div class="server-stat-label">Errors</div>
 				</div>
 			</div>

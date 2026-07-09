@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {PromFamily, PromMetricType, PromSample} from './prometheus.types';
+import {PromFamily, PromFlatSeries, PromMetricType, PromSample} from './prometheus.types';
 
 const TYPE_LINE_REGEX = /^# TYPE (\S+) (\S+)$/;
 const SAMPLE_LINE_REGEX = /^(\S+?)(?:\{(.*)\})?\s+(\S+)(?:\s+\S+)?$/;
@@ -81,6 +81,33 @@ export function canonicalizeLabels(labels: Record<string, string>): string {
 		.sort()
 		.map((key) => `${key}=${labels[key]}`)
 		.join(',');
+}
+
+/**
+ * Flattens a metric family into per-label-set series with canonicalized labels
+ * Gauge/counter families yield one series per sample; histogram families zip _sum and _count per label set
+ * @param {PromFamily} family - Parsed metric family
+ * @returns {PromFlatSeries[]} One entry per label set
+ */
+export function flattenFamily(family: PromFamily): PromFlatSeries[] {
+	if (family.type === 'histogram') {
+		const counts = new Map<string, number>();
+		for (const sample of family.count_samples ?? []) {
+			counts.set(canonicalizeLabels(sample.labels), sample.value);
+		}
+		return (family.sum_samples ?? []).map((sample) => {
+			const labels = canonicalizeLabels(sample.labels);
+			return {name: family.name, labels, type: family.type, value: null, sum: sample.value, count: counts.get(labels) ?? 0};
+		});
+	}
+	return family.samples.map((sample) => ({
+		name: family.name,
+		labels: canonicalizeLabels(sample.labels),
+		type: family.type,
+		value: sample.value,
+		sum: null,
+		count: null,
+	}));
 }
 
 /**

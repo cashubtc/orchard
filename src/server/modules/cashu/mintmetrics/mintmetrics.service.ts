@@ -6,7 +6,7 @@ import {FindOptionsWhere, Repository, LessThan, Between, In} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {PrometheusService} from '@server/modules/prometheus/prometheus.service';
-import {canonicalizeLabels} from '@server/modules/prometheus/prometheus.helpers';
+import {flattenFamily} from '@server/modules/prometheus/prometheus.helpers';
 import {PromFamily} from '@server/modules/prometheus/prometheus.types';
 import {SettingService} from '@server/modules/setting/setting.service';
 import {SettingKey} from '@server/modules/setting/setting.enums';
@@ -84,13 +84,24 @@ export class MintMetricsService {
 			if (!STORED_FAMILY_REGEX.test(family.name)) continue;
 			if (family.type !== 'gauge' && family.type !== 'counter' && family.type !== 'histogram') continue;
 
-			const family_rows = family.type === 'histogram' ? this.buildHistogramRows(family) : this.buildSampleRows(family);
-			if (family_rows.length > MAX_LABEL_SETS_PER_FAMILY) {
-				this.warnCardinalityExceeded(family.name, family_rows.length);
+			const family_series = flattenFamily(family);
+			if (family_series.length > MAX_LABEL_SETS_PER_FAMILY) {
+				this.warnCardinalityExceeded(family.name, family_series.length);
 				continue;
 			}
 
-			rows.push(...family_rows.map((row) => ({...row, date: minute_start, updated_at})));
+			rows.push(
+				...family_series.map((series) => ({
+					metric: series.name,
+					labels: series.labels,
+					type: series.type as MintMetricType,
+					value: series.value,
+					sum: series.sum,
+					count: series.count,
+					date: minute_start,
+					updated_at,
+				})),
+			);
 		}
 
 		return rows;
@@ -103,41 +114,6 @@ export class MintMetricsService {
 		if (this.warned_families.has(family_name)) return;
 		this.warned_families.add(family_name);
 		this.logger.warn(`Skipping metric family ${family_name}: ${label_set_count} label sets exceeds cardinality limit`);
-	}
-
-	/**
-	 * Builds partial rows for gauge/counter families
-	 */
-	private buildSampleRows(family: PromFamily): Omit<MintMetricsRow, 'date' | 'updated_at'>[] {
-		return family.samples.map((sample) => ({
-			metric: family.name,
-			labels: canonicalizeLabels(sample.labels),
-			type: family.type as MintMetricType,
-			value: sample.value,
-			sum: null,
-			count: null,
-		}));
-	}
-
-	/**
-	 * Builds partial rows for histogram families by zipping sum and count samples per label set
-	 */
-	private buildHistogramRows(family: PromFamily): Omit<MintMetricsRow, 'date' | 'updated_at'>[] {
-		const counts = new Map<string, number>();
-		for (const sample of family.count_samples ?? []) {
-			counts.set(canonicalizeLabels(sample.labels), sample.value);
-		}
-		return (family.sum_samples ?? []).map((sample) => {
-			const labels = canonicalizeLabels(sample.labels);
-			return {
-				metric: family.name,
-				labels,
-				type: MintMetricType.histogram,
-				value: null,
-				sum: sample.value,
-				count: counts.get(labels) ?? 0,
-			};
-		});
 	}
 
 	/* *******************************************************
