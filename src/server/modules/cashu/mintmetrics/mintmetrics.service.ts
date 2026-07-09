@@ -18,6 +18,7 @@ const RETENTION_DAYS = 90;
 const DOWNSAMPLE_AFTER_DAYS = 7;
 const STORED_FAMILY_REGEX = /^(cdk_|process_)/;
 const MAX_LABEL_SETS_PER_FAMILY = 100;
+const MAX_BUCKETS_PER_SERIES = 64;
 
 type MintMetricsRow = Omit<MintMetrics, 'id'>;
 
@@ -98,6 +99,7 @@ export class MintMetricsService {
 					value: series.value,
 					sum: series.sum,
 					count: series.count,
+					buckets: this.serializeBuckets(series.buckets),
 					date: minute_start,
 					updated_at,
 				})),
@@ -105,6 +107,15 @@ export class MintMetricsService {
 		}
 
 		return rows;
+	}
+
+	/**
+	 * Serializes a histogram bucket map to JSON, dropping pathological series that exceed the bucket cap
+	 */
+	private serializeBuckets(buckets: Record<string, number> | null): string | null {
+		if (!buckets) return null;
+		if (Object.keys(buckets).length > MAX_BUCKETS_PER_SERIES) return null;
+		return JSON.stringify(buckets);
 	}
 
 	/**
@@ -195,6 +206,7 @@ export class MintMetricsService {
 		if (hourly_buckets.length === 0) return;
 
 		const total_rows = hourly_buckets.reduce((sum, r) => sum + Number(r.row_count), 0);
+		const hourly_bucket_blobs = await this.getHourlyBucketBlobs(retention_cutoff, downsample_cutoff);
 
 		// Gauges keep the hourly average; counters and histograms keep the hourly max
 		const toNumber = (v: number | null): number | null => (v !== null ? Number(v) : null);
@@ -206,6 +218,7 @@ export class MintMetricsService {
 			value: toNumber(r.type === MintMetricType.gauge ? r.avg_value : r.max_value),
 			sum: toNumber(r.max_sum),
 			count: toNumber(r.max_count),
+			buckets: hourly_bucket_blobs.get(`${r.metric}|${r.labels}|${Number(r.hour_bucket)}`)?.buckets ?? null,
 			updated_at,
 		}));
 
@@ -221,5 +234,33 @@ export class MintMetricsService {
 		});
 
 		this.logger.log(`Downsampled ${total_rows} minute records into ${hourly_buckets.length} hourly records`);
+	}
+
+	/**
+	 * Loads the representative histogram bucket blob per series per hour in a window.
+	 * Histograms are cumulative, so the max-count row is the latest snapshot and the right hourly value.
+	 */
+	private async getHourlyBucketBlobs(start: number, end: number): Promise<Map<string, {count: number; buckets: string}>> {
+		const bucket_rows: {metric: string; labels: string; hour_bucket: number; count: number | null; buckets: string | null}[] =
+			await this.mintMetricsRepository
+				.createQueryBuilder('m')
+				.select('m.metric', 'metric')
+				.addSelect('m.labels', 'labels')
+				.addSelect('(m.date - (m.date % 3600))', 'hour_bucket')
+				.addSelect('m.count', 'count')
+				.addSelect('m.buckets', 'buckets')
+				.where('m.date >= :start AND m.date < :end AND m.buckets IS NOT NULL', {start, end})
+				.getRawMany();
+
+		const representative = new Map<string, {count: number; buckets: string}>();
+		for (const row of bucket_rows) {
+			if (row.buckets === null) continue;
+			const key = `${row.metric}|${row.labels}|${Number(row.hour_bucket)}`;
+			const count = Number(row.count ?? 0);
+			const existing = representative.get(key);
+			if (!existing || count >= existing.count) representative.set(key, {count, buckets: row.buckets});
+		}
+
+		return representative;
 	}
 }

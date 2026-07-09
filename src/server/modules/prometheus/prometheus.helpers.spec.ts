@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {expect} from '@jest/globals';
 /* Local Dependencies */
-import {parsePrometheusText, canonicalizeLabels, parseCanonicalLabels} from './prometheus.helpers';
+import {parsePrometheusText, canonicalizeLabels, parseCanonicalLabels, flattenFamily} from './prometheus.helpers';
 
 /** Trimmed fixture copied from a live cdk-mintd /metrics response */
 const CDK_METRICS_FIXTURE = `# HELP cdk_auth_attempts_total Total authentication attempts
@@ -51,13 +51,17 @@ describe('parsePrometheusText', () => {
 		expect(operations?.samples[1]).toEqual({labels: {operation: 'transaction_rollback', status: 'success'}, value: 15});
 	});
 
-	it('collects histogram sum and count samples and skips buckets', () => {
+	it('collects histogram sum, count and bucket samples', () => {
 		const families = parsePrometheusText(CDK_METRICS_FIXTURE);
 		const histogram = families.find((f) => f.name === 'cdk_mint_operation_duration_seconds');
 		expect(histogram?.type).toBe('histogram');
 		expect(histogram?.samples).toEqual([]);
 		expect(histogram?.sum_samples).toEqual([{labels: {operation: 'get_settings', status: 'success'}, value: 0.000019666}]);
 		expect(histogram?.count_samples).toEqual([{labels: {operation: 'get_settings', status: 'success'}, value: 3}]);
+		expect(histogram?.bucket_samples).toEqual([
+			{labels: {operation: 'get_settings', status: 'success', le: '0.005'}, value: 3},
+			{labels: {operation: 'get_settings', status: 'success', le: '+Inf'}, value: 3},
+		]);
 	});
 
 	it('unescapes quoted label values', () => {
@@ -69,6 +73,29 @@ describe('parsePrometheusText', () => {
 		const families = parsePrometheusText('orphan_metric 5\n# TYPE demo gauge\ndemo NaN\ndemo +Inf\ndemo 2\n');
 		expect(families).toHaveLength(1);
 		expect(families[0].samples).toEqual([{labels: {}, value: 2}]);
+	});
+});
+
+describe('flattenFamily', () => {
+	it('groups histogram buckets per label set, stripping le and omitting +Inf', () => {
+		const families = parsePrometheusText(CDK_METRICS_FIXTURE);
+		const histogram = families.find((f) => f.name === 'cdk_mint_operation_duration_seconds');
+		const series = flattenFamily(histogram!);
+		expect(series).toHaveLength(1);
+		expect(series[0]).toMatchObject({
+			labels: 'operation=get_settings,status=success',
+			sum: 0.000019666,
+			count: 3,
+			buckets: {'0.005': 3},
+		});
+	});
+
+	it('sets buckets null for gauge and counter families', () => {
+		const families = parsePrometheusText(CDK_METRICS_FIXTURE);
+		const gauge = flattenFamily(families.find((f) => f.name === 'cdk_db_connections_active')!);
+		const counter = flattenFamily(families.find((f) => f.name === 'cdk_mint_operations_total')!);
+		expect(gauge[0].buckets).toBeNull();
+		expect(counter[0].buckets).toBeNull();
 	});
 });
 

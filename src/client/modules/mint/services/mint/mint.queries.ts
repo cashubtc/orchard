@@ -540,6 +540,9 @@ query MintMetrics($date_start: UnixTimestamp, $date_end: UnixTimestamp, $interva
 		min
 		max
 		count
+		p50
+		p95
+		p99
 	}
 }`;
 

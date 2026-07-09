@@ -48,7 +48,7 @@
 			</div>
 
 			<div class="flex flex-column flex-gap-1">
-				<div class="title-m">Operation Latency <small class="orc-outline-color">avg</small></div>
+				<div class="title-m">Operation Latency <small class="orc-outline-color">p50 · p95 · p99</small></div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
 						<orc-mint-subsection-server-chart
@@ -58,6 +58,7 @@
 							unit="seconds"
 							type="line"
 							[color_index]="1"
+							[percentiles]="true"
 							[loading]="loading_metrics()"
 						></orc-mint-subsection-server-chart>
 					</mat-card-content>
@@ -82,7 +83,7 @@
 			</div>
 
 			<div class="flex flex-column flex-gap-1">
-				<div class="title-m">HTTP Latency <small class="orc-outline-color">avg</small></div>
+				<div class="title-m">HTTP Latency <small class="orc-outline-color">p50 · p95 · p99</small></div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
 						<orc-mint-subsection-server-chart
@@ -92,6 +93,7 @@
 							unit="seconds"
 							type="line"
 							[color_index]="1"
+							[percentiles]="true"
 							[loading]="loading_metrics()"
 						></orc-mint-subsection-server-chart>
 					</mat-card-content>
@@ -116,7 +118,7 @@
 			</div>
 
 			<div class="flex flex-column flex-gap-1">
-				<div class="title-m">Database Latency <small class="orc-outline-color">avg</small></div>
+				<div class="title-m">Database Latency <small class="orc-outline-color">p50 · p95 · p99</small></div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
 						<orc-mint-subsection-server-chart
@@ -126,6 +128,7 @@
 							unit="seconds"
 							type="line"
 							[color_index]="3"
+							[percentiles]="true"
 							[loading]="loading_metrics()"
 						></orc-mint-subsection-server-chart>
 					</mat-card-content>

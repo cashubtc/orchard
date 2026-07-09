@@ -32,6 +32,11 @@ const HISTOGRAM_FAMILY: PromFamily = {
 	samples: [],
 	sum_samples: [{labels: {operation: 'get_settings', status: 'success'}, value: 0.5}],
 	count_samples: [{labels: {operation: 'get_settings', status: 'success'}, value: 3}],
+	bucket_samples: [
+		{labels: {operation: 'get_settings', status: 'success', le: '0.005'}, value: 2},
+		{labels: {operation: 'get_settings', status: 'success', le: '0.01'}, value: 3},
+		{labels: {operation: 'get_settings', status: 'success', le: '+Inf'}, value: 3},
+	],
 };
 
 describe('MintMetricsService', () => {
@@ -100,8 +105,28 @@ describe('MintMetricsService', () => {
 				value: null,
 				sum: 0.5,
 				count: 3,
+				buckets: JSON.stringify({'0.005': 2, '0.01': 3}),
 			});
+			expect(gauge_row.buckets).toBeNull();
 			expect(gauge_row.date % 60).toBe(0);
+		});
+
+		it('drops buckets for histograms exceeding the per-series bucket cap', async () => {
+			const bucket_samples = Array.from({length: 65}, (_, i) => ({labels: {operation: 'swap', le: `${i}`}, value: i}));
+			prometheusService.scrapeMetrics.mockResolvedValue([
+				{
+					name: 'cdk_wide_histogram',
+					type: 'histogram',
+					samples: [],
+					sum_samples: [{labels: {operation: 'swap'}, value: 1}],
+					count_samples: [{labels: {operation: 'swap'}, value: 64}],
+					bucket_samples,
+				},
+			]);
+			await mintMetricsService.collectAndStore();
+
+			const [rows] = repository.upsert.mock.calls[0];
+			expect(rows[0].buckets).toBeNull();
 		});
 
 		it('filters out families that are not cdk_ or process_ prefixed', async () => {

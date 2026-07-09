@@ -175,11 +175,11 @@ export class ApiMintMetricsService {
 	}
 
 	/**
-	 * Aggregates a cumulative histogram series into per-interval average durations
-	 * Value is null for intervals without observations
+	 * Aggregates a cumulative histogram series into per-interval average durations and p50/p95/p99
+	 * Value is null for intervals without observations; percentiles are null when bucket data is absent
 	 */
 	private aggregateHistogramSeries(series: MintMetrics[], interval: SystemMetricsInterval, tz: string): OrchardMintMetrics[] {
-		type Bucket = {sum: number; count: number};
+		type Bucket = {sum: number; count: number; le_counts: Map<string, number>; has_buckets: boolean};
 		const buckets = new Map<number, Bucket>();
 
 		for (let i = 1; i < series.length; i++) {
@@ -190,23 +190,109 @@ export class ApiMintMetricsService {
 			const delta_sum = reset ? current.sum : current.sum - previous.sum;
 			const delta_count = reset ? current.count : current.count - previous.count;
 			const bucket_date = this.getBucketDate(current.date, interval, tz);
-			const bucket = buckets.get(bucket_date) ?? {sum: 0, count: 0};
+			const bucket = buckets.get(bucket_date) ?? {sum: 0, count: 0, le_counts: new Map(), has_buckets: false};
 			bucket.sum += delta_sum;
 			bucket.count += delta_count;
+			this.accumulateBucketDeltas(bucket, previous.buckets, current.buckets, reset);
 			buckets.set(bucket_date, bucket);
 		}
 
-		return Array.from(buckets.entries()).map(
-			([date, bucket]) =>
-				new OrchardMintMetrics(
-					series[0].metric,
-					series[0].labels,
-					MintMetricType.histogram,
-					date,
-					bucket.count > 0 ? bucket.sum / bucket.count : null,
-					{count: bucket.count},
-				),
-		);
+		return Array.from(buckets.entries()).map(([date, bucket]) => {
+			const percentiles = this.computePercentiles(bucket.le_counts, bucket.count, bucket.has_buckets);
+			return new OrchardMintMetrics(
+				series[0].metric,
+				series[0].labels,
+				MintMetricType.histogram,
+				date,
+				bucket.count > 0 ? bucket.sum / bucket.count : null,
+				{
+					count: bucket.count,
+					...percentiles,
+				},
+			);
+		});
+	}
+
+	/**
+	 * Accumulates per-le observation deltas from consecutive cumulative bucket snapshots into an interval bucket
+	 */
+	private accumulateBucketDeltas(
+		bucket: {le_counts: Map<string, number>; has_buckets: boolean},
+		previous_json: string | null,
+		current_json: string | null,
+		reset: boolean,
+	): void {
+		const current = this.parseBuckets(current_json);
+		if (!current) return;
+		const previous = this.parseBuckets(previous_json) ?? {};
+		bucket.has_buckets = true;
+		for (const le of Object.keys(current)) {
+			const delta = reset ? current[le] : current[le] - (previous[le] ?? 0);
+			bucket.le_counts.set(le, (bucket.le_counts.get(le) ?? 0) + Math.max(0, delta));
+		}
+	}
+
+	/**
+	 * Computes p50/p95/p99 from accumulated per-le deltas, using the interval observation count as the +Inf total
+	 */
+	private computePercentiles(
+		le_counts: Map<string, number>,
+		count: number,
+		has_buckets: boolean,
+	): {p50: number | null; p95: number | null; p99: number | null} {
+		if (!has_buckets || count <= 0) return {p50: null, p95: null, p99: null};
+		const cumulative: {le: number; count: number}[] = Array.from(le_counts.entries()).map(([le, le_count]) => ({
+			le: Number(le),
+			count: le_count,
+		}));
+		cumulative.push({le: Infinity, count});
+		return {
+			p50: this.histogramQuantile(0.5, cumulative),
+			p95: this.histogramQuantile(0.95, cumulative),
+			p99: this.histogramQuantile(0.99, cumulative),
+		};
+	}
+
+	/**
+	 * Parses a stored bucket JSON blob into an {le: count} map, tolerating malformed data
+	 */
+	private parseBuckets(json: string | null): Record<string, number> | null {
+		if (!json) return null;
+		try {
+			const parsed = JSON.parse(json);
+			return parsed && typeof parsed === 'object' ? parsed : null;
+		} catch {
+			return null;
+		}
+	}
+
+	/**
+	 * Computes a quantile from cumulative histogram buckets using Prometheus-style linear interpolation.
+	 * The largest-le bucket's count is treated as the total; ranks in the +Inf bucket clamp to the largest finite le.
+	 */
+	private histogramQuantile(quantile: number, buckets: {le: number; count: number}[]): number | null {
+		if (quantile < 0 || quantile > 1 || buckets.length === 0) return null;
+
+		const sorted = [...buckets].sort((a, b) => a.le - b.le);
+		const total = sorted[sorted.length - 1].count;
+		if (!(total > 0)) return null;
+
+		const rank = quantile * total;
+		let index = sorted.findIndex((entry) => entry.count >= rank);
+		if (index < 0) index = sorted.length - 1;
+
+		const target = sorted[index];
+		if (index === sorted.length - 1) {
+			if (Number.isFinite(target.le)) return target.le;
+			return index > 0 && Number.isFinite(sorted[index - 1].le) ? sorted[index - 1].le : null;
+		}
+		if (index === 0 && target.le <= 0) return target.le;
+
+		const lower_le = index > 0 ? sorted[index - 1].le : 0;
+		const lower_count = index > 0 ? sorted[index - 1].count : 0;
+		const span = target.count - lower_count;
+		if (span <= 0) return lower_le;
+		return lower_le + (target.le - lower_le) * ((rank - lower_count) / span);
 	}
 
 	/**

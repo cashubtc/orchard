@@ -34,6 +34,7 @@ export class MintSubsectionServerChartComponent implements OnChanges, OnDestroy 
 	public type = input.required<'line' | 'bar'>();
 	public stacked = input<boolean>(false);
 	public color_index = input<number>(0);
+	public percentiles = input<boolean>(false);
 	public loading = input.required<boolean>();
 
 	public chart_type!: ChartJsType;
@@ -84,6 +85,8 @@ export class MintSubsectionServerChartComponent implements OnChanges, OnDestroy 
 			else series_map.set(key, [metric]);
 		}
 
+		if (this.percentiles()) return {datasets: this.getPercentileDatasets(series_map)};
+
 		const is_line = this.type() === 'line';
 		const datasets = Array.from(series_map.values()).map((series, index) => {
 			const color = this.chartService.getThemeColor((this.color_index() + index) % PALETTE_SIZE);
@@ -110,6 +113,39 @@ export class MintSubsectionServerChartComponent implements OnChanges, OnDestroy 
 		});
 
 		return {datasets};
+	}
+
+	/** Builds three line datasets (p50/p95/p99) per series: color by series, line style by percentile */
+	private getPercentileDatasets(series_map: Map<string, MintMetric[]>): ChartConfiguration['data']['datasets'] {
+		const percentile_configs: {key: 'p50' | 'p95' | 'p99'; label: string; dash: number[]}[] = [
+			{key: 'p50', label: 'p50', dash: [4, 4]},
+			{key: 'p95', label: 'p95', dash: []},
+			{key: 'p99', label: 'p99', dash: [1, 3]},
+		];
+
+		return Array.from(series_map.values()).flatMap((series, series_index) => {
+			const color = this.chartService.getThemeColor((this.color_index() + series_index) % PALETTE_SIZE);
+			const muted_color = this.chartService.getMutedColor(color.border);
+			return percentile_configs.map((config) => ({
+				data: series.map((metric) => ({x: metric.date * 1000, y: this.convertValue(metric[config.key] ?? null)})),
+				label: `${this.getSeriesLabel(series[0])} · ${config.label}`,
+				borderColor: muted_color,
+				borderWidth: 2,
+				borderDash: config.dash,
+				backgroundColor: muted_color,
+				pointBackgroundColor: muted_color,
+				pointBorderColor: muted_color,
+				pointBorderWidth: 2,
+				pointHoverBackgroundColor: this.chartService.getPointHoverBackgroundColor(),
+				pointHoverBorderColor: color.border,
+				pointHoverBorderWidth: 3,
+				pointRadius: 0,
+				pointHoverRadius: 4,
+				fill: false,
+				tension: 0.4,
+				spanGaps: true,
+			}));
+		});
 	}
 
 	/** Line charts get the shared point-glow plugin, matching the dashboard */

@@ -7,7 +7,7 @@ const VALID_TYPES: PromMetricType[] = ['gauge', 'counter', 'histogram', 'summary
 
 /**
  * Parses Prometheus text exposition format into metric families
- * Histogram families collect _sum and _count samples separately; _bucket samples are skipped
+ * Histogram families collect _sum, _count and _bucket samples separately
  * @param {string} text - Raw response body of a /metrics endpoint
  * @returns {PromFamily[]} Parsed metric families
  */
@@ -27,6 +27,7 @@ export function parsePrometheusText(text: string): PromFamily[] {
 			if (type === 'histogram') {
 				family.sum_samples = [];
 				family.count_samples = [];
+				family.bucket_samples = [];
 			}
 			families.push(family);
 			continue;
@@ -45,6 +46,7 @@ export function parsePrometheusText(text: string): PromFamily[] {
 		if (family.type === 'histogram') {
 			if (sample_name === `${family.name}_sum`) family.sum_samples?.push(sample);
 			if (sample_name === `${family.name}_count`) family.count_samples?.push(sample);
+			if (sample_name === `${family.name}_bucket`) family.bucket_samples?.push(sample);
 			continue;
 		}
 		if (sample_name === family.name) family.samples.push(sample);
@@ -85,7 +87,7 @@ export function canonicalizeLabels(labels: Record<string, string>): string {
 
 /**
  * Flattens a metric family into per-label-set series with canonicalized labels
- * Gauge/counter families yield one series per sample; histogram families zip _sum and _count per label set
+ * Gauge/counter families yield one series per sample; histogram families zip _sum, _count and _bucket per label set
  * @param {PromFamily} family - Parsed metric family
  * @returns {PromFlatSeries[]} One entry per label set
  */
@@ -95,9 +97,18 @@ export function flattenFamily(family: PromFamily): PromFlatSeries[] {
 		for (const sample of family.count_samples ?? []) {
 			counts.set(canonicalizeLabels(sample.labels), sample.value);
 		}
+		const buckets = groupBucketSamples(family.bucket_samples ?? []);
 		return (family.sum_samples ?? []).map((sample) => {
 			const labels = canonicalizeLabels(sample.labels);
-			return {name: family.name, labels, type: family.type, value: null, sum: sample.value, count: counts.get(labels) ?? 0};
+			return {
+				name: family.name,
+				labels,
+				type: family.type,
+				value: null,
+				sum: sample.value,
+				count: counts.get(labels) ?? 0,
+				buckets: buckets.get(labels) ?? null,
+			};
 		});
 	}
 	return family.samples.map((sample) => ({
@@ -107,7 +118,27 @@ export function flattenFamily(family: PromFamily): PromFlatSeries[] {
 		value: sample.value,
 		sum: null,
 		count: null,
+		buckets: null,
 	}));
+}
+
+/**
+ * Groups histogram _bucket samples into a cumulative {le: count} map per base label set
+ * The le label is stripped from the identity; the +Inf bucket is omitted since it equals _count
+ * @param {PromSample[]} samples - Raw _bucket samples carrying base labels plus an le label
+ * @returns {Map<string, Record<string, number>>} Base label set to cumulative bucket counts
+ */
+function groupBucketSamples(samples: PromSample[]): Map<string, Record<string, number>> {
+	const grouped = new Map<string, Record<string, number>>();
+	for (const sample of samples) {
+		const {le, ...base_labels} = sample.labels;
+		if (le === undefined || le === '+Inf') continue;
+		const key = canonicalizeLabels(base_labels);
+		const bucket = grouped.get(key) ?? {};
+		bucket[le] = sample.value;
+		grouped.set(key, bucket);
+	}
+	return grouped;
 }
 
 /**

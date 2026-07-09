@@ -24,6 +24,7 @@ const row = (overrides: Partial<MintMetrics>): MintMetrics =>
 		value: null,
 		sum: null,
 		count: null,
+		buckets: null,
 		updated_at: 0,
 		...overrides,
 	}) as MintMetrics;
@@ -88,7 +89,11 @@ describe('ApiMintMetricsService', () => {
 				row({metric: 'process_cpu_usage_percent', type: 'gauge', date: 3660, value: 30}),
 			]);
 
-			const out = await apiMintMetricsService.getMetrics('tag', {interval: SystemMetricsInterval.hour, date_start: 0, date_end: 7200});
+			const out = await apiMintMetricsService.getMetrics('tag', {
+				interval: SystemMetricsInterval.hour,
+				date_start: 0,
+				date_end: 7200,
+			});
 
 			expect(out).toHaveLength(1);
 			expect(out[0]).toMatchObject({metric: 'process_cpu_usage_percent', date: 3600, value: 20, min: 10, max: 30});
@@ -101,7 +106,11 @@ describe('ApiMintMetricsService', () => {
 				row({date: 7200, value: 3}),
 			]);
 
-			const out = await apiMintMetricsService.getMetrics('tag', {interval: SystemMetricsInterval.hour, date_start: 0, date_end: 9000});
+			const out = await apiMintMetricsService.getMetrics('tag', {
+				interval: SystemMetricsInterval.hour,
+				date_start: 0,
+				date_end: 9000,
+			});
 
 			expect(out).toHaveLength(2);
 			expect(out[0]).toMatchObject({date: 3600, value: 15});
@@ -116,7 +125,11 @@ describe('ApiMintMetricsService', () => {
 				row({metric: 'cdk_mint_operations_total', labels: 'operation=mint', date: 3660, value: 6}),
 			]);
 
-			const out = await apiMintMetricsService.getMetrics('tag', {interval: SystemMetricsInterval.hour, date_start: 0, date_end: 7200});
+			const out = await apiMintMetricsService.getMetrics('tag', {
+				interval: SystemMetricsInterval.hour,
+				date_start: 0,
+				date_end: 7200,
+			});
 
 			expect(out).toHaveLength(2);
 			const swap = out.find((m) => m.labels.some((l) => l.value === 'swap'));
@@ -132,11 +145,64 @@ describe('ApiMintMetricsService', () => {
 				row({metric: 'cdk_mint_operation_duration_seconds', type: 'histogram', date: 7200, sum: 3, count: 14}),
 			]);
 
-			const out = await apiMintMetricsService.getMetrics('tag', {interval: SystemMetricsInterval.hour, date_start: 0, date_end: 9000});
+			const out = await apiMintMetricsService.getMetrics('tag', {
+				interval: SystemMetricsInterval.hour,
+				date_start: 0,
+				date_end: 9000,
+			});
 
 			expect(out).toHaveLength(2);
 			expect(out[0]).toMatchObject({date: 3600, value: 0.5, count: 4});
 			expect(out[1]).toMatchObject({date: 7200, value: null, count: 0});
+		});
+
+		it('computes p50/p95/p99 from interval bucket deltas', async () => {
+			mintMetricsService.getMetrics.mockResolvedValue([
+				row({
+					metric: 'cdk_mint_operation_duration_seconds',
+					type: 'histogram',
+					date: 3600,
+					sum: 0,
+					count: 0,
+					buckets: JSON.stringify({'0.005': 0, '0.01': 0, '0.05': 0, '0.1': 0, '0.5': 0}),
+				}),
+				row({
+					metric: 'cdk_mint_operation_duration_seconds',
+					type: 'histogram',
+					date: 3660,
+					sum: 0.3,
+					count: 10,
+					buckets: JSON.stringify({'0.005': 0, '0.01': 0, '0.05': 5, '0.1': 8, '0.5': 10}),
+				}),
+			]);
+
+			const out = await apiMintMetricsService.getMetrics('tag', {
+				interval: SystemMetricsInterval.hour,
+				date_start: 0,
+				date_end: 7200,
+			});
+
+			expect(out).toHaveLength(1);
+			expect(out[0].p50).toBeCloseTo(0.05, 5);
+			expect(out[0].p95).toBeCloseTo(0.4, 5);
+			expect(out[0].p99).toBeCloseTo(0.48, 5);
+			expect(out[0].p50!).toBeLessThanOrEqual(out[0].p95!);
+			expect(out[0].p95!).toBeLessThanOrEqual(out[0].p99!);
+		});
+
+		it('returns null percentiles for histograms without bucket data', async () => {
+			mintMetricsService.getMetrics.mockResolvedValue([
+				row({metric: 'cdk_mint_operation_duration_seconds', type: 'histogram', date: 3600, sum: 1, count: 10}),
+				row({metric: 'cdk_mint_operation_duration_seconds', type: 'histogram', date: 3660, sum: 3, count: 14}),
+			]);
+
+			const out = await apiMintMetricsService.getMetrics('tag', {
+				interval: SystemMetricsInterval.hour,
+				date_start: 0,
+				date_end: 7200,
+			});
+
+			expect(out[0]).toMatchObject({p50: null, p95: null, p99: null});
 		});
 
 		it('wraps data source errors in OrchardApiError', async () => {

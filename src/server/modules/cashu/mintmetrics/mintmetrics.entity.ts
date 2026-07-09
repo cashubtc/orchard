@@ -40,6 +40,10 @@ export class MintMetrics {
 	@Column({type: 'integer', nullable: true})
 	count: number | null;
 
+	// Histogram cumulative bucket counts as JSON {le: count}, +Inf omitted (null for gauges/counters and legacy rows)
+	@Column({type: 'text', nullable: true})
+	buckets: string | null;
+
 	// Last time this record was updated (unix timestamp)
 	@Column({type: 'integer'})
 	updated_at: number;

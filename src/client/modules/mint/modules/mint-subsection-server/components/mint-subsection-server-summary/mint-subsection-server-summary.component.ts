@@ -50,8 +50,7 @@ export class MintSubsectionServerSummaryComponent {
 	/** Dims then brightens the element to signal fresh data, matching the nav block-height flash */
 	private flashElement(el: HTMLElement): void {
 		for (const anim of el.getAnimations()) anim.cancel();
-		el
-			.animate([{opacity: 1}, {opacity: 0.1}], {duration: 200, easing: 'ease-out', fill: 'forwards'})
+		el.animate([{opacity: 1}, {opacity: 0.1}], {duration: 200, easing: 'ease-out', fill: 'forwards'})
 			.finished.catch(() => {})
 			.finally(() => {
 				el.animate([{opacity: 0.1}, {opacity: 1}], {duration: 400, easing: 'ease-in', fill: 'forwards'});

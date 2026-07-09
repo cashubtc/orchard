@@ -11,6 +11,7 @@ export type PromFamily = {
 	samples: PromSample[];
 	sum_samples?: PromSample[];
 	count_samples?: PromSample[];
+	bucket_samples?: PromSample[];
 };
 
 export type PromFlatSeries = {
@@ -20,4 +21,5 @@ export type PromFlatSeries = {
 	value: number | null;
 	sum: number | null;
 	count: number | null;
+	buckets: Record<string, number> | null;
 };

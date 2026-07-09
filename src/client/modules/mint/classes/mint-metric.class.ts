@@ -9,6 +9,9 @@ export class MintMetric implements OrchardMintMetrics {
 	min?: number | null;
 	max?: number | null;
 	count?: number | null;
+	p50?: number | null;
+	p95?: number | null;
+	p99?: number | null;
 
 	constructor(omm: OrchardMintMetrics) {
 		this.metric = omm.metric;
@@ -19,6 +22,9 @@ export class MintMetric implements OrchardMintMetrics {
 		this.min = omm.min;
 		this.max = omm.max;
 		this.count = omm.count;
+		this.p50 = omm.p50;
+		this.p95 = omm.p95;
+		this.p99 = omm.p99;
 	}
 }
 
