@@ -5,10 +5,32 @@
 	@extend %flex;
 	@extend %flex-wrap;
 	@extend %flex-justify-center;
-	@extend %flex-gap-0-5;
+	@extend %flex-items-start;
+	@extend %flex-gap-1;
 	@extend %p-t-0-5;
-	max-height: 6rem;
+	max-height: 9rem;
 	overflow-y: auto;
+}
+
+.chart-legend-group {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-0-25;
+}
+
+.chart-legend-group-header {
+	@extend %font-size-xs;
+	@extend %orc-outline-color;
+	max-width: 14rem;
+	padding: 0.125rem 0.25rem;
+	border: none;
+	background: none;
+	font-weight: 600;
+	text-align: left;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	cursor: pointer;
 }
 
 .chart-legend-entry {
