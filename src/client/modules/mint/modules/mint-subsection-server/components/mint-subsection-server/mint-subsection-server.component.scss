@@ -58,9 +58,29 @@
 	}
 }
 
-// Fixed-height wrapper so gauge/pie panels align with the 280px chart panels
+// Gauge/pie panels have no legend row, so stretch their card to fill the grid
+// cell and match sibling chart panels (280px canvas + legend below)
+.mint-server-charts > .col-3:has(.mint-server-viz) {
+	mat-card,
+	mat-card-content {
+		display: flex;
+		flex-direction: column;
+		flex-grow: 1;
+	}
+}
+
+// Card grows to fill the row, but the graphic stays at the standard 280px
+// canvas height, centered, so it isn't blown up to match the taller card
 .mint-server-viz {
-	height: 280px;
+	flex-grow: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	> * {
+		width: 100%;
+		height: 280px;
+	}
 }
 
 .refresh-spinning {
