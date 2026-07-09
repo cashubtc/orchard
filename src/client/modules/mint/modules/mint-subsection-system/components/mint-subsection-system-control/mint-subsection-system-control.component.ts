@@ -6,7 +6,7 @@ import {MatSelectChange} from '@angular/material/select';
 import {DateRange} from '@angular/material/datepicker';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {NonNullableMintServerSettings} from '@client/modules/settings/types/setting.types';
+import {NonNullableMintSystemSettings} from '@client/modules/settings/types/setting.types';
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 /* Shared Dependencies */
@@ -18,14 +18,14 @@ type IntervalOption = {
 };
 
 @Component({
-	selector: 'orc-mint-subsection-server-control',
+	selector: 'orc-mint-subsection-system-control',
 	standalone: false,
-	templateUrl: './mint-subsection-server-control.component.html',
-	styleUrl: './mint-subsection-server-control.component.scss',
+	templateUrl: './mint-subsection-system-control.component.html',
+	styleUrl: './mint-subsection-system-control.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MintSubsectionServerControlComponent {
-	public page_settings = input.required<NonNullableMintServerSettings>();
+export class MintSubsectionSystemControlComponent {
+	public page_settings = input.required<NonNullableMintSystemSettings>();
 	public loading = input.required<boolean>();
 	public device_type = input.required<DeviceType>();
 

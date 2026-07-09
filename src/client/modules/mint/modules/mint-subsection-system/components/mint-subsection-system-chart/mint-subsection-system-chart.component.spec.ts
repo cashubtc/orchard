@@ -3,23 +3,23 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 /* Vendor Dependencies */
 import {MatIconTestingModule} from '@angular/material/icon/testing';
 /* Native Dependencies */
-import {OrcMintSubsectionServerModule} from '@client/modules/mint/modules/mint-subsection-server/mint-subsection-server.module';
+import {OrcMintSubsectionSystemModule} from '@client/modules/mint/modules/mint-subsection-system/mint-subsection-system.module';
 /* Local Dependencies */
-import {MintSubsectionServerChartComponent} from './mint-subsection-server-chart.component';
+import {MintSubsectionSystemChartComponent} from './mint-subsection-system-chart.component';
 import {MintMetric} from '@client/modules/mint/classes/mint-metric.class';
 /* Shared Dependencies */
 import {SystemMetricsInterval} from '@shared/generated.types';
 
-describe('MintSubsectionServerChartComponent', () => {
-	let component: MintSubsectionServerChartComponent;
-	let fixture: ComponentFixture<MintSubsectionServerChartComponent>;
+describe('MintSubsectionSystemChartComponent', () => {
+	let component: MintSubsectionSystemChartComponent;
+	let fixture: ComponentFixture<MintSubsectionSystemChartComponent>;
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			imports: [OrcMintSubsectionServerModule, MatIconTestingModule],
+			imports: [OrcMintSubsectionSystemModule, MatIconTestingModule],
 		}).compileComponents();
 
-		fixture = TestBed.createComponent(MintSubsectionServerChartComponent);
+		fixture = TestBed.createComponent(MintSubsectionSystemChartComponent);
 		component = fixture.componentInstance;
 		fixture.componentRef.setInput('locale', 'en-US');
 		fixture.componentRef.setInput('metrics', []);

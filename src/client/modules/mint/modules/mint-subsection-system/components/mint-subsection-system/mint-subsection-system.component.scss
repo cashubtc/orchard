@@ -1,7 +1,7 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
 
-.mint-server-container {
+.mint-system-container {
 	@extend %flex;
 	@extend %flex-column;
 	@extend %flex-gap-2;
@@ -11,56 +11,56 @@
 	container-type: inline-size;
 }
 
-.mint-server-control-panel {
+.mint-system-control-panel {
 	@extend %orc-surface-bg;
 	@extend %sticky;
 	@extend %top-0;
 	@extend %z-index-2;
 }
 
-.mint-server-charts {
+.mint-system-charts {
 	@extend %flex-gap-1;
 	grid-template-columns: repeat(12, 1fr);
 }
 
-.mint-server-charts > .col-3 {
+.mint-system-charts > .col-3 {
 	grid-column: span 3;
 }
 
-.mint-server-charts > .col-6 {
+.mint-system-charts > .col-6 {
 	grid-column: span 6;
 }
 
-.mint-server-charts > .col-12 {
+.mint-system-charts > .col-12 {
 	grid-column: span 12;
 }
 
 // Tablet: collapse to a 6-column grid (halves stay half, wide/full panels become full)
 @container (max-width: 60rem) {
-	.mint-server-charts {
+	.mint-system-charts {
 		grid-template-columns: repeat(6, 1fr);
 	}
 
-	.mint-server-charts > .col-6,
-	.mint-server-charts > .col-12 {
+	.mint-system-charts > .col-6,
+	.mint-system-charts > .col-12 {
 		grid-column: span 6;
 	}
 }
 
 // Mobile: single column
 @container (max-width: 36rem) {
-	.mint-server-charts {
+	.mint-system-charts {
 		grid-template-columns: repeat(1, 1fr);
 	}
 
-	.mint-server-charts > [class*='col-'] {
+	.mint-system-charts > [class*='col-'] {
 		grid-column: 1 / -1;
 	}
 }
 
 // Gauge/pie panels have no legend row, so stretch their card to fill the grid
 // cell and match sibling chart panels (280px canvas + legend below)
-.mint-server-charts > .col-3:has(.mint-server-viz) {
+.mint-system-charts > .col-3:has(.mint-system-viz) {
 	mat-card,
 	mat-card-content {
 		display: flex;
@@ -71,7 +71,7 @@
 
 // Card grows to fill the row, but the graphic stays at the standard 280px
 // canvas height, centered, so it isn't blown up to match the taller card
-.mint-server-viz {
+.mint-system-viz {
 	flex-grow: 1;
 	display: flex;
 	align-items: center;

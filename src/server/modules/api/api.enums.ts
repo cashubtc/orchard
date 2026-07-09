@@ -231,7 +231,7 @@ registerEnumType(AiAssistant, {
 		MINT_KEYSET_ROTATION: {description: 'Keyset rotation assistant'},
 		MINT_DATABASE: {description: 'Mint database management assistant'},
 		MINT_BACKUP: {description: 'Mint backup management assistant'},
-		MINT_SERVER: {description: 'Mint server metrics assistant'},
+		SYSTEM: {description: 'System metrics assistant'},
 		EVENT_LOG: {description: 'Event log assistant'},
 		SETTINGS_AGENT: {description: 'Agent settings configuration assistant'},
 	},

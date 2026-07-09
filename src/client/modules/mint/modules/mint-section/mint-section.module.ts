@@ -208,17 +208,17 @@ const mintQuoteTtlsResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, st
 						},
 					},
 					{
-						path: 'server',
+						path: 'system',
 						loadChildren: () =>
-							import('@client/modules/mint/modules/mint-subsection-server/mint-subsection-server.module').then(
-								(m) => m.OrcMintSubsectionServerModule,
+							import('@client/modules/mint/modules/mint-subsection-system/mint-subsection-system.module').then(
+								(m) => m.OrcMintSubsectionSystemModule,
 							),
-						title: 'Orchard | Mint Server',
+						title: 'Orchard | Mint System',
 						canActivate: [enabledGuard],
 						data: {
 							section: 'mint',
-							sub_section: 'server',
-							assistant: AiAssistant.MintServer,
+							sub_section: 'system',
+							assistant: AiAssistant.System,
 						},
 					},
 					{

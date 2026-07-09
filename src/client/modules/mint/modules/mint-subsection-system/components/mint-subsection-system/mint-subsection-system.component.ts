@@ -10,7 +10,7 @@ import {SettingDeviceService} from '@client/modules/settings/services/setting-de
 import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 import {AiService} from '@client/modules/ai/services/ai/ai.service';
 import {AiChatToolCall} from '@client/modules/ai/classes/ai-chat-chunk.class';
-import {NonNullableMintServerSettings} from '@client/modules/settings/types/setting.types';
+import {NonNullableMintSystemSettings} from '@client/modules/settings/types/setting.types';
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 import {resolveDateRangePreset} from '@client/modules/form/helpers/form-daterange.helpers';
 import {DeviceType} from '@client/modules/layout/types/device.types';
@@ -41,13 +41,13 @@ const CHART_METRIC_FAMILIES = [
 ];
 
 @Component({
-	selector: 'orc-mint-subsection-server',
+	selector: 'orc-mint-subsection-system',
 	standalone: false,
-	templateUrl: './mint-subsection-server.component.html',
-	styleUrl: './mint-subsection-server.component.scss',
+	templateUrl: './mint-subsection-system.component.html',
+	styleUrl: './mint-subsection-system.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MintSubsectionServerComponent implements OnInit, OnDestroy {
+export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 	private readonly mintService = inject(MintService);
 	private readonly settingDeviceService = inject(SettingDeviceService);
 	private readonly settingAppService = inject(SettingAppService);
@@ -56,7 +56,7 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 
 	public locale!: string;
 
-	public readonly page_settings = signal<NonNullableMintServerSettings | null>(null);
+	public readonly page_settings = signal<NonNullableMintSystemSettings | null>(null);
 	public readonly metrics = signal<MintMetric[]>([]);
 	public readonly loading_metrics = signal<boolean>(true);
 	public readonly refreshing = signal<boolean>(false);
@@ -106,8 +106,8 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 	******************************************************** */
 
 	/** Builds page settings from device settings with defaults for first visits */
-	private getPageSettings(): NonNullableMintServerSettings {
-		const settings = this.settingDeviceService.getMintServerSettings();
+	private getPageSettings(): NonNullableMintSystemSettings {
+		const settings = this.settingDeviceService.getMintSystemSettings();
 		const date_preset = settings.date_preset ?? null;
 		const resolved_dates = date_preset ? resolveDateRangePreset(date_preset, this.getMetricsGenesisTime()) : null;
 		return {
@@ -131,9 +131,9 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 		return Math.floor(DateTime.now().endOf('day').toSeconds());
 	}
 
-	private updateSettings(settings: NonNullableMintServerSettings): void {
+	private updateSettings(settings: NonNullableMintSystemSettings): void {
 		this.page_settings.set(settings);
-		this.settingDeviceService.setMintServerSettings(settings);
+		this.settingDeviceService.setMintSystemSettings(settings);
 		this.loadMetrics();
 	}
 

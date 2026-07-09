@@ -12,22 +12,22 @@ import {SettingAppService} from '@client/modules/settings/services/setting-app/s
 import {AiService} from '@client/modules/ai/services/ai/ai.service';
 import {AiChatToolCall} from '@client/modules/ai/classes/ai-chat-chunk.class';
 /* Native Dependencies */
-import {OrcMintSubsectionServerModule} from '@client/modules/mint/modules/mint-subsection-server/mint-subsection-server.module';
+import {OrcMintSubsectionSystemModule} from '@client/modules/mint/modules/mint-subsection-system/mint-subsection-system.module';
 /* Local Dependencies */
-import {MintSubsectionServerComponent} from './mint-subsection-server.component';
+import {MintSubsectionSystemComponent} from './mint-subsection-system.component';
 /* Shared Dependencies */
 import {AssistantToolName, SystemMetricsInterval} from '@shared/generated.types';
 
-describe('MintSubsectionServerComponent', () => {
-	let component: MintSubsectionServerComponent;
-	let fixture: ComponentFixture<MintSubsectionServerComponent>;
+describe('MintSubsectionSystemComponent', () => {
+	let component: MintSubsectionSystemComponent;
+	let fixture: ComponentFixture<MintSubsectionSystemComponent>;
 	let ai_service: {assistant_requests$: Subject<unknown>; tool_calls$: Subject<AiChatToolCall>; openAiSocket: jasmine.Spy};
 	let ai_enabled: boolean;
 
 	beforeEach(async () => {
 		ai_enabled = false;
 		await TestBed.configureTestingModule({
-			imports: [OrcMintSubsectionServerModule, MatIconTestingModule],
+			imports: [OrcMintSubsectionSystemModule, MatIconTestingModule],
 			providers: [
 				{
 					provide: ActivatedRoute,
@@ -46,10 +46,10 @@ describe('MintSubsectionServerComponent', () => {
 						getLocale: jasmine.createSpy('getLocale').and.returnValue('en-US'),
 						getTimezone: jasmine.createSpy('getTimezone').and.returnValue('UTC'),
 						getTheme: jasmine.createSpy('getTheme').and.returnValue('dark-mode'),
-						getMintServerSettings: jasmine
-							.createSpy('getMintServerSettings')
+						getMintSystemSettings: jasmine
+							.createSpy('getMintSystemSettings')
 							.and.returnValue({date_start: null, date_end: null, date_preset: null, interval: null}),
-						setMintServerSettings: jasmine.createSpy('setMintServerSettings'),
+						setMintSystemSettings: jasmine.createSpy('setMintSystemSettings'),
 					},
 				},
 				{
@@ -70,7 +70,7 @@ describe('MintSubsectionServerComponent', () => {
 		}).compileComponents();
 
 		ai_service = TestBed.inject(AiService) as unknown as typeof ai_service;
-		fixture = TestBed.createComponent(MintSubsectionServerComponent);
+		fixture = TestBed.createComponent(MintSubsectionSystemComponent);
 		component = fixture.componentInstance;
 		fixture.detectChanges();
 	});
@@ -114,15 +114,15 @@ describe('MintSubsectionServerComponent', () => {
 	});
 
 	it('should not wire the assistant when ai is disabled', () => {
-		ai_service.assistant_requests$.next({assistant: 'MINT_SERVER', content: 'last 24 hours'});
+		ai_service.assistant_requests$.next({assistant: 'SYSTEM', content: 'last 24 hours'});
 		expect(ai_service.openAiSocket).not.toHaveBeenCalled();
 	});
 
 	it('should push page context to the assistant when ai is enabled', () => {
 		ai_enabled = true;
-		const enabled_fixture = TestBed.createComponent(MintSubsectionServerComponent);
+		const enabled_fixture = TestBed.createComponent(MintSubsectionSystemComponent);
 		enabled_fixture.detectChanges();
-		ai_service.assistant_requests$.next({assistant: 'MINT_SERVER', content: 'last 24 hours'});
+		ai_service.assistant_requests$.next({assistant: 'SYSTEM', content: 'last 24 hours'});
 		expect(ai_service.openAiSocket).toHaveBeenCalled();
 	});
 });

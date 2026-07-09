@@ -12,22 +12,22 @@ import {MintMetric} from '@client/modules/mint/classes/mint-metric.class';
 /* Shared Dependencies */
 import {SystemMetricsInterval} from '@shared/generated.types';
 
-export type MintServerChartUnit = 'count' | 'percent' | 'bytes' | 'seconds';
+export type MintSystemChartUnit = 'count' | 'percent' | 'bytes' | 'seconds';
 
 @Component({
-	selector: 'orc-mint-subsection-server-chart',
+	selector: 'orc-mint-subsection-system-chart',
 	standalone: false,
-	templateUrl: './mint-subsection-server-chart.component.html',
-	styleUrl: './mint-subsection-server-chart.component.scss',
+	templateUrl: './mint-subsection-system-chart.component.html',
+	styleUrl: './mint-subsection-system-chart.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MintSubsectionServerChartComponent implements OnChanges, OnDestroy {
+export class MintSubsectionSystemChartComponent implements OnChanges, OnDestroy {
 	public readonly chart = viewChild(BaseChartDirective);
 
 	public locale = input.required<string>();
 	public metrics = input.required<MintMetric[]>();
 	public interval = input.required<SystemMetricsInterval>();
-	public unit = input.required<MintServerChartUnit>();
+	public unit = input.required<MintSystemChartUnit>();
 	public type = input.required<'line' | 'bar'>();
 	public stacked = input<boolean>(false);
 	public color_index = input<number>(0);

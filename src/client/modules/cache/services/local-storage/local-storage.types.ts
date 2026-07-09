@@ -63,7 +63,7 @@ export type MintConfigSettings = {
 	tertiary_nav: string[] | null;
 };
 
-export type MintServerSettings = {
+export type MintSystemSettings = {
 	date_start: number | null;
 	date_preset: DateRangePreset | null;
 	interval: SystemMetricsInterval | null;

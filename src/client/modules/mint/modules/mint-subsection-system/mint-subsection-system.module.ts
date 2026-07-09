@@ -16,17 +16,17 @@ import {BaseChartDirective as ChartJsBaseChartDirective} from 'ng2-charts';
 import {OrcFormModule} from '@client/modules/form/form.module';
 import {OrcChartModule} from '@client/modules/chart/chart.module';
 /* Local Dependencies */
-import {MintSubsectionServerComponent} from './components/mint-subsection-server/mint-subsection-server.component';
-import {MintSubsectionServerControlComponent} from './components/mint-subsection-server-control/mint-subsection-server-control.component';
-import {MintSubsectionServerChartComponent} from './components/mint-subsection-server-chart/mint-subsection-server-chart.component';
+import {MintSubsectionSystemComponent} from './components/mint-subsection-system/mint-subsection-system.component';
+import {MintSubsectionSystemControlComponent} from './components/mint-subsection-system-control/mint-subsection-system-control.component';
+import {MintSubsectionSystemChartComponent} from './components/mint-subsection-system-chart/mint-subsection-system-chart.component';
 
 @NgModule({
-	declarations: [MintSubsectionServerComponent, MintSubsectionServerControlComponent, MintSubsectionServerChartComponent],
+	declarations: [MintSubsectionSystemComponent, MintSubsectionSystemControlComponent, MintSubsectionSystemChartComponent],
 	imports: [
 		CoreRouterModule.forChild([
 			{
 				path: '',
-				component: MintSubsectionServerComponent,
+				component: MintSubsectionSystemComponent,
 			},
 		]),
 		CoreCommonModule,
@@ -44,4 +44,4 @@ import {MintSubsectionServerChartComponent} from './components/mint-subsection-s
 	],
 	exports: [],
 })
-export class OrcMintSubsectionServerModule {}
+export class OrcMintSubsectionSystemModule {}

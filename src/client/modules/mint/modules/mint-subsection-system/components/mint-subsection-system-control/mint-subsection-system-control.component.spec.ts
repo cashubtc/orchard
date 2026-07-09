@@ -3,22 +3,22 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 /* Vendor Dependencies */
 import {MatIconTestingModule} from '@angular/material/icon/testing';
 /* Native Dependencies */
-import {OrcMintSubsectionServerModule} from '@client/modules/mint/modules/mint-subsection-server/mint-subsection-server.module';
+import {OrcMintSubsectionSystemModule} from '@client/modules/mint/modules/mint-subsection-system/mint-subsection-system.module';
 /* Local Dependencies */
-import {MintSubsectionServerControlComponent} from './mint-subsection-server-control.component';
+import {MintSubsectionSystemControlComponent} from './mint-subsection-system-control.component';
 /* Shared Dependencies */
 import {SystemMetricsInterval} from '@shared/generated.types';
 
-describe('MintSubsectionServerControlComponent', () => {
-	let component: MintSubsectionServerControlComponent;
-	let fixture: ComponentFixture<MintSubsectionServerControlComponent>;
+describe('MintSubsectionSystemControlComponent', () => {
+	let component: MintSubsectionSystemControlComponent;
+	let fixture: ComponentFixture<MintSubsectionSystemControlComponent>;
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			imports: [OrcMintSubsectionServerModule, MatIconTestingModule],
+			imports: [OrcMintSubsectionSystemModule, MatIconTestingModule],
 		}).compileComponents();
 
-		fixture = TestBed.createComponent(MintSubsectionServerControlComponent);
+		fixture = TestBed.createComponent(MintSubsectionSystemControlComponent);
 		component = fixture.componentInstance;
 		fixture.componentRef.setInput('page_settings', {
 			date_start: 0,
