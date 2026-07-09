@@ -5,7 +5,7 @@ import {Resolver, Query, Args} from '@nestjs/graphql';
 import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
 import {Timezone, TimezoneType} from '@server/modules/graphql/scalars/timezone.scalar';
 /* Native Dependencies */
-import {MintMetricsInterval} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
+import {SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
 /* Local Dependencies */
 import {OrchardMintMetrics, OrchardMintMetricsSnapshot} from './mintmetrics.model';
 import {ApiMintMetricsService} from './mintmetrics.service';
@@ -23,8 +23,8 @@ export class MintMetricsResolver {
 	async mint_metrics(
 		@Args('date_start', {type: () => UnixTimestamp, nullable: true, description: 'Start of date range filter'}) date_start?: number,
 		@Args('date_end', {type: () => UnixTimestamp, nullable: true, description: 'End of date range filter'}) date_end?: number,
-		@Args('interval', {type: () => MintMetricsInterval, nullable: true, description: 'Time interval for data aggregation'})
-		interval?: MintMetricsInterval,
+		@Args('interval', {type: () => SystemMetricsInterval, nullable: true, description: 'Time interval for data aggregation'})
+		interval?: SystemMetricsInterval,
 		@Args('timezone', {type: () => Timezone, nullable: true, description: 'Timezone for date calculations'}) timezone?: TimezoneType,
 		@Args('metrics', {type: () => [String], nullable: true, description: 'List of specific metric families to retrieve'})
 		metrics?: string[],

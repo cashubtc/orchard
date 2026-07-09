@@ -10,7 +10,7 @@ import {ChartService} from '@client/modules/chart/services/chart/chart.service';
 /* Native Dependencies */
 import {MintMetric} from '@client/modules/mint/classes/mint-metric.class';
 /* Shared Dependencies */
-import {MintMetricsInterval} from '@shared/generated.types';
+import {SystemMetricsInterval} from '@shared/generated.types';
 
 export type MintServerChartUnit = 'count' | 'percent' | 'bytes' | 'seconds';
 
@@ -29,7 +29,7 @@ export class MintSubsectionServerChartComponent implements OnChanges, OnDestroy 
 
 	public locale = input.required<string>();
 	public metrics = input.required<MintMetric[]>();
-	public interval = input.required<MintMetricsInterval>();
+	public interval = input.required<SystemMetricsInterval>();
 	public unit = input.required<MintServerChartUnit>();
 	public type = input.required<'line' | 'bar'>();
 	public stacked = input<boolean>(false);
@@ -194,9 +194,9 @@ export class MintSubsectionServerChartComponent implements OnChanges, OnDestroy 
 	/** Maps the aggregation interval to a chart.js time unit */
 	private getTimeUnit(): 'minute' | 'hour' | 'day' {
 		switch (this.interval()) {
-			case MintMetricsInterval.Minute:
+			case SystemMetricsInterval.Minute:
 				return 'minute';
-			case MintMetricsInterval.Hour:
+			case SystemMetricsInterval.Hour:
 				return 'hour';
 			default:
 				return 'day';

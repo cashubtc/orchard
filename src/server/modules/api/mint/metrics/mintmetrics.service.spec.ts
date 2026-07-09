@@ -9,7 +9,7 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {SettingService} from '@server/modules/setting/setting.service';
 import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 import {MintMetrics} from '@server/modules/cashu/mintmetrics/mintmetrics.entity';
-import {MintMetricsInterval} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
+import {SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
 /* Local Dependencies */
 import {ApiMintMetricsService} from './mintmetrics.service';
 
@@ -88,7 +88,7 @@ describe('ApiMintMetricsService', () => {
 				row({metric: 'process_cpu_usage_percent', type: 'gauge', date: 3660, value: 30}),
 			]);
 
-			const out = await apiMintMetricsService.getMetrics('tag', {interval: MintMetricsInterval.hour, date_start: 0, date_end: 7200});
+			const out = await apiMintMetricsService.getMetrics('tag', {interval: SystemMetricsInterval.hour, date_start: 0, date_end: 7200});
 
 			expect(out).toHaveLength(1);
 			expect(out[0]).toMatchObject({metric: 'process_cpu_usage_percent', date: 3600, value: 20, min: 10, max: 30});
@@ -101,7 +101,7 @@ describe('ApiMintMetricsService', () => {
 				row({date: 7200, value: 3}),
 			]);
 
-			const out = await apiMintMetricsService.getMetrics('tag', {interval: MintMetricsInterval.hour, date_start: 0, date_end: 9000});
+			const out = await apiMintMetricsService.getMetrics('tag', {interval: SystemMetricsInterval.hour, date_start: 0, date_end: 9000});
 
 			expect(out).toHaveLength(2);
 			expect(out[0]).toMatchObject({date: 3600, value: 15});
@@ -116,7 +116,7 @@ describe('ApiMintMetricsService', () => {
 				row({metric: 'cdk_mint_operations_total', labels: 'operation=mint', date: 3660, value: 6}),
 			]);
 
-			const out = await apiMintMetricsService.getMetrics('tag', {interval: MintMetricsInterval.hour, date_start: 0, date_end: 7200});
+			const out = await apiMintMetricsService.getMetrics('tag', {interval: SystemMetricsInterval.hour, date_start: 0, date_end: 7200});
 
 			expect(out).toHaveLength(2);
 			const swap = out.find((m) => m.labels.some((l) => l.value === 'swap'));
@@ -132,7 +132,7 @@ describe('ApiMintMetricsService', () => {
 				row({metric: 'cdk_mint_operation_duration_seconds', type: 'histogram', date: 7200, sum: 3, count: 14}),
 			]);
 
-			const out = await apiMintMetricsService.getMetrics('tag', {interval: MintMetricsInterval.hour, date_start: 0, date_end: 9000});
+			const out = await apiMintMetricsService.getMetrics('tag', {interval: SystemMetricsInterval.hour, date_start: 0, date_end: 9000});
 
 			expect(out).toHaveLength(2);
 			expect(out[0]).toMatchObject({date: 3600, value: 0.5, count: 4});

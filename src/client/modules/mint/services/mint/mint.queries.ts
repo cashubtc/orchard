@@ -527,7 +527,7 @@ query MintSwaps($units: [MintUnit!], $id_keysets: [String!], $date_start: UnixTi
 }`;
 
 export const MINT_METRICS_QUERY = `
-query MintMetrics($date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: MintMetricsInterval, $timezone: Timezone, $metrics: [String!]) {
+query MintMetrics($date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: SystemMetricsInterval, $timezone: Timezone, $metrics: [String!]) {
 	mint_metrics(date_start: $date_start, date_end: $date_end, interval: $interval, timezone: $timezone, metrics: $metrics) {
 		metric
 		labels {

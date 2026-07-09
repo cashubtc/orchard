@@ -7,7 +7,7 @@ import {OrcMintSubsectionServerModule} from '@client/modules/mint/modules/mint-s
 /* Local Dependencies */
 import {MintSubsectionServerControlComponent} from './mint-subsection-server-control.component';
 /* Shared Dependencies */
-import {MintMetricsInterval} from '@shared/generated.types';
+import {SystemMetricsInterval} from '@shared/generated.types';
 
 describe('MintSubsectionServerControlComponent', () => {
 	let component: MintSubsectionServerControlComponent;
@@ -24,7 +24,7 @@ describe('MintSubsectionServerControlComponent', () => {
 			date_start: 0,
 			date_end: 86400,
 			date_preset: null,
-			interval: MintMetricsInterval.Hour,
+			interval: SystemMetricsInterval.Hour,
 		});
 		fixture.componentRef.setInput('loading', true);
 		fixture.componentRef.setInput('device_type', 'desktop');

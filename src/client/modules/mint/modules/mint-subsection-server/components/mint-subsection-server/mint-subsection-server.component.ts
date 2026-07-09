@@ -8,6 +8,9 @@ import {EMPTY, Subscription, catchError, forkJoin, of, timer, switchMap, takeWhi
 /* Application Dependencies */
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {SettingDeviceService} from '@client/modules/settings/services/setting-device/setting-device.service';
+import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
+import {AiService} from '@client/modules/ai/services/ai/ai.service';
+import {AiChatToolCall} from '@client/modules/ai/classes/ai-chat-chunk.class';
 import {NonNullableMintServerSettings} from '@client/modules/settings/types/setting.types';
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 import {resolveDateRangePreset} from '@client/modules/form/helpers/form-daterange.helpers';
@@ -15,7 +18,7 @@ import {DeviceType} from '@client/modules/layout/types/device.types';
 /* Native Dependencies */
 import {MintMetric, MintMetricSnapshot} from '@client/modules/mint/classes/mint-metric.class';
 /* Shared Dependencies */
-import {MintMetricsInterval} from '@shared/generated.types';
+import {AssistantToolName, SystemMetricsInterval} from '@shared/generated.types';
 
 const SNAPSHOT_POLL_INTERVAL_MS = 30000;
 const METRICS_RETENTION_DAYS = 90;
@@ -42,6 +45,8 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 	private readonly route = inject(ActivatedRoute);
 	private readonly mintService = inject(MintService);
 	private readonly settingDeviceService = inject(SettingDeviceService);
+	private readonly settingAppService = inject(SettingAppService);
+	private readonly aiService = inject(AiService);
 	private readonly breakpointObserver = inject(BreakpointObserver);
 
 	public locale!: string;
@@ -72,7 +77,16 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 		this.page_settings.set(this.getPageSettings());
 		this.subscriptions.add(this.getBreakpointSubscription());
 		this.subscriptions.add(this.getSnapshotPollingSubscription());
+		this.orchardOptionalInit();
 		this.loadMetrics();
+	}
+
+	/** Registers AI assistant subscriptions when the assistant is enabled */
+	private orchardOptionalInit(): void {
+		if (this.settingAppService.getSetting('ai_enabled').value) {
+			this.subscriptions.add(this.getAssistantSubscription());
+			this.subscriptions.add(this.getToolSubscription());
+		}
 	}
 
 	/* *******************************************************
@@ -88,7 +102,7 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 			date_start: resolved_dates?.date_start ?? settings.date_start ?? this.getDefaultDateStart(),
 			date_end: resolved_dates?.date_end ?? settings.date_end ?? this.getDefaultDateEnd(),
 			date_preset,
-			interval: settings.interval ?? MintMetricsInterval.Hour,
+			interval: settings.interval ?? SystemMetricsInterval.Hour,
 		};
 	}
 
@@ -215,6 +229,45 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 	}
 
 	/* *******************************************************
+		AI
+	******************************************************** */
+
+	/** Feeds the current page context to the assistant on each request */
+	private getAssistantSubscription(): Subscription {
+		return this.aiService.assistant_requests$.subscribe(({assistant, content}) => {
+			const settings = this.page_settings();
+			let context = `* **Current Date:** ${DateTime.now().toFormat('yyyy-MM-dd')}\n`;
+			if (settings) {
+				context += `* **Date Start:** ${DateTime.fromSeconds(settings.date_start).toFormat('yyyy-MM-dd')}\n`;
+				context += `* **Date End:** ${DateTime.fromSeconds(settings.date_end).toFormat('yyyy-MM-dd')}\n`;
+				context += `* **Interval:** ${settings.interval}\n`;
+			}
+			this.aiService.openAiSocket(assistant, content, context);
+		});
+	}
+
+	/** Dispatches assistant tool calls to the matching Actions-Up handlers */
+	private getToolSubscription(): Subscription {
+		return this.aiService.tool_calls$.subscribe((tool_call: AiChatToolCall) => {
+			this.executeAssistantFunction(tool_call);
+		});
+	}
+
+	/** Routes an assistant tool call to the corresponding page action */
+	private executeAssistantFunction(tool_call: AiChatToolCall): void {
+		if (tool_call.function.name === AssistantToolName.DateRangeUpdate) {
+			const range = [
+				DateTime.fromFormat(tool_call.function.arguments.date_start, 'yyyy-MM-dd').toUnixInteger(),
+				DateTime.fromFormat(tool_call.function.arguments.date_end, 'yyyy-MM-dd').toUnixInteger(),
+			];
+			this.onDateChange(range);
+		}
+		if (tool_call.function.name === AssistantToolName.MetricsIntervalUpdate) {
+			this.onIntervalChange(tool_call.function.arguments.interval);
+		}
+	}
+
+	/* *******************************************************
 		Actions Up
 	******************************************************** */
 
@@ -231,7 +284,7 @@ export class MintSubsectionServerComponent implements OnInit, OnDestroy {
 		this.updateSettings({...settings, date_start: resolved_dates.date_start, date_end: resolved_dates.date_end, date_preset: preset});
 	}
 
-	public onIntervalChange(interval: MintMetricsInterval): void {
+	public onIntervalChange(interval: SystemMetricsInterval): void {
 		const settings = this.page_settings();
 		if (!settings) return;
 		this.updateSettings({...settings, interval});

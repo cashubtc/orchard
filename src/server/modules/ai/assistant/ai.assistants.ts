@@ -12,6 +12,7 @@ import {
 	UpdateCrewUserActiveTool,
 	UpdateMintAnalyticsUnitsTool,
 	UpdateMintAnalyticsIntervalTool,
+	UpdateMetricsIntervalTool,
 	UpdateMintNameTool,
 	UpdateMintDescriptionTool,
 	UpdateMintIconUrlTool,
@@ -125,7 +126,7 @@ export const AI_ASSISTANTS = {
 			role: 'system',
 			content: 'You are an agent designed to help adjust parameters used to explore mint server metrics.',
 		},
-		tools: [UpdateDateRangeTool],
+		tools: [UpdateDateRangeTool, UpdateMetricsIntervalTool],
 	},
 	[AiAssistant.MINT_INFO]: {
 		name: 'Mint Info Agent',

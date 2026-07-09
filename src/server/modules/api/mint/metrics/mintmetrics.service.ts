@@ -12,7 +12,8 @@ import {SettingService} from '@server/modules/setting/setting.service';
 import {SettingKey} from '@server/modules/setting/setting.enums';
 import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 import {MintMetrics} from '@server/modules/cashu/mintmetrics/mintmetrics.entity';
-import {MintMetricType, MintMetricsInterval} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
+import {MintMetricType} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
+import {SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
 import {flattenFamily} from '@server/modules/prometheus/prometheus.helpers';
 /* Local Dependencies */
 import {OrchardMintMetrics, OrchardMintMetricsSnapshot} from './mintmetrics.model';
@@ -20,7 +21,7 @@ import {OrchardMintMetrics, OrchardMintMetricsSnapshot} from './mintmetrics.mode
 interface MintMetricsArgs {
 	date_start?: number;
 	date_end?: number;
-	interval?: MintMetricsInterval;
+	interval?: SystemMetricsInterval;
 	timezone?: string;
 	metrics?: string[];
 }
@@ -44,7 +45,7 @@ export class ApiMintMetricsService {
 		try {
 			await this.guardSupport();
 			const now = DateTime.utc().toUnixInteger();
-			const interval = args.interval ?? MintMetricsInterval.minute;
+			const interval = args.interval ?? SystemMetricsInterval.minute;
 			const date_start = args.date_start ?? DateTime.utc().minus({days: 1}).toUnixInteger();
 			const date_end = args.date_end ?? now;
 			const data = await this.mintMetricsService.getMetrics(date_start, date_end, args.metrics);
@@ -101,7 +102,7 @@ export class ApiMintMetricsService {
 	/**
 	 * Aggregates raw cumulative rows into interval data points per series
 	 */
-	private aggregateByInterval(data: MintMetrics[], interval: MintMetricsInterval, timezone?: string): OrchardMintMetrics[] {
+	private aggregateByInterval(data: MintMetrics[], interval: SystemMetricsInterval, timezone?: string): OrchardMintMetrics[] {
 		const tz = timezone ?? 'UTC';
 		const series_map = new Map<string, MintMetrics[]>();
 
@@ -126,7 +127,7 @@ export class ApiMintMetricsService {
 	/**
 	 * Aggregates a gauge series into avg/min/max per interval bucket
 	 */
-	private aggregateGaugeSeries(series: MintMetrics[], interval: MintMetricsInterval, tz: string): OrchardMintMetrics[] {
+	private aggregateGaugeSeries(series: MintMetrics[], interval: SystemMetricsInterval, tz: string): OrchardMintMetrics[] {
 		type Bucket = {values: number[]; min: number; max: number};
 		const buckets = new Map<number, Bucket>();
 
@@ -156,7 +157,7 @@ export class ApiMintMetricsService {
 	 * Aggregates a cumulative counter series into per-interval deltas
 	 * A drop in the cumulative value means the mint restarted; the new value is the delta
 	 */
-	private aggregateCounterSeries(series: MintMetrics[], interval: MintMetricsInterval, tz: string): OrchardMintMetrics[] {
+	private aggregateCounterSeries(series: MintMetrics[], interval: SystemMetricsInterval, tz: string): OrchardMintMetrics[] {
 		const buckets = new Map<number, number>();
 
 		for (let i = 1; i < series.length; i++) {
@@ -177,7 +178,7 @@ export class ApiMintMetricsService {
 	 * Aggregates a cumulative histogram series into per-interval average durations
 	 * Value is null for intervals without observations
 	 */
-	private aggregateHistogramSeries(series: MintMetrics[], interval: MintMetricsInterval, tz: string): OrchardMintMetrics[] {
+	private aggregateHistogramSeries(series: MintMetrics[], interval: SystemMetricsInterval, tz: string): OrchardMintMetrics[] {
 		type Bucket = {sum: number; count: number};
 		const buckets = new Map<number, Bucket>();
 
@@ -211,13 +212,13 @@ export class ApiMintMetricsService {
 	/**
 	 * Gets the bucket start timestamp for a given interval
 	 */
-	private getBucketDate(date: number, interval: MintMetricsInterval, timezone: string): number {
+	private getBucketDate(date: number, interval: SystemMetricsInterval, timezone: string): number {
 		const dt = DateTime.fromSeconds(date, {zone: timezone});
 
 		switch (interval) {
-			case MintMetricsInterval.day:
+			case SystemMetricsInterval.day:
 				return dt.startOf('day').toUnixInteger();
-			case MintMetricsInterval.hour:
+			case SystemMetricsInterval.hour:
 				return dt.startOf('hour').toUnixInteger();
 			default:
 				return dt.startOf('minute').toUnixInteger();

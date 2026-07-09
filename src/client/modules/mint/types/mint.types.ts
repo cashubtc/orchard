@@ -35,7 +35,7 @@ import {
 	OrchardMintKeysetCount,
 	OrchardMintMetrics,
 	OrchardMintMetricsSnapshot,
-	MintMetricsInterval,
+	SystemMetricsInterval,
 } from '@shared/generated.types';
 
 export type MintActivitySummaryResponse = {
@@ -127,7 +127,7 @@ export type MintAnalyticsArgs = {
 export type MintMetricsArgs = {
 	date_start?: number;
 	date_end?: number;
-	interval?: MintMetricsInterval;
+	interval?: SystemMetricsInterval;
 	timezone?: string;
 	metrics?: string[];
 };

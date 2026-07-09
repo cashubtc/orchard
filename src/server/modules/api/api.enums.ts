@@ -29,7 +29,7 @@ import {
 	EventLogDetailStatus,
 } from '@server/modules/event/event.enums';
 import {SystemMetric, SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
-import {MintMetricType, MintMetricsInterval} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
+import {MintMetricType} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
 
 registerEnumType(MintUnit, {
 	name: 'MintUnit',
@@ -393,14 +393,5 @@ registerEnumType(MintMetricType, {
 		gauge: {description: 'Point-in-time value'},
 		counter: {description: 'Monotonic cumulative value'},
 		histogram: {description: 'Distribution of observed values'},
-	},
-});
-registerEnumType(MintMetricsInterval, {
-	name: 'MintMetricsInterval',
-	description: 'Time interval for mint metrics aggregation',
-	valuesMap: {
-		minute: {description: 'Per-minute aggregation'},
-		hour: {description: 'Per-hour aggregation'},
-		day: {description: 'Per-day aggregation'},
 	},
 });

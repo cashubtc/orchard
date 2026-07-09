@@ -10,11 +10,11 @@ import {NonNullableMintServerSettings} from '@client/modules/settings/types/sett
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 /* Shared Dependencies */
-import {MintMetricsInterval} from '@shared/generated.types';
+import {SystemMetricsInterval} from '@shared/generated.types';
 
 type IntervalOption = {
 	label: string;
-	value: MintMetricsInterval;
+	value: SystemMetricsInterval;
 };
 
 @Component({
@@ -31,20 +31,20 @@ export class MintSubsectionServerControlComponent {
 
 	public dateChange = output<number[]>();
 	public presetChange = output<DateRangePreset>();
-	public intervalChange = output<MintMetricsInterval>();
+	public intervalChange = output<SystemMetricsInterval>();
 
 	public readonly panel = new FormGroup({
 		daterange: new FormGroup({
 			date_start: new FormControl<DateTime | null>(null, [Validators.required]),
 			date_end: new FormControl<DateTime | null>(null, [Validators.required]),
 		}),
-		interval: new FormControl<MintMetricsInterval | null>(null, [Validators.required]),
+		interval: new FormControl<SystemMetricsInterval | null>(null, [Validators.required]),
 	});
 
 	public interval_options: IntervalOption[] = [
-		{label: 'Minute', value: MintMetricsInterval.Minute},
-		{label: 'Hour', value: MintMetricsInterval.Hour},
-		{label: 'Day', value: MintMetricsInterval.Day},
+		{label: 'Minute', value: SystemMetricsInterval.Minute},
+		{label: 'Hour', value: SystemMetricsInterval.Hour},
+		{label: 'Day', value: SystemMetricsInterval.Day},
 	];
 
 	public get height_state(): string {
