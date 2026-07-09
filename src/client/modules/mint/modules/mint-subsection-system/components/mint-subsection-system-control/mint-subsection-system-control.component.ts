@@ -1,8 +1,9 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, effect, input, output, untracked} from '@angular/core';
+import {ChangeDetectionStrategy, Component, effect, input, output, untracked, viewChild} from '@angular/core';
 import {FormControl, FormGroup, Validators} from '@angular/forms';
 /* Vendor Dependencies */
 import {MatSelectChange} from '@angular/material/select';
+import {MatMenuTrigger} from '@angular/material/menu';
 import {DateRange} from '@angular/material/datepicker';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
@@ -51,6 +52,7 @@ export class MintSubsectionSystemControlComponent {
 		return this.panel?.invalid ? 'invalid' : 'valid';
 	}
 
+	private filter_menu_trigger = viewChild(MatMenuTrigger);
 	private initialized = false;
 
 	constructor() {
@@ -130,5 +132,17 @@ export class MintSubsectionSystemControlComponent {
 		if (this.panel.controls.daterange.controls.date_end.value.toSeconds() !== settings.date_end) return true;
 		if (this.panel.controls.interval.value !== settings.interval) return true;
 		return false;
+	}
+
+	/** Resets the panel to default filters — last 7 days and hourly interval — then closes the menu */
+	public onClearFilter(): void {
+		this.presetChange.emit(DateRangePreset.Last7Days);
+		this.intervalChange.emit(SystemMetricsInterval.Hour);
+		this.filter_menu_trigger()?.closeMenu();
+	}
+
+	/** Closes the filter menu without applying changes */
+	public onCloseFilter(): void {
+		this.filter_menu_trigger()?.closeMenu();
 	}
 }

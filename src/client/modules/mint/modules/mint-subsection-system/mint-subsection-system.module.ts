@@ -9,6 +9,7 @@ import {MatCardModule} from '@angular/material/card';
 import {MatButtonModule} from '@angular/material/button';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatSelectModule} from '@angular/material/select';
+import {MatMenuModule} from '@angular/material/menu';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {BaseChartDirective as ChartJsBaseChartDirective} from 'ng2-charts';
@@ -36,6 +37,7 @@ import {MintSubsectionSystemChartComponent} from './components/mint-subsection-s
 		MatButtonModule,
 		MatFormFieldModule,
 		MatSelectModule,
+		MatMenuModule,
 		MatDatepickerModule,
 		MatProgressSpinnerModule,
 		ChartJsBaseChartDirective,
