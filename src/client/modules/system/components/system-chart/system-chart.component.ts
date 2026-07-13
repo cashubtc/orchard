@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, input, OnChanges, OnDestroy, SimpleChanges, computed, signal, viewChild} from '@angular/core';
+import {ChangeDetectionStrategy, Component, input, OnChanges, OnDestroy, SimpleChanges, computed, inject, signal, viewChild} from '@angular/core';
 /* Vendor Dependencies */
 import {BaseChartDirective} from 'ng2-charts';
 import {ChartConfiguration, ChartType as ChartJsType, Plugin} from 'chart.js';
@@ -8,31 +8,32 @@ import {Subscription} from 'rxjs';
 /* Application Dependencies */
 import {ChartService} from '@client/modules/chart/services/chart/chart.service';
 /* Native Dependencies */
-import {MintMetric} from '@client/modules/mint/classes/mint-metric.class';
+import {SystemChartUnit, SystemChartPoint} from '@client/modules/system/types/system.types';
 /* Shared Dependencies */
 import {SystemMetricsInterval} from '@shared/generated.types';
 
-export type MintSystemChartUnit = 'count' | 'percent' | 'bytes' | 'seconds';
-
 @Component({
-	selector: 'orc-mint-subsection-system-chart',
+	selector: 'orc-system-chart',
 	standalone: false,
-	templateUrl: './mint-subsection-system-chart.component.html',
-	styleUrl: './mint-subsection-system-chart.component.scss',
+	templateUrl: './system-chart.component.html',
+	styleUrl: './system-chart.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MintSubsectionSystemChartComponent implements OnChanges, OnDestroy {
+export class SystemChartComponent implements OnChanges, OnDestroy {
+	private readonly chartService = inject(ChartService);
+
 	public readonly chart = viewChild(BaseChartDirective);
 
 	public locale = input.required<string>();
-	public metrics = input.required<MintMetric[]>();
+	public metrics = input.required<SystemChartPoint[]>();
 	public interval = input.required<SystemMetricsInterval>();
-	public unit = input.required<MintSystemChartUnit>();
-	public type = input.required<'line' | 'bar'>();
+	public unit = input.required<SystemChartUnit>();
+	public type = input<'line' | 'bar'>('line');
 	public stacked = input<boolean>(false);
-	public color_index = input<number>(0);
 	public percentiles = input<boolean>(false);
+	public color_index = input<number>(0);
 	public legend = input<'below' | 'none'>('none');
+	public label_map = input<Record<string, string> | undefined>(undefined);
 	public loading = input.required<boolean>();
 
 	public chart_type!: ChartJsType;
@@ -45,7 +46,7 @@ export class MintSubsectionSystemChartComponent implements OnChanges, OnDestroy 
 
 	private subscriptions: Subscription = new Subscription();
 
-	constructor(private chartService: ChartService) {
+	constructor() {
 		this.subscriptions.add(this.chartService.onResizeStart().subscribe(() => this.displayed.set(false)));
 		this.subscriptions.add(this.chartService.onResizeEnd().subscribe(() => this.displayed.set(true)));
 	}
@@ -75,9 +76,9 @@ export class MintSubsectionSystemChartComponent implements OnChanges, OnDestroy 
 
 	/** Groups metrics by label set into one themed dataset per series */
 	private getChartData(): ChartConfiguration['data'] {
-		const series_map = new Map<string, MintMetric[]>();
+		const series_map = new Map<string, SystemChartPoint[]>();
 		for (const metric of this.metrics()) {
-			const key = `${metric.metric}|${metric.labels.map((label) => `${label.name}=${label.value}`).join(',')}`;
+			const key = `${metric.metric}|${(metric.labels ?? []).map((label) => `${label.name}=${label.value}`).join(',')}`;
 			const series = series_map.get(key);
 			if (series) series.push(metric);
 			else series_map.set(key, [metric]);
@@ -114,7 +115,7 @@ export class MintSubsectionSystemChartComponent implements OnChanges, OnDestroy 
 	}
 
 	/** Builds three line datasets (p50/p95/p99) per series: color by series, line style by percentile */
-	private getPercentileDatasets(series_map: Map<string, MintMetric[]>): ChartConfiguration['data']['datasets'] {
+	private getPercentileDatasets(series_map: Map<string, SystemChartPoint[]>): ChartConfiguration['data']['datasets'] {
 		const percentile_configs: {key: 'p50' | 'p95' | 'p99'; label: string; dash: number[]}[] = [
 			{key: 'p50', label: 'p50', dash: [4, 4]},
 			{key: 'p95', label: 'p95', dash: []},
@@ -153,10 +154,16 @@ export class MintSubsectionSystemChartComponent implements OnChanges, OnDestroy 
 		return first_color ? [this.chartService.createGlowPlugin(first_color)] : [];
 	}
 
-	/** Derives a legend label from a series label set */
-	private getSeriesLabel(metric: MintMetric): string {
-		if (metric.labels.length === 0) return this.humanizeMetric(metric.metric);
-		return metric.labels.map((label) => label.value).join(' · ');
+	/**
+	 * Derives a legend label for a series: an explicit label_map entry wins, then a
+	 * prometheus-labels-derived label, then a humanized metric-name fallback.
+	 */
+	private getSeriesLabel(metric: SystemChartPoint): string {
+		const mapped = this.label_map()?.[metric.metric];
+		if (mapped) return mapped;
+		const labels = metric.labels ?? [];
+		if (labels.length > 0) return labels.map((label) => label.value).join(' · ');
+		return this.humanizeMetric(metric.metric);
 	}
 
 	/** Turns a prometheus family name into a readable single-series label */
@@ -250,6 +257,7 @@ export class MintSubsectionSystemChartComponent implements OnChanges, OnDestroy 
 		switch (this.unit()) {
 			case 'percent':
 				return `${formatted}%`;
+			case 'megabytes':
 			case 'bytes':
 				return `${formatted} MB`;
 			case 'seconds':

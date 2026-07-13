@@ -2,7 +2,6 @@
 import {ChangeDetectionStrategy, Component, OnInit, OnDestroy, computed, inject, signal} from '@angular/core';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 /* Vendor Dependencies */
-import {DateTime} from 'luxon';
 import {Subscription} from 'rxjs';
 /* Application Dependencies */
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
@@ -10,17 +9,19 @@ import {SettingDeviceService} from '@client/modules/settings/services/setting-de
 import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 import {AiService} from '@client/modules/ai/services/ai/ai.service';
 import {AiChatToolCall} from '@client/modules/ai/classes/ai-chat-chunk.class';
-import {NonNullableMintSystemSettings} from '@client/modules/settings/types/setting.types';
+import {NonNullableSystemMetricsSettings} from '@client/modules/settings/types/setting.types';
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 import {resolveDateRangePreset} from '@client/modules/form/helpers/form-daterange.helpers';
 import {DeviceType} from '@client/modules/layout/types/device.types';
+import {deviceTypeFromBreakpoints} from '@client/modules/layout/helpers/device.helpers';
+import {resolveSystemMetricsSettings, getMetricsGenesisTime} from '@client/modules/system/helpers/system-settings.helpers';
+import {buildSystemAssistantContext, parseAssistantDateRange} from '@client/modules/system/helpers/system-assistant.helpers';
 /* Native Dependencies */
 import {MintMetric} from '@client/modules/mint/classes/mint-metric.class';
 import {computeHttpErrorRate, computeEndpointDistribution} from '@client/modules/mint/helpers/mint-http-metric.helpers';
 /* Shared Dependencies */
 import {AssistantToolName, SystemMetricsInterval} from '@shared/generated.types';
 
-const METRICS_RETENTION_DAYS = 90;
 const CHART_METRIC_FAMILIES = [
 	'cdk_mint_operations_total',
 	'cdk_mint_operation_duration_seconds',
@@ -56,7 +57,7 @@ export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 
 	public locale!: string;
 
-	public readonly page_settings = signal<NonNullableMintSystemSettings | null>(null);
+	public readonly page_settings = signal<NonNullableSystemMetricsSettings | null>(null);
 	public readonly metrics = signal<MintMetric[]>([]);
 	public readonly loading_metrics = signal<boolean>(true);
 	public readonly refreshing = signal<boolean>(false);
@@ -106,32 +107,11 @@ export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 	******************************************************** */
 
 	/** Builds page settings from device settings with defaults for first visits */
-	private getPageSettings(): NonNullableMintSystemSettings {
-		const settings = this.settingDeviceService.getMintSystemSettings();
-		const date_preset = settings.date_preset ?? null;
-		const resolved_dates = date_preset ? resolveDateRangePreset(date_preset, this.getMetricsGenesisTime()) : null;
-		return {
-			date_start: resolved_dates?.date_start ?? settings.date_start ?? this.getDefaultDateStart(),
-			date_end: resolved_dates?.date_end ?? settings.date_end ?? this.getDefaultDateEnd(),
-			date_preset,
-			interval: settings.interval ?? SystemMetricsInterval.Hour,
-		};
+	private getPageSettings(): NonNullableSystemMetricsSettings {
+		return resolveSystemMetricsSettings(this.settingDeviceService.getMintSystemSettings());
 	}
 
-	/** Oldest possible sample given the server retention window (used for the AllTime preset) */
-	private getMetricsGenesisTime(): number {
-		return Math.floor(DateTime.now().minus({days: METRICS_RETENTION_DAYS}).startOf('day').toSeconds());
-	}
-
-	private getDefaultDateStart(): number {
-		return Math.floor(DateTime.now().minus({days: 7}).startOf('day').toSeconds());
-	}
-
-	private getDefaultDateEnd(): number {
-		return Math.floor(DateTime.now().endOf('day').toSeconds());
-	}
-
-	private updateSettings(settings: NonNullableMintSystemSettings): void {
+	private updateSettings(settings: NonNullableSystemMetricsSettings): void {
 		this.page_settings.set(settings);
 		this.settingDeviceService.setMintSystemSettings(settings);
 		this.loadMetrics();
@@ -142,15 +122,9 @@ export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 	******************************************************** */
 
 	private getBreakpointSubscription(): Subscription {
-		return this.breakpointObserver.observe([Breakpoints.XSmall, Breakpoints.Small, Breakpoints.Medium]).subscribe((result) => {
-			if (result.breakpoints[Breakpoints.XSmall]) {
-				this.device_type.set('mobile');
-			} else if (result.breakpoints[Breakpoints.Small] || result.breakpoints[Breakpoints.Medium]) {
-				this.device_type.set('tablet');
-			} else {
-				this.device_type.set('desktop');
-			}
-		});
+		return this.breakpointObserver
+			.observe([Breakpoints.XSmall, Breakpoints.Small, Breakpoints.Medium])
+			.subscribe((result) => this.device_type.set(deviceTypeFromBreakpoints(result)));
 	}
 
 	/* *******************************************************
@@ -225,13 +199,7 @@ export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 	/** Feeds the current page context to the assistant on each request */
 	private getAssistantSubscription(): Subscription {
 		return this.aiService.assistant_requests$.subscribe(({assistant, content}) => {
-			const settings = this.page_settings();
-			let context = `* **Current Date:** ${DateTime.now().toFormat('yyyy-MM-dd')}\n`;
-			if (settings) {
-				context += `* **Date Start:** ${DateTime.fromSeconds(settings.date_start).toFormat('yyyy-MM-dd')}\n`;
-				context += `* **Date End:** ${DateTime.fromSeconds(settings.date_end).toFormat('yyyy-MM-dd')}\n`;
-				context += `* **Interval:** ${settings.interval}\n`;
-			}
+			const context = buildSystemAssistantContext(this.page_settings());
 			this.aiService.openAiSocket(assistant, content, context);
 		});
 	}
@@ -246,11 +214,7 @@ export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 	/** Routes an assistant tool call to the corresponding page action */
 	private executeAssistantFunction(tool_call: AiChatToolCall): void {
 		if (tool_call.function.name === AssistantToolName.DateRangeUpdate) {
-			const range = [
-				DateTime.fromFormat(tool_call.function.arguments.date_start, 'yyyy-MM-dd').toUnixInteger(),
-				DateTime.fromFormat(tool_call.function.arguments.date_end, 'yyyy-MM-dd').toUnixInteger(),
-			];
-			this.onDateChange(range);
+			this.onDateChange(parseAssistantDateRange(tool_call.function.arguments.date_start, tool_call.function.arguments.date_end));
 		}
 		if (tool_call.function.name === AssistantToolName.MetricsIntervalUpdate) {
 			this.onIntervalChange(tool_call.function.arguments.interval);
@@ -270,7 +234,7 @@ export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 	public onPresetChange(preset: DateRangePreset): void {
 		const settings = this.page_settings();
 		if (!settings) return;
-		const resolved_dates = resolveDateRangePreset(preset, this.getMetricsGenesisTime());
+		const resolved_dates = resolveDateRangePreset(preset, getMetricsGenesisTime());
 		this.updateSettings({...settings, date_start: resolved_dates.date_start, date_end: resolved_dates.date_end, date_preset: preset});
 	}
 

@@ -2,7 +2,7 @@
 	@if (page_settings(); as settings) {
 		<div class="index-system-control-panel p-t-1">
 			<div class="flex flex-justify-between flex-gap-1 flex-items-end">
-				<orc-index-subsection-system-control
+				<orc-system-control
 					class="flex-grow"
 					[page_settings]="settings"
 					[loading]="loading_metrics()"
@@ -10,7 +10,7 @@
 					(dateChange)="onDateChange($event)"
 					(presetChange)="onPresetChange($event)"
 					(intervalChange)="onIntervalChange($event)"
-				></orc-index-subsection-system-control>
+				></orc-system-control>
 				@if (device_type() === 'desktop') {
 					<div class="index-system-uptime p-b-1-5">
 						<div class="index-system-uptime-stat">
@@ -45,15 +45,16 @@
 				<div class="title-m">CPU Usage</div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
-						<orc-index-subsection-system-chart
+						<orc-system-chart
 							[locale]="locale"
+							[label_map]="metric_labels"
 							[metrics]="cpu_metrics()"
 							[interval]="settings.interval"
 							unit="percent"
 							type="line"
 							[color_index]="0"
 							[loading]="loading_metrics()"
-						></orc-index-subsection-system-chart>
+						></orc-system-chart>
 					</mat-card-content>
 				</mat-card>
 			</div>
@@ -62,15 +63,16 @@
 				<div class="title-m">Memory Usage</div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
-						<orc-index-subsection-system-chart
+						<orc-system-chart
 							[locale]="locale"
+							[label_map]="metric_labels"
 							[metrics]="memory_rss_metrics()"
 							[interval]="settings.interval"
 							unit="megabytes"
 							type="line"
 							[color_index]="2"
 							[loading]="loading_metrics()"
-						></orc-index-subsection-system-chart>
+						></orc-system-chart>
 					</mat-card-content>
 				</mat-card>
 			</div>
@@ -79,15 +81,16 @@
 				<div class="title-m">Memory %</div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
-						<orc-index-subsection-system-chart
+						<orc-system-chart
 							[locale]="locale"
+							[label_map]="metric_labels"
 							[metrics]="memory_percent_metrics()"
 							[interval]="settings.interval"
 							unit="percent"
 							type="line"
 							[color_index]="2"
 							[loading]="loading_metrics()"
-						></orc-index-subsection-system-chart>
+						></orc-system-chart>
 					</mat-card-content>
 				</mat-card>
 			</div>
@@ -97,15 +100,16 @@
 				<div class="title-m">Disk Usage</div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
-						<orc-index-subsection-system-chart
+						<orc-system-chart
 							[locale]="locale"
+							[label_map]="metric_labels"
 							[metrics]="disk_metrics()"
 							[interval]="settings.interval"
 							unit="percent"
 							type="line"
 							[color_index]="4"
 							[loading]="loading_metrics()"
-						></orc-index-subsection-system-chart>
+						></orc-system-chart>
 					</mat-card-content>
 				</mat-card>
 			</div>
@@ -114,8 +118,9 @@
 				<div class="title-m">Load Average <small class="orc-outline-color">runnable processes · 1m · 5m · 15m</small></div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
-						<orc-index-subsection-system-chart
+						<orc-system-chart
 							[locale]="locale"
+							[label_map]="metric_labels"
 							[metrics]="load_metrics()"
 							[interval]="settings.interval"
 							unit="count"
@@ -123,7 +128,7 @@
 							[color_index]="3"
 							legend="below"
 							[loading]="loading_metrics()"
-						></orc-index-subsection-system-chart>
+						></orc-system-chart>
 					</mat-card-content>
 				</mat-card>
 			</div>
@@ -133,8 +138,9 @@
 				<div class="title-m">App Memory <small class="orc-outline-color">V8 heap · used vs total</small></div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
-						<orc-index-subsection-system-chart
+						<orc-system-chart
 							[locale]="locale"
+							[label_map]="metric_labels"
 							[metrics]="heap_metrics()"
 							[interval]="settings.interval"
 							unit="megabytes"
@@ -142,7 +148,7 @@
 							[color_index]="1"
 							legend="below"
 							[loading]="loading_metrics()"
-						></orc-index-subsection-system-chart>
+						></orc-system-chart>
 					</mat-card-content>
 				</mat-card>
 			</div>

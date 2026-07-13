@@ -3,24 +3,24 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 /* Vendor Dependencies */
 import {MatIconTestingModule} from '@angular/material/icon/testing';
 /* Native Dependencies */
-import {OrcIndexSubsectionSystemModule} from '@client/modules/index/modules/index-subsection-system/index-subsection-system.module';
+import {OrcSystemModule} from '@client/modules/system/system.module';
 /* Application Dependencies */
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 /* Local Dependencies */
-import {IndexSubsectionSystemControlComponent} from './index-subsection-system-control.component';
+import {SystemControlComponent} from './system-control.component';
 /* Shared Dependencies */
 import {SystemMetricsInterval} from '@shared/generated.types';
 
-describe('IndexSubsectionSystemControlComponent', () => {
-	let component: IndexSubsectionSystemControlComponent;
-	let fixture: ComponentFixture<IndexSubsectionSystemControlComponent>;
+describe('SystemControlComponent', () => {
+	let component: SystemControlComponent;
+	let fixture: ComponentFixture<SystemControlComponent>;
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			imports: [OrcIndexSubsectionSystemModule, MatIconTestingModule],
+			imports: [OrcSystemModule, MatIconTestingModule],
 		}).compileComponents();
 
-		fixture = TestBed.createComponent(IndexSubsectionSystemControlComponent);
+		fixture = TestBed.createComponent(SystemControlComponent);
 		component = fixture.componentInstance;
 		fixture.componentRef.setInput('page_settings', {
 			date_start: 0,

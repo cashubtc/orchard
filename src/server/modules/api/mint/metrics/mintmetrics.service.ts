@@ -14,6 +14,7 @@ import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.
 import {MintMetrics} from '@server/modules/cashu/mintmetrics/mintmetrics.entity';
 import {MintMetricType} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
 import {SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
+import {getBucketDate, bucketMinMaxAvg} from '@server/modules/system/metrics/sysmetrics.helpers';
 /* Local Dependencies */
 import {OrchardMintMetrics} from './mintmetrics.model';
 
@@ -98,29 +99,13 @@ export class ApiMintMetricsService {
 	 * Aggregates a gauge series into avg/min/max per interval bucket
 	 */
 	private aggregateGaugeSeries(series: MintMetrics[], interval: SystemMetricsInterval, tz: string): OrchardMintMetrics[] {
-		type Bucket = {values: number[]; min: number; max: number};
-		const buckets = new Map<number, Bucket>();
-
-		for (const row of series) {
-			if (row.value === null) continue;
-			const bucket_date = this.getBucketDate(row.date, interval, tz);
-			const bucket = buckets.get(bucket_date);
-			if (bucket) {
-				bucket.values.push(row.value);
-				bucket.min = Math.min(bucket.min, row.value);
-				bucket.max = Math.max(bucket.max, row.value);
-			} else {
-				buckets.set(bucket_date, {values: [row.value], min: row.value, max: row.value});
-			}
-		}
-
-		return Array.from(buckets.entries()).map(([date, bucket]) => {
-			const avg = bucket.values.reduce((sum, v) => sum + v, 0) / bucket.values.length;
-			return new OrchardMintMetrics(series[0].metric, series[0].labels, MintMetricType.gauge, date, avg, {
-				min: bucket.min,
-				max: bucket.max,
-			});
-		});
+		return bucketMinMaxAvg(series, interval, tz).map(
+			(bucket) =>
+				new OrchardMintMetrics(series[0].metric, series[0].labels, MintMetricType.gauge, bucket.date, bucket.avg, {
+					min: bucket.min,
+					max: bucket.max,
+				}),
+		);
 	}
 
 	/**
@@ -135,7 +120,7 @@ export class ApiMintMetricsService {
 			const current = series[i].value;
 			if (previous === null || current === null) continue;
 			const delta = current >= previous ? current - previous : current;
-			const bucket_date = this.getBucketDate(series[i].date, interval, tz);
+			const bucket_date = getBucketDate(series[i].date, interval, tz);
 			buckets.set(bucket_date, (buckets.get(bucket_date) ?? 0) + delta);
 		}
 
@@ -159,7 +144,7 @@ export class ApiMintMetricsService {
 			const reset = current.count < previous.count;
 			const delta_sum = reset ? current.sum : current.sum - previous.sum;
 			const delta_count = reset ? current.count : current.count - previous.count;
-			const bucket_date = this.getBucketDate(current.date, interval, tz);
+			const bucket_date = getBucketDate(current.date, interval, tz);
 			const bucket = buckets.get(bucket_date) ?? {sum: 0, count: 0, le_counts: new Map(), has_buckets: false};
 			bucket.sum += delta_sum;
 			bucket.count += delta_count;
@@ -263,21 +248,5 @@ export class ApiMintMetricsService {
 		const span = target.count - lower_count;
 		if (span <= 0) return lower_le;
 		return lower_le + (target.le - lower_le) * ((rank - lower_count) / span);
-	}
-
-	/**
-	 * Gets the bucket start timestamp for a given interval
-	 */
-	private getBucketDate(date: number, interval: SystemMetricsInterval, timezone: string): number {
-		const dt = DateTime.fromSeconds(date, {zone: timezone});
-
-		switch (interval) {
-			case SystemMetricsInterval.day:
-				return dt.startOf('day').toUnixInteger();
-			case SystemMetricsInterval.hour:
-				return dt.startOf('hour').toUnixInteger();
-			default:
-				return dt.startOf('minute').toUnixInteger();
-		}
 	}
 }

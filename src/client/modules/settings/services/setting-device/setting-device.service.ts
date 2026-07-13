@@ -9,7 +9,6 @@ import {ThemeType, CurrencyType, Currency, AiFavorites} from '@client/modules/ca
 import {
 	AllBitcoinOracleSettings,
 	AllMintDashboardSettings,
-	AllMintSystemSettings,
 	AllMintDatabaseSettings,
 	AllMintKeysetsSettings,
 	AllMintConfigSettings,
@@ -209,14 +208,14 @@ export class SettingDeviceService {
 	}
 
 	/* Page: Mint System */
-	public getMintSystemSettings(): AllMintSystemSettings {
+	public getMintSystemSettings(): AllSystemMetricsSettings {
 		const long_term_settings = this.localStorageService.getMintSystemSettings();
 		return {
 			...long_term_settings,
 			...this.mint_server_short_settings,
-		} as AllMintSystemSettings;
+		} as AllSystemMetricsSettings;
 	}
-	public setMintSystemSettings(settings: AllMintSystemSettings): void {
+	public setMintSystemSettings(settings: AllSystemMetricsSettings): void {
 		const {date_end, ...long_settings} = settings;
 		this.localStorageService.setMintSystemSettings(long_settings);
 		this.mint_server_short_settings = {

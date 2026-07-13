@@ -7,26 +7,23 @@ import {MatMenuTrigger} from '@angular/material/menu';
 import {DateRange} from '@angular/material/datepicker';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {NonNullableMintSystemSettings} from '@client/modules/settings/types/setting.types';
+import {NonNullableSystemMetricsSettings} from '@client/modules/settings/types/setting.types';
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 import {DeviceType} from '@client/modules/layout/types/device.types';
+/* Native Dependencies */
+import {SystemIntervalOption} from '@client/modules/system/types/system.types';
 /* Shared Dependencies */
 import {SystemMetricsInterval} from '@shared/generated.types';
 
-type IntervalOption = {
-	label: string;
-	value: SystemMetricsInterval;
-};
-
 @Component({
-	selector: 'orc-mint-subsection-system-control',
+	selector: 'orc-system-control',
 	standalone: false,
-	templateUrl: './mint-subsection-system-control.component.html',
-	styleUrl: './mint-subsection-system-control.component.scss',
+	templateUrl: './system-control.component.html',
+	styleUrl: './system-control.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MintSubsectionSystemControlComponent {
-	public page_settings = input.required<NonNullableMintSystemSettings>();
+export class SystemControlComponent {
+	public page_settings = input.required<NonNullableSystemMetricsSettings>();
 	public loading = input.required<boolean>();
 	public device_type = input.required<DeviceType>();
 
@@ -42,7 +39,7 @@ export class MintSubsectionSystemControlComponent {
 		interval: new FormControl<SystemMetricsInterval | null>(null, [Validators.required]),
 	});
 
-	public interval_options: IntervalOption[] = [
+	public interval_options: SystemIntervalOption[] = [
 		{label: 'Minute', value: SystemMetricsInterval.Minute},
 		{label: 'Hour', value: SystemMetricsInterval.Hour},
 		{label: 'Day', value: SystemMetricsInterval.Day},

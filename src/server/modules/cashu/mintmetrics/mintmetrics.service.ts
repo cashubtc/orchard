@@ -10,12 +10,11 @@ import {flattenFamily} from '@server/modules/prometheus/prometheus.helpers';
 import {PromFamily} from '@server/modules/prometheus/prometheus.types';
 import {SettingService} from '@server/modules/setting/setting.service';
 import {SettingKey} from '@server/modules/setting/setting.enums';
+import {METRICS_RETENTION_DAYS, METRICS_DOWNSAMPLE_AFTER_DAYS} from '@server/modules/system/metrics/sysmetrics.constants';
 /* Local Dependencies */
 import {MintMetrics} from './mintmetrics.entity';
 import {MintMetricType} from './mintmetrics.enums';
 
-const RETENTION_DAYS = 90;
-const DOWNSAMPLE_AFTER_DAYS = 7;
 const STORED_FAMILY_REGEX = /^(cdk_|process_)/;
 const MAX_LABEL_SETS_PER_FAMILY = 100;
 const MAX_BUCKETS_PER_SERIES = 64;
@@ -151,29 +150,29 @@ export class MintMetricsService {
 	******************************************************** */
 
 	/**
-	 * Deletes records older than RETENTION_DAYS and downsamples
-	 * minute-granularity data older than DOWNSAMPLE_AFTER_DAYS to hourly
+	 * Deletes records older than METRICS_RETENTION_DAYS and downsamples
+	 * minute-granularity data older than METRICS_DOWNSAMPLE_AFTER_DAYS to hourly
 	 */
 	async cleanupOldMetrics(): Promise<void> {
 		const now = DateTime.utc();
-		const retention_cutoff = now.minus({days: RETENTION_DAYS}).startOf('minute').toUnixInteger();
+		const retention_cutoff = now.minus({days: METRICS_RETENTION_DAYS}).startOf('minute').toUnixInteger();
 		const deleted = await this.mintMetricsRepository.delete({
 			date: LessThan(retention_cutoff),
 		});
 		if (deleted.affected) {
-			this.logger.log(`Deleted ${deleted.affected} mint metrics older than ${RETENTION_DAYS} days`);
+			this.logger.log(`Deleted ${deleted.affected} mint metrics older than ${METRICS_RETENTION_DAYS} days`);
 		}
 		await this.downsampleToHourly(now);
 	}
 
 	/**
-	 * Downsamples minute-granularity data to hourly for records older than DOWNSAMPLE_AFTER_DAYS.
+	 * Downsamples minute-granularity data to hourly for records older than METRICS_DOWNSAMPLE_AFTER_DAYS.
 	 * Gauges keep the hourly average; counters and histograms keep the hourly max so
 	 * cumulative last-value semantics (and query-time deltas) stay correct.
 	 */
 	private async downsampleToHourly(now: DateTime): Promise<void> {
-		const downsample_cutoff = now.minus({days: DOWNSAMPLE_AFTER_DAYS}).startOf('hour').toUnixInteger();
-		const retention_cutoff = now.minus({days: RETENTION_DAYS}).startOf('hour').toUnixInteger();
+		const downsample_cutoff = now.minus({days: METRICS_DOWNSAMPLE_AFTER_DAYS}).startOf('hour').toUnixInteger();
+		const retention_cutoff = now.minus({days: METRICS_RETENTION_DAYS}).startOf('hour').toUnixInteger();
 		const updated_at = now.toUnixInteger();
 
 		const hourly_buckets: {

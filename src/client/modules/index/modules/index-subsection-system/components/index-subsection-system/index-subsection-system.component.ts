@@ -2,7 +2,6 @@
 import {ChangeDetectionStrategy, Component, OnInit, OnDestroy, computed, inject, signal} from '@angular/core';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 /* Vendor Dependencies */
-import {DateTime} from 'luxon';
 import {Subscription} from 'rxjs';
 /* Application Dependencies */
 import {SettingDeviceService} from '@client/modules/settings/services/setting-device/setting-device.service';
@@ -13,6 +12,9 @@ import {NonNullableSystemMetricsSettings} from '@client/modules/settings/types/s
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 import {resolveDateRangePreset} from '@client/modules/form/helpers/form-daterange.helpers';
 import {DeviceType} from '@client/modules/layout/types/device.types';
+import {deviceTypeFromBreakpoints} from '@client/modules/layout/helpers/device.helpers';
+import {resolveSystemMetricsSettings, getMetricsGenesisTime} from '@client/modules/system/helpers/system-settings.helpers';
+import {buildSystemAssistantContext, parseAssistantDateRange} from '@client/modules/system/helpers/system-assistant.helpers';
 /* Native Dependencies */
 import {SystemService} from '@client/modules/index/services/system/system.service';
 import {SystemMetricSample} from '@client/modules/index/classes/system-metric.class';
@@ -20,7 +22,6 @@ import {formatUptime} from '@client/modules/index/helpers/system-uptime.helpers'
 /* Shared Dependencies */
 import {AssistantToolName, SystemMetric, SystemMetricsInterval} from '@shared/generated.types';
 
-const METRICS_RETENTION_DAYS = 90;
 const SYSTEM_METRIC_FAMILIES: SystemMetric[] = [
 	SystemMetric.CpuPercent,
 	SystemMetric.MemoryRssMb,
@@ -34,6 +35,19 @@ const SYSTEM_METRIC_FAMILIES: SystemMetric[] = [
 	SystemMetric.UptimeSystem,
 	SystemMetric.UptimeProcess,
 ];
+
+/** Chart series labels for the host metric families */
+const METRIC_LABELS: Record<string, string> = {
+	cpu_percent: 'CPU',
+	memory_percent: 'Memory',
+	memory_rss_mb: 'Memory',
+	disk_percent: 'Disk',
+	load_avg_1m: '1m',
+	load_avg_5m: '5m',
+	load_avg_15m: '15m',
+	heap_used_mb: 'Heap used',
+	heap_total_mb: 'Heap total',
+};
 
 @Component({
 	selector: 'orc-index-subsection-system',
@@ -50,6 +64,7 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 	private readonly breakpointObserver = inject(BreakpointObserver);
 
 	public locale!: string;
+	public readonly metric_labels = METRIC_LABELS;
 
 	public readonly page_settings = signal<NonNullableSystemMetricsSettings | null>(null);
 	public readonly metrics = signal<SystemMetricSample[]>([]);
@@ -92,28 +107,7 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 
 	/** Builds page settings from device settings with defaults for first visits */
 	private getPageSettings(): NonNullableSystemMetricsSettings {
-		const settings = this.settingDeviceService.getSystemMetricsSettings();
-		const date_preset = settings.date_preset ?? null;
-		const resolved_dates = date_preset ? resolveDateRangePreset(date_preset, this.getMetricsGenesisTime()) : null;
-		return {
-			date_start: resolved_dates?.date_start ?? settings.date_start ?? this.getDefaultDateStart(),
-			date_end: resolved_dates?.date_end ?? settings.date_end ?? this.getDefaultDateEnd(),
-			date_preset,
-			interval: settings.interval ?? SystemMetricsInterval.Hour,
-		};
-	}
-
-	/** Oldest possible sample given the server retention window (used for the AllTime preset) */
-	private getMetricsGenesisTime(): number {
-		return Math.floor(DateTime.now().minus({days: METRICS_RETENTION_DAYS}).startOf('day').toSeconds());
-	}
-
-	private getDefaultDateStart(): number {
-		return Math.floor(DateTime.now().minus({days: 7}).startOf('day').toSeconds());
-	}
-
-	private getDefaultDateEnd(): number {
-		return Math.floor(DateTime.now().endOf('day').toSeconds());
+		return resolveSystemMetricsSettings(this.settingDeviceService.getSystemMetricsSettings());
 	}
 
 	private updateSettings(settings: NonNullableSystemMetricsSettings): void {
@@ -127,15 +121,9 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 	******************************************************** */
 
 	private getBreakpointSubscription(): Subscription {
-		return this.breakpointObserver.observe([Breakpoints.XSmall, Breakpoints.Small, Breakpoints.Medium]).subscribe((result) => {
-			if (result.breakpoints[Breakpoints.XSmall]) {
-				this.device_type.set('mobile');
-			} else if (result.breakpoints[Breakpoints.Small] || result.breakpoints[Breakpoints.Medium]) {
-				this.device_type.set('tablet');
-			} else {
-				this.device_type.set('desktop');
-			}
-		});
+		return this.breakpointObserver
+			.observe([Breakpoints.XSmall, Breakpoints.Small, Breakpoints.Medium])
+			.subscribe((result) => this.device_type.set(deviceTypeFromBreakpoints(result)));
 	}
 
 	/* *******************************************************
@@ -217,13 +205,7 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 	/** Feeds the current page context to the assistant on each request */
 	private getAssistantSubscription(): Subscription {
 		return this.aiService.assistant_requests$.subscribe(({assistant, content}) => {
-			const settings = this.page_settings();
-			let context = `* **Current Date:** ${DateTime.now().toFormat('yyyy-MM-dd')}\n`;
-			if (settings) {
-				context += `* **Date Start:** ${DateTime.fromSeconds(settings.date_start).toFormat('yyyy-MM-dd')}\n`;
-				context += `* **Date End:** ${DateTime.fromSeconds(settings.date_end).toFormat('yyyy-MM-dd')}\n`;
-				context += `* **Interval:** ${settings.interval}\n`;
-			}
+			const context = buildSystemAssistantContext(this.page_settings());
 			this.aiService.openAiSocket(assistant, content, context);
 		});
 	}
@@ -238,11 +220,7 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 	/** Routes an assistant tool call to the corresponding page action */
 	private executeAssistantFunction(tool_call: AiChatToolCall): void {
 		if (tool_call.function.name === AssistantToolName.DateRangeUpdate) {
-			const range = [
-				DateTime.fromFormat(tool_call.function.arguments.date_start, 'yyyy-MM-dd').toUnixInteger(),
-				DateTime.fromFormat(tool_call.function.arguments.date_end, 'yyyy-MM-dd').toUnixInteger(),
-			];
-			this.onDateChange(range);
+			this.onDateChange(parseAssistantDateRange(tool_call.function.arguments.date_start, tool_call.function.arguments.date_end));
 		}
 		if (tool_call.function.name === AssistantToolName.MetricsIntervalUpdate) {
 			this.onIntervalChange(tool_call.function.arguments.interval);
@@ -262,7 +240,7 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 	public onPresetChange(preset: DateRangePreset): void {
 		const settings = this.page_settings();
 		if (!settings) return;
-		const resolved_dates = resolveDateRangePreset(preset, this.getMetricsGenesisTime());
+		const resolved_dates = resolveDateRangePreset(preset, getMetricsGenesisTime());
 		this.updateSettings({...settings, date_start: resolved_dates.date_start, date_end: resolved_dates.date_end, date_preset: preset});
 	}
 

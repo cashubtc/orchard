@@ -6,15 +6,13 @@ import {promises as fs} from 'fs';
 /* Vendor Dependencies */
 import {FindOptionsWhere, Repository, LessThan, Between, In} from 'typeorm';
 import {DateTime} from 'luxon';
+/* Application Dependencies */
+import {round2} from '@server/modules/math/round';
 /* Local Dependencies */
 import {SystemMetrics} from './sysmetrics.entity';
 import {SystemMetric} from './sysmetrics.enums';
+import {METRICS_RETENTION_DAYS, METRICS_DOWNSAMPLE_AFTER_DAYS} from './sysmetrics.constants';
 
-/** Rounds a number to 2 decimal places */
-const round2 = (n: number): number => Math.round(n * 100) / 100;
-
-const RETENTION_DAYS = 90;
-const DOWNSAMPLE_AFTER_DAYS = 7;
 const CPU_SAMPLE_INTERVAL_MS = 100;
 
 @Injectable()
@@ -161,33 +159,33 @@ export class SystemMetricsService {
 	******************************************************** */
 
 	/**
-	 * Deletes records older than RETENTION_DAYS and downsamples
-	 * minute-granularity data older than DOWNSAMPLE_AFTER_DAYS to hourly
+	 * Deletes records older than METRICS_RETENTION_DAYS and downsamples
+	 * minute-granularity data older than METRICS_DOWNSAMPLE_AFTER_DAYS to hourly
 	 */
 	async cleanupOldMetrics(): Promise<void> {
 		const now = DateTime.utc();
 
 		// Delete records older than retention period
-		const retention_cutoff = now.minus({days: RETENTION_DAYS}).startOf('minute').toUnixInteger();
+		const retention_cutoff = now.minus({days: METRICS_RETENTION_DAYS}).startOf('minute').toUnixInteger();
 		const deleted = await this.systemMetricsRepository.delete({
 			date: LessThan(retention_cutoff),
 		});
 		if (deleted.affected) {
-			this.logger.log(`Deleted ${deleted.affected} system metrics older than ${RETENTION_DAYS} days`);
+			this.logger.log(`Deleted ${deleted.affected} system metrics older than ${METRICS_RETENTION_DAYS} days`);
 		}
 
-		// Downsample minute data older than DOWNSAMPLE_AFTER_DAYS to hourly
+		// Downsample minute data older than METRICS_DOWNSAMPLE_AFTER_DAYS to hourly
 		await this.downsampleToHourly(now);
 	}
 
 	/**
 	 * Downsamples minute-granularity data to hourly by averaging values
-	 * for records older than DOWNSAMPLE_AFTER_DAYS.
+	 * for records older than METRICS_DOWNSAMPLE_AFTER_DAYS.
 	 * Uses SQL GROUP BY to avoid loading all rows into memory.
 	 */
 	private async downsampleToHourly(now: DateTime): Promise<void> {
-		const downsample_cutoff = now.minus({days: DOWNSAMPLE_AFTER_DAYS}).startOf('hour').toUnixInteger();
-		const retention_cutoff = now.minus({days: RETENTION_DAYS}).startOf('hour').toUnixInteger();
+		const downsample_cutoff = now.minus({days: METRICS_DOWNSAMPLE_AFTER_DAYS}).startOf('hour').toUnixInteger();
+		const retention_cutoff = now.minus({days: METRICS_RETENTION_DAYS}).startOf('hour').toUnixInteger();
 		const updated_at = now.toUnixInteger();
 
 		// Aggregate in SQL: group by metric + hour bucket, compute averages
