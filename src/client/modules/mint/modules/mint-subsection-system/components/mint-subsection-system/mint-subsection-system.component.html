@@ -255,23 +255,25 @@
 			</div>
 
 			<!-- Activity -->
-			<div class="col-6 flex flex-column flex-gap-1">
-				<div class="title-m">Authentication Rate</div>
-				<mat-card appearance="outlined" class="relative overflow-hidden">
-					<mat-card-content class="orc-surface-container-low-bg">
-						<orc-system-chart
-							[locale]="locale"
-							[metrics]="auth_metrics()"
-							[interval]="settings.interval"
-							unit="count"
-							type="line"
-							[color_index]="0"
-							legend="below"
-							[loading]="loading_metrics()"
-						></orc-system-chart>
-					</mat-card-content>
-				</mat-card>
-			</div>
+			@if (auth_supported()) {
+				<div class="col-6 flex flex-column flex-gap-1">
+					<div class="title-m">Authentication Rate</div>
+					<mat-card appearance="outlined" class="relative overflow-hidden">
+						<mat-card-content class="orc-surface-container-low-bg">
+							<orc-system-chart
+								[locale]="locale"
+								[metrics]="auth_metrics()"
+								[interval]="settings.interval"
+								unit="count"
+								type="line"
+								[color_index]="0"
+								legend="below"
+								[loading]="loading_metrics()"
+							></orc-system-chart>
+						</mat-card-content>
+					</mat-card>
+				</div>
+			}
 
 			<div class="col-6 flex flex-column flex-gap-1">
 				<div class="title-m">Wallet &amp; Payment Operations</div>
@@ -291,8 +293,8 @@
 				</mat-card>
 			</div>
 
-			<!-- Errors (full width) -->
-			<div class="col-12 flex flex-column flex-gap-1">
+			<!-- Errors -->
+			<div class="flex flex-column flex-gap-1" [class.col-12]="auth_supported()" [class.col-6]="!auth_supported()">
 				<div class="title-m">Errors</div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">

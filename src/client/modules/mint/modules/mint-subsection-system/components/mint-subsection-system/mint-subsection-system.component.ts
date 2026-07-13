@@ -1,5 +1,6 @@
 /* Core Dependencies */
 import {ChangeDetectionStrategy, Component, OnInit, OnDestroy, computed, inject, signal} from '@angular/core';
+import {ActivatedRoute} from '@angular/router';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 /* Vendor Dependencies */
 import {Subscription} from 'rxjs';
@@ -17,6 +18,7 @@ import {deviceTypeFromBreakpoints} from '@client/modules/layout/helpers/device.h
 import {resolveSystemMetricsSettings, getMetricsGenesisTime} from '@client/modules/system/helpers/system-settings.helpers';
 import {buildSystemAssistantContext, parseAssistantDateRange} from '@client/modules/system/helpers/system-assistant.helpers';
 /* Native Dependencies */
+import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
 import {MintMetric} from '@client/modules/mint/classes/mint-metric.class';
 import {computeHttpErrorRate, computeEndpointDistribution} from '@client/modules/mint/helpers/mint-http-metric.helpers';
 /* Shared Dependencies */
@@ -35,11 +37,12 @@ const CHART_METRIC_FAMILIES = [
 	'process_memory_percent',
 	'cdk_mint_in_flight_requests',
 	'cdk_db_connections_active',
-	'cdk_auth_attempts_total',
-	'cdk_auth_successes_total',
 	'cdk_wallet_operations_total',
 	'cdk_payments_total',
 ];
+
+// Requested only when the mint advertises auth (NUT-21/NUT-22)
+const AUTH_METRIC_FAMILIES = ['cdk_auth_attempts_total', 'cdk_auth_successes_total'];
 
 @Component({
 	selector: 'orc-mint-subsection-system',
@@ -54,6 +57,7 @@ export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 	private readonly settingAppService = inject(SettingAppService);
 	private readonly aiService = inject(AiService);
 	private readonly breakpointObserver = inject(BreakpointObserver);
+	private readonly route = inject(ActivatedRoute);
 
 	public locale!: string;
 
@@ -62,6 +66,7 @@ export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 	public readonly loading_metrics = signal<boolean>(true);
 	public readonly refreshing = signal<boolean>(false);
 	public readonly device_type = signal<DeviceType>('desktop');
+	public readonly auth_supported = signal<boolean>(false);
 
 	public readonly operations_metrics = computed(() => this.filterMetrics('cdk_mint_operations_total'));
 	public readonly operation_duration_metrics = computed(() => this.filterMetrics('cdk_mint_operation_duration_seconds'));
@@ -89,9 +94,16 @@ export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 	ngOnInit(): void {
 		this.locale = this.settingDeviceService.getLocale();
 		this.page_settings.set(this.getPageSettings());
+		this.auth_supported.set(this.resolveAuthSupported());
 		this.subscriptions.add(this.getBreakpointSubscription());
 		this.orchardOptionalInit();
 		this.loadMetrics();
+	}
+
+	/** Flags whether the mint advertises auth (NUT-21 clear or NUT-22 blind) from resolved mint info */
+	private resolveAuthSupported(): boolean {
+		const mint_info = this.route.snapshot.data['mint_info'] as MintInfo | null;
+		return !!(mint_info?.nuts?.nut21 || mint_info?.nuts?.nut22);
 	}
 
 	/** Registers AI assistant subscriptions when the assistant is enabled */
@@ -143,7 +155,7 @@ export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 					date_end: settings.date_end,
 					interval: settings.interval,
 					timezone: this.settingDeviceService.getTimezone(),
-					metrics: CHART_METRIC_FAMILIES,
+					metrics: this.getMetricFamilies(),
 				})
 				.subscribe({
 					next: (metrics: MintMetric[]) => {
@@ -162,6 +174,11 @@ export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 		return this.metrics().filter((m) => m.metric === metric);
 	}
 
+	/** Metric families to request, including auth series only when the mint advertises auth */
+	private getMetricFamilies(): string[] {
+		return this.auth_supported() ? [...CHART_METRIC_FAMILIES, ...AUTH_METRIC_FAMILIES] : CHART_METRIC_FAMILIES;
+	}
+
 	/** Forces a fresh fetch of the stored series, then pulses the page */
 	public onRefresh(): void {
 		const settings = this.page_settings();
@@ -176,7 +193,7 @@ export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 					date_end: settings.date_end,
 					interval: settings.interval,
 					timezone: this.settingDeviceService.getTimezone(),
-					metrics: CHART_METRIC_FAMILIES,
+					metrics: this.getMetricFamilies(),
 				})
 				.subscribe({
 					next: (metrics: MintMetric[]) => {

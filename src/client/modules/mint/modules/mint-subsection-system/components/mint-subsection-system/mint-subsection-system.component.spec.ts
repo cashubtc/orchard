@@ -24,16 +24,18 @@ describe('MintSubsectionSystemComponent', () => {
 	let fixture: ComponentFixture<MintSubsectionSystemComponent>;
 	let ai_service: {assistant_requests$: Subject<unknown>; tool_calls$: Subject<AiChatToolCall>; openAiSocket: jasmine.Spy};
 	let ai_enabled: boolean;
+	let route_data: Record<string, unknown>;
 
 	beforeEach(async () => {
 		ai_enabled = false;
+		route_data = {};
 		await TestBed.configureTestingModule({
 			imports: [OrcMintSubsectionSystemModule, MatIconTestingModule],
 			providers: [
 				provideChartConfig(),
 				{
 					provide: ActivatedRoute,
-					useValue: {snapshot: {data: {}}},
+					useValue: {snapshot: {data: route_data}},
 				},
 				{
 					provide: MintService,
@@ -86,6 +88,25 @@ describe('MintSubsectionSystemComponent', () => {
 		expect(settings).not.toBeNull();
 		expect(settings?.interval).toBeTruthy();
 		expect(component.loading_metrics()).toBeFalse();
+	});
+
+	it('should not flag auth or request auth families when the mint advertises no auth', () => {
+		const mint_service = TestBed.inject(MintService) as unknown as {loadMintMetrics: jasmine.Spy};
+		const args = mint_service.loadMintMetrics.calls.mostRecent().args[0];
+		expect(component.auth_supported()).toBeFalse();
+		expect(args.metrics).not.toContain('cdk_auth_attempts_total');
+		expect(args.metrics).not.toContain('cdk_auth_successes_total');
+	});
+
+	it('should flag auth and request auth families when the mint advertises NUT-22', () => {
+		route_data['mint_info'] = {nuts: {nut22: {bat_max_mint: 10, protected_endpoints: []}}};
+		const auth_fixture = TestBed.createComponent(MintSubsectionSystemComponent);
+		auth_fixture.detectChanges();
+		const mint_service = TestBed.inject(MintService) as unknown as {loadMintMetrics: jasmine.Spy};
+		const args = mint_service.loadMintMetrics.calls.mostRecent().args[0];
+		expect(auth_fixture.componentInstance.auth_supported()).toBeTrue();
+		expect(args.metrics).toContain('cdk_auth_attempts_total');
+		expect(args.metrics).toContain('cdk_auth_successes_total');
 	});
 
 	it('should clear cache and refetch on refresh', () => {
