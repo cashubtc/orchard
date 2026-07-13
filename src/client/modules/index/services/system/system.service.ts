@@ -11,8 +11,9 @@ import {ApiService} from '@client/modules/api/services/api/api.service';
 import {CacheService} from '@client/modules/cache/services/cache/cache.service';
 /* Native Dependencies */
 import {SystemMetricSample} from '@client/modules/index/classes/system-metric.class';
-import {SYSTEM_METRICS_QUERY} from '@client/modules/index/services/system/system.queries';
-import {SystemMetricsArgs, SystemMetricsResponse} from '@client/modules/index/types/system.types';
+import {SystemInfo} from '@client/modules/index/classes/system-info.class';
+import {SYSTEM_METRICS_QUERY, SYSTEM_INFO_QUERY} from '@client/modules/index/services/system/system.queries';
+import {SystemMetricsArgs, SystemMetricsResponse, SystemInfoResponse} from '@client/modules/index/types/system.types';
 
 @Injectable({
 	providedIn: 'root',
@@ -24,13 +25,16 @@ export class SystemService {
 
 	public readonly CACHE_KEYS = {
 		SYSTEM_METRICS: 'system_metrics',
+		SYSTEM_INFO: 'system_info',
 	};
 
 	private readonly CACHE_DURATIONS: Record<string, number> = {
 		[this.CACHE_KEYS.SYSTEM_METRICS]: 1 * 60 * 1000, // 1 minute
+		[this.CACHE_KEYS.SYSTEM_INFO]: 60 * 60 * 1000, // 1 hour
 	};
 
 	private readonly system_metrics_subject: BehaviorSubject<SystemMetricSample[] | null>;
+	private readonly system_info_subject: BehaviorSubject<SystemInfo | null>;
 
 	private cached_metrics_args: string | null = null;
 
@@ -38,6 +42,10 @@ export class SystemService {
 		this.system_metrics_subject = this.cache.createCache<SystemMetricSample[]>(
 			this.CACHE_KEYS.SYSTEM_METRICS,
 			this.CACHE_DURATIONS[this.CACHE_KEYS.SYSTEM_METRICS],
+		);
+		this.system_info_subject = this.cache.createCache<SystemInfo>(
+			this.CACHE_KEYS.SYSTEM_INFO,
+			this.CACHE_DURATIONS[this.CACHE_KEYS.SYSTEM_INFO],
 		);
 	}
 
@@ -67,6 +75,31 @@ export class SystemService {
 			}),
 			catchError((error) => {
 				console.error('Error loading system metrics:', error);
+				return throwError(() => error);
+			}),
+		);
+	}
+
+	/** Loads live host system information (static facts, cached long) */
+	public loadSystemInfo(): Observable<SystemInfo> {
+		if (this.system_info_subject.value && this.cache.isCacheValid(this.CACHE_KEYS.SYSTEM_INFO)) {
+			return of(this.system_info_subject.value);
+		}
+
+		const query = getApiQuery(SYSTEM_INFO_QUERY);
+
+		return this.http.post<OrchardRes<SystemInfoResponse>>(this.apiService.api, query).pipe(
+			map((response) => {
+				if (response.errors) throw new OrchardErrors(response.errors);
+				return response.data.system_info;
+			}),
+			map((info) => new SystemInfo(info)),
+			tap((info) => {
+				this.cache.updateCache(this.CACHE_KEYS.SYSTEM_INFO, info);
+				this.system_info_subject.next(info);
+			}),
+			catchError((error) => {
+				console.error('Error loading system info:', error);
 				return throwError(() => error);
 			}),
 		);

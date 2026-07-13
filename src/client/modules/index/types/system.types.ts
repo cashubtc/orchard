@@ -1,5 +1,5 @@
 /* Shared Dependencies */
-import {SystemMetric, SystemMetricsInterval, OrchardSystemMetrics} from '@shared/generated.types';
+import {SystemMetric, SystemMetricsInterval, OrchardSystemMetrics, OrchardSystemInfo} from '@shared/generated.types';
 
 export type SystemMetricsArgs = {
 	date_start?: number;
@@ -11,4 +11,13 @@ export type SystemMetricsArgs = {
 
 export type SystemMetricsResponse = {
 	system_metrics: OrchardSystemMetrics[];
+};
+
+export type SystemInfoResponse = {
+	system_info: OrchardSystemInfo;
+};
+
+export type SystemInfoTile = {
+	value: string;
+	caption: string;
 };

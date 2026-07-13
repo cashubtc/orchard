@@ -11,19 +11,6 @@
 						(presetChange)="onPresetChange($event)"
 						(intervalChange)="onIntervalChange($event)"
 					></orc-system-control>
-					@if (device_type() === 'desktop') {
-						<div class="index-system-uptime p-b-1-5">
-							<div class="index-system-uptime-stat">
-								<span class="index-system-uptime-value">{{ uptime_system_label() }}</span>
-								<span class="index-system-uptime-caption">system uptime</span>
-							</div>
-							<div class="index-system-uptime-divider"></div>
-							<div class="index-system-uptime-stat">
-								<span class="index-system-uptime-value">{{ uptime_process_label() }}</span>
-								<span class="index-system-uptime-caption">process uptime</span>
-							</div>
-						</div>
-					}
 				</div>
 				<div class="p-b-1-5">
 					<button
@@ -41,10 +28,30 @@
 			<div class="category-rule"></div>
 		</div>
 
+		<div class="flex flex-column flex-gap-1">
+			<div class="flex flex-justify-between flex-items-end flex-gap-1">
+				<div class="title-m">System info</div>
+				@if (device_type() === 'desktop') {
+					<div class="index-system-uptime">
+						<div class="index-system-uptime-stat">
+							<span class="index-system-uptime-value">{{ uptime_system_label() }}</span>
+							<span class="index-system-uptime-caption">system uptime</span>
+						</div>
+						<div class="index-system-uptime-divider"></div>
+						<div class="index-system-uptime-stat">
+							<span class="index-system-uptime-value">{{ uptime_process_label() }}</span>
+							<span class="index-system-uptime-caption">orchard uptime</span>
+						</div>
+					</div>
+				}
+			</div>
+			<orc-index-system-info [info]="system_info()" [loading]="loading_info()"></orc-index-system-info>
+		</div>
+
 		<div class="grid index-system-charts">
 			<!-- System -->
 			<div class="col-6 flex flex-column flex-gap-1">
-				<div class="title-m">CPU Usage</div>
+				<div class="title-m">CPU Usage <small class="orc-outline-color">host vs orchard</small></div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
 						<orc-system-chart
@@ -55,6 +62,7 @@
 							unit="percent"
 							type="line"
 							[color_index]="0"
+							legend="below"
 							[loading]="loading_metrics()"
 						></orc-system-chart>
 					</mat-card-content>
@@ -80,7 +88,12 @@
 			</div>
 
 			<div class="col-3 flex flex-column flex-gap-1">
-				<div class="title-m">Memory %</div>
+				<div class="title-m">
+					Memory %
+					@if (memory_total_label()) {
+						<small class="orc-outline-color">of {{ memory_total_label() }}</small>
+					}
+				</div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
 						<orc-system-chart
@@ -99,7 +112,12 @@
 
 			<!-- Host -->
 			<div class="col-6 flex flex-column flex-gap-1">
-				<div class="title-m">Disk Usage</div>
+				<div class="title-m">
+					Disk Usage
+					@if (disk_total_label()) {
+						<small class="orc-outline-color">of {{ disk_total_label() }}</small>
+					}
+				</div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
 						<orc-system-chart
@@ -117,7 +135,7 @@
 			</div>
 
 			<div class="col-6 flex flex-column flex-gap-1">
-				<div class="title-m">Load Average <small class="orc-outline-color">runnable processes · 1m · 5m · 15m</small></div>
+				<div class="title-m">Server Load <small class="orc-outline-color">{{ load_subtitle() }}</small></div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
 						<orc-system-chart
@@ -129,6 +147,7 @@
 							type="line"
 							[color_index]="3"
 							legend="below"
+							[reference_line]="load_reference()"
 							[loading]="loading_metrics()"
 						></orc-system-chart>
 					</mat-card-content>
@@ -137,7 +156,7 @@
 
 			<!-- App memory (full width) -->
 			<div class="col-12 flex flex-column flex-gap-1">
-				<div class="title-m">App Memory <small class="orc-outline-color">V8 heap · used vs total</small></div>
+				<div class="title-m">App Memory <small class="orc-outline-color">{{ heap_subtitle() }}</small></div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
 						<orc-system-chart
@@ -149,6 +168,8 @@
 							type="line"
 							[color_index]="1"
 							legend="below"
+							[ceiling]="system_info()?.heap_limit_mb"
+							[reference_line]="heap_reference()"
 							[loading]="loading_metrics()"
 						></orc-system-chart>
 					</mat-card-content>

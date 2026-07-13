@@ -12,6 +12,12 @@ export type SystemIntervalOption = {
  */
 export type SystemChartUnit = 'count' | 'percent' | 'megabytes' | 'bytes' | 'seconds';
 
+/** Horizontal reference line drawn across a system chart (e.g. "all cores busy" at 1.0) */
+export type SystemChartReferenceLine = {
+	value: number;
+	label: string;
+};
+
 /** Structural shape a system chart datum must satisfy — both SystemMetricSample and MintMetric fit it */
 export type SystemChartPoint = {
 	metric: string;

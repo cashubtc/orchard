@@ -60,6 +60,7 @@ import {ApiSettingModule} from './setting/setting.module';
 import {ApiEventLogModule} from './event/event.module';
 // System Endpoints
 import {ApiSystemMetricsModule} from './system/metrics/sysmetrics.module';
+import {ApiSystemInfoModule} from './system/info/sysinfo.module';
 /* Enum Registration */
 import './api.enums';
 
@@ -113,6 +114,7 @@ import './api.enums';
 		ApiSettingModule,
 		ApiEventLogModule,
 		ApiSystemMetricsModule,
+		ApiSystemInfoModule,
 	],
 })
 export class ApiModule {}

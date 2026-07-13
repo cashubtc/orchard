@@ -19,6 +19,9 @@ const CPU_SAMPLE_INTERVAL_MS = 100;
 export class SystemMetricsService {
 	private readonly logger = new Logger(SystemMetricsService.name);
 
+	private previous_cpu_usage: NodeJS.CpuUsage | null = null;
+	private previous_cpu_sample_at: bigint | null = null;
+
 	constructor(
 		@InjectRepository(SystemMetrics)
 		private systemMetricsRepository: Repository<SystemMetrics>,
@@ -38,20 +41,22 @@ export class SystemMetricsService {
 
 		const samples = await this.sampleAll();
 
-		const rows = Object.entries(samples).map(([metric, value]) => ({
-			metric,
-			date: minute_start,
-			value,
-			updated_at,
-		}));
+		const rows = Object.entries(samples)
+			.filter(([, value]) => value !== null)
+			.map(([metric, value]) => ({
+				metric,
+				date: minute_start,
+				value: value as number,
+				updated_at,
+			}));
 
 		await this.systemMetricsRepository.upsert(rows, {conflictPaths: ['metric', 'date']});
 	}
 
 	/**
-	 * Samples all system metrics and returns them as a map
+	 * Samples all system metrics and returns them as a map; null values are skipped
 	 */
-	private async sampleAll(): Promise<Record<string, number>> {
+	private async sampleAll(): Promise<Record<string, number | null>> {
 		const [cpu_percent, disk_percent] = await Promise.all([this.sampleCpuPercent(), this.sampleDiskPercent()]);
 
 		const total_mem = os.totalmem();
@@ -64,6 +69,7 @@ export class SystemMetricsService {
 		const heap_used_mb = heap.heapUsed / (1024 * 1024);
 		const heap_total_mb = heap.heapTotal / (1024 * 1024);
 		const memory_rss_mb = heap.rss / (1024 * 1024);
+		const memory_external_mb = heap.external / (1024 * 1024);
 
 		return {
 			[SystemMetric.cpu_percent]: round2(cpu_percent),
@@ -75,9 +81,30 @@ export class SystemMetricsService {
 			[SystemMetric.load_avg_15m]: round2(load_15m),
 			[SystemMetric.heap_used_mb]: round2(heap_used_mb),
 			[SystemMetric.heap_total_mb]: round2(heap_total_mb),
+			[SystemMetric.memory_external_mb]: round2(memory_external_mb),
+			[SystemMetric.process_cpu_percent]: this.sampleProcessCpuPercent(),
 			[SystemMetric.uptime_system]: Math.floor(os.uptime()),
 			[SystemMetric.uptime_process]: Math.floor(process.uptime()),
 		};
+	}
+
+	/**
+	 * Process CPU usage since the previous tick as a % of total machine capacity;
+	 * null on the first tick (no prior sample to delta against)
+	 */
+	private sampleProcessCpuPercent(): number | null {
+		const now = process.hrtime.bigint();
+		const usage = process.cpuUsage();
+		const previous_usage = this.previous_cpu_usage;
+		const previous_at = this.previous_cpu_sample_at;
+		this.previous_cpu_usage = usage;
+		this.previous_cpu_sample_at = now;
+		if (previous_usage === null || previous_at === null) return null;
+		const elapsed_us = Number(now - previous_at) / 1000;
+		if (elapsed_us <= 0) return null;
+		const used_us = usage.user - previous_usage.user + usage.system - previous_usage.system;
+		const cores = os.availableParallelism();
+		return round2(Math.min(100, (used_us / (elapsed_us * cores)) * 100));
 	}
 
 	/**

@@ -9,9 +9,10 @@ import {MatButtonModule} from '@angular/material/button';
 import {OrcSystemModule} from '@client/modules/system/system.module';
 /* Local Dependencies */
 import {IndexSubsectionSystemComponent} from './components/index-subsection-system/index-subsection-system.component';
+import {IndexSystemInfoComponent} from './components/index-system-info/index-system-info.component';
 
 @NgModule({
-	declarations: [IndexSubsectionSystemComponent],
+	declarations: [IndexSubsectionSystemComponent, IndexSystemInfoComponent],
 	imports: [
 		CoreRouterModule.forChild([
 			{

@@ -52,11 +52,31 @@ describe('SystemMetricsService', () => {
 	});
 
 	describe('collectAndStore', () => {
-		it('should batch upsert all 11 metrics in a single call', async () => {
+		it('should batch upsert 12 metrics on the first call (process cpu has no prior sample)', async () => {
 			await service.collectAndStore();
 			expect(repository.upsert).toHaveBeenCalledTimes(1);
 			const rows = repository.upsert.mock.calls[0][0];
-			expect(rows).toHaveLength(11);
+			expect(rows).toHaveLength(12);
+			expect(rows.map((r: {metric: string}) => r.metric)).not.toContain('process_cpu_percent');
+		});
+
+		it('should include process_cpu_percent from the second call onward', async () => {
+			await service.collectAndStore();
+			await service.collectAndStore();
+			const rows = repository.upsert.mock.calls[1][0] as {metric: string; value: number}[];
+			expect(rows).toHaveLength(13);
+			const process_cpu_row = rows.find((r) => r.metric === 'process_cpu_percent');
+			expect(process_cpu_row).toBeDefined();
+			expect(process_cpu_row!.value).toBeGreaterThanOrEqual(0);
+			expect(process_cpu_row!.value).toBeLessThanOrEqual(100);
+		});
+
+		it('should store non-negative memory_external_mb values', async () => {
+			await service.collectAndStore();
+			const rows = repository.upsert.mock.calls[0][0] as {metric: string; value: number}[];
+			const external_row = rows.find((r) => r.metric === 'memory_external_mb');
+			expect(external_row).toBeDefined();
+			expect(external_row!.value).toBeGreaterThanOrEqual(0);
 		});
 
 		it('should upsert with correct conflict paths', async () => {

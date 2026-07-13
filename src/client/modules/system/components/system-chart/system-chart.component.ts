@@ -1,5 +1,16 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, input, OnChanges, OnDestroy, SimpleChanges, computed, inject, signal, viewChild} from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	input,
+	OnChanges,
+	OnDestroy,
+	SimpleChanges,
+	computed,
+	inject,
+	signal,
+	viewChild,
+} from '@angular/core';
 /* Vendor Dependencies */
 import {BaseChartDirective} from 'ng2-charts';
 import {ChartConfiguration, ChartType as ChartJsType, Plugin} from 'chart.js';
@@ -8,7 +19,7 @@ import {Subscription} from 'rxjs';
 /* Application Dependencies */
 import {ChartService} from '@client/modules/chart/services/chart/chart.service';
 /* Native Dependencies */
-import {SystemChartUnit, SystemChartPoint} from '@client/modules/system/types/system.types';
+import {SystemChartUnit, SystemChartPoint, SystemChartReferenceLine} from '@client/modules/system/types/system.types';
 /* Shared Dependencies */
 import {SystemMetricsInterval} from '@shared/generated.types';
 
@@ -34,6 +45,8 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 	public color_index = input<number>(0);
 	public legend = input<'below' | 'none'>('none');
 	public label_map = input<Record<string, string> | undefined>(undefined);
+	public reference_line = input<SystemChartReferenceLine | undefined>(undefined);
+	public ceiling = input<number | undefined>(undefined);
 	public loading = input.required<boolean>();
 
 	public chart_type!: ChartJsType;
@@ -54,6 +67,12 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 	ngOnChanges(changes: SimpleChanges): void {
 		if (changes['loading'] && this.loading() === false) this.init();
 		if (changes['metrics'] && !changes['metrics'].firstChange) this.init();
+		// Reference values arrive async from system_info, after the series has rendered
+		if (
+			(changes['reference_line'] && !changes['reference_line'].firstChange) ||
+			(changes['ceiling'] && !changes['ceiling'].firstChange)
+		)
+			this.init();
 	}
 
 	/* *******************************************************
@@ -197,6 +216,8 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 				y: {
 					stacked: this.stacked(),
 					beginAtZero: true,
+					// 2% headroom keeps the ceiling annotation clear of the chart edge
+					suggestedMax: this.ceiling() !== undefined ? this.ceiling()! * 1.02 : undefined,
 					grid: {color: this.chartService.getGridColor()},
 					ticks: {
 						callback: (value: string | number) => this.formatValue(Number(value)),
@@ -204,6 +225,7 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 				},
 			},
 			plugins: {
+				...(this.reference_line() ? {annotation: this.getReferenceAnnotation()} : {}),
 				tooltip: {
 					enabled: true,
 					mode: 'index',
@@ -227,6 +249,38 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 				mode: 'index',
 				axis: 'x',
 				intersect: false,
+			},
+		};
+	}
+
+	/** Builds a dashed horizontal annotation line at the reference value */
+	private getReferenceAnnotation(): any {
+		const reference = this.reference_line()!;
+		const config = this.chartService.getFormAnnotationConfig(false);
+		return {
+			annotations: {
+				reference: {
+					type: 'line',
+					borderColor: config.border_color,
+					borderWidth: config.border_width,
+					borderDash: [4, 4],
+					display: true,
+					label: {
+						display: true,
+						content: reference.label,
+						position: 'end',
+						backgroundColor: config.label_bg_color,
+						color: config.text_color,
+						font: {
+							size: 12,
+							weight: '300',
+						},
+						borderColor: config.label_border_color,
+						borderWidth: 1,
+					},
+					scaleID: 'y',
+					value: reference.value,
+				},
 			},
 		};
 	}

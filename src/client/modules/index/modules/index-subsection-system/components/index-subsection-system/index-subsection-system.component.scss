@@ -58,7 +58,7 @@
 	}
 }
 
-// Inline uptime stats in the sticky control panel (desktop only)
+// Inline uptime stats, right-justified on the System info header row
 .index-system-uptime {
 	@extend %flex;
 	@extend %flex-items-center;

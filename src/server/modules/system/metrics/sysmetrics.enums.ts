@@ -8,6 +8,8 @@ export enum SystemMetric {
 	load_avg_15m = 'load_avg_15m',
 	heap_used_mb = 'heap_used_mb',
 	heap_total_mb = 'heap_total_mb',
+	memory_external_mb = 'memory_external_mb',
+	process_cpu_percent = 'process_cpu_percent',
 	uptime_system = 'uptime_system',
 	uptime_process = 'uptime_process',
 }

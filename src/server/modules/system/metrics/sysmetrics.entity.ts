@@ -12,6 +12,8 @@ import {Entity, Column, PrimaryGeneratedColumn, Index} from 'typeorm';
  * - disk_percent: Root disk usage percentage (0-100)
  * - load_avg_1m/5m/15m: System load averages
  * - heap_used_mb/heap_total_mb: Node.js heap in MB
+ * - memory_external_mb: Node.js off-heap memory in MB
+ * - process_cpu_percent: Process CPU as % of machine capacity
  * - uptime_system/uptime_process: Uptime in seconds
  */
 @Entity('metrics_system')

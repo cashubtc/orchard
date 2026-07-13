@@ -15,15 +15,19 @@ import {DeviceType} from '@client/modules/layout/types/device.types';
 import {deviceTypeFromBreakpoints} from '@client/modules/layout/helpers/device.helpers';
 import {resolveSystemMetricsSettings, getMetricsGenesisTime} from '@client/modules/system/helpers/system-settings.helpers';
 import {buildSystemAssistantContext, parseAssistantDateRange} from '@client/modules/system/helpers/system-assistant.helpers';
+import {SystemChartReferenceLine} from '@client/modules/system/types/system.types';
 /* Native Dependencies */
 import {SystemService} from '@client/modules/index/services/system/system.service';
 import {SystemMetricSample} from '@client/modules/index/classes/system-metric.class';
+import {SystemInfo} from '@client/modules/index/classes/system-info.class';
 import {formatUptime} from '@client/modules/index/helpers/system-uptime.helpers';
+import {formatBytesSize} from '@client/modules/index/helpers/system-info.helpers';
 /* Shared Dependencies */
 import {AssistantToolName, SystemMetric, SystemMetricsInterval} from '@shared/generated.types';
 
 const SYSTEM_METRIC_FAMILIES: SystemMetric[] = [
 	SystemMetric.CpuPercent,
+	SystemMetric.ProcessCpuPercent,
 	SystemMetric.MemoryRssMb,
 	SystemMetric.MemoryPercent,
 	SystemMetric.DiskPercent,
@@ -31,14 +35,15 @@ const SYSTEM_METRIC_FAMILIES: SystemMetric[] = [
 	SystemMetric.LoadAvg_5m,
 	SystemMetric.LoadAvg_15m,
 	SystemMetric.HeapUsedMb,
-	SystemMetric.HeapTotalMb,
+	SystemMetric.MemoryExternalMb,
 	SystemMetric.UptimeSystem,
 	SystemMetric.UptimeProcess,
 ];
 
 /** Chart series labels for the host metric families */
 const METRIC_LABELS: Record<string, string> = {
-	cpu_percent: 'CPU',
+	cpu_percent: 'Host',
+	process_cpu_percent: 'Orchard',
 	memory_percent: 'Memory',
 	memory_rss_mb: 'Memory',
 	disk_percent: 'Disk',
@@ -46,7 +51,7 @@ const METRIC_LABELS: Record<string, string> = {
 	load_avg_5m: '5m',
 	load_avg_15m: '15m',
 	heap_used_mb: 'Heap used',
-	heap_total_mb: 'Heap total',
+	memory_external_mb: 'External',
 };
 
 @Component({
@@ -68,20 +73,56 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 
 	public readonly page_settings = signal<NonNullableSystemMetricsSettings | null>(null);
 	public readonly metrics = signal<SystemMetricSample[]>([]);
+	public readonly system_info = signal<SystemInfo | null>(null);
 	public readonly loading_metrics = signal<boolean>(true);
+	public readonly loading_info = signal<boolean>(true);
 	public readonly refreshing = signal<boolean>(false);
 	public readonly device_type = signal<DeviceType>('desktop');
 
-	public readonly cpu_metrics = computed(() => this.filterMetrics([SystemMetric.CpuPercent]));
+	public readonly cpu_metrics = computed(() => this.filterMetrics([SystemMetric.CpuPercent, SystemMetric.ProcessCpuPercent]));
 	public readonly memory_rss_metrics = computed(() => this.filterMetrics([SystemMetric.MemoryRssMb]));
 	public readonly memory_percent_metrics = computed(() => this.filterMetrics([SystemMetric.MemoryPercent]));
 	public readonly disk_metrics = computed(() => this.filterMetrics([SystemMetric.DiskPercent]));
-	public readonly load_metrics = computed(() =>
-		this.filterMetrics([SystemMetric.LoadAvg_1m, SystemMetric.LoadAvg_5m, SystemMetric.LoadAvg_15m]),
-	);
-	public readonly heap_metrics = computed(() => this.filterMetrics([SystemMetric.HeapUsedMb, SystemMetric.HeapTotalMb]));
+	public readonly load_metrics = computed(() => {
+		const raw = this.filterMetrics([SystemMetric.LoadAvg_1m, SystemMetric.LoadAvg_5m, SystemMetric.LoadAvg_15m]);
+		const cores = this.system_info()?.cpu_cores;
+		if (!cores) return raw;
+		return raw.map(
+			(m) =>
+				new SystemMetricSample({
+					metric: m.metric,
+					date: m.date,
+					value: m.value / cores,
+					min: m.min != null ? m.min / cores : m.min,
+					max: m.max != null ? m.max / cores : m.max,
+				}),
+		);
+	});
+	public readonly heap_metrics = computed(() => this.filterMetrics([SystemMetric.HeapUsedMb, SystemMetric.MemoryExternalMb]));
 	public readonly uptime_system_label = computed(() => formatUptime(this.latestValue(SystemMetric.UptimeSystem)));
 	public readonly uptime_process_label = computed(() => formatUptime(this.latestValue(SystemMetric.UptimeProcess)));
+	public readonly load_subtitle = computed(() =>
+		this.system_info()?.cpu_cores ? 'load per core · 1m · 5m · 15m' : 'runnable processes · 1m · 5m · 15m',
+	);
+	public readonly load_reference = computed<SystemChartReferenceLine | undefined>(() =>
+		this.system_info()?.cpu_cores ? {value: 1, label: 'all cores busy'} : undefined,
+	);
+	public readonly heap_reference = computed<SystemChartReferenceLine | undefined>(() => {
+		const limit = this.system_info()?.heap_limit_mb;
+		return limit ? {value: limit, label: 'heap limit'} : undefined;
+	});
+	public readonly heap_subtitle = computed(() => {
+		const limit = this.system_info()?.heap_limit_mb;
+		return limit ? `V8 heap + external · limit ${formatBytesSize(limit * 1024 * 1024)}` : 'V8 heap + external';
+	});
+	public readonly memory_total_label = computed(() => {
+		const bytes = this.system_info()?.memory_total_bytes;
+		return bytes ? formatBytesSize(bytes) : '';
+	});
+	public readonly disk_total_label = computed(() => {
+		const bytes = this.system_info()?.disk_total_bytes;
+		return bytes ? formatBytesSize(bytes) : '';
+	});
 
 	private subscriptions = new Subscription();
 
@@ -90,6 +131,7 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 		this.page_settings.set(this.getPageSettings());
 		this.subscriptions.add(this.getBreakpointSubscription());
 		this.orchardOptionalInit();
+		this.loadInfo();
 		this.loadMetrics();
 	}
 
@@ -129,6 +171,22 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 	/* *******************************************************
 		Data
 	******************************************************** */
+
+	/** Loads live host facts for the info tiles; independent of the metrics setting */
+	private loadInfo(): void {
+		this.subscriptions.add(
+			this.systemService.loadSystemInfo().subscribe({
+				next: (info: SystemInfo) => {
+					this.system_info.set(info);
+					this.loading_info.set(false);
+				},
+				error: () => {
+					this.system_info.set(null);
+					this.loading_info.set(false);
+				},
+			}),
+		);
+	}
 
 	/** Loads the stored metric series for the selected range and interval */
 	private loadMetrics(): void {

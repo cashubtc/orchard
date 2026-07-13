@@ -70,4 +70,55 @@ describe('SystemChartComponent', () => {
 
 		expect(component.chart_data.datasets.map((dataset) => dataset.label)).toEqual(['CPU']);
 	});
+
+	it('adds a y-axis annotation when reference_line is set', () => {
+		const metrics: SystemChartPoint[] = [{metric: 'load_avg_1m', date: 3600, value: 0.5}];
+		fixture.componentRef.setInput('type', 'line');
+		fixture.componentRef.setInput('metrics', metrics);
+		fixture.componentRef.setInput('reference_line', {value: 1, label: 'all cores busy'});
+		fixture.componentRef.setInput('loading', false);
+		fixture.detectChanges();
+
+		const annotation = (component.chart_options?.plugins as any)?.annotation?.annotations?.reference;
+		expect(annotation).toBeDefined();
+		expect(annotation.value).toBe(1);
+		expect(annotation.label.content).toBe('all cores busy');
+	});
+
+	it('re-inits options when reference_line arrives after the first render', () => {
+		const metrics: SystemChartPoint[] = [{metric: 'load_avg_1m', date: 3600, value: 0.5}];
+		fixture.componentRef.setInput('type', 'line');
+		fixture.componentRef.setInput('metrics', metrics);
+		fixture.componentRef.setInput('loading', false);
+		fixture.detectChanges();
+		expect((component.chart_options?.plugins as any)?.annotation).toBeUndefined();
+
+		fixture.componentRef.setInput('reference_line', {value: 1, label: 'all cores busy'});
+		fixture.detectChanges();
+		expect((component.chart_options?.plugins as any)?.annotation).toBeDefined();
+	});
+
+	it('extends the y axis above the ceiling when set', () => {
+		const metrics: SystemChartPoint[] = [{metric: 'heap_used_mb', date: 3600, value: 120}];
+		fixture.componentRef.setInput('type', 'line');
+		fixture.componentRef.setInput('unit', 'megabytes');
+		fixture.componentRef.setInput('metrics', metrics);
+		fixture.componentRef.setInput('ceiling', 4144);
+		fixture.componentRef.setInput('loading', false);
+		fixture.detectChanges();
+
+		expect((component.chart_options?.scales?.['y'] as any)?.suggestedMax).toBeCloseTo(4144 * 1.02);
+	});
+
+	it('leaves options untouched when reference_line and ceiling are absent', () => {
+		const metrics: SystemChartPoint[] = [{metric: 'cpu_percent', date: 3600, value: 42}];
+		fixture.componentRef.setInput('type', 'line');
+		fixture.componentRef.setInput('unit', 'percent');
+		fixture.componentRef.setInput('metrics', metrics);
+		fixture.componentRef.setInput('loading', false);
+		fixture.detectChanges();
+
+		expect((component.chart_options?.plugins as any)?.annotation).toBeUndefined();
+		expect((component.chart_options?.scales?.['y'] as any)?.suggestedMax).toBeUndefined();
+	});
 });

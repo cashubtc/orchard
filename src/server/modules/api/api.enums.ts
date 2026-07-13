@@ -374,6 +374,8 @@ registerEnumType(SystemMetric, {
 		load_avg_15m: {description: '15-minute load average'},
 		heap_used_mb: {description: 'Node.js heap used in MB'},
 		heap_total_mb: {description: 'Node.js total heap in MB'},
+		memory_external_mb: {description: 'Node.js external (off-heap) memory in MB'},
+		process_cpu_percent: {description: 'Orchard process CPU usage as a percentage of total machine capacity'},
 		uptime_system: {description: 'System uptime in seconds'},
 		uptime_process: {description: 'Process uptime in seconds'},
 	},

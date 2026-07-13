@@ -1,0 +1,19 @@
+@use 'nucleus/nucleus';
+
+.index-system-info-tile {
+	@extend %relative;
+	@extend %overflow-hidden;
+}
+
+.index-system-info-caption {
+	@extend %overflow-hidden;
+	text-overflow: ellipsis;
+}
+
+.loading-stat-overlay {
+	@extend %absolute;
+	@extend %top-0;
+	@extend %left-0;
+	@extend %right-0;
+	@extend %bottom-0;
+}
