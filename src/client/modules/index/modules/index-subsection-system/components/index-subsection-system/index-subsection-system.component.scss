@@ -58,28 +58,35 @@
 	}
 }
 
-// Compact uptime stats in the sticky control panel (desktop only)
+// Inline uptime stats in the sticky control panel (desktop only)
 .index-system-uptime {
 	@extend %flex;
-	@extend %flex-column;
-	align-items: flex-end;
-	gap: 0.25rem;
+	@extend %flex-items-center;
+	@extend %flex-gap-1;
 	white-space: nowrap;
 }
 
 .index-system-uptime-stat {
 	@extend %flex;
-	gap: 0.5rem;
-	align-items: baseline;
-}
-
-.index-system-uptime-label {
-	font-size: 0.75rem;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
 }
 
 .index-system-uptime-value {
-	font-size: 0.875rem;
-	font-weight: 600;
+	@extend %font-size-s;
+	@extend %font-weight-semi-bold;
+}
+
+.index-system-uptime-caption {
+	@extend %font-size-xs;
+	@extend %orc-outline-color;
+}
+
+.index-system-uptime-divider {
+	@extend %border-left;
+	@extend %border-solid;
+	@extend %orc-outline-variant-border;
+	@extend %h-1-5;
 }
 
 .refresh-spinning {
