@@ -2,6 +2,8 @@
  * Per-stack settings setup — drives `/settings/app` and `/settings/device`
  * (no GraphQL shortcuts) so the result lands in the same auth storage file.
  * Undefined config fields are skipped, leaving server/system defaults.
+ * One documented exception: `mint_metrics_api` goes through GraphQL because
+ * it has no settings card yet — see `applyMintMetricsApi`.
  *
  * App toggles register a PENDING event and only persist on a commit click;
  * `applyAppSettings` batches its toggles and commits once at the end. Device
@@ -9,6 +11,7 @@
  */
 
 import {expect, type Locator, type Page} from '@playwright/test';
+import {gql} from '@e2e/helpers/ui/gql';
 import type {AppSettingValues, ConfigInfo, DeviceSettingValues} from '@e2e/types/config';
 
 /** Click the form-toggle inside `card` whose visible label matches. Sibling
@@ -43,6 +46,25 @@ async function applyAiOllamaApi(page: Page, value: string): Promise<void> {
 	await input.fill(value);
 }
 
+/** ******************************************************************
+ *  TEMPORARY GRAPHQL SHORTCUT — REPLACE WITH A REAL UI DRIVE.
+ *  `mint.metrics.api` has NO settings-UI surface on this branch, so the
+ *  flip goes straight through the admin `settings_update` mutation. The
+ *  NEXT branch adds the metrics settings components — when they land,
+ *  delete this function and drive the card on /settings/app like every
+ *  other app setting (this file's header rule is "no GraphQL shortcuts";
+ *  this is the one documented exception until the UI exists).
+ ****************************************************************** */
+async function applyMintMetricsApi(page: Page, value: string): Promise<void> {
+	await gql(
+		page,
+		`mutation E2eSetMintMetricsApi($keys: [SettingKey!]!, $values: [String!]!) {
+			settings_update(keys: $keys, values: $values) { key value }
+		}`,
+		{keys: ['MINT_METRICS_API'], values: [value]},
+	);
+}
+
 /** Click either visible nav-tool (desktop + mobile both render) to commit the
  *  PENDING save; wait for the highlight to clear before returning. */
 async function commitPendingAppSettings(page: Page): Promise<void> {
@@ -69,6 +91,12 @@ async function applyAppSettings(page: Page, app: AppSettingValues): Promise<void
 	if (app.ai_ollama_api) {
 		await applyAiOllamaApi(page, app.ai_ollama_api);
 		dirty = true;
+	}
+	// GraphQL write — registers no PENDING chip, so it must NOT mark dirty:
+	// on a stack whose only app setting is mint_metrics_api the commit click
+	// would fail waiting for a highlight that never appears.
+	if (app.mint_metrics_api !== undefined) {
+		await applyMintMetricsApi(page, app.mint_metrics_api);
 	}
 	if (dirty) await commitPendingAppSettings(page);
 }

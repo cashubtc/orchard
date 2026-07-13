@@ -37,7 +37,9 @@ dotenv.config({path: './e2e/.env', quiet: true});
 function grepFor(config: ConfigInfo): RegExp {
 	return new RegExp(
 		tagsFor(config)
-			.map((t) => `(${t})`)
+			// Boundary lookahead so a tag never substring-matches a longer
+			// tag it prefixes (`@mint` must not match `@mint-metrics`).
+			.map((t) => `(${t}(?![\\w-]))`)
 			.join('|'),
 	);
 }

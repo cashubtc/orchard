@@ -34,7 +34,10 @@ export const CANARY: ConfigName = 'lnd-nutshell-sqlite';
  *  `<config>:<port>` real project. Encodes the project-naming convention
  *  defined in `playwright.config.ts`. */
 export function bareConfigName(projectName: string): string {
-	return projectName.replace(/^setup-/, '').replace(/^settings-/, '').replace(/:\d+$/, '');
+	return projectName
+		.replace(/^setup-/, '')
+		.replace(/^settings-/, '')
+		.replace(/:\d+$/, '');
 }
 
 /** Bare feature names enabled on this stack. Single source of truth consumed
@@ -48,6 +51,7 @@ export function featuresFor(config: ConfigInfo): string[] {
 	if (config.mainchain) features.push('mainchain');
 	if (config.appSettings?.ai_enabled === true) features.push('ai');
 	if (config.appSettings?.bitcoin_oracle === true) features.push('oracle');
+	if (config.appSettings?.mint_metrics_api) features.push('mint-metrics');
 	return features;
 }
 
@@ -116,6 +120,14 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 			mint: 'lnd-cdk-sqlite-cdk-mintd',
 		},
 		mintPort: 3339,
+		// Mint-metrics home: only cdk mints expose a prometheus exporter, and
+		// this is the least feature-loaded cdk stack in the main run
+		// (cln-cdk-postgres already carries bolt12/onchain/ai; fake-cdk-postgres
+		// proves the no-backend paths). Compose-network URL — orchard scrapes
+		// the exporter in-network, no host port mapping.
+		appSettings: {
+			mint_metrics_api: 'http://cdk-mintd:9090',
+		},
 		deviceSettings: {
 			theme: 'light-mode',
 			locale: 'en-GB',
@@ -283,7 +295,11 @@ export function lndDirForNode(config: ConfigInfo, node: LnNode): string {
  *  Run from the repo root (playwright's cwd). */
 export function mintUnitsFor(config: ConfigInfo): MintUnit[] {
 	const dir = path.resolve(process.cwd(), 'e2e', 'docker', 'configs', config.name);
-	const stripComments = (raw: string): string => raw.split('\n').filter((l) => !l.trim().startsWith('#')).join('\n');
+	const stripComments = (raw: string): string =>
+		raw
+			.split('\n')
+			.filter((l) => !l.trim().startsWith('#'))
+			.join('\n');
 	const units: MintUnit[] = ['sat'];
 
 	if (config.mint === 'cdk') {

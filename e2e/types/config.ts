@@ -19,6 +19,12 @@ export type AppSettingValues = {
 	ai_enabled?: boolean;
 	ai_vendor?: 'ollama' | 'openrouter';
 	ai_ollama_api?: string;
+	/** Server STRING setting `mint.metrics.api` — the cdk-mintd prometheus
+	 *  exporter base url. Non-empty enables the `/mint/system` page and the
+	 *  mint-metrics collection cron. Applied via GraphQL, not the UI — no
+	 *  settings card exists yet (see `applyMintMetricsApi` in
+	 *  `helpers/ui/settings.ts`). */
+	mint_metrics_api?: string;
 };
 
 /** Device-level (localStorage) settings driven via `/settings/device`. Each

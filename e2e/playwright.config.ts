@@ -103,6 +103,11 @@ import type {ConfigInfo} from './types/config';
  *                          oracle on for this stack (cln-nutshell-postgres
  *                          only — pairs with @mainchain). Use for specs that
  *                          need a populated price feed.
+ *   @mint-metrics        — config-state: settings setup pointed
+ *                          `mint.metrics.api` at the stack's cdk-mintd
+ *                          prometheus exporter (lnd-cdk-sqlite only). Use
+ *                          for specs that need the mint system page live
+ *                          with a populated metrics_mint table.
  *   @all                 — genuine matrix coverage; runs on every stack
  *
  * Untagged tests match no project's grep → they don't run. If you see a new
@@ -122,7 +127,9 @@ function grepFor(config: ConfigInfo): RegExp {
 	return new RegExp(
 		tagsFor(config)
 			.filter((t) => t !== '@ai') // AI tests run only via `npm run e2e:test:ai`
-			.map((t) => `(${t})`)
+			// Boundary lookahead so a tag never substring-matches a longer
+			// tag it prefixes (`@mint` must not match `@mint-metrics`).
+			.map((t) => `(${t}(?![\\w-]))`)
 			.join('|'),
 	);
 }

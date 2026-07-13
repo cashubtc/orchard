@@ -94,6 +94,24 @@ export const orchard = {
 	},
 
 	/* *******************************************************
+		Metrics — the `metrics_system` + `metrics_mint`
+		minute-bucket tables written by the per-minute
+		collection crons.
+	******************************************************** */
+
+	/** Row count of `metrics_system` (host metrics, gated on the
+	 *  `system.metrics` setting). NOT cached: rows accrue every minute. */
+	metricsSystemCount(config: ConfigInfo): number {
+		return parseInt(orchardDbQuery(config, 'SELECT COUNT(*) FROM metrics_system'), 10);
+	},
+
+	/** Row count of `metrics_mint` (cdk prometheus scrapes, gated on the
+	 *  `mint.metrics.api` setting). NOT cached: rows accrue every minute. */
+	metricsMintCount(config: ConfigInfo): number {
+		return parseInt(orchardDbQuery(config, 'SELECT COUNT(*) FROM metrics_mint'), 10);
+	},
+
+	/* *******************************************************
 		Settings — the `settings` key/value table.
 	******************************************************** */
 
@@ -168,7 +186,13 @@ export const orchard = {
 		const out = orchardDbQuery(config, `SELECT name, active, model, schedules, agent_key FROM agents WHERE id = '${sqlEscape(id)}'`);
 		if (out === '') return null;
 		const [name, active, model, schedules, agent_key] = cells(out);
-		return {name, active: parseSqlBoolean(active), model: nullable(model), schedules: nullable(schedules), agent_key: nullable(agent_key)};
+		return {
+			name,
+			active: parseSqlBoolean(active),
+			model: nullable(model),
+			schedules: nullable(schedules),
+			agent_key: nullable(agent_key),
+		};
 	},
 
 	/** Number of `agent_runs` rows for an agent — the before/after delta is
@@ -179,10 +203,7 @@ export const orchard = {
 
 	/** Newest `agent_runs` row for an agent (assert status resolved, not
 	 *  stuck 'running'). Null when the agent has never run. */
-	latestAgentRun(
-		config: ConfigInfo,
-		agent_id: string,
-	): {status: string; started_at: number | null; completed_at: number | null} | null {
+	latestAgentRun(config: ConfigInfo, agent_id: string): {status: string; started_at: number | null; completed_at: number | null} | null {
 		const sql = `SELECT status, started_at, completed_at FROM agent_runs WHERE agent_id = '${sqlEscape(agent_id)}' ORDER BY started_at DESC LIMIT 1`;
 		const out = orchardDbQuery(config, sql);
 		if (out === '') return null;
@@ -205,7 +226,10 @@ export const orchard = {
 		used_at: number | null;
 		created_at: number;
 	}> {
-		const out = orchardDbQuery(config, 'SELECT id, token, label, role, expires_at, used_at, created_at FROM invites ORDER BY created_at DESC');
+		const out = orchardDbQuery(
+			config,
+			'SELECT id, token, label, role, expires_at, used_at, created_at FROM invites ORDER BY created_at DESC',
+		);
 		if (out === '') return [];
 		return out.split('\n').map((row) => {
 			const [id, token, label, role, expires_at, used_at, created_at] = cells(row);
