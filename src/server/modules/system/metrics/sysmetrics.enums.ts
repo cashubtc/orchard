@@ -1,6 +1,7 @@
 export enum SystemMetric {
 	cpu_percent = 'cpu_percent',
 	memory_percent = 'memory_percent',
+	memory_rss_mb = 'memory_rss_mb',
 	disk_percent = 'disk_percent',
 	load_avg_1m = 'load_avg_1m',
 	load_avg_5m = 'load_avg_5m',

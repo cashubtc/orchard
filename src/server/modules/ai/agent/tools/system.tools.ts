@@ -52,6 +52,7 @@ export const GetSystemMetricsTool: AiToolEntry = {
 				'**Available metrics:**',
 				'- `cpu_percent` — CPU utilization (0–100%)',
 				'- `memory_percent` — RAM utilization (0–100%)',
+				'- `memory_rss_mb` — application process resident memory in MB',
 				'- `disk_percent` — Root filesystem utilization (0–100%)',
 				'- `load_avg_1m` / `load_avg_5m` / `load_avg_15m` — system load averages',
 				'- `heap_used_mb` / `heap_total_mb` — Node.js heap usage in MB',
@@ -96,6 +97,7 @@ export const GetSystemMetricsTool: AiToolEntry = {
 							enum: [
 								'cpu_percent',
 								'memory_percent',
+								'memory_rss_mb',
 								'disk_percent',
 								'load_avg_1m',
 								'load_avg_5m',

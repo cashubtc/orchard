@@ -19,6 +19,11 @@ export class NavService {
 				navroute: 'crew',
 				subsection: 'crew',
 			},
+			{
+				name: 'System',
+				navroute: 'system',
+				subsection: 'system',
+			},
 		],
 		bitcoin: [
 			{

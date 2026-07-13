@@ -52,11 +52,11 @@ describe('SystemMetricsService', () => {
 	});
 
 	describe('collectAndStore', () => {
-		it('should batch upsert all 10 metrics in a single call', async () => {
+		it('should batch upsert all 11 metrics in a single call', async () => {
 			await service.collectAndStore();
 			expect(repository.upsert).toHaveBeenCalledTimes(1);
 			const rows = repository.upsert.mock.calls[0][0];
-			expect(rows).toHaveLength(10);
+			expect(rows).toHaveLength(11);
 		});
 
 		it('should upsert with correct conflict paths', async () => {

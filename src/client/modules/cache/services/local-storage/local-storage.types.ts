@@ -98,6 +98,12 @@ export type EventLogSettings = {
 	page_size: number | null;
 };
 
+export type SystemMetricsSettings = {
+	date_start: number | null;
+	date_preset: DateRangePreset | null;
+	interval: SystemMetricsInterval | null;
+};
+
 export type AiFavorites = {
 	ollama: string[];
 	openrouter: string[];

@@ -7,28 +7,28 @@ import {DateTime} from 'luxon';
 import {MatIconTestingModule} from '@angular/material/icon/testing';
 /* Application Dependencies */
 import {provideChartConfig} from '@client/modules/chart/chart.providers';
-import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {SettingDeviceService} from '@client/modules/settings/services/setting-device/setting-device.service';
 import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 import {AiService} from '@client/modules/ai/services/ai/ai.service';
 import {AiChatToolCall} from '@client/modules/ai/classes/ai-chat-chunk.class';
 /* Native Dependencies */
-import {OrcMintSubsectionSystemModule} from '@client/modules/mint/modules/mint-subsection-system/mint-subsection-system.module';
+import {OrcIndexSubsectionSystemModule} from '@client/modules/index/modules/index-subsection-system/index-subsection-system.module';
+import {SystemService} from '@client/modules/index/services/system/system.service';
 /* Local Dependencies */
-import {MintSubsectionSystemComponent} from './mint-subsection-system.component';
+import {IndexSubsectionSystemComponent} from './index-subsection-system.component';
 /* Shared Dependencies */
 import {AssistantToolName, SystemMetricsInterval} from '@shared/generated.types';
 
-describe('MintSubsectionSystemComponent', () => {
-	let component: MintSubsectionSystemComponent;
-	let fixture: ComponentFixture<MintSubsectionSystemComponent>;
+describe('IndexSubsectionSystemComponent', () => {
+	let component: IndexSubsectionSystemComponent;
+	let fixture: ComponentFixture<IndexSubsectionSystemComponent>;
 	let ai_service: {assistant_requests$: Subject<unknown>; tool_calls$: Subject<AiChatToolCall>; openAiSocket: jasmine.Spy};
 	let ai_enabled: boolean;
 
 	beforeEach(async () => {
 		ai_enabled = false;
 		await TestBed.configureTestingModule({
-			imports: [OrcMintSubsectionSystemModule, MatIconTestingModule],
+			imports: [OrcIndexSubsectionSystemModule, MatIconTestingModule],
 			providers: [
 				provideChartConfig(),
 				{
@@ -36,9 +36,9 @@ describe('MintSubsectionSystemComponent', () => {
 					useValue: {snapshot: {data: {}}},
 				},
 				{
-					provide: MintService,
+					provide: SystemService,
 					useValue: {
-						loadMintMetrics: jasmine.createSpy('loadMintMetrics').and.returnValue(of([])),
+						loadSystemMetrics: jasmine.createSpy('loadSystemMetrics').and.returnValue(of([])),
 						clearMetricsCache: jasmine.createSpy('clearMetricsCache'),
 					},
 				},
@@ -48,10 +48,10 @@ describe('MintSubsectionSystemComponent', () => {
 						getLocale: jasmine.createSpy('getLocale').and.returnValue('en-US'),
 						getTimezone: jasmine.createSpy('getTimezone').and.returnValue('UTC'),
 						getTheme: jasmine.createSpy('getTheme').and.returnValue('dark-mode'),
-						getMintSystemSettings: jasmine
-							.createSpy('getMintSystemSettings')
+						getSystemMetricsSettings: jasmine
+							.createSpy('getSystemMetricsSettings')
 							.and.returnValue({date_start: null, date_end: null, date_preset: null, interval: null}),
-						setMintSystemSettings: jasmine.createSpy('setMintSystemSettings'),
+						setSystemMetricsSettings: jasmine.createSpy('setSystemMetricsSettings'),
 					},
 				},
 				{
@@ -72,7 +72,7 @@ describe('MintSubsectionSystemComponent', () => {
 		}).compileComponents();
 
 		ai_service = TestBed.inject(AiService) as unknown as typeof ai_service;
-		fixture = TestBed.createComponent(MintSubsectionSystemComponent);
+		fixture = TestBed.createComponent(IndexSubsectionSystemComponent);
 		component = fixture.componentInstance;
 		fixture.detectChanges();
 	});
@@ -89,9 +89,9 @@ describe('MintSubsectionSystemComponent', () => {
 	});
 
 	it('should clear cache and refetch on refresh', () => {
-		const mint_service = TestBed.inject(MintService) as unknown as {clearMetricsCache: jasmine.Spy};
+		const system_service = TestBed.inject(SystemService) as unknown as {clearMetricsCache: jasmine.Spy};
 		component.onRefresh();
-		expect(mint_service.clearMetricsCache).toHaveBeenCalled();
+		expect(system_service.clearMetricsCache).toHaveBeenCalled();
 		expect(component.refreshing()).toBeFalse();
 	});
 
@@ -122,7 +122,7 @@ describe('MintSubsectionSystemComponent', () => {
 
 	it('should push page context to the assistant when ai is enabled', () => {
 		ai_enabled = true;
-		const enabled_fixture = TestBed.createComponent(MintSubsectionSystemComponent);
+		const enabled_fixture = TestBed.createComponent(IndexSubsectionSystemComponent);
 		enabled_fixture.detectChanges();
 		ai_service.assistant_requests$.next({assistant: 'SYSTEM', content: 'last 24 hours'});
 		expect(ai_service.openAiSocket).toHaveBeenCalled();

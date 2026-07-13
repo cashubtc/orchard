@@ -367,6 +367,7 @@ registerEnumType(SystemMetric, {
 	valuesMap: {
 		cpu_percent: {description: 'CPU usage percentage'},
 		memory_percent: {description: 'Memory usage percentage'},
+		memory_rss_mb: {description: 'Process resident set size in MB'},
 		disk_percent: {description: 'Disk usage percentage'},
 		load_avg_1m: {description: '1-minute load average'},
 		load_avg_5m: {description: '5-minute load average'},

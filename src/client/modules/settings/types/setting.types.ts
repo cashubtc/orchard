@@ -6,6 +6,7 @@ import {
 	MintKeysetsSettings,
 	MintDatabaseSettings,
 	MintConfigSettings,
+	SystemMetricsSettings,
 	SettingsDeviceSettings,
 	SettingsAppSettings,
 	EventLogSettings,
@@ -83,3 +84,11 @@ export type AllEventLogSettings = EventLogSettings & {
 	date_end: number | null;
 	page: number | null;
 };
+
+/* Page: System Metrics */
+export type AllSystemMetricsSettings = SystemMetricsSettings & {
+	date_end: number | null;
+};
+export type NonNullableSystemMetricsSettings = {
+	[K in keyof Omit<AllSystemMetricsSettings, 'date_preset'>]: NonNullable<AllSystemMetricsSettings[K]>;
+} & Pick<AllSystemMetricsSettings, 'date_preset'>;

@@ -15,6 +15,7 @@ import {
 	MintKeysetsSettings,
 	MintDatabaseSettings,
 	MintConfigSettings,
+	SystemMetricsSettings,
 	SettingsDeviceSettings,
 	SettingsAppSettings,
 	EventLogSettings,
@@ -43,6 +44,8 @@ export class LocalStorageService {
 		MINT_KEYSETS_KEY: 'v1.mint.keysets.settings',
 		MINT_DATABASE_KEY: 'v1.mint.database.settings',
 		MINT_SYSTEM_KEY: 'v0.mint.system.settings',
+		/* System Settings */
+		SYSTEM_METRICS_KEY: 'v0.system.metrics.settings',
 		/* Settings Settings */
 		SETTINGS_DEVICE_KEY: 'v1.settings.device.settings',
 		SETTINGS_APP_KEY: 'v0.settings.app.settings',
@@ -175,6 +178,11 @@ export class LocalStorageService {
 		if (!settings) return {date_start: null, date_preset: null, page_size: null};
 		return settings;
 	}
+    getSystemMetricsSettings(): SystemMetricsSettings {
+		const settings = this.getItem<SystemMetricsSettings>(this.STORAGE_KEYS.SYSTEM_METRICS_KEY);
+		if (!settings) return {date_start: null, date_preset: null, interval: null};
+		return settings;
+	}
 
 	setAuthToken(token: string | null): void {
 		this.setItem(this.STORAGE_KEYS.AUTH_TOKEN_KEY, token);
@@ -226,6 +234,9 @@ export class LocalStorageService {
 	}
 	setEventLogSettings(settings: EventLogSettings): void {
 		this.setItem(this.STORAGE_KEYS.EVENT_LOG_KEY, settings);
+	}
+    setSystemMetricsSettings(settings: SystemMetricsSettings): void {
+		this.setItem(this.STORAGE_KEYS.SYSTEM_METRICS_KEY, settings);
 	}
 
 	/**

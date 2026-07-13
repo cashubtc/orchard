@@ -8,6 +8,7 @@ import {Entity, Column, PrimaryGeneratedColumn, Index} from 'typeorm';
  * Metrics tracked:
  * - cpu_percent: CPU utilization percentage (0-100)
  * - memory_percent: System memory usage percentage (0-100)
+ * - memory_rss_mb: Process resident set size in MB
  * - disk_percent: Root disk usage percentage (0-100)
  * - load_avg_1m/5m/15m: System load averages
  * - heap_used_mb/heap_total_mb: Node.js heap in MB

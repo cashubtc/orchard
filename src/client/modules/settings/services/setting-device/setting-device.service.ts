@@ -13,6 +13,7 @@ import {
 	AllMintDatabaseSettings,
 	AllMintKeysetsSettings,
 	AllMintConfigSettings,
+	AllSystemMetricsSettings,
 	AllSettingsDeviceSettings,
 	AllSettingsAppSettings,
 	AllEventLogSettings,
@@ -41,6 +42,9 @@ export class SettingDeviceService {
 	public event_log_short_settings: Record<string, number | null> = {
 		date_end: null,
 		page: null,
+	};
+    public system_metrics_short_settings: Record<string, number | null> = {
+		date_end: null,
 	};
 
 	/* In-memory cache for frequently accessed settings */
@@ -250,6 +254,22 @@ export class SettingDeviceService {
 		this.event_log_short_settings = {
 			date_end: date_end,
 			page: page,
+		};
+	}
+
+    /* Page: System Metrics */
+	public getSystemMetricsSettings(): AllSystemMetricsSettings {
+		const long_term_settings = this.localStorageService.getSystemMetricsSettings();
+		return {
+			...long_term_settings,
+			...this.system_metrics_short_settings,
+		} as AllSystemMetricsSettings;
+	}
+	public setSystemMetricsSettings(settings: AllSystemMetricsSettings): void {
+		const {date_end, ...long_settings} = settings;
+		this.localStorageService.setSystemMetricsSettings(long_settings);
+		this.system_metrics_short_settings = {
+			date_end: date_end,
 		};
 	}
 }

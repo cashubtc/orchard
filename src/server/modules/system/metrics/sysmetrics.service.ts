@@ -65,10 +65,12 @@ export class SystemMetricsService {
 		const heap = process.memoryUsage();
 		const heap_used_mb = heap.heapUsed / (1024 * 1024);
 		const heap_total_mb = heap.heapTotal / (1024 * 1024);
+		const memory_rss_mb = heap.rss / (1024 * 1024);
 
 		return {
 			[SystemMetric.cpu_percent]: round2(cpu_percent),
 			[SystemMetric.memory_percent]: round2(memory_percent),
+			[SystemMetric.memory_rss_mb]: round2(memory_rss_mb),
 			[SystemMetric.disk_percent]: round2(disk_percent),
 			[SystemMetric.load_avg_1m]: round2(load_1m),
 			[SystemMetric.load_avg_5m]: round2(load_5m),

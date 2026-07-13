@@ -2,6 +2,8 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 /* Vendor Dependencies */
 import {MatIconTestingModule} from '@angular/material/icon/testing';
+/* Application Dependencies */
+import {provideChartConfig} from '@client/modules/chart/chart.providers';
 /* Native Dependencies */
 import {OrcMintSubsectionSystemModule} from '@client/modules/mint/modules/mint-subsection-system/mint-subsection-system.module';
 /* Local Dependencies */
@@ -17,6 +19,7 @@ describe('MintSubsectionSystemChartComponent', () => {
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
 			imports: [OrcMintSubsectionSystemModule, MatIconTestingModule],
+			providers: [provideChartConfig()],
 		}).compileComponents();
 
 		fixture = TestBed.createComponent(MintSubsectionSystemChartComponent);
