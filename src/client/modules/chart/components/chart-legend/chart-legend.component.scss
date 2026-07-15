@@ -43,11 +43,12 @@
 	@extend %flex-items-center;
 	@extend %flex-gap-0-5;
 	@extend %w-min-0;
+	// Fill the series column so the whole name cell toggles the group, not just the text
+	@extend %w-full;
 	@extend %p-0;
 	@extend %border-none;
 	@extend %transparent-bg;
 	@extend %cursor-pointer;
-	max-width: 100%;
 }
 
 .chart-legend-matrix-cell {
@@ -87,6 +88,13 @@
 	grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
 	gap: 0.125rem 0.75rem;
 	max-height: 12rem;
+
+	// Fill the grid cell so the whole row is a click target, not just the text (the wrap layout keeps compact buttons)
+	.chart-legend-entry,
+	.chart-legend-group-header {
+		@extend %w-full;
+		max-width: none;
+	}
 }
 
 .chart-legend-group {
