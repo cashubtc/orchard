@@ -34,6 +34,9 @@ const LEGEND_SEPARATOR = ' · ';
 	templateUrl: './chart-legend.component.html',
 	styleUrl: './chart-legend.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	host: {
+		'[class.chart-legend-fill]': 'fill()',
+	},
 })
 export class ChartLegendComponent {
 	private readonly chartService = inject(ChartService);
@@ -47,6 +50,8 @@ export class ChartLegendComponent {
 	public readonly layout = input<ChartLegendLayout>('wrap');
 	// Header label above the series-name column in the matrix layout
 	public readonly group_label = input<string>('series');
+	// Stretch to the host's remaining height (scrolling within it) instead of capping the list height
+	public readonly fill = input<boolean>(false);
 
 	public readonly entries = computed<ChartLegendEntry[]>(() => this.buildEntries());
 	public readonly groups = computed<ChartLegendGroup[]>(() => this.buildGroups());
@@ -60,7 +65,11 @@ export class ChartLegendComponent {
 	// Group keys whose every series is hidden, for O(1) group-hidden checks in the template
 	public readonly hidden_groups = computed<Set<string>>(() => {
 		const hidden = this.hidden();
-		return new Set(this.groups().filter((group) => group.entries.every((entry) => hidden.has(entry.index))).map((group) => group.key));
+		return new Set(
+			this.groups()
+				.filter((group) => group.entries.every((entry) => hidden.has(entry.index)))
+				.map((group) => group.key),
+		);
 	});
 	// Isolated variant leaf, or null when no isolation is active
 	public readonly isolated = signal<string | null>(null);
@@ -172,19 +181,30 @@ export class ChartLegendComponent {
 		const datasets = chart.data.datasets as {borderColor?: unknown; backgroundColor?: unknown}[];
 		// Recapture when the chart was rebuilt since the last hover
 		if (this.original_styles.size !== datasets.length) {
-			this.original_styles = new Map(datasets.map((dataset, index) => [index, {border: dataset.borderColor, background: dataset.backgroundColor}]));
+			this.original_styles = new Map(
+				datasets.map((dataset, index) => [index, {border: dataset.borderColor, background: dataset.backgroundColor}]),
+			);
 		}
-		datasets.forEach((dataset, index) => {
-			const original = this.original_styles.get(index);
-			if (!original) return;
-			if (highlight.has(index)) {
-				dataset.borderColor = original.border;
-				dataset.backgroundColor = original.background;
-			} else {
-				dataset.borderColor = this.dim(original.border);
-				dataset.backgroundColor = 'transparent';
+		if (this.datapoint_mode()) {
+			// Pie/doughnut: one dataset holds every slice, so highlight per data point instead of dimming the whole dataset
+			const original = this.original_styles.get(0);
+			const colors = original?.background;
+			if (datasets[0] && Array.isArray(colors)) {
+				datasets[0].backgroundColor = colors.map((color, index) => (highlight.has(index) ? color : this.dim(color)));
 			}
-		});
+		} else {
+			datasets.forEach((dataset, index) => {
+				const original = this.original_styles.get(index);
+				if (!original) return;
+				if (highlight.has(index)) {
+					dataset.borderColor = original.border;
+					dataset.backgroundColor = original.background;
+				} else {
+					dataset.borderColor = this.dim(original.border);
+					dataset.backgroundColor = 'transparent';
+				}
+			});
+		}
 		chart.update();
 	}
 

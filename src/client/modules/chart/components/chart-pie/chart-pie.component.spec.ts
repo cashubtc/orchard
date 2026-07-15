@@ -26,6 +26,13 @@ describe('ChartPieComponent', () => {
 		expect(component).toBeTruthy();
 	});
 
+	it('runs its legend in fill mode so it takes the remaining card height', () => {
+		fixture.componentRef.setInput('slices', [{label: '/mint', value: 5}]);
+		fixture.detectChanges();
+		const legend = (fixture.nativeElement as HTMLElement).querySelector('orc-chart-legend');
+		expect(legend?.classList.contains('chart-legend-fill')).toBe(true);
+	});
+
 	it('builds one data point per slice with labels and colours', () => {
 		fixture.componentRef.setInput('slices', [
 			{label: '/mint', value: 5},

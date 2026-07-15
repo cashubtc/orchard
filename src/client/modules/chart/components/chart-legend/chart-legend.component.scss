@@ -1,45 +1,10 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
 
-.chart-legend-wrapper {
-	@extend %flex;
-	@extend %flex-column;
-	@extend %flex-gap-0-5;
-	@extend %p-t-0-5;
-}
-
-.chart-legend-controls {
-	@extend %flex;
-	@extend %flex-wrap;
-	@extend %flex-items-center;
-	@extend %flex-justify-between;
-	@extend %flex-gap-0-5;
-}
-
 .chart-legend-filter {
 	@extend %w-min-0;
 	flex: 1 1 8rem;
 	max-width: 16rem;
-}
-
-.chart-legend-controls-actions {
-	@extend %flex;
-	@extend %flex-items-center;
-	@extend %flex-gap-0-5;
-}
-
-.chart-legend-isolate-group {
-	@extend %flex;
-	@extend %border;
-	@extend %border-solid;
-	@extend %orc-outline-variant-border;
-	@extend %orc-corner-full;
-	@extend %overflow-hidden;
-}
-
-.chart-legend-isolate {
-	@extend %orc-corner-none;
-	@extend %w-min-0;
 }
 
 .chart-legend-isolate-active {
@@ -103,10 +68,6 @@
 
 .chart-legend-cell-hidden {
 	opacity: 0.3;
-}
-
-.chart-legend-line {
-	@extend %flex-shrink-0;
 }
 
 /* ── List / wrap layouts: single-series entries ── */
@@ -195,4 +156,30 @@
 	@extend %font-size-xs;
 	@extend %orc-outline-color;
 	@extend %text-ellipsis;
+}
+
+/* ── Fill mode: stretch to the host's remaining height instead of capping the list ── */
+
+:host(.chart-legend-fill) {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-grow;
+	// Zero basis: the chart canvas keeps its full flex basis and the legend
+	// takes exactly the remaining height
+	@extend %flex-basis-0;
+	@extend %h-min-0;
+
+	.chart-legend-wrapper {
+		@extend %flex-grow;
+		@extend %h-min-0;
+	}
+
+	.chart-legend,
+	.chart-legend-matrix-scroll {
+		@extend %flex-grow;
+		@extend %h-min-0;
+		// Keep rows packed at the top when the list is taller than its content
+		align-content: start;
+		max-height: none;
+	}
 }

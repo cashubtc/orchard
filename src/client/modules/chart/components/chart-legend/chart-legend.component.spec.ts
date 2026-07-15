@@ -61,6 +61,13 @@ describe('ChartLegendComponent', () => {
 		expect(component.dashArray([])).toBeNull();
 	});
 
+	it('stretches to fill its host only when fill mode is on', () => {
+		expect((fixture.nativeElement as HTMLElement).classList.contains('chart-legend-fill')).toBe(false);
+		fixture.componentRef.setInput('fill', true);
+		fixture.detectChanges();
+		expect((fixture.nativeElement as HTMLElement).classList.contains('chart-legend-fill')).toBe(true);
+	});
+
 	it('shows bulk controls only on the dataset-heavy layouts', () => {
 		fixture.componentRef.setInput('layout', 'wrap');
 		expect(component.show_controls()).toBe(false);
@@ -158,6 +165,21 @@ describe('ChartLegendComponent', () => {
 		component.onHoverEnd();
 		expect(datasets[1].borderColor).toBe('rgba(4, 5, 6, 0.6)');
 		expect(datasets[1].backgroundColor).toBe('rgba(4, 5, 6, 0.6)');
+	});
+
+	it('dims sibling slices per data point on hover in datapoint mode instead of blanking the whole pie', () => {
+		const datasets = [{backgroundColor: ['rgba(170, 0, 0, 0.6)', 'rgba(0, 187, 0, 0.6)', 'rgba(0, 0, 204, 0.6)']}];
+		fixture.componentRef.setInput('datapoint_mode', true);
+		fixture.componentRef.setInput('chart_data', {labels: ['/a', '/b', '/c'], datasets});
+		fixture.componentRef.setInput('chart', mockChart(datasets));
+
+		// Hovering a non-first slice must keep a per-slice colour array, not collapse the dataset to one 'transparent'
+		component.onHover([1]);
+		expect(Array.isArray(datasets[0].backgroundColor)).toBe(true);
+		expect(datasets[0].backgroundColor).toEqual(['rgba(170, 0, 0, 0.1)', 'rgba(0, 187, 0, 0.6)', 'rgba(0, 0, 204, 0.1)']);
+
+		component.onHoverEnd();
+		expect(datasets[0].backgroundColor).toEqual(['rgba(170, 0, 0, 0.6)', 'rgba(0, 187, 0, 0.6)', 'rgba(0, 0, 204, 0.6)']);
 	});
 
 	it('toggles every series with select-all and select-none', () => {

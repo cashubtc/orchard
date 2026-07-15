@@ -8,8 +8,10 @@
 	height: 100%;
 }
 
+// Canvas holds the standard 280px chart height (shrinking in short hosts);
+// the fill-mode legend below takes whatever height remains
 .chart-pie-canvas {
-	@extend %flex-grow;
-	position: relative;
+	@extend %relative;
+	flex: 0 1 280px;
 	min-height: 8rem;
 }

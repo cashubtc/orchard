@@ -1,12 +1,12 @@
 @if (entries().length) {
-	<div class="chart-legend-wrapper">
+	<div class="chart-legend-wrapper flex flex-column flex-gap-0-5 p-t-0-5">
 		@if (show_controls()) {
-			<div class="chart-legend-controls">
+			<div class="flex flex-wrap flex-items-center flex-justify-between flex-gap-0-5">
 				<mat-form-field [hideRequiredMarker]="true" class="orc-dense-form-field chart-legend-filter" subscriptSizing="dynamic">
 					<mat-icon matPrefix class="icon-sm">search</mat-icon>
 					<input matInput type="text" aria-label="Filter series" (input)="onQuery($any($event.target).value)" />
 				</mat-form-field>
-				<div class="chart-legend-controls-actions">
+				<div class="flex flex-items-center flex-gap-0-5">
 					<button matButton type="button" class="orc-dense-button" (click)="showAll()">
 						<mat-icon>visibility</mat-icon>
 						<span class="text-nowrap">All</span>
@@ -16,12 +16,12 @@
 						<span class="text-nowrap">None</span>
 					</button>
 					@if (layout() === 'matrix' && leaves().length > 1) {
-						<div class="chart-legend-isolate-group">
+						<div class="flex border border-solid orc-outline-variant-border orc-corner-full overflow-hidden">
 							@for (leaf of leaves(); track leaf) {
 								<button
 									matButton
 									type="button"
-									class="orc-dense-button chart-legend-isolate"
+									class="orc-dense-button orc-corner-none w-min-0"
 									[class.chart-legend-isolate-active]="isolated() === leaf"
 									(click)="onIsolate(leaf)"
 								>
@@ -66,7 +66,7 @@
 										(click)="onToggle(entry)"
 										[title]="entry.label"
 									>
-										<svg class="chart-legend-line" width="24" height="10" aria-hidden="true">
+										<svg class="flex-shrink-0" width="24" height="10" aria-hidden="true">
 											<line
 												x1="1"
 												y1="5"
