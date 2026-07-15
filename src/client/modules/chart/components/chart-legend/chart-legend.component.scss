@@ -1,47 +1,173 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
 
+.chart-legend-wrapper {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-0-5;
+	@extend %p-t-0-5;
+}
+
+.chart-legend-controls {
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-items-center;
+	@extend %flex-justify-between;
+	@extend %flex-gap-0-5;
+}
+
+.chart-legend-filter {
+	@extend %w-min-0;
+	flex: 1 1 8rem;
+	max-width: 16rem;
+}
+
+.chart-legend-controls-actions {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+}
+
+.chart-legend-isolate-group {
+	@extend %flex;
+	@extend %border;
+	@extend %border-solid;
+	@extend %orc-outline-variant-border;
+	@extend %orc-corner-full;
+	@extend %overflow-hidden;
+}
+
+.chart-legend-isolate {
+	@extend %orc-corner-none;
+	@extend %w-min-0;
+}
+
+.chart-legend-isolate-active {
+	@extend %orc-secondary-container-bg;
+	@extend %orc-on-secondary-container-color;
+}
+
+/* ── Matrix layout: a dense Material table of series × variant cells ── */
+
+.chart-legend-matrix-scroll {
+	@extend %overflow-y-auto;
+	max-height: 16rem;
+}
+
+.chart-legend-matrix-table {
+	@extend %w-full;
+
+	.mat-mdc-header-cell,
+	.mat-mdc-cell {
+		padding: 0 0.5rem;
+	}
+
+	// Row-wide feedback: the whole row drives the chart highlight on hover
+	.mat-mdc-row:hover {
+		@extend %orc-surface-container-high-bg;
+	}
+}
+
+.chart-legend-matrix-col {
+	@extend %text-center;
+	width: 4.5rem;
+}
+
+.chart-legend-matrix-name {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+	@extend %w-min-0;
+	@extend %p-0;
+	@extend %border-none;
+	@extend %transparent-bg;
+	@extend %cursor-pointer;
+	max-width: 100%;
+}
+
+.chart-legend-matrix-cell {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+	@extend %w-full;
+	@extend %border-none;
+	@extend %orc-corner-extra-small;
+	@extend %transparent-bg;
+	@extend %cursor-pointer;
+	padding: 0.125rem 0;
+
+	&:hover {
+		@extend %orc-surface-container-highest-bg;
+	}
+}
+
+.chart-legend-cell-hidden {
+	opacity: 0.3;
+}
+
+.chart-legend-line {
+	@extend %flex-shrink-0;
+}
+
+/* ── List / wrap layouts: single-series entries ── */
+
 .chart-legend {
 	@extend %flex;
 	@extend %flex-wrap;
 	@extend %flex-justify-center;
 	@extend %flex-items-start;
 	@extend %flex-gap-1;
-	@extend %p-t-0-5;
+	@extend %overflow-y-auto;
 	max-height: 9rem;
-	overflow-y: auto;
+}
+
+.chart-legend.chart-legend--list {
+	@extend %grid;
+	grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+	gap: 0.125rem 0.75rem;
+	max-height: 12rem;
 }
 
 .chart-legend-group {
 	@extend %flex;
 	@extend %flex-column;
 	@extend %flex-gap-0-25;
+	@extend %orc-corner-extra-small;
+
+	// Row-wide feedback: hovering anywhere in the group highlights all its series on the chart
+	&:hover {
+		@extend %orc-surface-container-high-bg;
+	}
 }
 
 .chart-legend-group-header {
 	@extend %font-size-xs;
 	@extend %orc-outline-color;
+	@extend %text-ellipsis;
+	@extend %border-none;
+	@extend %transparent-bg;
+	@extend %font-weight-semi-bold;
+	@extend %text-left;
+	@extend %cursor-pointer;
 	max-width: 14rem;
 	padding: 0.125rem 0.25rem;
-	border: none;
-	background: none;
-	font-weight: 600;
-	text-align: left;
-	overflow: hidden;
-	white-space: nowrap;
-	text-overflow: ellipsis;
-	cursor: pointer;
 }
 
 .chart-legend-entry {
 	@extend %flex;
 	@extend %flex-items-center;
 	@extend %flex-gap-0-5;
+	@extend %border-none;
+	@extend %transparent-bg;
+	@extend %cursor-pointer;
+	@extend %orc-corner-extra-small;
 	max-width: 14rem;
 	padding: 0.125rem 0.25rem;
-	border: none;
-	background: none;
-	cursor: pointer;
+
+	// Item-level feedback for the entry under the cursor, mirroring the matrix cell hover
+	&:hover {
+		@extend %orc-surface-container-high-bg;
+	}
 }
 
 .chart-legend-entry-hidden {
@@ -53,22 +179,20 @@
 }
 
 .chart-legend-swatch {
+	@extend %flex-shrink-0;
 	width: 0.75rem;
 	height: 0.75rem;
-	flex-shrink: 0;
 	border-radius: 2px;
 	background: var(--legend-color);
 }
 
 .chart-legend-swatch-dashed {
-	border-radius: 0;
+	@extend %orc-corner-none;
 	background: repeating-linear-gradient(to right, var(--legend-color) 0 4px, transparent 4px 8px);
 }
 
 .chart-legend-label {
 	@extend %font-size-xs;
 	@extend %orc-outline-color;
-	overflow: hidden;
-	white-space: nowrap;
-	text-overflow: ellipsis;
+	@extend %text-ellipsis;
 }

@@ -44,6 +44,10 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 	public percentiles = input<boolean>(false);
 	public color_index = input<number>(0);
 	public legend = input<'below' | 'none'>('none');
+	// Legend layout for non-percentile charts; percentile charts always use the matrix layout
+	public legend_layout = input<'wrap' | 'list'>('wrap');
+	// Header label above the series-name column in the matrix legend
+	public legend_group_label = input<string>('series');
 	public label_map = input<Record<string, string> | undefined>(undefined);
 	public reference_line = input<SystemChartReferenceLine | undefined>(undefined);
 	public ceiling = input<number | undefined>(undefined);
@@ -56,6 +60,8 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 	public readonly displayed = signal<boolean>(true);
 
 	public readonly has_data = computed(() => this.metrics().length > 0);
+	// Percentile charts always use the matrix layout; others honor the requested legend layout
+	public readonly resolved_legend_layout = computed<'wrap' | 'list' | 'matrix'>(() => (this.percentiles() ? 'matrix' : this.legend_layout()));
 
 	private subscriptions: Subscription = new Subscription();
 
