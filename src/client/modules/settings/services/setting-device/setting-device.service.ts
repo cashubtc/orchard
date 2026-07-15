@@ -42,7 +42,7 @@ export class SettingDeviceService {
 		date_end: null,
 		page: null,
 	};
-    public system_metrics_short_settings: Record<string, number | null> = {
+	public system_metrics_short_settings: Record<string, number | null> = {
 		date_end: null,
 	};
 
@@ -256,7 +256,7 @@ export class SettingDeviceService {
 		};
 	}
 
-    /* Page: System Metrics */
+	/* Page: System Metrics */
 	public getSystemMetricsSettings(): AllSystemMetricsSettings {
 		const long_term_settings = this.localStorageService.getSystemMetricsSettings();
 		return {

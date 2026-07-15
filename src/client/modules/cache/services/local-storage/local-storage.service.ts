@@ -178,7 +178,7 @@ export class LocalStorageService {
 		if (!settings) return {date_start: null, date_preset: null, page_size: null};
 		return settings;
 	}
-    getSystemMetricsSettings(): SystemMetricsSettings {
+	getSystemMetricsSettings(): SystemMetricsSettings {
 		const settings = this.getItem<SystemMetricsSettings>(this.STORAGE_KEYS.SYSTEM_METRICS_KEY);
 		if (!settings) return {date_start: null, date_preset: null, interval: null};
 		return settings;
@@ -235,7 +235,7 @@ export class LocalStorageService {
 	setEventLogSettings(settings: EventLogSettings): void {
 		this.setItem(this.STORAGE_KEYS.EVENT_LOG_KEY, settings);
 	}
-    setSystemMetricsSettings(settings: SystemMetricsSettings): void {
+	setSystemMetricsSettings(settings: SystemMetricsSettings): void {
 		this.setItem(this.STORAGE_KEYS.SYSTEM_METRICS_KEY, settings);
 	}
 

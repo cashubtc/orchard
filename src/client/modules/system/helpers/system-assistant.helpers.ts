@@ -16,8 +16,5 @@ export function buildSystemAssistantContext(settings: NonNullableSystemMetricsSe
 
 /** Parses assistant yyyy-MM-dd date strings into a [start, end] unix-second range */
 export function parseAssistantDateRange(date_start: string, date_end: string): number[] {
-	return [
-		DateTime.fromFormat(date_start, 'yyyy-MM-dd').toUnixInteger(),
-		DateTime.fromFormat(date_end, 'yyyy-MM-dd').toUnixInteger(),
-	];
+	return [DateTime.fromFormat(date_start, 'yyyy-MM-dd').toUnixInteger(), DateTime.fromFormat(date_end, 'yyyy-MM-dd').toUnixInteger()];
 }

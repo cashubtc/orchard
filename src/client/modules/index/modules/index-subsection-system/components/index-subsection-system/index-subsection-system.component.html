@@ -135,7 +135,9 @@
 			</div>
 
 			<div class="col-6 flex flex-column flex-gap-1">
-				<div class="title-m">Server Load <small class="orc-outline-color">{{ load_subtitle() }}</small></div>
+				<div class="title-m">
+					Server Load <small class="orc-outline-color">{{ load_subtitle() }}</small>
+				</div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
 						<orc-system-chart
@@ -156,7 +158,9 @@
 
 			<!-- App memory (full width) -->
 			<div class="col-12 flex flex-column flex-gap-1">
-				<div class="title-m">App Memory <small class="orc-outline-color">{{ heap_subtitle() }}</small></div>
+				<div class="title-m">
+					App Memory <small class="orc-outline-color">{{ heap_subtitle() }}</small>
+				</div>
 				<mat-card appearance="outlined" class="relative overflow-hidden">
 					<mat-card-content class="orc-surface-container-low-bg">
 						<orc-system-chart

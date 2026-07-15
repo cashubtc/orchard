@@ -61,7 +61,9 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 
 	public readonly has_data = computed(() => this.metrics().length > 0);
 	// Percentile charts always use the matrix layout; others honor the requested legend layout
-	public readonly resolved_legend_layout = computed<'wrap' | 'list' | 'matrix'>(() => (this.percentiles() ? 'matrix' : this.legend_layout()));
+	public readonly resolved_legend_layout = computed<'wrap' | 'list' | 'matrix'>(() =>
+		this.percentiles() ? 'matrix' : this.legend_layout(),
+	);
 
 	private subscriptions: Subscription = new Subscription();
 
