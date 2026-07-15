@@ -27,8 +27,20 @@ describe('PrometheusService', () => {
 		const text = jest.fn().mockResolvedValue('# TYPE cdk_errors_total counter\ncdk_errors_total 2\n');
 		fetchService.fetchWithProxy.mockResolvedValue({ok: true, text} as any);
 		const families = await prometheusService.scrapeMetrics('http://mint:5553/metrics');
-		expect(fetchService.fetchWithProxy).toHaveBeenCalledWith('http://mint:5553/metrics', {method: 'GET'});
+		expect(fetchService.fetchWithProxy).toHaveBeenCalledWith(
+			'http://mint:5553/metrics',
+			expect.objectContaining({method: 'GET', signal: expect.any(AbortSignal)}),
+		);
 		expect(families).toEqual([{name: 'cdk_errors_total', type: 'counter', samples: [{labels: {}, value: 2}]}]);
+	});
+
+	it('bounds the scrape with a 15s abort timeout so a hung endpoint cannot pend forever', async () => {
+		const timeout_spy = jest.spyOn(AbortSignal, 'timeout');
+		const text = jest.fn().mockResolvedValue('');
+		fetchService.fetchWithProxy.mockResolvedValue({ok: true, text} as any);
+		await prometheusService.scrapeMetrics('http://mint:5553/metrics');
+		expect(timeout_spy).toHaveBeenCalledWith(15000);
+		timeout_spy.mockRestore();
 	});
 
 	it('throws on non-ok responses', async () => {

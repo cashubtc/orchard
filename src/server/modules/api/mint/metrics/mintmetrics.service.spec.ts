@@ -100,10 +100,11 @@ describe('ApiMintMetricsService', () => {
 		});
 
 		it('derives counter deltas and detects resets', async () => {
+			// each delta is attributed to the bucket of its earlier sample (where the traffic occurred)
 			mintMetricsService.getMetrics.mockResolvedValue([
 				row({date: 3600, value: 10}),
-				row({date: 3660, value: 25}),
-				row({date: 7200, value: 3}),
+				row({date: 7200, value: 25}),
+				row({date: 7260, value: 3}),
 			]);
 
 			const out = await apiMintMetricsService.getMetrics('tag', {
@@ -115,6 +116,20 @@ describe('ApiMintMetricsService', () => {
 			expect(out).toHaveLength(2);
 			expect(out[0]).toMatchObject({date: 3600, value: 15});
 			expect(out[1]).toMatchObject({date: 7200, value: 3});
+		});
+
+		it('attributes a counter delta to the interval of the earlier sample, not the next one', async () => {
+			// scrapes straddling a minute boundary: 00:01:30 → 00:02:30; the 30 increments happened during minute 00:01
+			mintMetricsService.getMetrics.mockResolvedValue([row({date: 90, value: 100}), row({date: 150, value: 130})]);
+
+			const out = await apiMintMetricsService.getMetrics('tag', {
+				interval: SystemMetricsInterval.minute,
+				date_start: 0,
+				date_end: 300,
+			});
+
+			expect(out).toHaveLength(1);
+			expect(out[0]).toMatchObject({date: 60, value: 30});
 		});
 
 		it('keeps series with different labels separate', async () => {
@@ -139,10 +154,11 @@ describe('ApiMintMetricsService', () => {
 		});
 
 		it('derives histogram average durations with null for empty intervals', async () => {
+			// the zero-delta from 7200→7260 buckets into hour 7200, yielding an empty (null-value) interval
 			mintMetricsService.getMetrics.mockResolvedValue([
 				row({metric: 'cdk_mint_operation_duration_seconds', type: 'histogram', date: 3600, sum: 1, count: 10}),
-				row({metric: 'cdk_mint_operation_duration_seconds', type: 'histogram', date: 3660, sum: 3, count: 14}),
 				row({metric: 'cdk_mint_operation_duration_seconds', type: 'histogram', date: 7200, sum: 3, count: 14}),
+				row({metric: 'cdk_mint_operation_duration_seconds', type: 'histogram', date: 7260, sum: 3, count: 14}),
 			]);
 
 			const out = await apiMintMetricsService.getMetrics('tag', {

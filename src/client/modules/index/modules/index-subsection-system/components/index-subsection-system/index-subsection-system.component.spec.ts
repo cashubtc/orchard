@@ -119,6 +119,20 @@ describe('IndexSubsectionSystemComponent', () => {
 		expect(component.load_subtitle()).toBe('load per core · 1m · 5m · 15m');
 	});
 
+	it('should order the load series 1m, 5m, 15m regardless of raw sample order', () => {
+		// raw data arrives name-sorted (15m before 1m); the legend must still read 1m · 5m · 15m
+		component.metrics.set([
+			new SystemMetricSample({metric: SystemMetric.LoadAvg_15m, date: 60, value: 3}),
+			new SystemMetricSample({metric: SystemMetric.LoadAvg_1m, date: 60, value: 1}),
+			new SystemMetricSample({metric: SystemMetric.LoadAvg_5m, date: 60, value: 2}),
+		]);
+		expect(component.load_metrics().map((m) => m.metric)).toEqual([
+			SystemMetric.LoadAvg_1m,
+			SystemMetric.LoadAvg_5m,
+			SystemMetric.LoadAvg_15m,
+		]);
+	});
+
 	it('should fall back to the raw load series when info failed to load', () => {
 		component.system_info.set(null);
 		component.metrics.set([new SystemMetricSample({metric: SystemMetric.LoadAvg_1m, date: 60, value: 4})]);

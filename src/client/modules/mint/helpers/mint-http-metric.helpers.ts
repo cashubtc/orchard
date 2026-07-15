@@ -12,7 +12,8 @@ function getLabelValue(metric: MintMetric, name: string): string | undefined {
 }
 
 /**
- * Computes the HTTP error rate (percent of non-200 responses) over the window from request counter deltas
+ * Computes the HTTP error rate (percent of 4xx/5xx responses) over the window from request counter deltas.
+ * Only status codes >= 400 count as errors; 1xx (e.g. websocket 101 upgrades), 2xx and 3xx are treated as success.
  * @param {MintMetric[]} metrics - Aggregated cdk_http_requests_total series (per endpoint/status)
  * @returns {number | null} Error rate percentage, or null when there were no requests
  */
@@ -22,7 +23,8 @@ export function computeHttpErrorRate(metrics: MintMetric[]): number | null {
 	for (const metric of metrics) {
 		const count = metric.value ?? 0;
 		total += count;
-		if (getLabelValue(metric, 'status') !== '200') errors += count;
+		const status = Number(getLabelValue(metric, 'status'));
+		if (Number.isFinite(status) && status >= 400) errors += count;
 	}
 	if (total <= 0) return null;
 	return (errors / total) * 100;

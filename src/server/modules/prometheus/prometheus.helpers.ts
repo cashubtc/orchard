@@ -68,20 +68,61 @@ function parseLabelBlock(label_block: string | undefined): Record<string, string
 	const label_regex = /(\w+)="((?:\\.|[^"\\])*)"/g;
 	let match: RegExpExecArray | null;
 	while ((match = label_regex.exec(label_block)) !== null) {
-		labels[match[1]] = match[2].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+		// single left-to-right pass: decode each escape as a unit so `\\n` becomes backslash+n, not backslash+newline
+		labels[match[1]] = match[2].replace(/\\(.)/g, (_full, char) => (char === 'n' ? '\n' : char));
 	}
 	return labels;
 }
 
 /**
- * Builds a canonical stable string identity for a label set
+ * Escapes the canonical-format delimiters (backslash, comma, equals) in a label key or value
+ * so a value containing them cannot collide with the pair or key/value separators
+ */
+function escapeLabelPart(part: string): string {
+	return part.replace(/[\\,=]/g, (char) => `\\${char}`);
+}
+
+/**
+ * Reverses escapeLabelPart, decoding each escape sequence as a unit
+ */
+function unescapeLabelPart(part: string): string {
+	return part.replace(/\\(.)/g, (_full, char) => char);
+}
+
+/**
+ * Splits a canonical string on unescaped occurrences of the delimiter, leaving escape sequences intact
+ */
+function splitUnescaped(input: string, delimiter: string): string[] {
+	const parts: string[] = [];
+	let current = '';
+	for (let i = 0; i < input.length; i++) {
+		const char = input[i];
+		if (char === '\\' && i + 1 < input.length) {
+			current += char + input[i + 1];
+			i++;
+			continue;
+		}
+		if (char === delimiter) {
+			parts.push(current);
+			current = '';
+			continue;
+		}
+		current += char;
+	}
+	parts.push(current);
+	return parts;
+}
+
+/**
+ * Builds a canonical stable string identity for a label set.
+ * Keys and values are escaped so a value containing a comma or equals cannot collide with a different label set.
  * @param {Record<string, string>} labels - Label name to value map
  * @returns {string} Sorted key=value pairs joined by commas, empty string when unlabeled
  */
 export function canonicalizeLabels(labels: Record<string, string>): string {
 	return Object.keys(labels)
 		.sort()
-		.map((key) => `${key}=${labels[key]}`)
+		.map((key) => `${escapeLabelPart(key)}=${escapeLabelPart(labels[key])}`)
 		.join(',');
 }
 
@@ -148,8 +189,8 @@ function groupBucketSamples(samples: PromSample[]): Map<string, Record<string, n
  */
 export function parseCanonicalLabels(canonical: string): {name: string; value: string}[] {
 	if (!canonical) return [];
-	return canonical.split(',').map((pair) => {
-		const separator_index = pair.indexOf('=');
-		return {name: pair.slice(0, separator_index), value: pair.slice(separator_index + 1)};
+	return splitUnescaped(canonical, ',').map((pair) => {
+		const [name, value = ''] = splitUnescaped(pair, '=');
+		return {name: unescapeLabelPart(name), value: unescapeLabelPart(value)};
 	});
 }

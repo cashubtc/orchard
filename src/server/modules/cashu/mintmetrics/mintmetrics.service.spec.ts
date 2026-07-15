@@ -173,6 +173,26 @@ describe('MintMetricsService', () => {
 			await mintMetricsService.collectAndStore();
 			expect(repository.upsert).toHaveBeenCalledTimes(1);
 		});
+
+		it('skips a concurrent run while a collection is already in flight', async () => {
+			let release!: (families: PromFamily[]) => void;
+			prometheusService.scrapeMetrics.mockReturnValueOnce(new Promise<PromFamily[]>((resolve) => (release = resolve)));
+
+			const first = mintMetricsService.collectAndStore();
+			// a second tick while the first scrape is still pending must not start another scrape
+			await mintMetricsService.collectAndStore();
+			expect(prometheusService.scrapeMetrics).toHaveBeenCalledTimes(1);
+
+			release([GAUGE_FAMILY]);
+			await first;
+			expect(repository.upsert).toHaveBeenCalledTimes(1);
+
+			// once the in-flight run finishes the guard is released and a later run proceeds normally
+			prometheusService.scrapeMetrics.mockResolvedValue([GAUGE_FAMILY]);
+			await mintMetricsService.collectAndStore();
+			expect(prometheusService.scrapeMetrics).toHaveBeenCalledTimes(2);
+			expect(repository.upsert).toHaveBeenCalledTimes(2);
+		});
 	});
 
 	describe('getMetrics', () => {

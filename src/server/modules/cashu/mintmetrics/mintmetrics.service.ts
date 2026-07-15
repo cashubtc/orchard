@@ -27,6 +27,7 @@ export class MintMetricsService {
 
 	private mint_reachable: boolean | null = null;
 	private warned_families = new Set<string>();
+	private collecting = false;
 
 	constructor(
 		@InjectRepository(MintMetrics)
@@ -52,23 +53,33 @@ export class MintMetricsService {
 	/**
 	 * Scrapes the mint prometheus exporter and stores samples for the current minute
 	 * Never throws when the mint is unreachable; logs once on state transitions
+	 * Skips the run when a previous collection is still in flight, so slow scrapes can't stack across ticks
 	 */
 	async collectAndStore(): Promise<void> {
-		let families: PromFamily[];
-		try {
-			families = await this.scrapeMintMetrics();
-		} catch (error) {
-			if (this.mint_reachable !== false) {
-				this.logger.warn(`Mint metrics endpoint unreachable: ${error.message}`);
-			}
-			this.mint_reachable = false;
+		if (this.collecting) {
+			this.logger.warn('Mint metrics collection already in progress, skipping this run');
 			return;
 		}
-		if (this.mint_reachable === false) this.logger.log('Mint metrics endpoint reachable again, resuming collection');
-		this.mint_reachable = true;
-		const rows = this.buildRows(families);
-		if (rows.length === 0) return;
-		await this.mintMetricsRepository.upsert(rows, {conflictPaths: ['metric', 'labels', 'date']});
+		this.collecting = true;
+		try {
+			let families: PromFamily[];
+			try {
+				families = await this.scrapeMintMetrics();
+			} catch (error) {
+				if (this.mint_reachable !== false) {
+					this.logger.warn(`Mint metrics endpoint unreachable: ${error.message}`);
+				}
+				this.mint_reachable = false;
+				return;
+			}
+			if (this.mint_reachable === false) this.logger.log('Mint metrics endpoint reachable again, resuming collection');
+			this.mint_reachable = true;
+			const rows = this.buildRows(families);
+			if (rows.length === 0) return;
+			await this.mintMetricsRepository.upsert(rows, {conflictPaths: ['metric', 'labels', 'date']});
+		} finally {
+			this.collecting = false;
+		}
 	}
 
 	/**

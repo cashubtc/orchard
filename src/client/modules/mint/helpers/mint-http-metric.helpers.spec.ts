@@ -16,8 +16,16 @@ const metric = (endpoint: string, status: string, value: number): MintMetric =>
 
 describe('mint-http-metric.helpers', () => {
 	describe('computeHttpErrorRate', () => {
-		it('returns the percent of non-200 responses', () => {
+		it('returns the percent of 4xx/5xx responses', () => {
 			expect(computeHttpErrorRate([metric('/mint', '200', 80), metric('/mint', '500', 20)])).toBe(20);
+		});
+
+		it('treats 1xx/2xx/3xx (incl. websocket 101 upgrades) as success', () => {
+			expect(computeHttpErrorRate([metric('/info', '200', 90), metric('/ws', '101', 129), metric('/keys', '304', 10)])).toBe(0);
+		});
+
+		it('counts client and server errors together', () => {
+			expect(computeHttpErrorRate([metric('/mint', '200', 96), metric('/mint', '404', 3), metric('/mint', '503', 1)])).toBe(4);
 		});
 
 		it('returns null when there were no requests', () => {

@@ -81,6 +81,16 @@
 		width: 100%;
 		height: 280px;
 	}
+
+	// The pie carries its own fill-mode legend below the donut. `contain: size`
+	// keeps the legend's content from inflating the row height — the card keeps
+	// adopting the height its sibling panels set (280px floor) and the legend
+	// scrolls within whatever space remains
+	> orc-chart-pie {
+		height: 100%;
+		min-height: 280px;
+		contain: size;
+	}
 }
 
 .refresh-spinning {

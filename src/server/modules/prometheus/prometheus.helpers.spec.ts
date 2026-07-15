@@ -69,6 +69,12 @@ describe('parsePrometheusText', () => {
 		expect(families[0].samples[0].labels).toEqual({path: 'a"b', note: 'line\nbreak', slash: 'c\\d'});
 	});
 
+	it('decodes an escaped backslash before n as literal backslash-n, not a newline', () => {
+		// wire value is `a\\nb` (escaped backslash then literal n); it must decode to `a\nb`, not `a<newline>b`
+		const families = parsePrometheusText('# TYPE demo gauge\ndemo{path="a\\\\nb"} 1\n');
+		expect(families[0].samples[0].labels.path).toBe('a\\nb');
+	});
+
 	it('skips non-finite values and samples without a TYPE line', () => {
 		const families = parsePrometheusText('orphan_metric 5\n# TYPE demo gauge\ndemo NaN\ndemo +Inf\ndemo 2\n');
 		expect(families).toHaveLength(1);
@@ -107,6 +113,16 @@ describe('canonicalizeLabels', () => {
 	it('returns an empty string for unlabeled samples', () => {
 		expect(canonicalizeLabels({})).toBe('');
 	});
+
+	it('leaves cdk-style label values (no delimiters) byte-identical for stored-data continuity', () => {
+		expect(canonicalizeLabels({endpoint: '/v1/keys/{keyset_id}', status: '200'})).toBe('endpoint=/v1/keys/{keyset_id},status=200');
+	});
+
+	it('escapes commas and equals in values so distinct label sets cannot collide', () => {
+		expect(canonicalizeLabels({a: '1', b: '2'})).toBe('a=1,b=2');
+		expect(canonicalizeLabels({a: '1,b=2'})).toBe('a=1\\,b\\=2');
+		expect(canonicalizeLabels({a: '1', b: '2'})).not.toBe(canonicalizeLabels({a: '1,b=2'}));
+	});
 });
 
 describe('parseCanonicalLabels', () => {
@@ -119,5 +135,13 @@ describe('parseCanonicalLabels', () => {
 
 	it('returns an empty array for the empty string', () => {
 		expect(parseCanonicalLabels('')).toEqual([]);
+	});
+
+	it('round-trips values containing commas and equals', () => {
+		const canonical = canonicalizeLabels({endpoint: '/v1/info', filter: 'a=1,b=2'});
+		expect(parseCanonicalLabels(canonical)).toEqual([
+			{name: 'endpoint', value: '/v1/info'},
+			{name: 'filter', value: 'a=1,b=2'},
+		]);
 	});
 });

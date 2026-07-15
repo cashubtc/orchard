@@ -216,7 +216,11 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 	}
 
 	private filterMetrics(metrics: SystemMetric[]): SystemMetricSample[] {
-		return this.metrics().filter((m) => metrics.includes(m.metric));
+		// Order series by the requested metric order (stable, so each series keeps its date order); otherwise the
+		// chart legend follows the raw name-sorted data and e.g. load_avg_15m sorts before load_avg_1m
+		return this.metrics()
+			.filter((m) => metrics.includes(m.metric))
+			.sort((a, b) => metrics.indexOf(a.metric) - metrics.indexOf(b.metric));
 	}
 
 	/** Most recent sampled value for a single metric family */

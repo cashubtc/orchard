@@ -111,6 +111,7 @@ export class ApiMintMetricsService {
 	/**
 	 * Aggregates a cumulative counter series into per-interval deltas
 	 * A drop in the cumulative value means the mint restarted; the new value is the delta
+	 * Each delta is attributed to the interval containing the earlier sample, where the traffic occurred
 	 */
 	private aggregateCounterSeries(series: MintMetrics[], interval: SystemMetricsInterval, tz: string): OrchardMintMetrics[] {
 		const buckets = new Map<number, number>();
@@ -120,7 +121,7 @@ export class ApiMintMetricsService {
 			const current = series[i].value;
 			if (previous === null || current === null) continue;
 			const delta = current >= previous ? current - previous : current;
-			const bucket_date = getBucketDate(series[i].date, interval, tz);
+			const bucket_date = getBucketDate(series[i - 1].date, interval, tz);
 			buckets.set(bucket_date, (buckets.get(bucket_date) ?? 0) + delta);
 		}
 
@@ -144,7 +145,8 @@ export class ApiMintMetricsService {
 			const reset = current.count < previous.count;
 			const delta_sum = reset ? current.sum : current.sum - previous.sum;
 			const delta_count = reset ? current.count : current.count - previous.count;
-			const bucket_date = getBucketDate(current.date, interval, tz);
+			// Attribute the delta to the interval containing the earlier sample, where the observations occurred
+			const bucket_date = getBucketDate(previous.date, interval, tz);
 			const bucket = buckets.get(bucket_date) ?? {sum: 0, count: 0, le_counts: new Map(), has_buckets: false};
 			bucket.sum += delta_sum;
 			bucket.count += delta_count;
