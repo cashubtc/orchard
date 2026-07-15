@@ -205,9 +205,105 @@ describe('ApiMintMetricsService', () => {
 			expect(out[0]).toMatchObject({p50: null, p95: null, p99: null});
 		});
 
+		it('derives histogram deltas across a reset', async () => {
+			mintMetricsService.getMetrics.mockResolvedValue([
+				row({metric: 'cdk_mint_operation_duration_seconds', type: 'histogram', date: 3600, sum: 10, count: 100}),
+				row({metric: 'cdk_mint_operation_duration_seconds', type: 'histogram', date: 3660, sum: 2, count: 5}),
+			]);
+
+			const out = await apiMintMetricsService.getMetrics('tag', {
+				interval: SystemMetricsInterval.hour,
+				date_start: 0,
+				date_end: 7200,
+			});
+
+			// reset: the smaller current sum/count are taken as the interval delta
+			expect(out).toHaveLength(1);
+			expect(out[0]).toMatchObject({date: 3600, value: 0.4, count: 5});
+		});
+
+		it('tolerates malformed bucket json by returning null percentiles', async () => {
+			mintMetricsService.getMetrics.mockResolvedValue([
+				row({
+					metric: 'cdk_mint_operation_duration_seconds',
+					type: 'histogram',
+					date: 3600,
+					sum: 1,
+					count: 10,
+					buckets: 'not-json{',
+				}),
+				row({metric: 'cdk_mint_operation_duration_seconds', type: 'histogram', date: 3660, sum: 3, count: 14, buckets: '{bad'}),
+			]);
+
+			const out = await apiMintMetricsService.getMetrics('tag', {
+				interval: SystemMetricsInterval.hour,
+				date_start: 0,
+				date_end: 7200,
+			});
+
+			// average duration still resolves; percentiles are null because no buckets parsed
+			expect(out[0]).toMatchObject({value: 0.5, count: 4, p50: null, p95: null, p99: null});
+		});
+
 		it('wraps data source errors in OrchardApiError', async () => {
 			mintMetricsService.getMetrics.mockRejectedValue(new Error('boom'));
 			await expect(apiMintMetricsService.getMetrics('tag', {})).rejects.toBeInstanceOf(OrchardApiError);
+		});
+	});
+
+	describe('histogramQuantile', () => {
+		// exercises the private percentile core directly to cover its guard/clamp branches
+		const quantile = (q: number, buckets: {le: number; count: number}[]): number | null =>
+			(apiMintMetricsService as any).histogramQuantile(q, buckets);
+
+		it('returns null for out-of-range quantiles', () => {
+			const buckets = [
+				{le: 1, count: 5},
+				{le: Infinity, count: 10},
+			];
+			expect(quantile(-0.1, buckets)).toBeNull();
+			expect(quantile(1.1, buckets)).toBeNull();
+		});
+
+		it('returns null for empty buckets', () => {
+			expect(quantile(0.5, [])).toBeNull();
+		});
+
+		it('returns null when the total count is zero', () => {
+			expect(
+				quantile(0.5, [
+					{le: 1, count: 0},
+					{le: Infinity, count: 0},
+				]),
+			).toBeNull();
+		});
+
+		it('clamps to the largest finite le when the rank falls in the +Inf bucket', () => {
+			expect(
+				quantile(0.9, [
+					{le: 1, count: 5},
+					{le: Infinity, count: 10},
+				]),
+			).toBe(1);
+		});
+
+		it('returns the bucket boundary when the first bucket is non-positive', () => {
+			expect(
+				quantile(0.5, [
+					{le: 0, count: 5},
+					{le: Infinity, count: 5},
+				]),
+			).toBe(0);
+		});
+
+		it('linearly interpolates within a finite bucket', () => {
+			// rank 2.5 of total 5 across [0,1] → 0.5
+			expect(
+				quantile(0.5, [
+					{le: 1, count: 5},
+					{le: Infinity, count: 5},
+				]),
+			).toBeCloseTo(0.5, 5);
 		});
 	});
 });

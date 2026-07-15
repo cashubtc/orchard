@@ -39,14 +39,36 @@ const HISTOGRAM_FAMILY: PromFamily = {
 	],
 };
 
+/** Builds a chainable SELECT query builder whose getRawMany resolves the given raw rows */
+const rawBuilder = (rows: unknown[]) => ({
+	select: jest.fn().mockReturnThis(),
+	addSelect: jest.fn().mockReturnThis(),
+	where: jest.fn().mockReturnThis(),
+	groupBy: jest.fn().mockReturnThis(),
+	addGroupBy: jest.fn().mockReturnThis(),
+	getRawMany: jest.fn().mockResolvedValue(rows),
+});
+
 describe('MintMetricsService', () => {
 	let mintMetricsService: MintMetricsService;
-	let repository: {upsert: jest.Mock; find: jest.Mock; delete: jest.Mock};
+	let repository: {
+		upsert: jest.Mock;
+		find: jest.Mock;
+		delete: jest.Mock;
+		createQueryBuilder: jest.Mock;
+		manager: {transaction: jest.Mock};
+	};
 	let prometheusService: jest.Mocked<PrometheusService>;
 	let settingService: jest.Mocked<SettingService>;
 
 	beforeEach(async () => {
-		repository = {upsert: jest.fn(), find: jest.fn(), delete: jest.fn()};
+		repository = {
+			upsert: jest.fn(),
+			find: jest.fn(),
+			delete: jest.fn(),
+			createQueryBuilder: jest.fn(),
+			manager: {transaction: jest.fn()},
+		};
 
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
@@ -168,6 +190,119 @@ describe('MintMetricsService', () => {
 					order: {date: 'ASC'},
 				}),
 			);
+		});
+	});
+
+	describe('cleanupOldMetrics', () => {
+		let tx_manager: {createQueryBuilder: jest.Mock; upsert: jest.Mock};
+		let tx_delete: {delete: jest.Mock; from: jest.Mock; where: jest.Mock; execute: jest.Mock};
+
+		beforeEach(() => {
+			repository.delete.mockResolvedValue({affected: 3});
+			tx_delete = {
+				delete: jest.fn().mockReturnThis(),
+				from: jest.fn().mockReturnThis(),
+				where: jest.fn().mockReturnThis(),
+				execute: jest.fn().mockResolvedValue(undefined),
+			};
+			tx_manager = {createQueryBuilder: jest.fn().mockReturnValue(tx_delete), upsert: jest.fn().mockResolvedValue(undefined)};
+			repository.manager.transaction.mockImplementation(async (cb: (m: typeof tx_manager) => Promise<void>) => cb(tx_manager));
+		});
+
+		it('purges records past the retention window before downsampling', async () => {
+			repository.createQueryBuilder.mockReturnValueOnce(rawBuilder([]));
+			await mintMetricsService.cleanupOldMetrics();
+			expect(repository.delete).toHaveBeenCalledTimes(1);
+		});
+
+		it('skips the downsample transaction when no minute rows remain to roll up', async () => {
+			repository.createQueryBuilder.mockReturnValueOnce(rawBuilder([]));
+			await mintMetricsService.cleanupOldMetrics();
+			// no hourly buckets: no blob lookup, no transaction
+			expect(repository.createQueryBuilder).toHaveBeenCalledTimes(1);
+			expect(repository.manager.transaction).not.toHaveBeenCalled();
+			expect(tx_manager.upsert).not.toHaveBeenCalled();
+		});
+
+		it('rolls minute rows into hourly buckets inside a transaction', async () => {
+			// SQLite returns aggregate columns as strings; verify they are coerced to numbers
+			const hourly_buckets = [
+				{
+					metric: 'process_memory_bytes',
+					labels: '',
+					type: 'gauge',
+					hour_bucket: '3600',
+					avg_value: '20',
+					max_value: '30',
+					max_sum: null,
+					max_count: null,
+					row_count: '2',
+				},
+				{
+					metric: 'cdk_mint_operations_total',
+					labels: 'operation=swap',
+					type: 'counter',
+					hour_bucket: '3600',
+					avg_value: '15',
+					max_value: '25',
+					max_sum: null,
+					max_count: null,
+					row_count: '3',
+				},
+				{
+					metric: 'cdk_mint_operation_duration_seconds',
+					labels: 'operation=swap',
+					type: 'histogram',
+					hour_bucket: '7200',
+					avg_value: '0.4',
+					max_value: '0.6',
+					max_sum: '3',
+					max_count: '14',
+					row_count: '4',
+				},
+			];
+			// two snapshots for the same histogram hour: the higher-count row is the representative one
+			const bucket_rows = [
+				{
+					metric: 'cdk_mint_operation_duration_seconds',
+					labels: 'operation=swap',
+					hour_bucket: '7200',
+					count: '10',
+					buckets: '{"0.005":5}',
+				},
+				{
+					metric: 'cdk_mint_operation_duration_seconds',
+					labels: 'operation=swap',
+					hour_bucket: '7200',
+					count: '14',
+					buckets: '{"0.005":8}',
+				},
+			];
+			repository.createQueryBuilder.mockReturnValueOnce(rawBuilder(hourly_buckets)).mockReturnValueOnce(rawBuilder(bucket_rows));
+
+			await mintMetricsService.cleanupOldMetrics();
+
+			// old minute rows are deleted then rolled-up rows upserted, atomically
+			expect(repository.manager.transaction).toHaveBeenCalledTimes(1);
+			expect(tx_delete.execute).toHaveBeenCalledTimes(1);
+			expect(tx_manager.upsert).toHaveBeenCalledTimes(1);
+
+			const [entity, rows, options] = tx_manager.upsert.mock.calls[0];
+			expect(entity).toBe(MintMetrics);
+			expect(options).toEqual({conflictPaths: ['metric', 'labels', 'date']});
+			expect(rows).toHaveLength(3);
+
+			// gauge keeps the hourly average
+			const gauge_row = rows.find((r: MintMetrics) => r.type === 'gauge');
+			expect(gauge_row).toMatchObject({metric: 'process_memory_bytes', date: 3600, value: 20, sum: null, count: null, buckets: null});
+
+			// counter keeps the hourly max to preserve cumulative semantics
+			const counter_row = rows.find((r: MintMetrics) => r.type === 'counter');
+			expect(counter_row).toMatchObject({date: 3600, value: 25, buckets: null});
+
+			// histogram keeps the max sum/count and the representative (max-count) bucket blob
+			const histogram_row = rows.find((r: MintMetrics) => r.type === 'histogram');
+			expect(histogram_row).toMatchObject({date: 7200, value: 0.6, sum: 3, count: 14, buckets: '{"0.005":8}'});
 		});
 	});
 });

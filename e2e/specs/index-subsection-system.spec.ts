@@ -17,7 +17,7 @@
  *   - host info tile row renders five populated tiles (live `system_info`,
  *     independent of the `system.metrics` setting — no readiness gate)
  *   - `system_info` direct probe returns sane host facts
- *   - uptime block shows formatUptime-shaped system + process values
+ *   - uptime block shows formatUptime-shaped system + orchard values
  *   - Interval Hour → Minute refires `SystemMetrics` with the new interval
  *   - the refresh button refires `SystemMetrics`
  *
@@ -106,18 +106,20 @@ test.describe('index system — /system', {tag: '@canary'}, () => {
 		expect(info['heap_limit_mb'] as number).toBeGreaterThan(0);
 	});
 
-	test('uptime block shows formatted system and process uptimes', async ({page}) => {
+	test('uptime block shows formatted system and orchard uptimes', async ({page}) => {
 		await openSystemPage(page);
 		await requireReady(page, systemMetricsHasRows);
 		const values = page.locator('.index-system-uptime-value');
 		const captions = page.locator('.index-system-uptime-caption');
 		await expect(values).toHaveCount(2);
 		await expect(captions.nth(0)).toHaveText('system uptime');
-		await expect(captions.nth(1)).toHaveText('process uptime');
-		// formatUptime emits "Nd Nh Nm" with leading units dropped; the em
-		// dash is the no-data placeholder — a real sample must never show it.
+		// The process-uptime stat is captioned "orchard uptime" in the UI.
+		await expect(captions.nth(1)).toHaveText('orchard uptime');
+		// formatUptime joins the non-zero d/h/m parts (e.g. "13d 8h", "1m"),
+		// dropping any zero unit; "—" is the no-data placeholder a real
+		// sample must never show.
 		for (const value of await values.all()) {
-			await expect(value).toHaveText(/^(\d+d )?(\d+h )?\d+m$/);
+			await expect(value).toHaveText(/^\d+[dhm]( \d+[dhm])*$/);
 		}
 	});
 

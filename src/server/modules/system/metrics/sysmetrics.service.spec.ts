@@ -8,7 +8,16 @@ import {SystemMetrics} from './sysmetrics.entity';
 
 describe('SystemMetricsService', () => {
 	let service: SystemMetricsService;
-	let repository: Record<string, jest.Mock>;
+	let repository: {
+		find: jest.Mock;
+		upsert: jest.Mock;
+		delete: jest.Mock;
+		createQueryBuilder: jest.Mock;
+		manager: {transaction: jest.Mock};
+	};
+	let select_qb: {getRawMany: jest.Mock};
+	let tx_delete_qb: {delete: jest.Mock; from: jest.Mock; where: jest.Mock; execute: jest.Mock};
+	let tx_manager: {createQueryBuilder: jest.Mock; upsert: jest.Mock};
 
 	beforeEach(async () => {
 		const mock_delete_qb = {
@@ -24,6 +33,15 @@ describe('SystemMetricsService', () => {
 			addGroupBy: jest.fn().mockReturnThis(),
 			getRawMany: jest.fn().mockResolvedValue([]),
 		};
+		select_qb = mock_select_qb;
+
+		tx_delete_qb = {
+			delete: jest.fn().mockReturnThis(),
+			from: jest.fn().mockReturnThis(),
+			where: jest.fn().mockReturnThis(),
+			execute: jest.fn().mockResolvedValue(undefined),
+		};
+		tx_manager = {createQueryBuilder: jest.fn().mockReturnValue(tx_delete_qb), upsert: jest.fn().mockResolvedValue(undefined)};
 
 		repository = {
 			find: jest.fn().mockResolvedValue([]),
@@ -32,6 +50,7 @@ describe('SystemMetricsService', () => {
 			createQueryBuilder: jest.fn().mockImplementation((alias?: string) => {
 				return alias ? mock_select_qb : mock_delete_qb;
 			}),
+			manager: {transaction: jest.fn().mockImplementation(async (cb: (m: typeof tx_manager) => Promise<void>) => cb(tx_manager))},
 		};
 
 		const module: TestingModule = await Test.createTestingModule({
@@ -129,6 +148,36 @@ describe('SystemMetricsService', () => {
 			expect(repository.delete).toHaveBeenCalledTimes(1);
 			// Downsample uses createQueryBuilder with alias for SQL GROUP BY
 			expect(repository.createQueryBuilder).toHaveBeenCalledWith('m');
+		});
+
+		it('should skip the downsample transaction when there are no hourly buckets', async () => {
+			select_qb.getRawMany.mockResolvedValue([]);
+			await service.cleanupOldMetrics();
+			expect(repository.manager.transaction).not.toHaveBeenCalled();
+			expect(tx_manager.upsert).not.toHaveBeenCalled();
+		});
+
+		it('should average minute rows into hourly rows inside a transaction', async () => {
+			// SQLite returns aggregate columns as strings; verify coercion and round2
+			select_qb.getRawMany.mockResolvedValue([
+				{metric: 'cpu_percent', hour_bucket: '3600', avg_value: '12.345', row_count: '4'},
+				{metric: 'memory_percent', hour_bucket: '7200', avg_value: '50', row_count: '6'},
+			]);
+
+			await service.cleanupOldMetrics();
+
+			// old minute rows deleted then hourly rows upserted, atomically
+			expect(repository.manager.transaction).toHaveBeenCalledTimes(1);
+			expect(tx_delete_qb.execute).toHaveBeenCalledTimes(1);
+			expect(tx_manager.upsert).toHaveBeenCalledTimes(1);
+
+			const [entity, rows, options] = tx_manager.upsert.mock.calls[0];
+			expect(entity).toBe(SystemMetrics);
+			expect(options).toEqual({conflictPaths: ['metric', 'date']});
+			expect(rows).toEqual([
+				expect.objectContaining({metric: 'cpu_percent', date: 3600, value: 12.35}),
+				expect.objectContaining({metric: 'memory_percent', date: 7200, value: 50}),
+			]);
 		});
 	});
 });
