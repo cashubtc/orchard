@@ -1,8 +1,10 @@
 /* Core Dependencies */
 import {ChangeDetectionStrategy, Component, computed, inject, input, signal} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 /* Vendor Dependencies */
 import {BaseChartDirective} from 'ng2-charts';
 import {ChartConfiguration} from 'chart.js';
+import {Subject, debounceTime} from 'rxjs';
 /* Application Dependencies */
 import {ChartService} from '@client/modules/chart/services/chart/chart.service';
 
@@ -27,6 +29,9 @@ interface ChartLegendGroup {
 
 // Series labels join their parts with this separator (e.g. `get_settings · success · p50`)
 const LEGEND_SEPARATOR = ' · ';
+
+// Keystrokes filter the legend instantly; the chart redraw waits for typing to settle
+const CHART_SYNC_DEBOUNCE_MS = 200;
 
 @Component({
 	selector: 'orc-chart-legend',
@@ -76,8 +81,27 @@ export class ChartLegendComponent {
 
 	private readonly hidden = signal<Set<number>>(new Set());
 	private readonly query = signal<string>('');
+	// Series indices surviving the active query, or null when no query is narrowing the legend
+	private readonly matched = computed<Set<number> | null>(() => {
+		if (!this.query()) return null;
+		return new Set(this.filtered_groups().flatMap((group) => group.entries.map((entry) => entry.index)));
+	});
+	// The series the chart should plot: the query matches, minus the ones explicitly toggled off
+	private readonly visible = computed<Set<number>>(() => {
+		const hidden = this.hidden();
+		const matched = this.matched();
+		const indices = this.entries()
+			.map((entry) => entry.index)
+			.filter((index) => !hidden.has(index) && (matched === null || matched.has(index)));
+		return new Set(indices);
+	});
 	// Original per-dataset styles captured on hover start, restored on hover end
 	private original_styles = new Map<number, {border: unknown; background: unknown}>();
+	private readonly query_input$ = new Subject<void>();
+
+	constructor() {
+		this.query_input$.pipe(debounceTime(CHART_SYNC_DEBOUNCE_MS), takeUntilDestroyed()).subscribe(() => this.syncVisibility());
+	}
 
 	/** Whether the given series index is currently toggled off */
 	public isHidden(index: number): boolean {
@@ -108,40 +132,35 @@ export class ChartLegendComponent {
 		Actions Up
 	******************************************************** */
 
-	/** Narrows the visible legend entries to those matching the query */
+	/** Narrows the legend entries to those matching the query, taking the plotted series with them */
 	public onQuery(value: string): void {
 		this.query.set(value.trim().toLowerCase());
+		this.query_input$.next();
 	}
 
 	/** Toggles a series' visibility on the chart and dims its legend entry */
 	public onToggle(entry: ChartLegendEntry): void {
-		const chart = this.chart()?.chart;
-		if (!chart) return;
+		if (!this.chart()?.chart) return;
 		this.isolated.set(null);
 		const hidden = new Set(this.hidden());
-		const visible = hidden.has(entry.index);
-		this.setEntryVisibility(chart, entry.index, visible);
-		if (visible) hidden.delete(entry.index);
+		if (hidden.has(entry.index)) hidden.delete(entry.index);
 		else hidden.add(entry.index);
 		this.hidden.set(hidden);
-		chart.update();
+		this.syncVisibility();
 	}
 
 	/** Toggles visibility of every series in a group, driving them all to the same state */
 	public onToggleGroup(group: ChartLegendGroup): void {
-		const chart = this.chart()?.chart;
-		if (!chart) return;
+		if (!this.chart()?.chart) return;
 		this.isolated.set(null);
 		const hide = !this.isGroupHidden(group);
 		const hidden = new Set(this.hidden());
 		for (const entry of group.entries) {
-			if (hidden.has(entry.index) === hide) continue;
-			this.setEntryVisibility(chart, entry.index, !hide);
 			if (hide) hidden.add(entry.index);
 			else hidden.delete(entry.index);
 		}
 		this.hidden.set(hidden);
-		chart.update();
+		this.syncVisibility();
 	}
 
 	/** Reveals every series */
@@ -158,19 +177,16 @@ export class ChartLegendComponent {
 
 	/** Shows only the series of one variant (e.g. p95) across every group; re-clicking clears the isolation */
 	public onIsolate(leaf: string): void {
-		const chart = this.chart()?.chart;
-		if (!chart) return;
+		if (!this.chart()?.chart) return;
 		const next = this.isolated() === leaf ? null : leaf;
 		this.isolated.set(next);
 		const isolatable = new Set(this.leaves());
 		const hidden = new Set<number>();
 		for (const entry of this.entries()) {
-			const hide = next !== null && isolatable.has(entry.leaf) && entry.leaf !== next;
-			this.setEntryVisibility(chart, entry.index, !hide);
-			if (hide) hidden.add(entry.index);
+			if (next !== null && isolatable.has(entry.leaf) && entry.leaf !== next) hidden.add(entry.index);
 		}
 		this.hidden.set(hidden);
-		chart.update();
+		this.syncVisibility();
 	}
 
 	/** Highlights the given series on the chart, dimming the rest */
@@ -227,23 +243,27 @@ export class ChartLegendComponent {
 		Chart
 	******************************************************** */
 
-	/** Drives every series to the given visibility and syncs the hidden set */
+	/** Drives the hidden set to all-or-nothing; any active query still masks the result */
 	private setAllVisibility(visible: boolean): void {
+		if (!this.chart()?.chart) return;
+		this.hidden.set(visible ? new Set<number>() : new Set(this.entries().map((entry) => entry.index)));
+		this.syncVisibility();
+	}
+
+	/** Drives every series on the chart to its effective visibility */
+	private syncVisibility(): void {
 		const chart = this.chart()?.chart;
 		if (!chart) return;
-		const hidden = new Set<number>();
-		for (const entry of this.entries()) {
-			this.setEntryVisibility(chart, entry.index, visible);
-			if (!visible) hidden.add(entry.index);
-		}
-		this.hidden.set(hidden);
+		const visible = this.visible();
+		for (const entry of this.entries()) this.setEntryVisibility(chart, entry.index, visible.has(entry.index));
 		chart.update();
 	}
 
 	/** Sets one series' visibility, honoring datapoint mode's toggle-only API */
 	private setEntryVisibility(chart: NonNullable<BaseChartDirective['chart']>, index: number, visible: boolean): void {
 		if (this.datapoint_mode()) {
-			if (this.hidden().has(index) === visible) chart.toggleDataVisibility(index);
+			// The chart holds the truth here: `hidden` tracks toggles only, and the query masks visibility on top of it
+			if (chart.getDataVisibility(index) !== visible) chart.toggleDataVisibility(index);
 		} else {
 			chart.setDatasetVisibility(index, visible);
 		}

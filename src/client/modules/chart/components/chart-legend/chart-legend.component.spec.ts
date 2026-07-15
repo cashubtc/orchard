@@ -1,20 +1,36 @@
 /* Core Dependencies */
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {ComponentFixture, TestBed, fakeAsync, tick} from '@angular/core/testing';
 /* Native Dependencies */
 import {OrcChartModule} from '@client/modules/chart/chart.module';
 import {provideChartConfig} from '@client/modules/chart/chart.providers';
 /* Local Dependencies */
 import {ChartLegendComponent} from './chart-legend.component';
 
+// Comfortably past the legend's internal chart-sync debounce
+const SETTLE_MS = 250;
+
 /** Builds a minimal ng2-charts stand-in exposing the Chart.js instance the legend drives */
 function mockChart(datasets: {borderColor?: unknown; backgroundColor?: unknown}[]): any {
+	// Datapoint visibility is toggle-only in Chart.js, so the mock has to carry the state
+	const hidden = new Set<number>();
 	const chart = {
 		data: {datasets},
 		setDatasetVisibility: jasmine.createSpy('setDatasetVisibility'),
-		toggleDataVisibility: jasmine.createSpy('toggleDataVisibility'),
+		toggleDataVisibility: jasmine.createSpy('toggleDataVisibility').and.callFake((index: number) => {
+			if (hidden.has(index)) hidden.delete(index);
+			else hidden.add(index);
+		}),
+		getDataVisibility: (index: number) => !hidden.has(index),
 		update: jasmine.createSpy('update'),
 	};
 	return {chart};
+}
+
+/** The visibility last driven onto each dataset index */
+function visibilityState(chart: any): boolean[] {
+	const state: boolean[] = [];
+	for (const [index, visible] of chart.chart.setDatasetVisibility.calls.allArgs()) state[index] = visible;
+	return state;
 }
 
 const PERCENTILE_DATASETS = [
@@ -90,13 +106,77 @@ describe('ChartLegendComponent', () => {
 		expect(component.leaves()).toEqual(['p50', 'p95', 'p99']);
 	});
 
-	it('filters legend groups by query without touching chart visibility', () => {
+	it('filters legend groups by query', () => {
 		fixture.componentRef.setInput('chart_data', {datasets: PERCENTILE_DATASETS});
 		component.onQuery('MELT');
 		expect(component.filtered_groups().map((group) => group.key)).toEqual(['melt']);
 		component.onQuery('');
 		expect(component.filtered_groups().length).toBe(2);
 	});
+
+	it('plots only the matching series once the query settles', fakeAsync(() => {
+		const datasets = PERCENTILE_DATASETS.map((dataset) => ({...dataset}));
+		fixture.componentRef.setInput('chart_data', {datasets});
+		const chart = mockChart(datasets);
+		fixture.componentRef.setInput('chart', chart);
+
+		component.onQuery('melt');
+		tick(SETTLE_MS);
+		// mint (0-2) drops off the chart, melt (3-5) keeps plotting
+		expect(visibilityState(chart)).toEqual([false, false, false, true, true, true]);
+	}));
+
+	it('defers the chart update until typing settles', fakeAsync(() => {
+		const datasets = PERCENTILE_DATASETS.map((dataset) => ({...dataset}));
+		fixture.componentRef.setInput('chart_data', {datasets});
+		const chart = mockChart(datasets);
+		fixture.componentRef.setInput('chart', chart);
+
+		component.onQuery('m');
+		component.onQuery('me');
+		component.onQuery('mel');
+		// The legend narrows on every keystroke, but the canvas must not redraw three times
+		expect(component.filtered_groups().map((group) => group.key)).toEqual(['melt']);
+		expect(chart.chart.update).not.toHaveBeenCalled();
+
+		tick(SETTLE_MS);
+		expect(chart.chart.update).toHaveBeenCalledTimes(1);
+	}));
+
+	it('restores the pre-search visibility when the query is cleared', fakeAsync(() => {
+		const datasets = PERCENTILE_DATASETS.map((dataset) => ({...dataset}));
+		fixture.componentRef.setInput('chart_data', {datasets});
+		const chart = mockChart(datasets);
+		fixture.componentRef.setInput('chart', chart);
+
+		// Hiding melt · p50 by hand must survive a search that never displayed it
+		component.onToggle(component.entries()[3]);
+		component.onQuery('mint');
+		tick(SETTLE_MS);
+		component.onQuery('');
+		tick(SETTLE_MS);
+
+		expect(visibilityState(chart)).toEqual([true, true, true, false, true, true]);
+		expect(component.isHidden(3)).toBe(true);
+	}));
+
+	it('drops non-matching slices from the pie and brings them back on clear', fakeAsync(() => {
+		const datasets = [{backgroundColor: ['#aaaaaa', '#bbbbbb']}];
+		fixture.componentRef.setInput('datapoint_mode', true);
+		fixture.componentRef.setInput('chart_data', {labels: ['mint', 'melt'], datasets});
+		const chart = mockChart(datasets);
+		fixture.componentRef.setInput('chart', chart);
+
+		component.onQuery('melt');
+		tick(SETTLE_MS);
+		// Toggle-only API: only the non-matching slice flips, and only once
+		expect(chart.chart.toggleDataVisibility.calls.allArgs()).toEqual([[0]]);
+		expect(chart.chart.getDataVisibility(0)).toBe(false);
+
+		component.onQuery('');
+		tick(SETTLE_MS);
+		expect(chart.chart.getDataVisibility(0)).toBe(true);
+	}));
 
 	it('keeps ungrouped series as singleton groups carrying their full label', () => {
 		fixture.componentRef.setInput('chart_data', {
