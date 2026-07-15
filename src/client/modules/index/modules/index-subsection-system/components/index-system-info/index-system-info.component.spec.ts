@@ -1,6 +1,7 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 /* Native Dependencies */
+import {OrcIndexSubsectionSystemModule} from '@client/modules/index/modules/index-subsection-system/index-subsection-system.module';
 import {SystemInfo} from '@client/modules/index/classes/system-info.class';
 /* Local Dependencies */
 import {IndexSystemInfoComponent} from './index-system-info.component';
@@ -24,7 +25,7 @@ describe('IndexSystemInfoComponent', () => {
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			declarations: [IndexSystemInfoComponent],
+			imports: [OrcIndexSubsectionSystemModule],
 		}).compileComponents();
 
 		fixture = TestBed.createComponent(IndexSystemInfoComponent);
