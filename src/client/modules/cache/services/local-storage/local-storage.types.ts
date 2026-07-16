@@ -3,7 +3,7 @@ import {ChartType} from '@client/modules/mint/enums/chart-type.enum';
 import {MintDataType} from '@client/modules/mint/enums/data-type.enum';
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 /* Shared Dependencies */
-import {MintUnit, AnalyticsInterval} from '@shared/generated.types';
+import {MintUnit, AnalyticsInterval, SystemMetricsInterval} from '@shared/generated.types';
 
 export type Timezone = {
 	tz: string | null;
@@ -63,6 +63,8 @@ export type MintConfigSettings = {
 	tertiary_nav: string[] | null;
 };
 
+export type MintSystemSettings = SystemMetricsSettings;
+
 export type MintKeysetsSettings = {
 	date_start: number | null;
 	date_preset: DateRangePreset | null;
@@ -90,6 +92,12 @@ export type EventLogSettings = {
 	date_start: number | null;
 	date_preset: DateRangePreset | null;
 	page_size: number | null;
+};
+
+export type SystemMetricsSettings = {
+	date_start: number | null;
+	date_preset: DateRangePreset | null;
+	interval: SystemMetricsInterval | null;
 };
 
 export type AiFavorites = {

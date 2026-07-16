@@ -48,6 +48,19 @@ import {AiAssistant} from '@shared/generated.types';
 							assistant: AiAssistant.IndexCrew,
 						},
 					},
+					{
+						path: 'system',
+						loadChildren: () =>
+							import('@client/modules/index/modules/index-subsection-system/index-subsection-system.module').then(
+								(m) => m.OrcIndexSubsectionSystemModule,
+							),
+						title: 'Orchard | System',
+						data: {
+							section: 'index',
+							sub_section: 'system',
+							assistant: AiAssistant.System,
+						},
+					},
 				],
 			},
 		]),

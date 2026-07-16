@@ -29,6 +29,7 @@ import {
 	EventLogDetailStatus,
 } from '@server/modules/event/event.enums';
 import {SystemMetric, SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
+import {MintMetricType} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
 
 registerEnumType(MintUnit, {
 	name: 'MintUnit',
@@ -230,6 +231,7 @@ registerEnumType(AiAssistant, {
 		MINT_KEYSET_ROTATION: {description: 'Keyset rotation assistant'},
 		MINT_DATABASE: {description: 'Mint database management assistant'},
 		MINT_BACKUP: {description: 'Mint backup management assistant'},
+		SYSTEM: {description: 'System metrics assistant'},
 		EVENT_LOG: {description: 'Event log assistant'},
 		SETTINGS_AGENT: {description: 'Agent settings configuration assistant'},
 	},
@@ -264,6 +266,7 @@ registerEnumType(SettingKey, {
 	description: 'Application setting configuration keys',
 	valuesMap: {
 		BITCOIN_ORACLE: {description: 'Bitcoin price oracle toggle'},
+		MINT_METRICS_API: {description: 'Mint prometheus exporter base url'},
 		AI_ENABLED: {description: 'AI features toggle'},
 		AI_VENDOR: {description: 'AI vendor selection'},
 		AI_OLLAMA_API: {description: 'Ollama API endpoint'},
@@ -364,12 +367,15 @@ registerEnumType(SystemMetric, {
 	valuesMap: {
 		cpu_percent: {description: 'CPU usage percentage'},
 		memory_percent: {description: 'Memory usage percentage'},
+		memory_rss_mb: {description: 'Process resident set size in MB'},
 		disk_percent: {description: 'Disk usage percentage'},
 		load_avg_1m: {description: '1-minute load average'},
 		load_avg_5m: {description: '5-minute load average'},
 		load_avg_15m: {description: '15-minute load average'},
 		heap_used_mb: {description: 'Node.js heap used in MB'},
 		heap_total_mb: {description: 'Node.js total heap in MB'},
+		memory_external_mb: {description: 'Node.js external (off-heap) memory in MB'},
+		process_cpu_percent: {description: 'Orchard process CPU usage as a percentage of total machine capacity'},
 		uptime_system: {description: 'System uptime in seconds'},
 		uptime_process: {description: 'Process uptime in seconds'},
 	},
@@ -381,5 +387,14 @@ registerEnumType(SystemMetricsInterval, {
 		minute: {description: 'Per-minute collection'},
 		hour: {description: 'Per-hour collection'},
 		day: {description: 'Per-day collection'},
+	},
+});
+registerEnumType(MintMetricType, {
+	name: 'MintMetricType',
+	description: 'Type of a mint prometheus metric',
+	valuesMap: {
+		gauge: {description: 'Point-in-time value'},
+		counter: {description: 'Monotonic cumulative value'},
+		histogram: {description: 'Distribution of observed values'},
 	},
 });

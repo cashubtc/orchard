@@ -12,6 +12,7 @@ import {
 	AllMintDatabaseSettings,
 	AllMintKeysetsSettings,
 	AllMintConfigSettings,
+	AllSystemMetricsSettings,
 	AllSettingsDeviceSettings,
 	AllSettingsAppSettings,
 	AllEventLogSettings,
@@ -34,9 +35,15 @@ export class SettingDeviceService {
 		date_end: null,
 		page: null,
 	};
+	public mint_server_short_settings: Record<string, number | null> = {
+		date_end: null,
+	};
 	public event_log_short_settings: Record<string, number | null> = {
 		date_end: null,
 		page: null,
+	};
+	public system_metrics_short_settings: Record<string, number | null> = {
+		date_end: null,
 	};
 
 	/* In-memory cache for frequently accessed settings */
@@ -200,6 +207,22 @@ export class SettingDeviceService {
 		};
 	}
 
+	/* Page: Mint System */
+	public getMintSystemSettings(): AllSystemMetricsSettings {
+		const long_term_settings = this.localStorageService.getMintSystemSettings();
+		return {
+			...long_term_settings,
+			...this.mint_server_short_settings,
+		} as AllSystemMetricsSettings;
+	}
+	public setMintSystemSettings(settings: AllSystemMetricsSettings): void {
+		const {date_end, ...long_settings} = settings;
+		this.localStorageService.setMintSystemSettings(long_settings);
+		this.mint_server_short_settings = {
+			date_end: date_end,
+		};
+	}
+
 	/* Page: Settings App */
 	public getSettingsAppSettings(): AllSettingsAppSettings {
 		return this.localStorageService.getSettingsAppSettings();
@@ -230,6 +253,22 @@ export class SettingDeviceService {
 		this.event_log_short_settings = {
 			date_end: date_end,
 			page: page,
+		};
+	}
+
+	/* Page: System Metrics */
+	public getSystemMetricsSettings(): AllSystemMetricsSettings {
+		const long_term_settings = this.localStorageService.getSystemMetricsSettings();
+		return {
+			...long_term_settings,
+			...this.system_metrics_short_settings,
+		} as AllSystemMetricsSettings;
+	}
+	public setSystemMetricsSettings(settings: AllSystemMetricsSettings): void {
+		const {date_end, ...long_settings} = settings;
+		this.localStorageService.setSystemMetricsSettings(long_settings);
+		this.system_metrics_short_settings = {
+			date_end: date_end,
 		};
 	}
 }

@@ -93,9 +93,19 @@ async function paginatorTotal(page: Page): Promise<number> {
 /** Wait for the page to have loaded its current data type. The neutral
  *  `table` placeholder icon renders while `loading()` is true or the source
  *  is empty-null; the paginator label reads real totals once the first
- *  response lands. */
+ *  response lands.
+ *
+ *  The paginator is always mounted with `[length]="count"`, and `count`
+ *  sits at 0 until the data query resolves — so its range label transiently
+ *  reads "0 of 0" (which `/of \d+/` matches) for the whole in-flight window.
+ *  A heavy query (Swaps joins+groups `completed_operations`) widens that
+ *  window enough that a bare label wait reliably reads the transient zero.
+ *  Gate on the loaded table first: `<table.orc-feature-table>` only renders
+ *  once `loading_dynamic_data` flips false, for both empty and non-empty
+ *  windows, so the paginator total is real by the time we read it. */
 async function settle(page: Page): Promise<void> {
 	await expect(page.locator('orc-mint-subsection-database-control')).toBeVisible();
+	await expect(page.locator('orc-mint-subsection-database-table table.orc-feature-table')).toBeVisible({timeout: 20_000});
 	await expect(page.locator('.mat-mdc-paginator-range-label')).toHaveText(/of\s+\d+/, {timeout: 20_000});
 }
 

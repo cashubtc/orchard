@@ -105,6 +105,12 @@ const mintQuoteTtlsResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, st
 	);
 };
 
+// Soft resolver: keep the metrics page usable when /v1/info fails instead of redirecting to error
+const mintInfoOptionalResolver: ResolveFn<any> = () => {
+	const mintService = inject(MintService);
+	return mintService.loadMintInfo().pipe(catchError(() => of(null)));
+};
+
 @NgModule({
 	declarations: [MintSectionComponent],
 	imports: [
@@ -205,6 +211,23 @@ const mintQuoteTtlsResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, st
 							section: 'mint',
 							sub_section: 'database',
 							assistant: AiAssistant.MintDatabase,
+						},
+					},
+					{
+						path: 'system',
+						loadChildren: () =>
+							import('@client/modules/mint/modules/mint-subsection-system/mint-subsection-system.module').then(
+								(m) => m.OrcMintSubsectionSystemModule,
+							),
+						title: 'Orchard | Mint System',
+						resolve: {
+							mint_info: mintInfoOptionalResolver,
+						},
+						canActivate: [enabledGuard],
+						data: {
+							section: 'mint',
+							sub_section: 'system',
+							assistant: AiAssistant.System,
 						},
 					},
 					{

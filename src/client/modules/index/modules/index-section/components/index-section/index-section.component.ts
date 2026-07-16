@@ -48,7 +48,7 @@ export class IndexSectionComponent implements OnInit, OnDestroy {
 		return this.router.events.subscribe((event) => {
 			if (event instanceof NavigationStart) {
 				const segments = event.url.split('/').filter(Boolean);
-				if (segments[0] === undefined || segments[0] === 'crew') this.overlayed.set(true);
+				if (segments[0] === undefined || segments[0] === 'crew' || segments[0] === 'system') this.overlayed.set(true);
 			}
 			if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) {
 				setTimeout(() => {
@@ -61,7 +61,7 @@ export class IndexSectionComponent implements OnInit, OnDestroy {
 	private getSubSection(event: Event): string {
 		if (event instanceof NavigationStart) {
 			const segments = event.url.split('/').filter(Boolean);
-			if (segments[0] !== undefined && segments[0] !== 'crew') return this.active_sub_section();
+			if (segments[0] !== undefined && segments[0] !== 'crew' && segments[0] !== 'system') return this.active_sub_section();
 			return segments[0] || 'home';
 		}
 

@@ -1,0 +1,103 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+.index-system-container {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-2;
+	@extend %p-l-1;
+	@extend %p-r-1;
+	@extend %p-b-1;
+	container-type: inline-size;
+}
+
+.index-system-control-panel {
+	@extend %orc-surface-bg;
+	@extend %sticky;
+	@extend %top-0;
+	@extend %z-index-2;
+}
+
+.index-system-charts {
+	@extend %flex-gap-1;
+	grid-template-columns: repeat(12, 1fr);
+}
+
+.index-system-charts > .col-3 {
+	grid-column: span 3;
+}
+
+.index-system-charts > .col-6 {
+	grid-column: span 6;
+}
+
+.index-system-charts > .col-12 {
+	grid-column: span 12;
+}
+
+// Tablet: collapse to a 6-column grid (halves stay half, wide panels become full)
+@container (max-width: 60rem) {
+	.index-system-charts {
+		grid-template-columns: repeat(6, 1fr);
+	}
+
+	.index-system-charts > .col-6,
+	.index-system-charts > .col-12 {
+		grid-column: span 6;
+	}
+}
+
+// Mobile: single column
+@container (max-width: 36rem) {
+	.index-system-charts {
+		grid-template-columns: repeat(1, 1fr);
+	}
+
+	.index-system-charts > [class*='col-'] {
+		grid-column: 1 / -1;
+	}
+}
+
+// Inline uptime stats, right-justified on the System info header row
+.index-system-uptime {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-1;
+	white-space: nowrap;
+}
+
+.index-system-uptime-stat {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+}
+
+.index-system-uptime-value {
+	@extend %font-size-s;
+	@extend %font-weight-semi-bold;
+}
+
+.index-system-uptime-caption {
+	@extend %font-size-xs;
+	@extend %orc-outline-color;
+}
+
+.index-system-uptime-divider {
+	@extend %border-left;
+	@extend %border-solid;
+	@extend %orc-outline-variant-border;
+	@extend %h-1-5;
+}
+
+.refresh-spinning {
+	animation: refresh-spin 1s linear infinite;
+}
+
+@keyframes refresh-spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}

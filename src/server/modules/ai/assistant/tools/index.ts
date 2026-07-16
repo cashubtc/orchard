@@ -9,6 +9,7 @@ export {
 	UpdateCrewUserActiveTool,
 } from './crew.tools';
 export {UpdateMintAnalyticsUnitsTool, UpdateMintAnalyticsIntervalTool, UpdateMintAnalyticsTypeTool} from './mint-analytics.tools';
+export {UpdateMetricsIntervalTool} from './metrics.tools';
 export {
 	UpdateMintNameTool,
 	UpdateMintDescriptionTool,

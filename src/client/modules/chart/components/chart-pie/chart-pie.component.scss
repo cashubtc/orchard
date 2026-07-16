@@ -1,0 +1,17 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+.chart-pie {
+	@extend %flex;
+	@extend %flex-column;
+	width: 100%;
+	height: 100%;
+}
+
+// Canvas holds the standard 280px chart height (shrinking in short hosts);
+// the fill-mode legend below takes whatever height remains
+.chart-pie-canvas {
+	@extend %relative;
+	flex: 0 1 280px;
+	min-height: 8rem;
+}

@@ -1,0 +1,107 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+.mint-system-container {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-2;
+	@extend %p-l-1;
+	@extend %p-r-1;
+	@extend %p-b-1;
+	container-type: inline-size;
+}
+
+.mint-system-control-panel {
+	@extend %orc-surface-bg;
+	@extend %sticky;
+	@extend %top-0;
+	@extend %z-index-2;
+}
+
+.mint-system-charts {
+	@extend %flex-gap-1;
+	grid-template-columns: repeat(12, 1fr);
+}
+
+.mint-system-charts > .col-3 {
+	grid-column: span 3;
+}
+
+.mint-system-charts > .col-6 {
+	grid-column: span 6;
+}
+
+.mint-system-charts > .col-12 {
+	grid-column: span 12;
+}
+
+// Tablet: collapse to a 6-column grid (halves stay half, wide/full panels become full)
+@container (max-width: 60rem) {
+	.mint-system-charts {
+		grid-template-columns: repeat(6, 1fr);
+	}
+
+	.mint-system-charts > .col-6,
+	.mint-system-charts > .col-12 {
+		grid-column: span 6;
+	}
+}
+
+// Mobile: single column
+@container (max-width: 36rem) {
+	.mint-system-charts {
+		grid-template-columns: repeat(1, 1fr);
+	}
+
+	.mint-system-charts > [class*='col-'] {
+		grid-column: 1 / -1;
+	}
+}
+
+// Gauge/pie panels have no legend row, so stretch their card to fill the grid
+// cell and match sibling chart panels (280px canvas + legend below)
+.mint-system-charts > .col-3:has(.mint-system-viz) {
+	mat-card,
+	mat-card-content {
+		display: flex;
+		flex-direction: column;
+		flex-grow: 1;
+	}
+}
+
+// Card grows to fill the row, but the graphic stays at the standard 280px
+// canvas height, centered, so it isn't blown up to match the taller card
+.mint-system-viz {
+	flex-grow: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	> * {
+		width: 100%;
+		height: 280px;
+	}
+
+	// The pie carries its own fill-mode legend below the donut. `contain: size`
+	// keeps the legend's content from inflating the row height — the card keeps
+	// adopting the height its sibling panels set (280px floor) and the legend
+	// scrolls within whatever space remains
+	> orc-chart-pie {
+		height: 100%;
+		min-height: 280px;
+		contain: size;
+	}
+}
+
+.refresh-spinning {
+	animation: refresh-spin 1s linear infinite;
+}
+
+@keyframes refresh-spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}

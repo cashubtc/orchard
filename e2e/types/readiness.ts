@@ -25,6 +25,14 @@ export interface AnalyticsCacheRow {
 	date: number;
 }
 
+/** A single minute-bucket row from one of the metrics tables
+ *  (`metrics_system` / `metrics_mint`). Only `date` is needed for
+ *  readiness gating — presence means the corresponding per-minute
+ *  collection cron has stored at least one sample. */
+export interface MetricSampleRow {
+	date: number;
+}
+
 export interface Readiness {
 	bitcoin: BlockchainInfo;
 	oracle_recent: OraclePrice[];
@@ -49,6 +57,15 @@ export interface Readiness {
 	 *  (resolver errors → probe falls back to false) or when the configured
 	 *  vendor (Ollama/OpenRouter) is unreachable. Gate `@ai` specs on this. */
 	ai_health: boolean;
+	/** Probe of `system_metrics(interval: minute)`. Empty until the host
+	 *  metrics cron (gated on `system.metrics`, default true) has stored
+	 *  its first minute bucket in `metrics_system`. */
+	system_metrics_recent: MetricSampleRow[];
+	/** Probe of `mint_metrics` on a gauge family. Empty on non-cdk stacks
+	 *  or when `mint.metrics.api` is unset (resolver throws — collapsed to
+	 *  `[]`), and until the first successful exporter scrape lands in
+	 *  `metrics_mint`. */
+	mint_metrics_recent: MetricSampleRow[];
 }
 
 export interface ReadinessPredicate {

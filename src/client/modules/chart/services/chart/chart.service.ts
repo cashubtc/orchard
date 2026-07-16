@@ -29,6 +29,12 @@ export class ChartService {
 		{bg: 'rgba(243, 101, 29, 0.15)', border: 'rgb(243, 101, 29)'},
 		{bg: 'rgba(156, 34, 34, 0.15)', border: 'rgb(156, 34, 34)'},
 	];
+	// Base hues for the series-heavy dashboard palette (percentiles, HTTP/auth/wallet, pie)
+	private categorical_base = ['#4BE0D8', '#FFE94D', '#FF5AB5', '#B281EA', '#14E0B0', '#06B4EA'];
+	// Lightness deltas (%) applied per base hue to derive related-but-distinct shades; 0 is first so pure hues are used before variants
+	private categorical_lightness_steps = [0, 16, -16];
+	private categorical_colors: string[] = this.buildCategoricalPalette();
+	public readonly categorical_palette_size = this.categorical_colors.length;
 	private state_mint_map = {
 		UNPAID: 'triangle',
 		PAID: 'rect',
@@ -60,6 +66,14 @@ export class ChartService {
 
 	public getThemeColor(index: number): {bg: string; border: string} {
 		return this.fallback_colors[index];
+	}
+
+	/**
+	 * Returns a color from the wider categorical palette for series-heavy charts, cycling by index
+	 */
+	public getCategoricalColor(index: number): {bg: string; border: string} {
+		const border = this.categorical_colors[index % this.categorical_colors.length];
+		return {bg: this.hexToRgba(border, 0.15), border};
 	}
 
 	public getPointHoverBackgroundColor(): string {
@@ -151,6 +165,77 @@ export class ChartService {
 	public getMutedColor(border_color: string, opacity: number = 0.6): string {
 		const hex_color = border_color.startsWith('#') ? border_color : this.rgbToHex(border_color);
 		return this.hexToRgba(hex_color, opacity);
+	}
+
+	/**
+	 * Builds the categorical palette by shifting each base hue across the lightness steps (pure base hues first)
+	 */
+	private buildCategoricalPalette(): string[] {
+		const palette: string[] = [];
+		for (const delta of this.categorical_lightness_steps) {
+			for (const base of this.categorical_base) {
+				palette.push(delta === 0 ? base : this.adjustLightness(base, delta));
+			}
+		}
+		return palette;
+	}
+
+	/**
+	 * Shifts a hex color's HSL lightness by delta percent (clamped), preserving hue and saturation
+	 */
+	private adjustLightness(hex: string, delta_percent: number): string {
+		const {h, s, l} = this.hexToHsl(hex);
+		const new_l = Math.max(15, Math.min(90, l + delta_percent));
+		return this.hslToHex(h, s, new_l);
+	}
+
+	/**
+	 * Converts a hex color to HSL (h in degrees, s and l as percentages)
+	 */
+	private hexToHsl(hex: string): {h: number; s: number; l: number} {
+		const clean = hex.replace('#', '');
+		const r = parseInt(clean.substring(0, 2), 16) / 255;
+		const g = parseInt(clean.substring(2, 4), 16) / 255;
+		const b = parseInt(clean.substring(4, 6), 16) / 255;
+		const max = Math.max(r, g, b);
+		const min = Math.min(r, g, b);
+		const delta = max - min;
+		const l = (max + min) / 2;
+		let h = 0;
+		if (delta !== 0) {
+			if (max === r) h = ((g - b) / delta) % 6;
+			else if (max === g) h = (b - r) / delta + 2;
+			else h = (r - g) / delta + 4;
+			h = Math.round(h * 60);
+			if (h < 0) h += 360;
+		}
+		const s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
+		return {h, s: s * 100, l: l * 100};
+	}
+
+	/**
+	 * Converts HSL (h in degrees, s and l as percentages) to a hex color
+	 */
+	private hslToHex(h: number, s: number, l: number): string {
+		const s_frac = s / 100;
+		const l_frac = l / 100;
+		const c = (1 - Math.abs(2 * l_frac - 1)) * s_frac;
+		const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+		const m = l_frac - c / 2;
+		let r = 0;
+		let g = 0;
+		let b = 0;
+		if (h < 60) [r, g, b] = [c, x, 0];
+		else if (h < 120) [r, g, b] = [x, c, 0];
+		else if (h < 180) [r, g, b] = [0, c, x];
+		else if (h < 240) [r, g, b] = [0, x, c];
+		else if (h < 300) [r, g, b] = [x, 0, c];
+		else [r, g, b] = [c, 0, x];
+		const to_hex = (value: number): string =>
+			Math.round((value + m) * 255)
+				.toString(16)
+				.padStart(2, '0');
+		return `#${to_hex(r)}${to_hex(g)}${to_hex(b)}`;
 	}
 
 	/**

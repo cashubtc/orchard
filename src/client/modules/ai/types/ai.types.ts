@@ -14,6 +14,7 @@ import {
 	AssistantToolName,
 	MintUnit,
 	AnalyticsInterval,
+	SystemMetricsInterval,
 	OrchardAiChatStream,
 } from '@shared/generated.types';
 
@@ -83,6 +84,7 @@ export type AiFunction =
 	| AiFunctionUpdateDateRange
 	| AiFunctionUpdateMintAnalyticsUnits
 	| AiFunctionUpdateAnalyticsInterval
+	| AiFunctionUpdateMetricsInterval
 	| AiFunctionUpdateMintAnalyticsType
 	| AiFunctionUpdateMintName
 	| AiFunctionUpdateMintDescription
@@ -195,6 +197,13 @@ export type AiFunctionUpdateAnalyticsInterval = {
 	name: AssistantToolName.MintAnalyticsIntervalUpdate;
 	arguments: {
 		interval: AnalyticsInterval;
+	};
+};
+
+export type AiFunctionUpdateMetricsInterval = {
+	name: AssistantToolName.MetricsIntervalUpdate;
+	arguments: {
+		interval: SystemMetricsInterval;
 	};
 };
 

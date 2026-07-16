@@ -47,6 +47,17 @@
 	));
 }
 
+// Legend-grade density: rows barely taller than their content, no dividers
+.orc-super-dense-table {
+	@include mat.table-overrides((
+		header-container-height: 1.5rem,
+		row-item-container-height: 1.75rem,
+		header-headline-size: 0.6875rem,
+		row-item-label-text-size: 0.75rem,
+		row-item-outline-color: transparent,
+	));
+}
+
 
 .orc-table-low {
 	@include mat.table-overrides((
@@ -83,6 +94,37 @@
 	));
 	@include mat.select-overrides((
 		trigger-text-size: 0.875rem,
+	));
+}
+
+// Compact filled field toned down to a neutral surface so it reads as a
+// subtle control rather than a saturated block of the theme accent, with the
+// bottom active-indicator line removed for a clean flat control
+.orc-dense-form-field {
+	@include mat.form-field-overrides((
+		container-height: 2rem,
+		container-vertical-padding: 0.375rem,
+		container-text-size: 0.75rem,
+		filled-container-color: var(--mat-sys-surface-container),
+		filled-container-shape: var(--mat-sys-corner-extra-small),
+		filled-active-indicator-height: 0,
+		filled-focus-active-indicator-height: 0,
+		filled-label-text-size: 0.75rem,
+	));
+}
+
+/* Specific Button Overrides */
+.orc-dense-button {
+	@include mat.button-overrides((
+		text-container-height: 2rem,
+		text-horizontal-padding: 0.625rem,
+		text-label-text-size: 0.8125rem,
+		outlined-container-height: 2rem,
+		outlined-horizontal-padding: 0.75rem,
+		outlined-label-text-size: 0.8125rem,
+		filled-container-height: 2rem,
+		filled-label-text-size: 0.8125rem,
+		tonal-container-height: 2rem,
 	));
 }
 
@@ -256,6 +298,16 @@
 			border-left-color: transparent;
 			border-right-color: transparent;
 			border-top-color: transparent;
+		}
+	}
+}
+:root {
+	.orc-dense-form-field {
+		.mat-mdc-form-field-flex {
+			align-items: center;
+		}
+		.mat-mdc-form-field-infix {
+			min-height: unset;
 		}
 	}
 }

@@ -1,0 +1,23 @@
+<div class="system-chart-container">
+	@if (displayed()) {
+		<canvas baseChart [data]="chart_data" [options]="chart_options" [type]="chart_type"></canvas>
+	}
+	@if (!loading() && !has_data()) {
+		<div class="chart-overlay" animate.enter="orc-animation-fadein-fast" animate.leave="orc-animation-fadeout-fast">
+			<mat-icon class="icon-lg mat-symbol-outline orc-outline-color">bar_chart_off</mat-icon>
+		</div>
+	}
+	@if (loading()) {
+		<div class="chart-overlay" animate.enter="orc-animation-fadein" animate.leave="orc-animation-fadeout-slow">
+			<mat-progress-spinner mode="indeterminate" diameter="30"></mat-progress-spinner>
+		</div>
+	}
+</div>
+@if (legend() === 'below' && !loading() && has_data()) {
+	<orc-chart-legend
+		[chart]="chart()"
+		[chart_data]="chart_data"
+		[layout]="resolved_legend_layout()"
+		[group_label]="legend_group_label()"
+	></orc-chart-legend>
+}

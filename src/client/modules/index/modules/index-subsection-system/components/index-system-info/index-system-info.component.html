@@ -1,0 +1,24 @@
+@if (loading() || info()) {
+	<mat-card appearance="outlined" class="relative overflow-hidden">
+		<mat-card-content class="orc-surface-container-low-bg">
+			<div class="flex flex-row flex-gap-1 flex-wrap">
+				@if (loading()) {
+					@for (placeholder of [0, 1, 2, 3, 4]; track placeholder) {
+						<div class="orc-high-card p-1 flex-1 index-system-info-tile">
+							<div class="loading-stat-overlay orc-animation-shimmer-highest"></div>
+							<div class="font-size-l text-nowrap font-weight-semi-bold">&nbsp;</div>
+							<div class="font-size-xs orc-outline-color text-nowrap">&nbsp;</div>
+						</div>
+					}
+				} @else {
+					@for (tile of tiles(); track tile.caption) {
+						<div class="orc-high-card p-1 flex-1 index-system-info-tile">
+							<div class="font-size-l text-nowrap font-weight-semi-bold">{{ tile.value }}</div>
+							<div class="font-size-xs orc-outline-color text-nowrap index-system-info-caption">{{ tile.caption }}</div>
+						</div>
+					}
+				}
+			</div>
+		</mat-card-content>
+	</mat-card>
+}

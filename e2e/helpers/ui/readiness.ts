@@ -10,7 +10,8 @@
  */
 
 import {type Page, test} from '@playwright/test';
-import type {AnalyticsCacheRow, BlockchainInfo, OraclePrice, Readiness, ReadinessPredicate} from '@e2e/types/readiness';
+import {gql} from '@e2e/helpers/ui/gql';
+import type {AnalyticsCacheRow, BlockchainInfo, MetricSampleRow, OraclePrice, Readiness, ReadinessPredicate} from '@e2e/types/readiness';
 
 const BITCOIN_BLOCKCHAIN_INFO_QUERY = `{ bitcoin_blockchain_info { verificationprogress initialblockdownload blocks } }`;
 const BITCOIN_ORACLE_RECENT_QUERY = `query Recent($start_date: UnixTimestamp, $end_date: UnixTimestamp) {
@@ -44,32 +45,24 @@ const BITCOIN_ANALYTICS_PROBE_QUERY = `{
 	}
 }`;
 const AI_HEALTH_QUERY = `{ ai_health { status } }`;
+/** Probe `metrics_system` for any minute bucket — the host-metrics cron
+ *  (gated on the `system.metrics` setting, default true) has collected at
+ *  least once. Host families are stored gauge-style, so one row is enough
+ *  for every chart on `/system`. */
+const SYSTEM_METRICS_PROBE_QUERY = `{ system_metrics(interval: minute) { date } }`;
+/** Probe `metrics_mint` via a gauge family the cdk exporter always serves —
+ *  one stored scrape is enough for gauges (counters need two). Empty when
+ *  `mint.metrics.api` is unset or the mint isn't cdk (the resolver throws
+ *  MintSupportError, which `probe` collapses to `[]`). */
+const MINT_METRICS_PROBE_QUERY = `{ mint_metrics(interval: minute, metrics: ["process_memory_bytes"]) { date } }`;
 
 const SECONDS_PER_DAY = 86_400;
-
-/** Orchard puts the JWT in localStorage and the Apollo interceptor injects
- *  it as `Authorization: Bearer <token>` on every request. `page.request`
- *  inherits cookies but not localStorage, so we read the token via the page
- *  context and forward it explicitly — without it, resolvers reject the call
- *  with `AuthenticationError`. */
-async function gql(page: Page, query: string, variables?: Record<string, unknown>): Promise<Record<string, unknown>> {
-	// LocalStorageService JSON-stringifies on write, so the raw localStorage
-	// value has surrounding quotes — parse them off before forwarding.
-	const raw = await page.evaluate(() => localStorage.getItem('v0.auth.token'));
-	const token = raw ? (JSON.parse(raw) as string) : null;
-	const headers: Record<string, string> = {};
-	if (token) headers['Authorization'] = `Bearer ${token}`;
-	const response = await page.request.post('/api', {headers, data: {query, variables}});
-	if (!response.ok()) throw new Error(`GraphQL ${response.status()} on readiness query`);
-	const body = await response.json();
-	if (body.errors?.length) throw new Error(`GraphQL error: ${body.errors[0].message}`);
-	return body.data;
-}
 
 /** Run a probe query and collapse any backend-side error into a safe
  *  default. The readiness probes fire across all stacks even when a
  *  feature is disabled (e.g. `bitcoin_analytics_metrics` on
- *  `fake-cdk-postgres` errors with `BitcoinRPCError`); treating the
+ *  `fake-cdk-postgres` errors with `BitcoinRPCError`, `mint_metrics` on
+ *  non-cdk stacks with `MintSupportError`); treating the
  *  error as "no rows" is correct for presence-only predicates because a
  *  disabled backend has no analytics rows anyway, and lets a single
  *  `getReadiness` call serve every stack without per-stack branching.
@@ -91,22 +84,25 @@ async function probe<T>(page: Page, query: string, field: string, fallback: T): 
 export async function getReadiness(page: Page): Promise<Readiness> {
 	const now_unix = Math.floor(Date.now() / 1000);
 	const start = now_unix - 7 * SECONDS_PER_DAY;
-	const [bitcoin_data, oracle_data, mint_probe, ln_probe, btc_probe, ai_health_data] = await Promise.all([
-		// Bitcoin chain-info errors on no-bitcoin stacks (`fake-cdk-postgres`),
-		// so wrap in `probe` and fall back to a safe default; the
-		// `mainchainSynced` predicate is only used on bitcoin-enabled stacks
-		// where the call succeeds.
-		probe<BlockchainInfo>(page, BITCOIN_BLOCKCHAIN_INFO_QUERY, 'bitcoin_blockchain_info', {
-			verificationprogress: 0,
-			initialblockdownload: true,
-			blocks: 0,
-		}),
-		probe<OraclePrice[]>(page, BITCOIN_ORACLE_RECENT_QUERY, 'bitcoin_oracle', []),
-		probe<AnalyticsCacheRow[]>(page, MINT_ANALYTICS_PROBE_QUERY, 'mint_analytics_metrics', []),
-		probe<AnalyticsCacheRow[]>(page, LIGHTNING_ANALYTICS_PROBE_QUERY, 'lightning_analytics_metrics', []),
-		probe<AnalyticsCacheRow[]>(page, BITCOIN_ANALYTICS_PROBE_QUERY, 'bitcoin_analytics_metrics', []),
-		probe<{status: boolean}>(page, AI_HEALTH_QUERY, 'ai_health', {status: false}),
-	]);
+	const [bitcoin_data, oracle_data, mint_probe, ln_probe, btc_probe, ai_health_data, system_metrics_probe, mint_metrics_probe] =
+		await Promise.all([
+			// Bitcoin chain-info errors on no-bitcoin stacks (`fake-cdk-postgres`),
+			// so wrap in `probe` and fall back to a safe default; the
+			// `mainchainSynced` predicate is only used on bitcoin-enabled stacks
+			// where the call succeeds.
+			probe<BlockchainInfo>(page, BITCOIN_BLOCKCHAIN_INFO_QUERY, 'bitcoin_blockchain_info', {
+				verificationprogress: 0,
+				initialblockdownload: true,
+				blocks: 0,
+			}),
+			probe<OraclePrice[]>(page, BITCOIN_ORACLE_RECENT_QUERY, 'bitcoin_oracle', []),
+			probe<AnalyticsCacheRow[]>(page, MINT_ANALYTICS_PROBE_QUERY, 'mint_analytics_metrics', []),
+			probe<AnalyticsCacheRow[]>(page, LIGHTNING_ANALYTICS_PROBE_QUERY, 'lightning_analytics_metrics', []),
+			probe<AnalyticsCacheRow[]>(page, BITCOIN_ANALYTICS_PROBE_QUERY, 'bitcoin_analytics_metrics', []),
+			probe<{status: boolean}>(page, AI_HEALTH_QUERY, 'ai_health', {status: false}),
+			probe<MetricSampleRow[]>(page, SYSTEM_METRICS_PROBE_QUERY, 'system_metrics', []),
+			probe<MetricSampleRow[]>(page, MINT_METRICS_PROBE_QUERY, 'mint_metrics', []),
+		]);
 	return {
 		bitcoin: bitcoin_data,
 		oracle_recent: oracle_data,
@@ -114,6 +110,8 @@ export async function getReadiness(page: Page): Promise<Readiness> {
 		lightning_analytics_recent: ln_probe,
 		bitcoin_analytics_recent: btc_probe,
 		ai_health: ai_health_data.status,
+		system_metrics_recent: system_metrics_probe,
+		mint_metrics_recent: mint_metrics_probe,
 	};
 }
 
@@ -183,4 +181,20 @@ export const aiIsHealthy: ReadinessPredicate = (r) => ({
 export const bitcoinAnalyticsHasRows: ReadinessPredicate = (r) => ({
 	ok: r.bitcoin_analytics_recent.length > 0,
 	reason: `bitcoin_analytics_has_rows rows=${r.bitcoin_analytics_recent.length}`,
+});
+
+/** `metrics_system` has at least one row — the per-minute host-metrics cron
+ *  (gated on `system.metrics`, default true) has collected. Gate for any
+ *  spec asserting populated charts on `/system`. */
+export const systemMetricsHasRows: ReadinessPredicate = (r) => ({
+	ok: r.system_metrics_recent.length > 0,
+	reason: `system_metrics_has_rows rows=${r.system_metrics_recent.length}`,
+});
+
+/** `metrics_mint` has at least one row — `mint.metrics.api` is set AND the
+ *  per-minute scrape cron has stored a sample from the cdk exporter. Gauges
+ *  chart from one sample; counters need two. */
+export const mintMetricsHasRows: ReadinessPredicate = (r) => ({
+	ok: r.mint_metrics_recent.length > 0,
+	reason: `mint_metrics_has_rows rows=${r.mint_metrics_recent.length}`,
 });

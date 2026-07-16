@@ -1,0 +1,14 @@
+@use 'molecule/molecule';
+
+.system-control-panel-container {
+	@extend %p-b-1;
+}
+
+.big-form-field {
+	@extend %w-min-18;
+}
+
+.panel-form {
+	@extend %flex;
+	@extend %flex-justify-between;
+}

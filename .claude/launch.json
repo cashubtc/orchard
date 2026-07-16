@@ -8,6 +8,12 @@
             "port": 3322
         },
         {
+            "name": "client-localhost",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "start:client", "--", "--port", "4200"],
+            "port": 4200
+        },
+        {
             "name": "client-lnd-nutshell-sqlite",
             "runtimeExecutable": "bash",
             "runtimeArgs": [

@@ -49,6 +49,8 @@ import {
 	MintProofGroupStatsResponse,
 	MintWatchdogStatusResponse,
 	MintActivitySummaryResponse,
+	MintMetricsArgs,
+	MintMetricsResponse,
 } from '@client/modules/mint/types/mint.types';
 import {ApiService} from '@client/modules/api/services/api/api.service';
 import {CacheService} from '@client/modules/cache/services/cache/cache.service';
@@ -66,6 +68,7 @@ import {MintKeysetCount} from '@client/modules/mint/classes/mint-keyset-count.cl
 import {MintDatabaseInfo} from '@client/modules/mint/classes/mint-database-info.class';
 import {MintActivitySummary} from '@client/modules/mint/classes/mint-activity-summary.class';
 import {MintWatchdogStatus} from '@client/modules/mint/classes/mint-watchdog-status.class';
+import {MintMetric} from '@client/modules/mint/classes/mint-metric.class';
 /* Shared Dependencies */
 import {AnalyticsInterval, MintActivityPeriod, OrchardContact, OrchardMintAnalytics, MintUnit} from '@shared/generated.types';
 /* Local Dependencies */
@@ -112,6 +115,7 @@ import {
 	MINT_PROOF_GROUP_STATS_QUERY,
 	MINT_WATCHDOG_STATUS_QUERY,
 	MINT_ACTIVITY_SUMMARY_QUERY,
+	MINT_METRICS_QUERY,
 } from './mint.queries';
 
 @Injectable({
@@ -148,6 +152,7 @@ export class MintService {
 		MINT_WATCHDOG_STATUS: 'mint-watchdog-status',
 		MINT_DATABASE_INFO: 'mint-database-info',
 		MINT_ACTIVITY_SUMMARY: 'mint-activity-summary',
+		MINT_METRICS: 'mint-metrics',
 	};
 
 	private readonly CACHE_DURATIONS = {
@@ -176,6 +181,7 @@ export class MintService {
 		[this.CACHE_KEYS.MINT_WATCHDOG_STATUS]: 60 * 60 * 1000, // 60 minutes
 		[this.CACHE_KEYS.MINT_DATABASE_INFO]: 60 * 60 * 1000, // 60 minutes
 		[this.CACHE_KEYS.MINT_ACTIVITY_SUMMARY]: 5 * 60 * 1000, // 5 minutes
+		[this.CACHE_KEYS.MINT_METRICS]: 1 * 60 * 1000, // 1 minute
 	};
 
 	/* Subjects for caching */
@@ -204,10 +210,12 @@ export class MintService {
 	private readonly mint_watchdog_status_subject: BehaviorSubject<MintWatchdogStatus | null>;
 	private readonly mint_database_info_subject: BehaviorSubject<MintDatabaseInfo | null>;
 	private readonly mint_activity_summary_subject: BehaviorSubject<MintActivitySummary | null>;
+	private readonly mint_metrics_subject: BehaviorSubject<MintMetric[] | null>;
 
 	/* Observables for caching (rapid request caching) */
 	private mint_info_observable!: Observable<MintInfo> | null;
 	private cached_activity_period: MintActivityPeriod | null = null;
+	private cached_metrics_args: string | null = null;
 
 	constructor(
 		private http: HttpClient,
@@ -314,6 +322,10 @@ export class MintService {
 			this.CACHE_KEYS.MINT_ACTIVITY_SUMMARY,
 			this.CACHE_DURATIONS[this.CACHE_KEYS.MINT_ACTIVITY_SUMMARY],
 		);
+		this.mint_metrics_subject = this.cache.createCache<MintMetric[]>(
+			this.CACHE_KEYS.MINT_METRICS,
+			this.CACHE_DURATIONS[this.CACHE_KEYS.MINT_METRICS],
+		);
 	}
 
 	public clearInfoCache() {
@@ -340,6 +352,11 @@ export class MintService {
 	public clearActivityCache() {
 		this.cached_activity_period = null;
 		this.cache.clearCache(this.CACHE_KEYS.MINT_ACTIVITY_SUMMARY);
+	}
+
+	public clearMetricsCache() {
+		this.cached_metrics_args = null;
+		this.cache.clearCache(this.CACHE_KEYS.MINT_METRICS);
 	}
 
 	public clearKeysetsCache() {
@@ -817,6 +834,37 @@ export class MintService {
 			}),
 			catchError((error) => {
 				console.error('Error loading mint watchdog status:', error);
+				return throwError(() => error);
+			}),
+		);
+	}
+
+	/** Loads stored mint server metrics; cache is invalidated whenever the args change */
+	public loadMintMetrics(args: MintMetricsArgs): Observable<MintMetric[]> {
+		const args_hash = JSON.stringify(args);
+		if (args_hash !== this.cached_metrics_args) {
+			this.clearMetricsCache();
+			this.cached_metrics_args = args_hash;
+		}
+
+		if (this.mint_metrics_subject.value && this.cache.isCacheValid(this.CACHE_KEYS.MINT_METRICS)) {
+			return of(this.mint_metrics_subject.value);
+		}
+
+		const query = getApiQuery(MINT_METRICS_QUERY, args);
+
+		return this.http.post<OrchardRes<MintMetricsResponse>>(this.apiService.api, query).pipe(
+			map((response) => {
+				if (response.errors) throw new OrchardErrors(response.errors);
+				return response.data.mint_metrics;
+			}),
+			map((metrics) => metrics.map((metric) => new MintMetric(metric))),
+			tap((metrics) => {
+				this.cache.updateCache(this.CACHE_KEYS.MINT_METRICS, metrics);
+				this.mint_metrics_subject.next(metrics);
+			}),
+			catchError((error) => {
+				console.error('Error loading mint metrics:', error);
 				return throwError(() => error);
 			}),
 		);

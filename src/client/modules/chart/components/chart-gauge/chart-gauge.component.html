@@ -1,0 +1,6 @@
+<div class="chart-gauge">
+	<div class="chart-gauge-canvas">
+		<canvas baseChart [data]="chart_data()" [options]="chart_options" [type]="chart_type"></canvas>
+	</div>
+	<div class="chart-gauge-value" [style.color]="color()">{{ display_value() }}</div>
+</div>

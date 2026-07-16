@@ -15,7 +15,9 @@ import {CashuMintAnalyticsService} from '@server/modules/cashu/mintanalytics/min
 import {AgentService} from '@server/modules/ai/agent/agent.service';
 import {ConversationService} from '@server/modules/ai/conversation/conversation.service';
 import {SystemMetricsService} from '@server/modules/system/metrics/sysmetrics.service';
+import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 import {BitcoinType} from '@server/modules/bitcoin/bitcoin.enums';
+import {MintType} from '@server/modules/cashu/cashu.enums';
 import {SettingKey} from '@server/modules/setting/setting.enums';
 
 @Injectable()
@@ -34,6 +36,7 @@ export class TaskService {
 		private agentService: AgentService,
 		private conversationService: ConversationService,
 		private systemMetricsService: SystemMetricsService,
+		private mintMetricsService: MintMetricsService,
 	) {}
 
 	/**
@@ -299,6 +302,52 @@ export class TaskService {
 		} catch (error) {
 			this.logger.error(`Error cleaning up system metrics: ${error.message}`, error.stack);
 		}
+	}
+
+	/**
+	 * Collect mint prometheus metrics every minute
+	 * Runs only for cdk mints with a configured metrics endpoint
+	 */
+	@Cron('* * * * *', {
+		name: 'collect-mint-metrics',
+		timeZone: 'UTC',
+	})
+	async collectMintMetrics() {
+		if (!(await this.isMintMetricsEnabled())) return;
+
+		try {
+			await this.mintMetricsService.collectAndStore();
+		} catch (error) {
+			this.logger.error(`Error collecting mint metrics: ${error.message}`);
+		}
+	}
+
+	/**
+	 * Clean up old mint metrics and downsample daily at 2:45 AM UTC
+	 * Runs only for cdk mints with a configured metrics endpoint
+	 */
+	@Cron('45 2 * * *', {
+		name: 'cleanup-mint-metrics',
+		timeZone: 'UTC',
+	})
+	async cleanupMintMetrics() {
+		if (!(await this.isMintMetricsEnabled())) return;
+
+		this.logger.log('Starting mint metrics cleanup...');
+		try {
+			await this.mintMetricsService.cleanupOldMetrics();
+			this.logger.log('Mint metrics cleanup complete');
+		} catch (error) {
+			this.logger.error(`Error cleaning up mint metrics: ${error.message}`, error.stack);
+		}
+	}
+
+	/**
+	 * Whether mint prometheus metrics are enabled — a cdk mint with a configured endpoint
+	 */
+	private async isMintMetricsEnabled(): Promise<boolean> {
+		if (this.configService.get('cashu.type') !== MintType.CDK) return false;
+		return !!(await this.settingService.getStringSetting(SettingKey.MINT_METRICS_API));
 	}
 
 	/**

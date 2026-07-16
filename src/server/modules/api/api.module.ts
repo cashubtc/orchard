@@ -39,6 +39,7 @@ import {MintAnalyticsModule} from './mint/analytics/mintanalytics.module';
 import {MintCountModule} from './mint/count/mintcount.module';
 import {MintWatchdogModule} from './mint/watchdog/mintwatchdog.module';
 import {MintActivityModule} from './mint/activity/mintactivity.module';
+import {ApiMintMetricsModule} from './mint/metrics/mintmetrics.module';
 // AI Endpoints
 import {AiModelModule} from './ai/model/aimodel.module';
 import {AiAssistantModule} from './ai/assistant/aiassistant.module';
@@ -59,6 +60,7 @@ import {ApiSettingModule} from './setting/setting.module';
 import {ApiEventLogModule} from './event/event.module';
 // System Endpoints
 import {ApiSystemMetricsModule} from './system/metrics/sysmetrics.module';
+import {ApiSystemInfoModule} from './system/info/sysinfo.module';
 /* Enum Registration */
 import './api.enums';
 
@@ -97,6 +99,7 @@ import './api.enums';
 		MintCountModule,
 		MintWatchdogModule,
 		MintActivityModule,
+		ApiMintMetricsModule,
 		AiModelModule,
 		AiAssistantModule,
 		AiChatModule,
@@ -111,6 +114,7 @@ import './api.enums';
 		ApiSettingModule,
 		ApiEventLogModule,
 		ApiSystemMetricsModule,
+		ApiSystemInfoModule,
 	],
 })
 export class ApiModule {}

@@ -21,6 +21,7 @@ const defaultSetting = <T>(value: T): ParsedSetting<T> => ({value, description: 
 
 const SETTING_DEFAULTS: ParsedAppSettings = {
 	bitcoin_oracle: defaultSetting(false),
+	mint_metrics_api: defaultSetting(''),
 	ai_enabled: defaultSetting(false),
 	ai_vendor: defaultSetting('ollama'),
 	ai_ollama_api: defaultSetting('http://localhost:11434'),
@@ -139,6 +140,7 @@ export class SettingAppService {
 	private updateParsedSettings(settings: Setting[]): void {
 		const find = (key: SettingKey): Setting | undefined => settings.find((s) => s.key === key);
 		const bitcoin_oracle = find(SettingKey.BitcoinOracle);
+		const mint_metrics_api = find(SettingKey.MintMetricsApi);
 		const ai_enabled = find(SettingKey.AiEnabled);
 		const ai_vendor = find(SettingKey.AiVendor);
 		const ai_ollama_api = find(SettingKey.AiOllamaApi);
@@ -148,6 +150,7 @@ export class SettingAppService {
 		const messages_telegram_bot_token = find(SettingKey.MessagesTelegramBotToken);
 		const system_metrics = find(SettingKey.SystemMetrics);
 		if (bitcoin_oracle) this.parsed_settings.bitcoin_oracle = this.toParsedSetting<boolean>(bitcoin_oracle);
+		if (mint_metrics_api) this.parsed_settings.mint_metrics_api = this.toParsedSetting<string>(mint_metrics_api);
 		if (ai_enabled) this.parsed_settings.ai_enabled = this.toParsedSetting<boolean>(ai_enabled);
 		if (ai_vendor) this.parsed_settings.ai_vendor = this.toParsedSetting<string>(ai_vendor);
 		if (ai_ollama_api) this.parsed_settings.ai_ollama_api = this.toParsedSetting<string>(ai_ollama_api);

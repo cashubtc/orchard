@@ -71,3 +71,12 @@ quote_safety_multiplier = 1.10
 enabled = true
 address = "0.0.0.0"
 port = 8086
+
+# Prometheus exporter scraped by Orchard's collect-mint-metrics cron
+# (settings key mint.metrics.api = http://cdk-mintd:9090, set by the e2e
+# settings phase). Binds 0.0.0.0 so the orchard container can reach it
+# over the compose network; no host port mapping needed.
+[prometheus]
+enabled = true
+address = "0.0.0.0"
+port = 9090

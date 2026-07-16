@@ -1,0 +1,115 @@
+<div class="system-control-panel-container">
+	<form [formGroup]="panel" class="panel-form orc-animation-form-reaction" [class.animation-invalid]="height_state === 'invalid'">
+		<div class="flex flex-col flex-gap-1">
+			@if (device_type() !== 'mobile') {
+				<div formGroupName="daterange">
+					<mat-form-field hideRequiredMarker="true" subscriptSizing="dynamic" class="big-form-field">
+						<mat-label>Date range</mat-label>
+						<mat-date-range-input [rangePicker]="picker">
+							<input
+								matStartDate
+								formControlName="date_start"
+								placeholder="Start date"
+								(blur)="onDateChange()"
+								(keyup.enter)="onDateChange()"
+							/>
+							<input
+								matEndDate
+								formControlName="date_end"
+								placeholder="End date"
+								(blur)="onDateChange()"
+								(keyup.enter)="onDateChange()"
+							/>
+						</mat-date-range-input>
+						<orc-form-daterange-scroll-picker
+							matIconSuffix
+							[date_start]="panel.controls.daterange.controls.date_start.value"
+							[date_end]="panel.controls.daterange.controls.date_end.value"
+							[active_preset]="page_settings().date_preset"
+							[device_type]="device_type()"
+							(presetChange)="onPresetChange($event)"
+							(dateRangeChange)="onDateRangeChange($event)"
+							(closed)="onDateChange()"
+						></orc-form-daterange-scroll-picker>
+						<mat-date-range-picker #picker></mat-date-range-picker>
+						<mat-error class="font-size-xs">Invalid date range</mat-error>
+					</mat-form-field>
+				</div>
+				<div>
+					<mat-form-field hideRequiredMarker="true" subscriptSizing="dynamic">
+						<mat-label>Interval</mat-label>
+						<mat-select formControlName="interval" (selectionChange)="onIntervalChange($event)">
+							@for (interval of interval_options; track interval.value) {
+								<mat-option [value]="interval.value">{{ interval.label }}</mat-option>
+							}
+						</mat-select>
+					</mat-form-field>
+				</div>
+			}
+
+			@if (device_type() === 'mobile') {
+				<div class="p-t-0-5">
+					<button matButton type="button" [matMenuTriggerFor]="filter_menu">
+						<mat-icon>tune</mat-icon>
+						<span class="text-nowrap font-size-s">Filters</span>
+					</button>
+				</div>
+			}
+		</div>
+	</form>
+</div>
+
+<mat-menu #filter_menu="matMenu" yPosition="below" class="orc-sticky-menu orc-filter-menu">
+	<orc-form-filter-menu (click)="$event.stopPropagation()" (clear)="onClearFilter()" (close)="onCloseFilter()">
+		@if (device_type() === 'mobile') {
+			<form [formGroup]="panel">
+				<div formGroupName="daterange" class="p-1">
+					<mat-form-field hideRequiredMarker="true" subscriptSizing="dynamic" class="w-full">
+						<mat-label>Date range</mat-label>
+						<mat-date-range-input [rangePicker]="mobile_picker">
+							<input
+								matStartDate
+								formControlName="date_start"
+								placeholder="Start date"
+								(blur)="onDateChange()"
+								(keyup.enter)="onDateChange()"
+							/>
+							<input
+								matEndDate
+								formControlName="date_end"
+								placeholder="End date"
+								(blur)="onDateChange()"
+								(keyup.enter)="onDateChange()"
+							/>
+						</mat-date-range-input>
+						<orc-form-daterange-scroll-picker
+							matIconSuffix
+							[date_start]="panel.controls.daterange.controls.date_start.value"
+							[date_end]="panel.controls.daterange.controls.date_end.value"
+							[active_preset]="page_settings().date_preset"
+							[device_type]="device_type()"
+							(presetChange)="onPresetChange($event)"
+							(dateRangeChange)="onDateRangeChange($event)"
+							(closed)="onDateChange()"
+						></orc-form-daterange-scroll-picker>
+						<mat-date-range-picker #mobile_picker></mat-date-range-picker>
+						<mat-error class="font-size-xs">Invalid date range</mat-error>
+					</mat-form-field>
+				</div>
+				<div class="orc-filter-menu-rule"></div>
+				<div class="orc-filter-menu-section">
+					<div>
+						<mat-form-field hideRequiredMarker="true" subscriptSizing="dynamic" class="w-full">
+							<mat-label>Interval</mat-label>
+							<mat-select formControlName="interval" (selectionChange)="onIntervalChange($event)">
+								@for (interval of interval_options; track interval.value) {
+									<mat-option [value]="interval.value">{{ interval.label }}</mat-option>
+								}
+							</mat-select>
+						</mat-form-field>
+					</div>
+				</div>
+			</form>
+		}
+	</orc-form-filter-menu>
+</mat-menu>

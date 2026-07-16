@@ -16,6 +16,7 @@ import {AgentRun} from '../modules/ai/agent/agent-run.entity';
 import {Conversation} from '../modules/ai/conversation/conversation.entity';
 import {BitcoinAnalytics} from '../modules/bitcoin/analytics/btcanalytics.entity';
 import {SystemMetrics} from '../modules/system/metrics/sysmetrics.entity';
+import {MintMetrics} from '../modules/cashu/mintmetrics/mintmetrics.entity';
 
 export const AppDataSource = new DataSource({
 	type: 'better-sqlite3',
@@ -36,6 +37,7 @@ export const AppDataSource = new DataSource({
 		AgentRun,
 		Conversation,
 		SystemMetrics,
+		MintMetrics,
 	],
 	migrations: ['src/server/database/migrations/*.ts'],
 	synchronize: false,

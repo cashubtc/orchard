@@ -14,12 +14,16 @@ import {CashuMintAnalyticsService} from '@server/modules/cashu/mintanalytics/min
 import {AgentService} from '@server/modules/ai/agent/agent.service';
 import {ConversationService} from '@server/modules/ai/conversation/conversation.service';
 import {SystemMetricsService} from '@server/modules/system/metrics/sysmetrics.service';
+import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 /* Local Dependencies */
 import {TaskService} from './task.service';
 
 describe('TaskService', () => {
 	let taskService: TaskService;
 	let authService: jest.Mocked<AuthService>;
+	let configService: jest.Mocked<ConfigService>;
+	let settingService: jest.Mocked<SettingService>;
+	let mintMetricsService: jest.Mocked<MintMetricsService>;
 	let logger_spy: jest.SpyInstance;
 
 	beforeEach(async () => {
@@ -100,11 +104,21 @@ describe('TaskService', () => {
 						cleanupOldMetrics: jest.fn(),
 					},
 				},
+				{
+					provide: MintMetricsService,
+					useValue: {
+						collectAndStore: jest.fn(),
+						cleanupOldMetrics: jest.fn(),
+					},
+				},
 			],
 		}).compile();
 
 		taskService = module.get<TaskService>(TaskService);
 		authService = module.get(AuthService);
+		configService = module.get(ConfigService);
+		settingService = module.get(SettingService);
+		mintMetricsService = module.get(MintMetricsService);
 
 		// Spy on logger methods
 		logger_spy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
@@ -158,6 +172,69 @@ describe('TaskService', () => {
 			// Assert
 			expect(authService.cleanupExpiredTokens).toHaveBeenCalledTimes(1);
 			expect(error_spy).toHaveBeenCalledWith('Error cleaning up tokens: Database connection failed');
+		});
+	});
+
+	describe('collectMintMetrics', () => {
+		it('should skip when mint type is not cdk', async () => {
+			configService.get.mockReturnValue('nutshell');
+			settingService.getStringSetting.mockResolvedValue('http://localhost:5553');
+
+			await taskService.collectMintMetrics();
+
+			expect(mintMetricsService.collectAndStore).not.toHaveBeenCalled();
+		});
+
+		it('should skip when the metrics endpoint setting is unset', async () => {
+			configService.get.mockReturnValue('cdk');
+			settingService.getStringSetting.mockResolvedValue(null);
+
+			await taskService.collectMintMetrics();
+
+			expect(mintMetricsService.collectAndStore).not.toHaveBeenCalled();
+		});
+
+		it('should collect for cdk mints with a metrics endpoint setting', async () => {
+			configService.get.mockReturnValue('cdk');
+			settingService.getStringSetting.mockResolvedValue('http://localhost:5553');
+			mintMetricsService.collectAndStore.mockResolvedValue();
+
+			await taskService.collectMintMetrics();
+
+			expect(mintMetricsService.collectAndStore).toHaveBeenCalledTimes(1);
+		});
+
+		it('should log errors without throwing', async () => {
+			configService.get.mockReturnValue('cdk');
+			settingService.getStringSetting.mockResolvedValue('http://localhost:5553');
+			mintMetricsService.collectAndStore.mockRejectedValue(new Error('db locked'));
+			const error_spy = jest.spyOn(Logger.prototype, 'error');
+
+			await taskService.collectMintMetrics();
+
+			expect(error_spy).toHaveBeenCalledWith('Error collecting mint metrics: db locked');
+		});
+	});
+
+	describe('cleanupMintMetrics', () => {
+		it('should skip when mint type is not cdk', async () => {
+			configService.get.mockReturnValue('nutshell');
+			settingService.getStringSetting.mockResolvedValue('http://localhost:5553');
+
+			await taskService.cleanupMintMetrics();
+
+			expect(mintMetricsService.cleanupOldMetrics).not.toHaveBeenCalled();
+		});
+
+		it('should cleanup for cdk mints with a metrics endpoint setting', async () => {
+			configService.get.mockReturnValue('cdk');
+			settingService.getStringSetting.mockResolvedValue('http://localhost:5553');
+			mintMetricsService.cleanupOldMetrics.mockResolvedValue();
+
+			await taskService.cleanupMintMetrics();
+
+			expect(mintMetricsService.cleanupOldMetrics).toHaveBeenCalledTimes(1);
+			expect(logger_spy).toHaveBeenCalledWith('Mint metrics cleanup complete');
 		});
 	});
 });
