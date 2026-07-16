@@ -115,7 +115,14 @@ async function expectSuccessAndSettle(page: Page, mutationName: string, action: 
 	const response = page.waitForResponse(matchGql(mutationName));
 	await action();
 	await response;
-	await expect(eventToast(page).filter({hasText: 'Information updated'})).toBeVisible();
+	// Scope to the newest toast (`.last()`). Back-to-back saves (save → revert)
+	// can leave the first save's SUCCESS toast on screen when the second lands:
+	// the stack pauses auto-dismissal while the cursor hovers it, and the toast
+	// overlay sits bottom-left — right under the editing caret for bottom-of-form
+	// fields like motd. A bare filter then matches two "Information updated!"
+	// toasts and strict-mode-violates. The mutation round-trip is already proven
+	// by `await response`; this is the corroborating UI check.
+	await expect(eventToast(page).filter({hasText: 'Information updated'}).last()).toBeVisible();
 }
 
 /** Wait for the chip to return to its idle state (icon `save_clock`, no
