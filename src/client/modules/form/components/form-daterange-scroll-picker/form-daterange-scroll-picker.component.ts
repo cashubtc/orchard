@@ -35,6 +35,7 @@ export class FormDaterangeScrollPickerComponent implements OnDestroy {
 	public date_start = input<DateTime | null>(null);
 	public date_end = input<DateTime | null>(null);
 	public active_preset = input<string | null>(null);
+	public preset_options = input<DateRangePresetOption[]>(DATE_RANGE_PRESET_OPTIONS);
 	public min = input<DateTime | null>(null);
 	public max = input<DateTime | null>(null);
 	public dateClass = input<MatCalendarCellClassFunction<DateTime>>(() => '');
@@ -49,7 +50,6 @@ export class FormDaterangeScrollPickerComponent implements OnDestroy {
 	public trigger_el = viewChild.required<ElementRef>('triggerButton');
 
 	public is_open = signal(false);
-	public readonly preset_options: DateRangePresetOption[] = DATE_RANGE_PRESET_OPTIONS;
 
 	public current_range = computed(() => {
 		return new DateRange<DateTime>(this.date_start(), this.date_end());

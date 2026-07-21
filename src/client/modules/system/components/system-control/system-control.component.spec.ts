@@ -44,4 +44,40 @@ describe('SystemControlComponent', () => {
 		expect(preset_spy).toHaveBeenCalledWith(DateRangePreset.Last7Days);
 		expect(interval_spy).toHaveBeenCalledWith(SystemMetricsInterval.Hour);
 	});
+
+	describe('sub-day window', () => {
+		const applySubDayPreset = () => {
+			fixture.componentRef.setInput('page_settings', {
+				date_start: 0,
+				date_end: 900,
+				date_preset: DateRangePreset.Last15Minutes,
+				interval: SystemMetricsInterval.Minute,
+			});
+			fixture.detectChanges();
+		};
+
+		it('flags a sub-day window and exposes its label when a sub-day preset is active', () => {
+			applySubDayPreset();
+			expect(component.is_sub_day_window()).toBe(true);
+			expect(component.sub_day_label()).toBe('Last 15 minutes');
+		});
+
+		it('treats day-granularity presets as a regular date range', () => {
+			fixture.componentRef.setInput('page_settings', {
+				date_start: 0,
+				date_end: 86400,
+				date_preset: DateRangePreset.Last7Days,
+				interval: SystemMetricsInterval.Hour,
+			});
+			fixture.detectChanges();
+			expect(component.is_sub_day_window()).toBe(false);
+		});
+
+		it('does not day-snap or emit a date change while a sub-day window is active', () => {
+			applySubDayPreset();
+			const spy = spyOn(component.dateChange, 'emit');
+			component.onDateChange();
+			expect(spy).not.toHaveBeenCalled();
+		});
+	});
 });
