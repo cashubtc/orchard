@@ -9,10 +9,8 @@
 		<div nav-secondary-items>
 			<orc-nav-secondary-item name="Dashboard" navroute="bitcoin" [active]="active_sub_section() === 'dashboard'">
 			</orc-nav-secondary-item>
-			@if (show_oracle) {
-				<orc-nav-secondary-item name="Oracle" navroute="bitcoin/oracle" [active]="active_sub_section() === 'oracle'">
-				</orc-nav-secondary-item>
-			}
+			<orc-nav-secondary-item name="Oracle" navroute="bitcoin/oracle" [active]="active_sub_section() === 'oracle'">
+			</orc-nav-secondary-item>
 		</div>
 		<div nav-secondary-toolbar class="nav-secondary-toolbar">
 			<div class="section-implementation">{{ bitcoin_network_info()?.subversion }}</div>

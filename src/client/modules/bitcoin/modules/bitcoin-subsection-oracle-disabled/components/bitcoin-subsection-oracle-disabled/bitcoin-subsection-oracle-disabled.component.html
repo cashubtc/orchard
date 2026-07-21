@@ -1,0 +1,22 @@
+<div class="bitcoin-oracle-disabled-container p-1">
+	<mat-card appearance="outlined" class="relative overflow-hidden oracle-disabled-card">
+		<mat-card-content class="orc-surface-container-low-bg">
+			<div class="oracle-disabled-card-content">
+				<div class="oracle-disabled-card-icon">
+					<mat-icon class="mat-symbol-outline">currency_bitcoin</mat-icon>
+				</div>
+				<div class="oracle-disabled-card-copy">
+					<div class="title-m">Bitcoin Oracle Disabled</div>
+					<div class="font-size-s orc-outline-color line-height-1-4">
+						The Bitcoin Oracle derives price data from your node's on-chain history. Enable it from the
+						<code class="orc-md-code">Bitcoin Oracle</code> toggle in App Settings to start collecting data.
+					</div>
+					<button mat-button class="oracle-disabled-button p-h-1" [routerLink]="settings_link">
+						<span>Enable in App Settings</span>
+						<mat-icon class="mat-symbol-outline">arrow_forward</mat-icon>
+					</button>
+				</div>
+			</div>
+		</mat-card-content>
+	</mat-card>
+</div>

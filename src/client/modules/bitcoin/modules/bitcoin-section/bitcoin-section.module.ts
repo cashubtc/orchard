@@ -8,6 +8,7 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 /* Application Dependencies */
 import {OrcNavModule} from '@client/modules/nav/nav.module';
 import {enabledGuard} from '@client/modules/routing/guards/enabled/enabled.guard';
+import {bitcoinOracleGuard} from '@client/modules/routing/guards/bitcoin-oracle/bitcoin-oracle.guard';
 import {provideChartConfig} from '@client/modules/chart/chart.providers';
 /* Native Dependencies */
 import {BitcoinSectionComponent} from './components/bitcoin-section/bitcoin-section.component';
@@ -38,9 +39,24 @@ import {BitcoinSectionComponent} from './components/bitcoin-section/bitcoin-sect
 					},
 					{
 						path: 'oracle',
+						canMatch: [bitcoinOracleGuard],
 						loadChildren: () =>
 							import('@client/modules/bitcoin/modules/bitcoin-subsection-oracle/bitcoin-subsection-oracle.module').then(
 								(m) => m.OrcBitcoinSubsectionOracleModule,
+							),
+						title: 'Orchard | Bitcoin Oracle',
+						canActivate: [enabledGuard],
+						data: {
+							section: 'bitcoin',
+							sub_section: 'oracle',
+						},
+					},
+					{
+						// Fallback when the bitcoin_oracle setting is disabled: render the stub with a link to app settings
+						path: 'oracle',
+						loadChildren: () =>
+							import('@client/modules/bitcoin/modules/bitcoin-subsection-oracle-disabled/bitcoin-subsection-oracle-disabled.module').then(
+								(m) => m.OrcBitcoinSubsectionOracleDisabledModule,
 							),
 						title: 'Orchard | Bitcoin Oracle',
 						canActivate: [enabledGuard],

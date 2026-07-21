@@ -1,0 +1,54 @@
+@use 'molecule/molecule';
+
+:host {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-grow;
+}
+
+.bitcoin-oracle-disabled-container {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-grow;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+}
+
+.oracle-disabled-card {
+	@extend %w-full;
+	max-width: 40rem;
+}
+
+.oracle-disabled-card-content {
+	@extend %flex;
+	@extend %flex-items-start;
+	@extend %flex-gap-1-5;
+	@extend %p-t-1-5;
+	@extend %p-b-1-5;
+	@extend %p-l-1;
+	@extend %p-r-1;
+}
+
+.oracle-disabled-card-icon {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+	@extend %orc-surface-container-high-bg;
+	@extend %orc-corner-full;
+	@extend %flex-shrink-0;
+	height: 3rem;
+	width: 3rem;
+}
+
+.oracle-disabled-card-copy {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-1;
+	@extend %flex-grow;
+	min-width: 0;
+}
+
+.oracle-disabled-button {
+	align-self: flex-start;
+	max-width: 100%;
+}
