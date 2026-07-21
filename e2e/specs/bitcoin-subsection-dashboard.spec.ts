@@ -4,16 +4,17 @@
  *
  * The body is a placeholder stub (bitcoin svg-icon + "Bitcoin Dashboard
  * Coming Soon!"). The real surface is the section wrapper: chain name +
- * node subversion in the header (differential against bitcoind), the
- * always-present "Dashboard" nav item, and the CONDITIONAL "Oracle" nav
- * item gated on the bitcoin-oracle app setting.
+ * node subversion in the header (differential against bitcoind), and the
+ * two always-present nav items ("Dashboard" + "Oracle"). The Oracle tab is
+ * now FIXED — always rendered regardless of the bitcoin_oracle setting; when
+ * the setting is off the route falls through to the disabled stub (covered by
+ * bitcoin-subsection-oracle's @canary block).
  *
  * Coverage:
  *   - stub body renders
  *   - header chain == btc.getBlockchainInfo().chain
  *   - header subversion == btc.getNetworkInfo().subversion
- *   - Oracle nav item present iff the stack enabled the oracle
- *     (config.mainchain — the cln-nutshell-postgres @oracle stack)
+ *   - Oracle nav item is always present (fixed nav)
  *
  * NOT covered:
  *   - route-overlay spinner (`unit-better` — transient)
@@ -72,14 +73,13 @@ test.describe('bitcoin subsection dashboard — /bitcoin', {tag: '@bitcoin'}, ()
 		}
 	});
 
-	test('Oracle nav item is present only when the stack enabled the oracle', async ({page}, testInfo) => {
-		// show_oracle reads the bitcoin_oracle app setting, which the settings
-		// matrix turns on for the mainchain stack (cln-nutshell-postgres) only.
-		const config = getConfig(testInfo.project.name);
+	test('Oracle nav item is always present in the bitcoin section nav', async ({page}) => {
+		// The Oracle tab is now FIXED — always rendered regardless of the
+		// bitcoin_oracle setting. On stacks with the oracle off the route falls
+		// through to the disabled stub (asserted in bitcoin-subsection-oracle
+		// @canary); here we only assert the nav chrome renders both tabs.
 		const section = await openSection(page);
-		const dashboard_item = section.locator('orc-nav-secondary-item', {hasText: 'Dashboard'});
-		const oracle_item = section.locator('orc-nav-secondary-item', {hasText: 'Oracle'});
-		await expect(dashboard_item).toBeVisible();
-		await expect(oracle_item).toHaveCount(config.mainchain ? 1 : 0);
+		await expect(section.locator('orc-nav-secondary-item', {hasText: 'Dashboard'})).toBeVisible();
+		await expect(section.locator('orc-nav-secondary-item', {hasText: 'Oracle'})).toBeVisible();
 	});
 });

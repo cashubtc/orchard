@@ -2,10 +2,12 @@
  * Feature spec: `orc-bitcoin-subsection-oracle` — the `/bitcoin/oracle` page:
  * the UTXOracle price feed, its latest reading, and the Backfill Prices flow.
  *
- * Config-gated to the one stack that enables the oracle + wires a real
- * mainnet bitcoind: `cln-nutshell-postgres` (`@oracle` + `@mainchain`). On
- * every other stack the nav item and route don't exist, so these tests match
- * zero projects and are skipped by grep.
+ * The live-feed tests are config-gated to the one stack that enables the
+ * oracle + wires a real mainnet bitcoind: `cln-nutshell-postgres` (`@oracle`
+ * + `@mainchain`). The Oracle nav tab is now FIXED (always rendered); when the
+ * bitcoin_oracle setting is off the route falls through to the disabled stub.
+ * A `@canary` block below covers that stub on the oracle-off canary stack
+ * (`lnd-nutshell-sqlite`) — mirroring mint-subsection-system's split.
  *
  * `oracle.setup.ts` has already run Backfill for yesterday and stored a
  * price, so the Latest Price surface is populated. This spec is READ-ONLY:
@@ -82,5 +84,31 @@ test.describe('bitcoin subsection oracle — /bitcoin/oracle', {tag: '@oracle'},
 	test('renders the price chart canvas', async ({page}) => {
 		await openOracle(page);
 		await expect(page.locator('orc-bitcoin-subsection-oracle-chart canvas')).toBeVisible();
+	});
+});
+
+test.describe('bitcoin subsection oracle disabled — bitcoin_oracle off', {tag: '@canary'}, () => {
+	// Canary (lnd-nutshell-sqlite) never turns the oracle on, so `bitcoin_oracle`
+	// is false. The nav is fixed (Oracle tab always shown), but the route's
+	// bitcoinOracleGuard canMatch fails and falls through to the stub module.
+	test('the Oracle tab is present but routes to the disabled stub', async ({page}) => {
+		await page.goto('/bitcoin', {waitUntil: 'networkidle'});
+		const tab = page.locator('orc-bitcoin-section orc-nav-secondary-item', {hasText: 'Oracle'});
+		await expect(tab).toBeVisible();
+		await tab.click();
+		await expect(page).toHaveURL(/\/bitcoin\/oracle$/);
+		const stub = page.locator('orc-bitcoin-subsection-oracle-disabled');
+		await expect(stub).toBeVisible();
+		await expect(stub.locator('orc-public-docs-link-card')).toBeVisible();
+		// The real oracle component must NOT load when the setting is off.
+		await expect(page.locator('orc-bitcoin-subsection-oracle')).toHaveCount(0);
+	});
+
+	test('direct /bitcoin/oracle renders the disabled stub', async ({page}) => {
+		await page.goto('/bitcoin/oracle', {waitUntil: 'networkidle'});
+		const stub = page.locator('orc-bitcoin-subsection-oracle-disabled');
+		await expect(stub).toBeVisible();
+		await expect(stub.locator('orc-public-docs-link-card')).toBeVisible();
+		await expect(page.locator('orc-bitcoin-subsection-oracle')).toHaveCount(0);
 	});
 });
