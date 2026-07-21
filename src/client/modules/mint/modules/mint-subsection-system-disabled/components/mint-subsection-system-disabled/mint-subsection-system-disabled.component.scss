@@ -1,0 +1,15 @@
+@use 'molecule/molecule';
+
+:host {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-grow;
+}
+
+.mint-system-disabled-container {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-grow;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+}

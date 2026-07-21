@@ -47,6 +47,9 @@ MINT_API=http://cdk-mintd:3339
 MINT_RPC_HOST=cdk-mintd
 MINT_RPC_PORT=8086
 MINT_RPC_MTLS=false
+# Prometheus exporter base url (cdk-mintd [prometheus] block, in-network :9090).
+# Enables the /mint/system metrics page and the collect-mint-metrics cron.
+MINT_METRICS_API=http://cdk-mintd:9090
 
 # Throttler bumped above defaults so the Playwright suite's serial dashboard
 # navigations (6+ tests per spec across 4 stacks) do not trip the default

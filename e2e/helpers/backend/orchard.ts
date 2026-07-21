@@ -106,7 +106,7 @@ export const orchard = {
 	},
 
 	/** Row count of `metrics_mint` (cdk prometheus scrapes, gated on the
-	 *  `mint.metrics.api` setting). NOT cached: rows accrue every minute. */
+	 *  `MINT_METRICS_API` env config). NOT cached: rows accrue every minute. */
 	metricsMintCount(config: ConfigInfo): number {
 		return parseInt(orchardDbQuery(config, 'SELECT COUNT(*) FROM metrics_mint'), 10);
 	},

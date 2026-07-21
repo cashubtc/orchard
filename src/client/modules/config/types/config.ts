@@ -22,6 +22,7 @@ export type Config = {
 		type: string;
 		critical_path: string;
 		database_type: string;
+		metrics: boolean;
 	};
 	constants: {
 		epoch_start: number;

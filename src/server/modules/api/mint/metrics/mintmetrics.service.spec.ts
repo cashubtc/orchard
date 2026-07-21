@@ -6,7 +6,6 @@ import {expect} from '@jest/globals';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 import {ErrorService} from '@server/modules/error/error.service';
-import {SettingService} from '@server/modules/setting/setting.service';
 import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 import {MintMetrics} from '@server/modules/cashu/mintmetrics/mintmetrics.entity';
 import {SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
@@ -33,7 +32,6 @@ describe('ApiMintMetricsService', () => {
 	let apiMintMetricsService: ApiMintMetricsService;
 	let mintMetricsService: jest.Mocked<MintMetricsService>;
 	let configService: jest.Mocked<ConfigService>;
-	let settingService: jest.Mocked<SettingService>;
 	let errorService: jest.Mocked<ErrorService>;
 
 	beforeEach(async () => {
@@ -42,7 +40,6 @@ describe('ApiMintMetricsService', () => {
 				ApiMintMetricsService,
 				{provide: MintMetricsService, useValue: {getMetrics: jest.fn(), scrapeMintMetrics: jest.fn()}},
 				{provide: ConfigService, useValue: {get: jest.fn()}},
-				{provide: SettingService, useValue: {getStringSetting: jest.fn()}},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
 			],
 		}).compile();
@@ -50,11 +47,10 @@ describe('ApiMintMetricsService', () => {
 		apiMintMetricsService = module.get<ApiMintMetricsService>(ApiMintMetricsService);
 		mintMetricsService = module.get(MintMetricsService);
 		configService = module.get(ConfigService);
-		settingService = module.get(SettingService);
 		errorService = module.get(ErrorService);
 
-		configService.get.mockReturnValue('cdk');
-		settingService.getStringSetting.mockResolvedValue('http://localhost:5553');
+		// cdk mint with a configured exporter — the enabled path
+		configService.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'cdk' : 'http://localhost:5553'));
 		errorService.resolveError.mockImplementation((_logger, error, _tag, {errord}) => ({
 			code: typeof error === 'number' ? error : errord,
 		}));
@@ -66,7 +62,7 @@ describe('ApiMintMetricsService', () => {
 
 	describe('support gating', () => {
 		it('throws MintSupportError for nutshell mints', async () => {
-			configService.get.mockReturnValue('nutshell');
+			configService.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'nutshell' : 'http://localhost:5553'));
 			await expect(apiMintMetricsService.getMetrics('tag', {})).rejects.toBeInstanceOf(OrchardApiError);
 			expect(errorService.resolveError).toHaveBeenCalledWith(
 				expect.anything(),
@@ -76,8 +72,8 @@ describe('ApiMintMetricsService', () => {
 			);
 		});
 
-		it('throws MintSupportError when the metrics endpoint setting is unset', async () => {
-			settingService.getStringSetting.mockResolvedValue(null);
+		it('throws MintSupportError when the metrics endpoint env config is unset', async () => {
+			configService.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'cdk' : undefined));
 			await expect(apiMintMetricsService.getMetrics('tag', {})).rejects.toBeInstanceOf(OrchardApiError);
 		});
 	});

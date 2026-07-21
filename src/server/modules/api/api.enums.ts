@@ -266,7 +266,6 @@ registerEnumType(SettingKey, {
 	description: 'Application setting configuration keys',
 	valuesMap: {
 		BITCOIN_ORACLE: {description: 'Bitcoin price oracle toggle'},
-		MINT_METRICS_API: {description: 'Mint prometheus exporter base url'},
 		AI_ENABLED: {description: 'AI features toggle'},
 		AI_VENDOR: {description: 'AI vendor selection'},
 		AI_OLLAMA_API: {description: 'Ollama API endpoint'},

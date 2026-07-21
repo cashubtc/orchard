@@ -7,6 +7,7 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 /* Application Dependencies */
 import {errorResolveGuard} from '@client/modules/error/guards/error-resolve.guard';
 import {enabledGuard} from '@client/modules/routing/guards/enabled/enabled.guard';
+import {mintMetricsGuard} from '@client/modules/routing/guards/mint-metrics/mint-metrics.guard';
 import {ErrorService} from '@client/modules/error/services/error.service';
 import {OrcNavModule} from '@client/modules/nav/nav.module';
 import {OrcMintGeneralModule} from '@client/modules/mint/modules/mint-general/mint-general.module';
@@ -215,6 +216,7 @@ const mintInfoOptionalResolver: ResolveFn<any> = () => {
 					},
 					{
 						path: 'system',
+						canMatch: [mintMetricsGuard],
 						loadChildren: () =>
 							import('@client/modules/mint/modules/mint-subsection-system/mint-subsection-system.module').then(
 								(m) => m.OrcMintSubsectionSystemModule,
@@ -228,6 +230,20 @@ const mintInfoOptionalResolver: ResolveFn<any> = () => {
 							section: 'mint',
 							sub_section: 'system',
 							assistant: AiAssistant.System,
+						},
+					},
+					{
+						// Fallback when the mint prometheus exporter is not configured: render the stub with docs link
+						path: 'system',
+						loadChildren: () =>
+							import('@client/modules/mint/modules/mint-subsection-system-disabled/mint-subsection-system-disabled.module').then(
+								(m) => m.OrcMintSubsectionSystemDisabledModule,
+							),
+						title: 'Orchard | Mint System',
+						canActivate: [enabledGuard],
+						data: {
+							section: 'mint',
+							sub_section: 'system',
 						},
 					},
 					{

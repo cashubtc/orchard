@@ -51,7 +51,7 @@ export function featuresFor(config: ConfigInfo): string[] {
 	if (config.mainchain) features.push('mainchain');
 	if (config.appSettings?.ai_enabled === true) features.push('ai');
 	if (config.appSettings?.bitcoin_oracle === true) features.push('oracle');
-	if (config.appSettings?.mint_metrics_api) features.push('mint-metrics');
+	if (config.mintMetrics) features.push('mint-metrics');
 	return features;
 }
 
@@ -89,6 +89,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bolt12: false,
 		onchain: false,
 		mainchain: false,
+		mintMetrics: false,
 		orchardUrl: 'http://localhost:3322',
 		...BASE,
 		containers: {
@@ -110,6 +111,12 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bolt12: false,
 		onchain: false,
 		mainchain: false,
+		// Mint-metrics home: only cdk mints expose a prometheus exporter, and
+		// this is the least feature-loaded cdk stack in the main run
+		// (cln-cdk-postgres already carries bolt12/onchain/ai; fake-cdk-postgres
+		// proves the no-backend paths). Enabled via MINT_METRICS_API in the
+		// stack's env file — orchard scrapes the exporter in-network at :9090.
+		mintMetrics: true,
 		orchardUrl: 'http://localhost:3324',
 		...BASE,
 		containers: {
@@ -120,14 +127,6 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 			mint: 'lnd-cdk-sqlite-cdk-mintd',
 		},
 		mintPort: 3339,
-		// Mint-metrics home: only cdk mints expose a prometheus exporter, and
-		// this is the least feature-loaded cdk stack in the main run
-		// (cln-cdk-postgres already carries bolt12/onchain/ai; fake-cdk-postgres
-		// proves the no-backend paths). Compose-network URL — orchard scrapes
-		// the exporter in-network, no host port mapping.
-		appSettings: {
-			mint_metrics_api: 'http://cdk-mintd:9090',
-		},
 		deviceSettings: {
 			theme: 'light-mode',
 			locale: 'en-GB',
@@ -146,6 +145,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bolt12: true,
 		onchain: true,
 		mainchain: false,
+		mintMetrics: false,
 		orchardUrl: 'http://localhost:3323',
 		...BASE,
 		containers: {
@@ -177,6 +177,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bolt12: false,
 		onchain: false,
 		mainchain: true,
+		mintMetrics: false,
 		orchardUrl: 'http://localhost:3325',
 		...BASE,
 		containers: {
@@ -208,6 +209,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		bolt12: false,
 		onchain: false,
 		mainchain: false,
+		mintMetrics: false,
 		orchardUrl: 'http://localhost:3326',
 		...BASE,
 		containers: {mint: 'fake-cdk-postgres-cdk-mintd'},

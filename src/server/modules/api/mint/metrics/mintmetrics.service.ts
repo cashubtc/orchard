@@ -8,8 +8,6 @@ import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 import {ErrorService} from '@server/modules/error/error.service';
 import {MintType} from '@server/modules/cashu/cashu.enums';
-import {SettingService} from '@server/modules/setting/setting.service';
-import {SettingKey} from '@server/modules/setting/setting.enums';
 import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 import {MintMetrics} from '@server/modules/cashu/mintmetrics/mintmetrics.entity';
 import {MintMetricType} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
@@ -33,7 +31,6 @@ export class ApiMintMetricsService {
 	constructor(
 		private mintMetricsService: MintMetricsService,
 		private configService: ConfigService,
-		private settingService: SettingService,
 		private errorService: ErrorService,
 	) {}
 
@@ -43,7 +40,7 @@ export class ApiMintMetricsService {
 	 */
 	async getMetrics(tag: string, args: MintMetricsArgs): Promise<OrchardMintMetrics[]> {
 		try {
-			await this.guardSupport();
+			this.guardSupport();
 			const now = DateTime.utc().toUnixInteger();
 			const interval = args.interval ?? SystemMetricsInterval.minute;
 			const date_start = args.date_start ?? DateTime.utc().minus({days: 1}).toUnixInteger();
@@ -61,9 +58,9 @@ export class ApiMintMetricsService {
 	/**
 	 * Throws when the mint backend has no prometheus metrics support or no endpoint is configured
 	 */
-	private async guardSupport(): Promise<void> {
+	private guardSupport(): void {
 		if (this.configService.get('cashu.type') !== MintType.CDK) throw OrchardErrorCode.MintSupportError;
-		if (!(await this.settingService.getStringSetting(SettingKey.MINT_METRICS_API))) throw OrchardErrorCode.MintSupportError;
+		if (!this.configService.get('cashu.metrics_api')) throw OrchardErrorCode.MintSupportError;
 	}
 
 	/* *******************************************************

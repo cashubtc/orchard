@@ -1,6 +1,7 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
+import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {FindOptionsWhere, Repository, LessThan, Between, In} from 'typeorm';
 import {DateTime} from 'luxon';
@@ -8,8 +9,6 @@ import {DateTime} from 'luxon';
 import {PrometheusService} from '@server/modules/prometheus/prometheus.service';
 import {flattenFamily} from '@server/modules/prometheus/prometheus.helpers';
 import {PromFamily} from '@server/modules/prometheus/prometheus.types';
-import {SettingService} from '@server/modules/setting/setting.service';
-import {SettingKey} from '@server/modules/setting/setting.enums';
 import {METRICS_RETENTION_DAYS, METRICS_DOWNSAMPLE_AFTER_DAYS} from '@server/modules/system/metrics/sysmetrics.constants';
 /* Local Dependencies */
 import {MintMetrics} from './mintmetrics.entity';
@@ -33,7 +32,7 @@ export class MintMetricsService {
 		@InjectRepository(MintMetrics)
 		private mintMetricsRepository: Repository<MintMetrics>,
 		private prometheusService: PrometheusService,
-		private settingService: SettingService,
+		private configService: ConfigService,
 	) {}
 
 	/* *******************************************************
@@ -45,7 +44,7 @@ export class MintMetricsService {
 	 * @returns {Promise<PromFamily[]>} Parsed metric families
 	 */
 	async scrapeMintMetrics(): Promise<PromFamily[]> {
-		const metrics_api = await this.settingService.getStringSetting(SettingKey.MINT_METRICS_API);
+		const metrics_api = this.configService.get<string>('cashu.metrics_api');
 		if (!metrics_api) return [];
 		return this.prometheusService.scrapeMetrics(`${metrics_api}/metrics`);
 	}
