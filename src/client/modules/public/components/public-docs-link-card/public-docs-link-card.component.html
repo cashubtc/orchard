@@ -11,10 +11,17 @@
 				<div class="font-size-s orc-outline-color line-height-1-4">
 					<ng-content select="[card-body]"></ng-content>
 				</div>
-				<button mat-button class="docs-link-button p-h-1" (click)="onDocsLink()">
-					<span>{{ link_title() }}</span>
-					<mat-icon class="mat-symbol-outline">open_in_new</mat-icon>
-				</button>
+				@if (router_link(); as link) {
+					<button mat-button class="docs-link-button p-h-1" [routerLink]="link">
+						<span>{{ link_title() }}</span>
+						<mat-icon class="mat-symbol-outline">settings</mat-icon>
+					</button>
+				} @else {
+					<button mat-button class="docs-link-button p-h-1" (click)="onDocsLink()">
+						<span>{{ link_title() }}</span>
+						<mat-icon class="mat-symbol-outline">open_in_new</mat-icon>
+					</button>
+				}
 			</div>
 		</div>
 	</mat-card-content>

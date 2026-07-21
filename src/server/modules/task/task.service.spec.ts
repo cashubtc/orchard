@@ -40,7 +40,6 @@ describe('TaskService', () => {
 					useValue: {
 						getSetting: jest.fn(),
 						getBooleanSetting: jest.fn(),
-						getStringSetting: jest.fn(),
 						getNumberSetting: jest.fn(),
 					},
 				},
