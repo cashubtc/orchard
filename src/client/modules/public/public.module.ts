@@ -1,6 +1,7 @@
 /* Core Dependencies */
 import {NgModule} from '@angular/core';
 import {CommonModule as CoreCommonModule} from '@angular/common';
+import {RouterModule as CoreRouterModule} from '@angular/router';
 /* Vendor Dependencies */
 import {MatDialogModule} from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
@@ -12,7 +13,7 @@ import {PublicDocsLinkCardComponent} from './components/public-docs-link-card/pu
 
 @NgModule({
 	declarations: [PublicExitWarningComponent, PublicDocsLinkCardComponent],
-	imports: [CoreCommonModule, MatDialogModule, MatButtonModule, MatIconModule, MatCardModule],
+	imports: [CoreCommonModule, CoreRouterModule, MatDialogModule, MatButtonModule, MatIconModule, MatCardModule],
 	exports: [PublicDocsLinkCardComponent],
 })
 export class OrcPublicModule {}

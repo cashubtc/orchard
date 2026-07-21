@@ -31,6 +31,7 @@ const mint = {
 	type: process.env['MINT_TYPE'] || 'cdk',
 	critical_path: '/v1/info',
 	database_type: process.env['MINT_DATABASE']?.match(/postgres(ql)?:\/\//) ? 'postgres' : 'sqlite',
+	metrics: process.env['MINT_METRICS_API'] ? true : false,
 };
 
 const constants = {

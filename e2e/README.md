@@ -208,7 +208,7 @@ stack's grep set.
 | `@sqlite` / `@postgres` | DB-sensitive | stacks with matching DB |
 | `@tapd` | requires Taproot Assets | `lnd-cdk-sqlite` only |
 | `@mainchain` | Orchard wired to a real mainnet bitcoind | `cln-nutshell-postgres` (overlay always loaded — see [Mainchain overlay](#mainchain-overlay)) |
-| `@mint-metrics` | settings setup set `mint.metrics.api` to the stack's cdk-mintd prometheus exporter (config-state) | `lnd-cdk-sqlite` only |
+| `@mint-metrics` | stack env sets `MINT_METRICS_API` to the cdk-mintd prometheus exporter (config-state) | `lnd-cdk-sqlite` only |
 | `@all` | genuine matrix coverage | all five stacks |
 
 **Prefer app-state tags (`@lightning` / `@no-lightning`) over impl-name

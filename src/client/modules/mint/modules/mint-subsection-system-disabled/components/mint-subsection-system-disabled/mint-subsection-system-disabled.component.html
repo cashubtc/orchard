@@ -1,0 +1,11 @@
+<div class="mint-system-disabled-container p-1">
+	<orc-public-docs-link-card [docs_link]="docs_link" link_title="Mint metrics docs">
+		<mat-icon card-icon class="mat-symbol-outline">account_balance</mat-icon>
+		<div card-title>Mint Metrics Not Configured</div>
+		<div card-body>
+			The Mint System dashboard scrapes your cdk mint's prometheus exporter. Set the
+			<code class="orc-md-code">MINT_METRICS_API</code> environment variable to the exporter base url to enable it. See the official
+			Orchard docs for setup.
+		</div>
+	</orc-public-docs-link-card>
+</div>

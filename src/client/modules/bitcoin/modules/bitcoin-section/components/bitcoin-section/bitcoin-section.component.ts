@@ -3,8 +3,6 @@ import {Component, ChangeDetectionStrategy, OnInit, OnDestroy, signal, WritableS
 import {Router, Event, ActivatedRoute, NavigationStart, NavigationEnd, NavigationCancel, NavigationError} from '@angular/router';
 /* Vendor Dependencies */
 import {filter, Subscription} from 'rxjs';
-/* Application Dependencies */
-import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 /* Native Dependencies */
 import {BitcoinService} from '@client/modules/bitcoin/services/bitcoin/bitcoin.service';
 import {BitcoinNetworkInfo} from '@client/modules/bitcoin/classes/bitcoin-network-info.class';
@@ -18,8 +16,6 @@ import {BitcoinBlockchainInfo} from '@client/modules/bitcoin/classes/bitcoin-blo
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BitcoinSectionComponent implements OnInit, OnDestroy {
-	public show_oracle: boolean;
-
 	public bitcoin_blockchain_info: WritableSignal<BitcoinBlockchainInfo | null> = signal(null);
 	public bitcoin_network_info: WritableSignal<BitcoinNetworkInfo | null> = signal(null);
 	public active_sub_section: WritableSignal<string> = signal('');
@@ -29,12 +25,9 @@ export class BitcoinSectionComponent implements OnInit, OnDestroy {
 
 	constructor(
 		private bitcoinService: BitcoinService,
-		private settingAppService: SettingAppService,
 		private router: Router,
 		private route: ActivatedRoute,
-	) {
-		this.show_oracle = this.settingAppService.getSetting('bitcoin_oracle').value;
-	}
+	) {}
 
 	ngOnInit(): void {
 		this.bitcoinService.loadBitcoinNetworkInfo().subscribe({

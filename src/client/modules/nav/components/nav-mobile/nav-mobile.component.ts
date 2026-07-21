@@ -1,10 +1,9 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, input, output, effect, computed, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, input, output, computed} from '@angular/core';
 import {Router} from '@angular/router';
 /* Vendor Dependencies */
 import {MatBottomSheet} from '@angular/material/bottom-sheet';
 /* Application Dependencies */
-import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 import {EventData} from 'src/client/modules/event/classes/event-data.class';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 /* Native Dependencies */
@@ -49,8 +48,6 @@ export class NavMobileComponent {
 	public abort = output<void>();
 	public showAssistant = output<void>();
 
-	public show_oracle = signal<boolean>(false);
-
 	public mobile_pending_event_state = computed(() => {
 		const device_type = this.device_type();
 		const active_event = this.active_event();
@@ -60,17 +57,9 @@ export class NavMobileComponent {
 
 	constructor(
 		private bottomSheet: MatBottomSheet,
-		private settingAppService: SettingAppService,
 		private navService: NavService,
 		private router: Router,
-	) {
-		effect(() => {
-			const active_section = this.active_section();
-			if (active_section === 'bitcoin') {
-				this.getOracleEnabled();
-			}
-		});
-	}
+	) {}
 
 	public onMenuSectionClick() {
 		this.bottomSheet.open(NavMobileSheetMenuSectionComponent, {
@@ -91,13 +80,6 @@ export class NavMobileComponent {
 
 	public onMenuSubsectionClick() {
 		const items = this.navService.getMenuItems(this.active_section());
-		if (this.active_section() === 'bitcoin' && this.show_oracle()) {
-			items.push({
-				name: 'Oracle',
-				navroute: 'bitcoin/oracle',
-				subsection: 'oracle',
-			});
-		}
 		this.bottomSheet.open(NavMobileSheetMenuSubsectionComponent, {
 			autoFocus: false,
 			data: {
@@ -122,10 +104,6 @@ export class NavMobileComponent {
 
 	public onProfileClick() {
 		this.bottomSheet.open(NavMobileSheetProfileComponent);
-	}
-
-	private getOracleEnabled(): void {
-		this.show_oracle.set(this.settingAppService.getSetting('bitcoin_oracle').value);
 	}
 
 	private getSectionEnabled(section: string): boolean {

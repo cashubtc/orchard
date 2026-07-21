@@ -31,6 +31,11 @@ export class NavService {
 				navroute: 'bitcoin',
 				subsection: 'dashboard',
 			},
+			{
+				name: 'Oracle',
+				navroute: 'bitcoin/oracle',
+				subsection: 'oracle',
+			},
 		],
 		lightning: [
 			{

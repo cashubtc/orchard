@@ -65,6 +65,10 @@ export class ErrorResolveComponent {
 			title: 'MINT RPC ERROR',
 			description: 'Orchard was unable to connect to the mint RPC',
 		},
+		40013: {
+			title: 'MINT METRICS ERROR',
+			description: 'Orchard was unable to reach the mint metrics endpoint',
+		},
 		60001: {
 			title: 'TAPROOT ASSETS RPC ERROR',
 			description: 'Orchard was unable to connect to the taproot assets RPC',

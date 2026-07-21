@@ -3,27 +3,27 @@
  * at `/mint/system` charting the cdk-mintd prometheus exporter's metric
  * families (process gauges, HTTP/mint/DB counters and histograms).
  *
- * The feature is doubly gated: the mint backend must be cdk AND the
- * `mint.metrics.api` setting must point at the exporter
- * (`ApiMintMetricsService.guardSupport`). The mint section's "System" nav
- * tab renders only when the setting is non-empty (`show_server`,
- * mint-section.component.ts) — computed once at construction, so a fresh
- * page load reflects the settings phase's GraphQL flip. Samples land in
- * `metrics_mint` via the per-minute `collect-mint-metrics` cron; when the
- * scrape endpoint is down the cron warn-logs `Mint metrics endpoint
- * unreachable` (visible via `npm run e2e:logs`) — the diagnostic path if
- * the `[prometheus]` exporter ever drops out of the pinned mintd image.
+ * The feature is doubly gated: the mint backend must be cdk AND Orchard must
+ * boot with `MINT_METRICS_API` pointing at the exporter
+ * (`ApiMintMetricsService.guardSupport`, env config — not a DB setting). The
+ * mint section's "System" nav tab is now FIXED — always rendered regardless of
+ * config. The route swaps components on match: when `config.mint.metrics` is
+ * true (`mintMetricsGuard` canMatch) the real charts component loads; otherwise
+ * the route falls through to the `mint-subsection-system-disabled` stub with a
+ * docs link. Samples land in `metrics_mint` via the per-minute
+ * `collect-mint-metrics` cron; when the scrape endpoint is down the cron
+ * warn-logs `Mint metrics endpoint unreachable` (visible via `npm run
+ * e2e:logs`) — the diagnostic path if the `[prometheus]` exporter ever drops
+ * out of the pinned mintd image.
  *
  * Coverage by tag:
- *   - `@mint-metrics` (lnd-cdk-sqlite only — the stack whose settings
- *     matrix sets `mint_metrics_api`): settings-flip differential against
- *     the orchard DB, nav-tab presence + routing, gauge-chart population
- *     (with a poll on the DB oracle for the first cron tick), interval and
- *     refresh `MintMetrics` refires.
- *   - `@canary` (nutshell + unset setting): the System tab is absent, and
- *     direct `/mint/system` renders every chart in the empty
- *     `bar_chart_off` state without crashing (server MintSupportError
- *     collapses to `metrics=[]` client-side).
+ *   - `@mint-metrics` (lnd-cdk-sqlite only — the stack whose env sets
+ *     `MINT_METRICS_API`): nav-tab presence + routing to the real charts
+ *     component, gauge-chart population (with a poll on the DB oracle for the
+ *     first cron tick), interval and refresh `MintMetrics` refires.
+ *   - `@canary` (nutshell + unset env): the System tab is still present, but
+ *     both the nav click and a direct `/mint/system` load the not-configured
+ *     stub (docs link), never the charts component.
  *
  * States the component supports but this spec does NOT cover:
  *   - counter/histogram charts asserted populated (`warm-up` — counters
@@ -33,13 +33,11 @@
  *     (`unit-better` — covered by Karma on the chart helpers)
  *   - scrape-outage recovery logging (`disruptive` — `docker pause` on the
  *     mint would knock out sibling specs)
- *   - settings UI drive (`next-branch` — no settings card exists yet; see
- *     the TEMPORARY GRAPHQL SHORTCUT note in helpers/ui/settings.ts)
  */
 
 import {test, expect, type Page} from '@playwright/test';
 
-import {CONFIGS, getConfig} from '@e2e/helpers/config';
+import {getConfig} from '@e2e/helpers/config';
 import {orchard} from '@e2e/helpers/backend';
 import {matchGql} from '@e2e/helpers/ui/gql-intercept';
 
@@ -63,17 +61,10 @@ function chartPanel(page: Page, title: string) {
 }
 
 test.describe('mint system — /mint/system', {tag: '@mint-metrics'}, () => {
-	test('settings phase persisted mint.metrics.api', async ({page: _page}, testInfo) => {
-		// Differential against orchard's own settings table: the GraphQL flip
-		// in settings.setup must have landed the exact matrix value.
-		const config = getConfig(testInfo.project.name);
-		expect(orchard.setting(config, 'mint.metrics.api')).toBe(CONFIGS[config.name].appSettings?.mint_metrics_api);
-	});
-
-	test('mint secondary nav shows the System tab and routes to /mint/system', async ({page}) => {
+	test('mint secondary nav shows the System tab and routes to the charts component', async ({page}) => {
 		await page.goto('/mint', {waitUntil: 'networkidle'});
-		// `show_server` is computed at section construction from the already-
-		// flipped setting — this fresh load must render the tab.
+		// The nav is fixed — the System tab always renders. On this stack the
+		// exporter is env-configured, so the route matches the real component.
 		const tab = page.locator('orc-mint-section orc-nav-secondary-item', {hasText: 'System'});
 		await expect(tab).toBeVisible();
 		await tab.click();
@@ -82,14 +73,15 @@ test.describe('mint system — /mint/system', {tag: '@mint-metrics'}, () => {
 		await expect(host).toBeVisible();
 		await expect(host.locator('orc-system-control')).toBeVisible();
 		await expect(host.locator('button[aria-label="Refresh data"]')).toBeVisible();
+		// The not-configured stub must NOT render on a metrics-enabled stack.
+		await expect(page.locator('orc-mint-subsection-system-disabled')).toHaveCount(0);
 	});
 
 	test('gauge charts populate once the scrape cron has sampled', async ({page}, testInfo) => {
-		// The settings phase flips the setting minutes before specs run, so
-		// samples normally already exist; the poll is the safety net for the
-		// worst case (this file scheduled immediately after settings). Cron
-		// ticks per minute — allow three ticks before declaring collection
-		// broken.
+		// The cron ticks per minute against the env-configured exporter, so
+		// samples normally already exist by the time specs run; the poll is the
+		// safety net for the worst case (this file scheduled immediately after
+		// the stack boots). Allow three ticks before declaring collection broken.
 		test.setTimeout(240_000);
 		const config = getConfig(testInfo.project.name);
 		await expect.poll(() => orchard.metricsMintCount(config), {timeout: 180_000, intervals: [10_000]}).toBeGreaterThan(0);
@@ -131,36 +123,28 @@ test.describe('mint system — /mint/system', {tag: '@mint-metrics'}, () => {
 	});
 });
 
-test.describe('mint system disabled — nutshell / unset setting', {tag: '@canary'}, () => {
-	test('the System tab is absent from the mint nav', async ({page}, testInfo) => {
-		// Canary runs nutshell and its matrix never sets `mint_metrics_api`,
-		// so the server default '' keeps `show_server` false.
-		const config = getConfig(testInfo.project.name);
-		expect(orchard.setting(config, 'mint.metrics.api')).toBeNull();
+test.describe('mint system disabled — nutshell / unset MINT_METRICS_API', {tag: '@canary'}, () => {
+	test('the System tab is present but routes to the not-configured stub', async ({page}) => {
+		// Canary runs nutshell with no MINT_METRICS_API, so `config.mint.metrics`
+		// is false. The nav is fixed (tab always shown), but the route's
+		// mintMetricsGuard canMatch fails and falls through to the stub module.
 		await page.goto('/mint', {waitUntil: 'networkidle'});
-		await expect(page.locator('orc-mint-section orc-nav-secondary-item', {hasText: 'Dashboard'})).toBeVisible();
-		await expect(page.locator('orc-mint-section orc-nav-secondary-item', {hasText: 'System'})).toHaveCount(0);
+		const tab = page.locator('orc-mint-section orc-nav-secondary-item', {hasText: 'System'});
+		await expect(tab).toBeVisible();
+		await tab.click();
+		await expect(page).toHaveURL(/\/mint\/system$/);
+		const stub = page.locator('orc-mint-subsection-system-disabled');
+		await expect(stub).toBeVisible();
+		await expect(stub.locator('orc-public-docs-link-card')).toBeVisible();
+		// The real charts component must NOT load when the exporter is unset.
+		await expect(page.locator('orc-mint-subsection-system')).toHaveCount(0);
 	});
 
-	test('direct /mint/system renders every chart in the empty state', async ({page}) => {
-		// The route's enabledGuard gates on mint-enabled, not metrics — the
-		// page mounts, the query errors server-side (MintSupportError), and
-		// the component collapses to empty charts instead of crashing.
+	test('direct /mint/system renders the not-configured stub', async ({page}) => {
 		await page.goto('/mint/system', {waitUntil: 'networkidle'});
-		const host = page.locator('orc-mint-subsection-system');
-		await expect(host).toBeVisible();
-		await expect(host.locator('orc-system-control')).toBeVisible();
-		// The canvas renders unconditionally (`displayed` defaults true) and
-		// sits behind the overlay — the `bar_chart_off` overlay is the
-		// empty-state discriminator, not canvas absence.
-		const charts = host.locator('orc-system-chart');
-		const chart_count = await charts.count();
-		expect(chart_count).toBeGreaterThan(0);
-		for (let i = 0; i < chart_count; i++) {
-			await expect(
-				charts.nth(i).locator('.chart-overlay mat-icon', {hasText: 'bar_chart_off'}),
-				`chart ${i} empty overlay`,
-			).toBeVisible();
-		}
+		const stub = page.locator('orc-mint-subsection-system-disabled');
+		await expect(stub).toBeVisible();
+		await expect(stub.locator('orc-public-docs-link-card')).toBeVisible();
+		await expect(page.locator('orc-mint-subsection-system')).toHaveCount(0);
 	});
 });

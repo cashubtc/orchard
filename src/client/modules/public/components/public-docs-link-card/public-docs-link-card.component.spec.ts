@@ -1,5 +1,6 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {provideRouter} from '@angular/router';
 /* Vendor Dependencies */
 import {MatDialog} from '@angular/material/dialog';
 /* Native Dependencies */
@@ -18,7 +19,7 @@ describe('PublicDocsLinkCardComponent', () => {
 
 		await TestBed.configureTestingModule({
 			imports: [OrcPublicModule],
-			providers: [{provide: MatDialog, useValue: dialog}],
+			providers: [{provide: MatDialog, useValue: dialog}, provideRouter([])],
 		}).compileComponents();
 
 		fixture = TestBed.createComponent(PublicDocsLinkCardComponent);
@@ -45,5 +46,27 @@ describe('PublicDocsLinkCardComponent', () => {
 
 		expect(compiled.textContent).toContain('Bitcoin configuration docs');
 		expect(compiled.textContent).not.toContain('https://docs.orchard.space/install/configuration/#bitcoin');
+	});
+
+	describe('router_link CTA variant', () => {
+		beforeEach(() => {
+			fixture.componentRef.setInput('router_link', '/settings/app');
+			fixture.detectChanges();
+		});
+
+		it('should render the internal routerLink button instead of the docs dialog button', () => {
+			const compiled = fixture.nativeElement as HTMLElement;
+			const icon = compiled.querySelector('.docs-link-button mat-icon');
+
+			expect(icon?.textContent).toContain('settings');
+			expect(compiled.textContent).not.toContain('open_in_new');
+		});
+
+		it('should not open the safe-exit dialog when the CTA button is clicked', () => {
+			const button = fixture.nativeElement.querySelector('.docs-link-button') as HTMLButtonElement;
+			button.click();
+
+			expect(dialog.open).not.toHaveBeenCalled();
+		});
 	});
 });

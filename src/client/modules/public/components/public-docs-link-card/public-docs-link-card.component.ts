@@ -15,8 +15,9 @@ import {PublicExitWarningComponent} from '@client/modules/public/components/publ
 export class PublicDocsLinkCardComponent {
 	private readonly dialog = inject(MatDialog); // Opens the safe external-link warning dialog.
 
-	public readonly docs_link = input.required<string>(); // Official Orchard docs URL for this configuration section.
-	public readonly link_title = input.required<string>(); // Short label shown on the documentation button.
+	public readonly docs_link = input<string>(''); // Official Orchard docs URL; used when router_link is not set.
+	public readonly router_link = input<string | null>(null); // Internal route for an in-app CTA; renders a routerLink button instead of the docs dialog.
+	public readonly link_title = input.required<string>(); // Short label shown on the card's action button.
 
 	/**
 	 * Opens the safe-exit warning dialog for the projected documentation link.

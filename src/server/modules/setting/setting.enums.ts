@@ -20,7 +20,6 @@ export enum SettingSensitivity {
 
 export enum SettingKey {
 	BITCOIN_ORACLE = 'bitcoin.oracle',
-	MINT_METRICS_API = 'mint.metrics.api',
 	AI_ENABLED = 'ai.enabled',
 	AI_VENDOR = 'ai.vendor',
 	AI_OLLAMA_API = 'ai.ollama.api',

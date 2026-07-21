@@ -6,7 +6,6 @@ import {filter, Subscription} from 'rxjs';
 /* Application Dependencies */
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {PublicService} from '@client/modules/public/services/image/public.service';
-import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
 import {PublicImage} from '@client/modules/public/classes/public-image.class';
 
@@ -22,9 +21,6 @@ export class MintSectionComponent implements OnInit, OnDestroy {
 	private readonly route = inject(ActivatedRoute);
 	private readonly mintService = inject(MintService);
 	private readonly publicService = inject(PublicService);
-	private readonly settingAppService = inject(SettingAppService);
-
-	public readonly show_server = !!this.settingAppService.getSetting('mint_metrics_api').value;
 
 	public readonly mint_info = signal<MintInfo | null>(null);
 	public readonly icon_data = signal<string | null>(null);

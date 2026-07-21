@@ -93,6 +93,7 @@ export const config = (): Config => {
 		rpc_key: process.env.MINT_RPC_KEY,
 		rpc_cert: process.env.MINT_RPC_CERT,
 		rpc_ca: process.env.MINT_RPC_CA,
+		metrics_api: replaceLocalhostInDocker(process.env.MINT_METRICS_API),
 	};
 
 	const config = {

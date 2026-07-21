@@ -52,7 +52,7 @@ const AI_HEALTH_QUERY = `{ ai_health { status } }`;
 const SYSTEM_METRICS_PROBE_QUERY = `{ system_metrics(interval: minute) { date } }`;
 /** Probe `metrics_mint` via a gauge family the cdk exporter always serves —
  *  one stored scrape is enough for gauges (counters need two). Empty when
- *  `mint.metrics.api` is unset or the mint isn't cdk (the resolver throws
+ *  `MINT_METRICS_API` is unset or the mint isn't cdk (the resolver throws
  *  MintSupportError, which `probe` collapses to `[]`). */
 const MINT_METRICS_PROBE_QUERY = `{ mint_metrics(interval: minute, metrics: ["process_memory_bytes"]) { date } }`;
 
@@ -191,7 +191,7 @@ export const systemMetricsHasRows: ReadinessPredicate = (r) => ({
 	reason: `system_metrics_has_rows rows=${r.system_metrics_recent.length}`,
 });
 
-/** `metrics_mint` has at least one row — `mint.metrics.api` is set AND the
+/** `metrics_mint` has at least one row — `MINT_METRICS_API` is set AND the
  *  per-minute scrape cron has stored a sample from the cdk exporter. Gauges
  *  chart from one sample; counters need two. */
 export const mintMetricsHasRows: ReadinessPredicate = (r) => ({

@@ -2,11 +2,11 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {getRepositoryToken} from '@nestjs/typeorm';
 import {expect} from '@jest/globals';
+/* Core Dependencies */
+import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
 import {PrometheusService} from '@server/modules/prometheus/prometheus.service';
 import {PromFamily} from '@server/modules/prometheus/prometheus.types';
-import {SettingService} from '@server/modules/setting/setting.service';
-import {SettingKey} from '@server/modules/setting/setting.enums';
 /* Local Dependencies */
 import {MintMetrics} from './mintmetrics.entity';
 import {MintMetricsService} from './mintmetrics.service';
@@ -59,7 +59,7 @@ describe('MintMetricsService', () => {
 		manager: {transaction: jest.Mock};
 	};
 	let prometheusService: jest.Mocked<PrometheusService>;
-	let settingService: jest.Mocked<SettingService>;
+	let configService: jest.Mocked<ConfigService>;
 
 	beforeEach(async () => {
 		repository = {
@@ -75,13 +75,13 @@ describe('MintMetricsService', () => {
 				MintMetricsService,
 				{provide: getRepositoryToken(MintMetrics), useValue: repository},
 				{provide: PrometheusService, useValue: {scrapeMetrics: jest.fn()}},
-				{provide: SettingService, useValue: {getStringSetting: jest.fn().mockResolvedValue('http://localhost:5553')}},
+				{provide: ConfigService, useValue: {get: jest.fn().mockReturnValue('http://localhost:5553')}},
 			],
 		}).compile();
 
 		mintMetricsService = module.get<MintMetricsService>(MintMetricsService);
 		prometheusService = module.get(PrometheusService);
-		settingService = module.get(SettingService);
+		configService = module.get(ConfigService);
 	});
 
 	it('should be defined', () => {
@@ -89,15 +89,15 @@ describe('MintMetricsService', () => {
 	});
 
 	describe('scrapeMintMetrics', () => {
-		it('builds the scrape url from the setting', async () => {
+		it('builds the scrape url from the env config', async () => {
 			prometheusService.scrapeMetrics.mockResolvedValue([]);
 			await mintMetricsService.scrapeMintMetrics();
-			expect(settingService.getStringSetting).toHaveBeenCalledWith(SettingKey.MINT_METRICS_API);
+			expect(configService.get).toHaveBeenCalledWith('cashu.metrics_api');
 			expect(prometheusService.scrapeMetrics).toHaveBeenCalledWith('http://localhost:5553/metrics');
 		});
 
-		it('returns an empty array without scraping when the setting is unset', async () => {
-			settingService.getStringSetting.mockResolvedValue(null);
+		it('returns an empty array without scraping when the env config is unset', async () => {
+			configService.get.mockReturnValue(undefined);
 			const out = await mintMetricsService.scrapeMintMetrics();
 			expect(out).toEqual([]);
 			expect(prometheusService.scrapeMetrics).not.toHaveBeenCalled();

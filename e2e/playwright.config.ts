@@ -103,11 +103,11 @@ import type {ConfigInfo} from './types/config';
  *                          oracle on for this stack (cln-nutshell-postgres
  *                          only — pairs with @mainchain). Use for specs that
  *                          need a populated price feed.
- *   @mint-metrics        — config-state: settings setup pointed
- *                          `mint.metrics.api` at the stack's cdk-mintd
- *                          prometheus exporter (lnd-cdk-sqlite only). Use
- *                          for specs that need the mint system page live
- *                          with a populated metrics_mint table.
+ *   @mint-metrics        — config-state: the stack's env sets
+ *                          `MINT_METRICS_API` to the cdk-mintd prometheus
+ *                          exporter (lnd-cdk-sqlite only). Use for specs
+ *                          that need the mint system page live with a
+ *                          populated metrics_mint table.
  *   @all                 — genuine matrix coverage; runs on every stack
  *
  * Untagged tests match no project's grep → they don't run. If you see a new

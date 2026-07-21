@@ -62,7 +62,7 @@ export interface Readiness {
 	 *  its first minute bucket in `metrics_system`. */
 	system_metrics_recent: MetricSampleRow[];
 	/** Probe of `mint_metrics` on a gauge family. Empty on non-cdk stacks
-	 *  or when `mint.metrics.api` is unset (resolver throws — collapsed to
+	 *  or when `MINT_METRICS_API` is unset (resolver throws — collapsed to
 	 *  `[]`), and until the first successful exporter scrape lands in
 	 *  `metrics_mint`. */
 	mint_metrics_recent: MetricSampleRow[];

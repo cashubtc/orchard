@@ -313,7 +313,7 @@ export class TaskService {
 		timeZone: 'UTC',
 	})
 	async collectMintMetrics() {
-		if (!(await this.isMintMetricsEnabled())) return;
+		if (!this.isMintMetricsEnabled()) return;
 
 		try {
 			await this.mintMetricsService.collectAndStore();
@@ -331,7 +331,7 @@ export class TaskService {
 		timeZone: 'UTC',
 	})
 	async cleanupMintMetrics() {
-		if (!(await this.isMintMetricsEnabled())) return;
+		if (!this.isMintMetricsEnabled()) return;
 
 		this.logger.log('Starting mint metrics cleanup...');
 		try {
@@ -345,9 +345,9 @@ export class TaskService {
 	/**
 	 * Whether mint prometheus metrics are enabled — a cdk mint with a configured endpoint
 	 */
-	private async isMintMetricsEnabled(): Promise<boolean> {
+	private isMintMetricsEnabled(): boolean {
 		if (this.configService.get('cashu.type') !== MintType.CDK) return false;
-		return !!(await this.settingService.getStringSetting(SettingKey.MINT_METRICS_API));
+		return !!this.configService.get('cashu.metrics_api');
 	}
 
 	/**
