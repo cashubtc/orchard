@@ -263,6 +263,31 @@ describe('ApiMintMetricsService', () => {
 		});
 	});
 
+	describe('checkHealth', () => {
+		it('returns true when the exporter scrape succeeds', async () => {
+			mintMetricsService.scrapeMintMetrics.mockResolvedValue([]);
+			await expect(apiMintMetricsService.checkHealth('tag')).resolves.toBe(true);
+			expect(mintMetricsService.scrapeMintMetrics).toHaveBeenCalled();
+		});
+
+		it('wraps an unreachable exporter in OrchardApiError with MintMetricsError', async () => {
+			mintMetricsService.scrapeMintMetrics.mockRejectedValue(new Error('socket hang up'));
+			await expect(apiMintMetricsService.checkHealth('tag')).rejects.toBeInstanceOf(OrchardApiError);
+			expect(errorService.resolveError).toHaveBeenCalledWith(
+				expect.anything(),
+				expect.any(Error),
+				'tag',
+				expect.objectContaining({errord: OrchardErrorCode.MintMetricsError}),
+			);
+		});
+
+		it('throws without scraping when the backend is unsupported', async () => {
+			configService.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'nutshell' : 'http://localhost:5553'));
+			await expect(apiMintMetricsService.checkHealth('tag')).rejects.toBeInstanceOf(OrchardApiError);
+			expect(mintMetricsService.scrapeMintMetrics).not.toHaveBeenCalled();
+		});
+	});
+
 	describe('histogramQuantile', () => {
 		// exercises the private percentile core directly to cover its guard/clamp branches
 		const quantile = (q: number, buckets: {le: number; count: number}[]): number | null =>

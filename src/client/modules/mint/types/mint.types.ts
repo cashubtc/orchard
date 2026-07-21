@@ -260,6 +260,10 @@ export type MintMetricsResponse = {
 	mint_metrics: OrchardMintMetrics[];
 };
 
+export type MintMetricsHealthResponse = {
+	mint_metrics_health: boolean;
+};
+
 export type MintNut04QuoteUpdateResponse = {
 	mint_nut04_quote_update: OrchardMintNut04QuoteUpdate;
 };

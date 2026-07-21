@@ -112,6 +112,19 @@ const mintInfoOptionalResolver: ResolveFn<any> = () => {
 	return mintService.loadMintInfo().pipe(catchError(() => of(null)));
 };
 
+const mintMetricsHealthResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
+	const mintService = inject(MintService);
+	const router = inject(Router);
+	const errorService = inject(ErrorService);
+	return mintService.loadMintMetricsHealth().pipe(
+		catchError((error) => {
+			errorService.resolve_errors.push(error);
+			router.navigate(['mint', 'error'], {state: {error, target: state.url, sub_section: route.data['sub_section']}});
+			return of([]);
+		}),
+	);
+};
+
 @NgModule({
 	declarations: [MintSectionComponent],
 	imports: [
@@ -224,6 +237,7 @@ const mintInfoOptionalResolver: ResolveFn<any> = () => {
 						title: 'Orchard | Mint System',
 						resolve: {
 							mint_info: mintInfoOptionalResolver,
+							mint_metrics_health: mintMetricsHealthResolver,
 						},
 						canActivate: [enabledGuard],
 						data: {

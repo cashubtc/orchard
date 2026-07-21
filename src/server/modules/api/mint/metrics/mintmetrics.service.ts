@@ -56,6 +56,25 @@ export class ApiMintMetricsService {
 	}
 
 	/**
+	 * Probes the mint prometheus exporter to confirm it is reachable
+	 * Throws OrchardApiError(MintMetricsError) when the endpoint is unsupported or unreachable
+	 * @param {string} tag - Logging tag for error tracking
+	 * @returns {Promise<boolean>} True when the exporter responded successfully
+	 */
+	async checkHealth(tag: string): Promise<boolean> {
+		try {
+			this.guardSupport();
+			await this.mintMetricsService.scrapeMintMetrics();
+			return true;
+		} catch (error) {
+			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
+				errord: OrchardErrorCode.MintMetricsError,
+			});
+			throw new OrchardApiError(orchard_error);
+		}
+	}
+
+	/**
 	 * Throws when the mint backend has no prometheus metrics support or no endpoint is configured
 	 */
 	private guardSupport(): void {

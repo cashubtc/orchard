@@ -545,3 +545,8 @@ query MintMetrics($date_start: UnixTimestamp, $date_end: UnixTimestamp, $interva
 		p99
 	}
 }`;
+
+export const MINT_METRICS_HEALTH_QUERY = `
+query MintMetricsHealth {
+	mint_metrics_health
+}`;

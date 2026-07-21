@@ -51,6 +51,7 @@ import {
 	MintActivitySummaryResponse,
 	MintMetricsArgs,
 	MintMetricsResponse,
+	MintMetricsHealthResponse,
 } from '@client/modules/mint/types/mint.types';
 import {ApiService} from '@client/modules/api/services/api/api.service';
 import {CacheService} from '@client/modules/cache/services/cache/cache.service';
@@ -116,6 +117,7 @@ import {
 	MINT_WATCHDOG_STATUS_QUERY,
 	MINT_ACTIVITY_SUMMARY_QUERY,
 	MINT_METRICS_QUERY,
+	MINT_METRICS_HEALTH_QUERY,
 } from './mint.queries';
 
 @Injectable({
@@ -865,6 +867,22 @@ export class MintService {
 			}),
 			catchError((error) => {
 				console.error('Error loading mint metrics:', error);
+				return throwError(() => error);
+			}),
+		);
+	}
+
+	/** Probes the mint prometheus exporter; errors when the endpoint is unreachable so the route resolver can surface it */
+	public loadMintMetricsHealth(): Observable<boolean> {
+		const query = getApiQuery(MINT_METRICS_HEALTH_QUERY, {});
+
+		return this.http.post<OrchardRes<MintMetricsHealthResponse>>(this.apiService.api, query).pipe(
+			map((response) => {
+				if (response.errors) throw new OrchardErrors(response.errors);
+				return response.data.mint_metrics_health;
+			}),
+			catchError((error) => {
+				console.error('Error loading mint metrics health:', error);
 				return throwError(() => error);
 			}),
 		);

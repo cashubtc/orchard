@@ -33,4 +33,11 @@ export class MintMetricsResolver {
 		this.logger.debug(tag);
 		return await this.apiMintMetricsService.getMetrics(tag, {date_start, date_end, interval, timezone, metrics});
 	}
+
+	@Query(() => Boolean, {description: 'Health check for the mint prometheus metrics endpoint. Throws when unreachable.'})
+	async mint_metrics_health(): Promise<boolean> {
+		const tag = 'GET { mint_metrics_health }';
+		this.logger.debug(tag);
+		return await this.apiMintMetricsService.checkHealth(tag);
+	}
 }
