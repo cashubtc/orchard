@@ -35,6 +35,12 @@ export function refreshMetricsRange(settings: NonNullableSystemMetricsSettings):
 	return {...settings, ...resolveMetricsDateRangePreset(settings.date_preset)};
 }
 
+/** True when settings describe a live rolling minute window (sub-day minute preset) that should auto-advance */
+export function shouldAutoRefreshMetrics(settings: NonNullableSystemMetricsSettings | null): boolean {
+	if (!settings || settings.interval !== SystemMetricsInterval.Minute || !settings.date_preset) return false;
+	return METRICS_PRESET_META[settings.date_preset]?.interval === SystemMetricsInterval.Minute;
+}
+
 /** Resolves stored device settings into fully-defaulted page settings for a first visit */
 export function resolveSystemMetricsSettings(settings: AllSystemMetricsSettings): NonNullableSystemMetricsSettings {
 	const date_preset = settings.date_preset ?? null;

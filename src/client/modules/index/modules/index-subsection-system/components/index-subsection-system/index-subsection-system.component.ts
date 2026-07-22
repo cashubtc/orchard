@@ -2,7 +2,7 @@
 import {ChangeDetectionStrategy, Component, OnInit, OnDestroy, computed, inject, signal} from '@angular/core';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 /* Vendor Dependencies */
-import {Subscription} from 'rxjs';
+import {Subscription, timer} from 'rxjs';
 /* Application Dependencies */
 import {SettingDeviceService} from '@client/modules/settings/services/setting-device/setting-device.service';
 import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
@@ -17,6 +17,7 @@ import {
 	resolveMetricsDateRangePreset,
 	suggestMetricsInterval,
 	refreshMetricsRange,
+	shouldAutoRefreshMetrics,
 } from '@client/modules/system/helpers/system-settings.helpers';
 import {buildSystemAssistantContext, parseAssistantDateRange} from '@client/modules/system/helpers/system-assistant.helpers';
 import {SystemChartReferenceLine} from '@client/modules/system/types/system.types';
@@ -129,11 +130,13 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 	});
 
 	private subscriptions = new Subscription();
+	private auto_refresh_subscription: Subscription | null = null;
 
 	ngOnInit(): void {
 		this.locale = this.settingDeviceService.getLocale();
 		this.page_settings.set(this.getPageSettings());
 		this.subscriptions.add(this.getBreakpointSubscription());
+		this.subscriptions.add(this.getAutoRefreshSubscription());
 		this.orchardOptionalInit();
 		this.loadInfo();
 		this.loadMetrics();
@@ -172,6 +175,11 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 			.subscribe((result) => this.device_type.set(deviceTypeFromBreakpoints(result)));
 	}
 
+	/** Ticks every minute; each tick decides whether a live minute window is active */
+	private getAutoRefreshSubscription(): Subscription {
+		return timer(60000, 60000).subscribe(() => this.autoRefreshMetrics());
+	}
+
 	/* *******************************************************
 		Data
 	******************************************************** */
@@ -196,6 +204,7 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 	private loadMetrics(): void {
 		const settings = this.page_settings();
 		if (!settings) return;
+		this.auto_refresh_subscription?.unsubscribe();
 		this.loading_metrics.set(true);
 		this.subscriptions.add(
 			this.systemService
@@ -234,10 +243,34 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 		return series.reduce((latest, m) => (m.date > latest.date ? m : latest)).value;
 	}
 
+	/** Rolls the window forward and silently refetches without touching loading state */
+	private autoRefreshMetrics(): void {
+		const settings = this.page_settings();
+		if (!shouldAutoRefreshMetrics(settings) || this.loading_metrics() || this.refreshing() || document.hidden) return;
+		const refreshed_settings = refreshMetricsRange(settings!);
+		this.page_settings.set(refreshed_settings);
+		this.settingDeviceService.setSystemMetricsSettings(refreshed_settings);
+		this.auto_refresh_subscription?.unsubscribe();
+		this.auto_refresh_subscription = this.systemService
+			.loadSystemMetrics({
+				date_start: refreshed_settings.date_start,
+				date_end: refreshed_settings.date_end,
+				interval: refreshed_settings.interval,
+				timezone: this.settingDeviceService.getTimezone(),
+				metrics: SYSTEM_METRIC_FAMILIES,
+			})
+			.subscribe({
+				next: (metrics: SystemMetricSample[]) => this.metrics.set(metrics),
+				// silent tick: keep the last data and let the timer retry next minute
+				error: () => {},
+			});
+	}
+
 	/** Forces a fresh fetch of the stored series against a re-resolved rolling window, then pulses the page */
 	public onRefresh(): void {
 		const settings = this.page_settings();
 		if (!settings || this.refreshing()) return;
+		this.auto_refresh_subscription?.unsubscribe();
 		const refreshed_settings = refreshMetricsRange(settings);
 		this.page_settings.set(refreshed_settings);
 		this.settingDeviceService.setSystemMetricsSettings(refreshed_settings);
@@ -331,6 +364,7 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 	******************************************************** */
 
 	ngOnDestroy(): void {
+		this.auto_refresh_subscription?.unsubscribe();
 		this.subscriptions.unsubscribe();
 	}
 }

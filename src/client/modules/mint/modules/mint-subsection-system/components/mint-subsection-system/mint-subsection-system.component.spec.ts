@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {ComponentFixture, TestBed, fakeAsync, tick, discardPeriodicTasks} from '@angular/core/testing';
 import {ActivatedRoute} from '@angular/router';
 /* Vendor Dependencies */
 import {of, Subject} from 'rxjs';
@@ -13,6 +13,7 @@ import {SettingAppService} from '@client/modules/settings/services/setting-app/s
 import {AiService} from '@client/modules/ai/services/ai/ai.service';
 import {AiChatToolCall} from '@client/modules/ai/classes/ai-chat-chunk.class';
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
+import {MintMetric} from '@client/modules/mint/classes/mint-metric.class';
 /* Native Dependencies */
 import {OrcMintSubsectionSystemModule} from '@client/modules/mint/modules/mint-subsection-system/mint-subsection-system.module';
 /* Local Dependencies */
@@ -155,6 +156,71 @@ describe('MintSubsectionSystemComponent', () => {
 		expect(args.date_end - args.date_start).toBe(15 * 60);
 		expect(component.page_settings()?.date_end).toBe(args.date_end);
 	});
+
+	it('should silently auto-advance a rolling minute window every minute', fakeAsync(() => {
+		const mint_service = TestBed.inject(MintService) as unknown as {loadMintMetrics: jasmine.Spy};
+		const live_fixture = TestBed.createComponent(MintSubsectionSystemComponent);
+		live_fixture.detectChanges();
+		live_fixture.componentInstance.page_settings.set({
+			date_start: 0,
+			date_end: 900,
+			date_preset: DateRangePreset.Last15Minutes,
+			interval: SystemMetricsInterval.Minute,
+		});
+		const before = Math.floor(Date.now() / 1000);
+		const calls_before = mint_service.loadMintMetrics.calls.count();
+		tick(60000);
+		expect(mint_service.loadMintMetrics.calls.count()).toBe(calls_before + 1);
+		const args = mint_service.loadMintMetrics.calls.mostRecent().args[0];
+		expect(args.date_end).toBeGreaterThanOrEqual(before);
+		expect(args.date_end - args.date_start).toBe(15 * 60);
+		expect(live_fixture.componentInstance.loading_metrics()).toBeFalse();
+		discardPeriodicTasks();
+	}));
+
+	it('should drop a stale auto-refresh response once a manual refresh supersedes it', fakeAsync(() => {
+		const mint_service = TestBed.inject(MintService) as unknown as {loadMintMetrics: jasmine.Spy};
+		const live_fixture = TestBed.createComponent(MintSubsectionSystemComponent);
+		live_fixture.detectChanges();
+		live_fixture.componentInstance.page_settings.set({
+			date_start: 0,
+			date_end: 900,
+			date_preset: DateRangePreset.Last15Minutes,
+			interval: SystemMetricsInterval.Minute,
+		});
+		const stale_response = new Subject<MintMetric[]>();
+		mint_service.loadMintMetrics.and.returnValue(stale_response);
+		tick(60000);
+		const fresh = [{metric: 'cdk_mint_operations_total', date: 60, value: 1}] as unknown as MintMetric[];
+		mint_service.loadMintMetrics.and.returnValue(of(fresh));
+		live_fixture.componentInstance.onRefresh();
+		stale_response.next([]);
+		expect(live_fixture.componentInstance.metrics()).toEqual(fresh);
+		discardPeriodicTasks();
+	}));
+
+	it('should not auto-advance without a rolling minute window', fakeAsync(() => {
+		const mint_service = TestBed.inject(MintService) as unknown as {loadMintMetrics: jasmine.Spy};
+		const live_fixture = TestBed.createComponent(MintSubsectionSystemComponent);
+		live_fixture.detectChanges();
+		live_fixture.componentInstance.page_settings.set({
+			date_start: 0,
+			date_end: 900,
+			date_preset: null,
+			interval: SystemMetricsInterval.Minute,
+		});
+		const calls_before = mint_service.loadMintMetrics.calls.count();
+		tick(60000);
+		live_fixture.componentInstance.page_settings.set({
+			date_start: 0,
+			date_end: 900,
+			date_preset: DateRangePreset.Last6Hours,
+			interval: SystemMetricsInterval.Hour,
+		});
+		tick(60000);
+		expect(mint_service.loadMintMetrics.calls.count()).toBe(calls_before);
+		discardPeriodicTasks();
+	}));
 
 	it('should route a DATE_RANGE_UPDATE tool call to onDateChange with unix timestamps', () => {
 		const on_date_change = spyOn(component, 'onDateChange');

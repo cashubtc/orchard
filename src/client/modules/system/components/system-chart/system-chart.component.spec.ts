@@ -71,6 +71,38 @@ describe('SystemChartComponent', () => {
 		expect(component.chart_data.datasets.map((dataset) => dataset.label)).toEqual(['CPU']);
 	});
 
+	it('updates dataset data in place on a metrics-only change with the same series', () => {
+		const metrics: SystemChartPoint[] = [{metric: 'cpu_percent', date: 3600, value: 42}];
+		fixture.componentRef.setInput('type', 'line');
+		fixture.componentRef.setInput('unit', 'percent');
+		fixture.componentRef.setInput('metrics', metrics);
+		fixture.componentRef.setInput('loading', false);
+		fixture.detectChanges();
+		const previous_data = component.chart_data;
+
+		fixture.componentRef.setInput('metrics', [...metrics, {metric: 'cpu_percent', date: 3660, value: 43}]);
+		fixture.detectChanges();
+
+		expect(component.chart_data).toBe(previous_data);
+		expect(component.chart_data.datasets[0].data.length).toBe(2);
+	});
+
+	it('fully rebuilds when a metrics-only change introduces a new series', () => {
+		const metrics: SystemChartPoint[] = [{metric: 'cpu_percent', date: 3600, value: 42}];
+		fixture.componentRef.setInput('type', 'line');
+		fixture.componentRef.setInput('unit', 'percent');
+		fixture.componentRef.setInput('metrics', metrics);
+		fixture.componentRef.setInput('loading', false);
+		fixture.detectChanges();
+		const previous_data = component.chart_data;
+
+		fixture.componentRef.setInput('metrics', [...metrics, {metric: 'process_cpu_percent', date: 3600, value: 10}]);
+		fixture.detectChanges();
+
+		expect(component.chart_data).not.toBe(previous_data);
+		expect(component.chart_data.datasets.length).toBe(2);
+	});
+
 	it('adds a y-axis annotation when reference_line is set', () => {
 		const metrics: SystemChartPoint[] = [{metric: 'load_avg_1m', date: 3600, value: 0.5}];
 		fixture.componentRef.setInput('type', 'line');

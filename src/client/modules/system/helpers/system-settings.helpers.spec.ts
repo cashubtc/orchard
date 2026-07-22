@@ -9,6 +9,7 @@ import {
 	resolveMetricsDateRangePreset,
 	suggestMetricsInterval,
 	refreshMetricsRange,
+	shouldAutoRefreshMetrics,
 	getMetricsGenesisTime,
 } from './system-settings.helpers';
 /* Shared Dependencies */
@@ -112,6 +113,28 @@ describe('system-settings.helpers', () => {
 		it('passes static custom ranges through unchanged', () => {
 			const static_settings = page_settings();
 			expect(refreshMetricsRange(static_settings)).toBe(static_settings);
+		});
+	});
+
+	describe('shouldAutoRefreshMetrics', () => {
+		it('is true for a rolling minute window', () => {
+			expect(
+				shouldAutoRefreshMetrics(
+					page_settings({interval: SystemMetricsInterval.Minute, date_preset: DateRangePreset.Last15Minutes}),
+				),
+			).toBe(true);
+		});
+
+		it('is false for null settings, static custom ranges, and coarser intervals', () => {
+			expect(shouldAutoRefreshMetrics(null)).toBe(false);
+			expect(shouldAutoRefreshMetrics(page_settings({interval: SystemMetricsInterval.Minute}))).toBe(false);
+			expect(shouldAutoRefreshMetrics(page_settings({date_preset: DateRangePreset.Last6Hours}))).toBe(false);
+		});
+
+		it('is false when the minute interval is manually forced onto a long preset', () => {
+			expect(
+				shouldAutoRefreshMetrics(page_settings({interval: SystemMetricsInterval.Minute, date_preset: DateRangePreset.Last30Days})),
+			).toBe(false);
 		});
 	});
 
