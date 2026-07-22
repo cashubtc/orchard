@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, effect, input, output, untracked, viewChild} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, effect, input, output, untracked, viewChild} from '@angular/core';
 import {FormControl, FormGroup, Validators} from '@angular/forms';
 /* Vendor Dependencies */
 import {MatSelectChange} from '@angular/material/select';
@@ -8,7 +8,8 @@ import {DateRange} from '@angular/material/datepicker';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {NonNullableSystemMetricsSettings} from '@client/modules/settings/types/setting.types';
-import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
+import {DateRangePreset, DateRangePresetOption, METRICS_DATE_RANGE_PRESET_OPTIONS} from '@client/modules/form/types/form-daterange.types';
+import {getDateRangePresetLabel, isSubDayDateRangePreset} from '@client/modules/form/helpers/form-daterange.helpers';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 /* Native Dependencies */
 import {SystemIntervalOption} from '@client/modules/system/types/system.types';
@@ -44,6 +45,12 @@ export class SystemControlComponent {
 		{label: 'Hour', value: SystemMetricsInterval.Hour},
 		{label: 'Day', value: SystemMetricsInterval.Day},
 	];
+
+	public readonly preset_options: DateRangePresetOption[] = METRICS_DATE_RANGE_PRESET_OPTIONS;
+
+	// True when the active preset is a rolling sub-day window — the trigger shows a label instead of a date range
+	public readonly is_sub_day_window = computed(() => isSubDayDateRangePreset(this.page_settings().date_preset));
+	public readonly sub_day_label = computed(() => getDateRangePresetLabel(this.page_settings().date_preset));
 
 	public get height_state(): string {
 		return this.panel?.invalid ? 'invalid' : 'valid';
@@ -95,14 +102,20 @@ export class SystemControlComponent {
 		this.presetChange.emit(preset);
 	}
 
-	/** Handles calendar date range selection — updates form controls and emits */
+	/** Handles calendar date range selection — updates form controls and emits a day-granularity range */
 	public onDateRangeChange(range: DateRange<DateTime>): void {
 		if (range.start) this.panel.controls.daterange.controls.date_start.setValue(range.start);
 		if (range.end) this.panel.controls.daterange.controls.date_end.setValue(range.end);
-		this.onDateChange();
+		this.emitDateChange();
 	}
 
+	/** Fires on manual input blur/enter and on picker close — skips sub-day windows, which are preset-driven */
 	public onDateChange(): void {
+		if (this.is_sub_day_window()) return;
+		this.emitDateChange();
+	}
+
+	private emitDateChange(): void {
 		if (this.panel.invalid) return;
 		if (!this.isValidChange()) return;
 		if (this.panel.controls.daterange.controls.date_start.value === null) return;
@@ -131,10 +144,9 @@ export class SystemControlComponent {
 		return false;
 	}
 
-	/** Resets the panel to default filters — last 7 days and hourly interval — then closes the menu */
+	/** Resets the panel to the default preset — the parent derives the matching interval — then closes the menu */
 	public onClearFilter(): void {
 		this.presetChange.emit(DateRangePreset.Last7Days);
-		this.intervalChange.emit(SystemMetricsInterval.Hour);
 		this.filter_menu_trigger()?.closeMenu();
 	}
 

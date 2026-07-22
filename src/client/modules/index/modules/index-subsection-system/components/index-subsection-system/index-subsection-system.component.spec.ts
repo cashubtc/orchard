@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {ComponentFixture, TestBed, fakeAsync, tick, discardPeriodicTasks} from '@angular/core/testing';
 import {ActivatedRoute} from '@angular/router';
 /* Vendor Dependencies */
 import {of, Subject} from 'rxjs';
@@ -11,6 +11,7 @@ import {SettingDeviceService} from '@client/modules/settings/services/setting-de
 import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 import {AiService} from '@client/modules/ai/services/ai/ai.service';
 import {AiChatToolCall} from '@client/modules/ai/classes/ai-chat-chunk.class';
+import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 /* Native Dependencies */
 import {OrcIndexSubsectionSystemModule} from '@client/modules/index/modules/index-subsection-system/index-subsection-system.module';
 import {SystemService} from '@client/modules/index/services/system/system.service';
@@ -152,6 +153,110 @@ describe('IndexSubsectionSystemComponent', () => {
 		expect(system_service.clearMetricsCache).toHaveBeenCalled();
 		expect(component.refreshing()).toBeFalse();
 	});
+
+	it('should resolve a rolling window and derive the interval on preset change', () => {
+		component.onPresetChange(DateRangePreset.Last5Minutes);
+		const settings = component.page_settings();
+		expect(settings?.date_preset).toBe(DateRangePreset.Last5Minutes);
+		expect(settings?.interval).toBe(SystemMetricsInterval.Minute);
+		expect((settings?.date_end ?? 0) - (settings?.date_start ?? 0)).toBe(5 * 60);
+	});
+
+	it('should re-resolve a rolling preset window on interval change', () => {
+		const before = Math.floor(Date.now() / 1000);
+		component.page_settings.set({
+			date_start: 0,
+			date_end: 900,
+			date_preset: DateRangePreset.Last15Minutes,
+			interval: SystemMetricsInterval.Minute,
+		});
+		component.onIntervalChange(SystemMetricsInterval.Hour);
+		const settings = component.page_settings();
+		expect(settings?.interval).toBe(SystemMetricsInterval.Hour);
+		expect(settings?.date_end).toBeGreaterThanOrEqual(before);
+		expect((settings?.date_end ?? 0) - (settings?.date_start ?? 0)).toBe(15 * 60);
+	});
+
+	it('should slide a rolling preset window forward on refresh', () => {
+		const system_service = TestBed.inject(SystemService) as unknown as {loadSystemMetrics: jasmine.Spy};
+		const before = Math.floor(Date.now() / 1000);
+		component.page_settings.set({
+			date_start: 0,
+			date_end: 900,
+			date_preset: DateRangePreset.Last15Minutes,
+			interval: SystemMetricsInterval.Minute,
+		});
+		component.onRefresh();
+		const args = system_service.loadSystemMetrics.calls.mostRecent().args[0];
+		expect(args.date_end).toBeGreaterThanOrEqual(before);
+		expect(args.date_end - args.date_start).toBe(15 * 60);
+		expect(component.page_settings()?.date_end).toBe(args.date_end);
+	});
+
+	it('should silently auto-advance a rolling minute window every minute', fakeAsync(() => {
+		const system_service = TestBed.inject(SystemService) as unknown as {loadSystemMetrics: jasmine.Spy};
+		const live_fixture = TestBed.createComponent(IndexSubsectionSystemComponent);
+		live_fixture.detectChanges();
+		live_fixture.componentInstance.page_settings.set({
+			date_start: 0,
+			date_end: 900,
+			date_preset: DateRangePreset.Last15Minutes,
+			interval: SystemMetricsInterval.Minute,
+		});
+		const before = Math.floor(Date.now() / 1000);
+		const calls_before = system_service.loadSystemMetrics.calls.count();
+		tick(60000);
+		expect(system_service.loadSystemMetrics.calls.count()).toBe(calls_before + 1);
+		const args = system_service.loadSystemMetrics.calls.mostRecent().args[0];
+		expect(args.date_end).toBeGreaterThanOrEqual(before);
+		expect(args.date_end - args.date_start).toBe(15 * 60);
+		expect(live_fixture.componentInstance.loading_metrics()).toBeFalse();
+		discardPeriodicTasks();
+	}));
+
+	it('should drop a stale auto-refresh response once a manual refresh supersedes it', fakeAsync(() => {
+		const system_service = TestBed.inject(SystemService) as unknown as {loadSystemMetrics: jasmine.Spy};
+		const live_fixture = TestBed.createComponent(IndexSubsectionSystemComponent);
+		live_fixture.detectChanges();
+		live_fixture.componentInstance.page_settings.set({
+			date_start: 0,
+			date_end: 900,
+			date_preset: DateRangePreset.Last15Minutes,
+			interval: SystemMetricsInterval.Minute,
+		});
+		const stale_response = new Subject<SystemMetricSample[]>();
+		system_service.loadSystemMetrics.and.returnValue(stale_response);
+		tick(60000);
+		const fresh = [new SystemMetricSample({metric: SystemMetric.CpuPercent, date: 60, value: 1})];
+		system_service.loadSystemMetrics.and.returnValue(of(fresh));
+		live_fixture.componentInstance.onRefresh();
+		stale_response.next([]);
+		expect(live_fixture.componentInstance.metrics()).toEqual(fresh);
+		discardPeriodicTasks();
+	}));
+
+	it('should not auto-advance without a rolling minute window', fakeAsync(() => {
+		const system_service = TestBed.inject(SystemService) as unknown as {loadSystemMetrics: jasmine.Spy};
+		const live_fixture = TestBed.createComponent(IndexSubsectionSystemComponent);
+		live_fixture.detectChanges();
+		live_fixture.componentInstance.page_settings.set({
+			date_start: 0,
+			date_end: 900,
+			date_preset: null,
+			interval: SystemMetricsInterval.Minute,
+		});
+		const calls_before = system_service.loadSystemMetrics.calls.count();
+		tick(60000);
+		live_fixture.componentInstance.page_settings.set({
+			date_start: 0,
+			date_end: 900,
+			date_preset: DateRangePreset.Last6Hours,
+			interval: SystemMetricsInterval.Hour,
+		});
+		tick(60000);
+		expect(system_service.loadSystemMetrics.calls.count()).toBe(calls_before);
+		discardPeriodicTasks();
+	}));
 
 	it('should route a DATE_RANGE_UPDATE tool call to onDateChange with unix timestamps', () => {
 		const on_date_change = spyOn(component, 'onDateChange');

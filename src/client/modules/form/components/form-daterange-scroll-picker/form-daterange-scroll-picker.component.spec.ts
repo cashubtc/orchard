@@ -6,7 +6,7 @@ import {DateRange} from '@angular/material/datepicker';
 import {DateTime} from 'luxon';
 /* Native Dependencies */
 import {OrcFormModule} from '@client/modules/form/form.module';
-import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
+import {DateRangePreset, METRICS_DATE_RANGE_PRESET_OPTIONS} from '@client/modules/form/types/form-daterange.types';
 /* Local Dependencies */
 import {FormDaterangeScrollPickerComponent} from './form-daterange-scroll-picker.component';
 
@@ -42,8 +42,14 @@ describe('FormDaterangeScrollPickerComponent', () => {
 		expect(component.is_open()).toBe(false);
 	});
 
-	it('should have all preset options', () => {
-		expect(component.preset_options.length).toBe(7);
+	it('should default to the day-granularity preset options', () => {
+		expect(component.preset_options().length).toBe(7);
+	});
+
+	it('should use the preset options provided via input', () => {
+		fixture.componentRef.setInput('preset_options', METRICS_DATE_RANGE_PRESET_OPTIONS);
+		fixture.detectChanges();
+		expect(component.preset_options().length).toBe(METRICS_DATE_RANGE_PRESET_OPTIONS.length);
 	});
 
 	it('should compute current_range from date_start and date_end inputs', () => {

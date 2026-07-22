@@ -6,7 +6,7 @@
 	<div class="picker-panel">
 		<div class="preset-column">
 			<mat-nav-list>
-				@for (option of preset_options; track option.value) {
+				@for (option of preset_options(); track option.value) {
 					<a mat-list-item (click)="onPresetSelected(option.value)" [activated]="active_preset() === option.value">
 						{{ option.label }}
 					</a>

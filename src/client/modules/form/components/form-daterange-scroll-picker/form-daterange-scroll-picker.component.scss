@@ -26,11 +26,11 @@
 	@extend %orc-corner-large;
 	@extend %orc-level3;
 	@extend %overflow-hidden;
-	width: 440px;
+	width: 465px;
 	height: 400px;
 
 	@media (max-width: 599px) {
-		width: 320px;
+		width: 345px;
 		height: 360px;
 	}
 }
@@ -42,10 +42,10 @@
 	@extend %orc-outline-variant-border;
 	@extend %overflow-y-auto;
 	@extend %p-0-5;
-	width: 140px;
+	width: 165px;
 
 	@media (max-width: 599px) {
-		width: 110px;
+		width: 135px;
 		padding: 0.25rem; // %p-0-25
 		font-size: 0.75rem; // %font-size-xs
 	}

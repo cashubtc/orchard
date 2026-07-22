@@ -65,6 +65,8 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 		this.percentiles() ? 'matrix' : this.legend_layout(),
 	);
 
+	private built_series_keys = '';
+
 	private subscriptions: Subscription = new Subscription();
 
 	constructor() {
@@ -74,7 +76,11 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 
 	ngOnChanges(changes: SimpleChanges): void {
 		if (changes['loading'] && this.loading() === false) this.init();
-		if (changes['metrics'] && !changes['metrics'].firstChange) this.init();
+		if (changes['metrics'] && !changes['metrics'].firstChange) {
+			const metrics_only = Object.keys(changes).length === 1;
+			if (metrics_only && this.getMetricsSeriesKeys() === this.built_series_keys) this.quietUpdate();
+			else this.init();
+		}
 		// Reference values arrive async from system_info, after the series has rendered
 		if (
 			(changes['reference_line'] && !changes['reference_line'].firstChange) ||
@@ -101,15 +107,35 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 		}, 50);
 	}
 
+	/** Replaces dataset data in place and redraws without animation (live tick) */
+	private quietUpdate(): void {
+		const chart = this.chart()?.chart;
+		const next_data = this.getChartData();
+		if (!chart || next_data.datasets.length !== this.chart_data.datasets.length) return this.init();
+		next_data.datasets.forEach((dataset, index) => (this.chart_data.datasets[index].data = dataset.data));
+		chart.update('none');
+	}
+
+	/** Stable identity for a metric series: family name plus its prometheus label set */
+	private getSeriesKey(metric: SystemChartPoint): string {
+		return `${metric.metric}|${(metric.labels ?? []).map((label) => `${label.name}=${label.value}`).join(',')}`;
+	}
+
+	/** Ordered unique series keys of the current metrics input */
+	private getMetricsSeriesKeys(): string {
+		return Array.from(new Set(this.metrics().map((metric) => this.getSeriesKey(metric)))).join(';');
+	}
+
 	/** Groups metrics by label set into one themed dataset per series */
 	private getChartData(): ChartConfiguration['data'] {
 		const series_map = new Map<string, SystemChartPoint[]>();
 		for (const metric of this.metrics()) {
-			const key = `${metric.metric}|${(metric.labels ?? []).map((label) => `${label.name}=${label.value}`).join(',')}`;
+			const key = this.getSeriesKey(metric);
 			const series = series_map.get(key);
 			if (series) series.push(metric);
 			else series_map.set(key, [metric]);
 		}
+		this.built_series_keys = Array.from(series_map.keys()).join(';');
 
 		if (this.percentiles()) return {datasets: this.getPercentileDatasets(series_map)};
 
