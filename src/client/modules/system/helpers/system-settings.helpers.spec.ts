@@ -1,13 +1,23 @@
+/* Vendor Dependencies */
+import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {resolveDateRangePreset} from '@client/modules/form/helpers/form-daterange.helpers';
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
-import {AllSystemMetricsSettings} from '@client/modules/settings/types/setting.types';
+import {AllSystemMetricsSettings, NonNullableSystemMetricsSettings} from '@client/modules/settings/types/setting.types';
 /* Native Dependencies */
-import {resolveSystemMetricsSettings, getMetricsGenesisTime} from './system-settings.helpers';
+import {
+	resolveSystemMetricsSettings,
+	resolveMetricsDateRangePreset,
+	suggestMetricsInterval,
+	refreshMetricsRange,
+	getMetricsGenesisTime,
+} from './system-settings.helpers';
 /* Shared Dependencies */
 import {SystemMetricsInterval} from '@shared/generated.types';
 
-/** Builds a settings object with all fields nulled unless overridden */
+/** Fixed reference time so rolling spans can be asserted exactly (UTC avoids DST-length days) */
+const now = DateTime.fromSeconds(1_750_000_000, {zone: 'utc'});
+
+/** Builds a stored-settings object with all fields nulled unless overridden */
 const settings = (overrides: Partial<AllSystemMetricsSettings> = {}): AllSystemMetricsSettings => ({
 	date_start: null,
 	date_end: null,
@@ -16,27 +26,104 @@ const settings = (overrides: Partial<AllSystemMetricsSettings> = {}): AllSystemM
 	...overrides,
 });
 
+/** Builds a resolved page-settings object with static defaults unless overridden */
+const page_settings = (overrides: Partial<NonNullableSystemMetricsSettings> = {}): NonNullableSystemMetricsSettings => ({
+	date_start: 111,
+	date_end: 222,
+	date_preset: null,
+	interval: SystemMetricsInterval.Hour,
+	...overrides,
+});
+
 describe('system-settings.helpers', () => {
 	describe('getMetricsGenesisTime', () => {
 		it('returns a positive unix-second timestamp in the past', () => {
 			const genesis = getMetricsGenesisTime();
-			const now = Math.floor(Date.now() / 1000);
+			const current = Math.floor(Date.now() / 1000);
 			expect(genesis).toBeGreaterThan(0);
-			expect(genesis).toBeLessThan(now);
+			expect(genesis).toBeLessThan(current);
 			// ~90 days ago, allow a day of slack for start-of-day flooring
-			expect(now - genesis).toBeGreaterThan(89 * 86400);
-			expect(now - genesis).toBeLessThan(91 * 86400);
+			expect(current - genesis).toBeGreaterThan(89 * 86400);
+			expect(current - genesis).toBeLessThan(91 * 86400);
+		});
+	});
+
+	describe('resolveMetricsDateRangePreset', () => {
+		it('resolves sub-day presets to rolling windows ending now', () => {
+			expect(resolveMetricsDateRangePreset(DateRangePreset.Last5Minutes, now)).toEqual({
+				date_start: now.toUnixInteger() - 5 * 60,
+				date_end: now.toUnixInteger(),
+			});
+			expect(resolveMetricsDateRangePreset(DateRangePreset.Last12Hours, now)).toEqual({
+				date_start: now.toUnixInteger() - 12 * 3600,
+				date_end: now.toUnixInteger(),
+			});
+		});
+
+		it('resolves Last2Days to exactly 48 hours ending now with no day snapping', () => {
+			const resolved = resolveMetricsDateRangePreset(DateRangePreset.Last2Days, now);
+			expect(resolved.date_end).toBe(now.toUnixInteger());
+			expect(resolved.date_end - resolved.date_start).toBe(2 * 86400);
+		});
+
+		it('resolves day presets to rolling N-day windows ending now', () => {
+			const resolved_7 = resolveMetricsDateRangePreset(DateRangePreset.Last7Days, now);
+			const resolved_90 = resolveMetricsDateRangePreset(DateRangePreset.Last90Days, now);
+			expect(resolved_7.date_end - resolved_7.date_start).toBe(7 * 86400);
+			expect(resolved_90.date_end - resolved_90.date_start).toBe(90 * 86400);
+			expect(resolved_7.date_end).toBe(now.toUnixInteger());
+		});
+
+		it('falls back to the shared day-pegged resolver for unmapped presets', () => {
+			const resolved = resolveMetricsDateRangePreset(DateRangePreset.AllTime, now);
+			expect(resolved.date_start).toBe(getMetricsGenesisTime());
+		});
+	});
+
+	describe('suggestMetricsInterval', () => {
+		it('maps presets to their suggested interval', () => {
+			expect(suggestMetricsInterval(DateRangePreset.Last5Minutes)).toBe(SystemMetricsInterval.Minute);
+			expect(suggestMetricsInterval(DateRangePreset.Last1Hour)).toBe(SystemMetricsInterval.Minute);
+			expect(suggestMetricsInterval(DateRangePreset.Last6Hours)).toBe(SystemMetricsInterval.Hour);
+			expect(suggestMetricsInterval(DateRangePreset.Last2Days)).toBe(SystemMetricsInterval.Hour);
+			expect(suggestMetricsInterval(DateRangePreset.Last7Days)).toBe(SystemMetricsInterval.Day);
+			expect(suggestMetricsInterval(DateRangePreset.Last90Days)).toBe(SystemMetricsInterval.Day);
+		});
+
+		it('returns null for unmapped or missing presets', () => {
+			expect(suggestMetricsInterval(DateRangePreset.AllTime)).toBeNull();
+			expect(suggestMetricsInterval(null)).toBeNull();
+			expect(suggestMetricsInterval(undefined)).toBeNull();
+		});
+	});
+
+	describe('refreshMetricsRange', () => {
+		it('re-resolves preset-driven settings to a fresh rolling window', () => {
+			const before = Math.floor(Date.now() / 1000);
+			const refreshed = refreshMetricsRange(
+				page_settings({date_start: 0, date_end: 900, date_preset: DateRangePreset.Last15Minutes}),
+			);
+			expect(refreshed.date_end).toBeGreaterThanOrEqual(before);
+			expect(refreshed.date_end - refreshed.date_start).toBe(15 * 60);
+			expect(refreshed.date_preset).toBe(DateRangePreset.Last15Minutes);
+			expect(refreshed.interval).toBe(SystemMetricsInterval.Hour);
+		});
+
+		it('passes static custom ranges through unchanged', () => {
+			const static_settings = page_settings();
+			expect(refreshMetricsRange(static_settings)).toBe(static_settings);
 		});
 	});
 
 	describe('resolveSystemMetricsSettings', () => {
-		it('defaults to a Last7Days range and hourly interval on a first visit', () => {
-			const defaults = resolveDateRangePreset(DateRangePreset.Last7Days);
+		it('defaults to a rolling last-7-days range and daily interval on a first visit', () => {
+			const before = Math.floor(Date.now() / 1000);
 			const resolved = resolveSystemMetricsSettings(settings());
-			expect(resolved.date_start).toBe(defaults.date_start);
-			expect(resolved.date_end).toBe(defaults.date_end);
+			expect(resolved.date_end).toBeGreaterThanOrEqual(before);
+			// wall-clock rolling window; allow an hour of slack for DST transitions in the local zone
+			expect(Math.abs(resolved.date_end - resolved.date_start - 7 * 86400)).toBeLessThanOrEqual(3600);
 			expect(resolved.date_preset).toBeNull();
-			expect(resolved.interval).toBe(SystemMetricsInterval.Hour);
+			expect(resolved.interval).toBe(SystemMetricsInterval.Day);
 		});
 
 		it('uses stored explicit dates and interval when no preset is set', () => {
@@ -49,13 +136,14 @@ describe('system-settings.helpers', () => {
 			expect(resolved.interval).toBe(SystemMetricsInterval.Minute);
 		});
 
-		it('lets a preset override stored explicit dates', () => {
-			const preset_dates = resolveDateRangePreset(DateRangePreset.Last30Days, getMetricsGenesisTime());
+		it('lets a preset override stored explicit dates with a fresh rolling window', () => {
+			const before = Math.floor(Date.now() / 1000);
 			const resolved = resolveSystemMetricsSettings(
 				settings({date_preset: DateRangePreset.Last30Days, date_start: 111, date_end: 222}),
 			);
-			expect(resolved.date_start).toBe(preset_dates.date_start);
-			expect(resolved.date_end).toBe(preset_dates.date_end);
+			expect(resolved.date_end).toBeGreaterThanOrEqual(before);
+			// wall-clock rolling window; allow an hour of slack for DST transitions in the local zone
+			expect(Math.abs(resolved.date_end - resolved.date_start - 30 * 86400)).toBeLessThanOrEqual(3600);
 			expect(resolved.date_preset).toBe(DateRangePreset.Last30Days);
 		});
 
@@ -64,8 +152,26 @@ describe('system-settings.helpers', () => {
 			expect(resolved.date_start).toBe(getMetricsGenesisTime());
 		});
 
-		it('falls back to the hourly interval when none is stored', () => {
-			expect(resolveSystemMetricsSettings(settings({interval: null})).interval).toBe(SystemMetricsInterval.Hour);
+		it('derives the default interval from the stored preset', () => {
+			expect(resolveSystemMetricsSettings(settings({date_preset: DateRangePreset.Last5Minutes})).interval).toBe(
+				SystemMetricsInterval.Minute,
+			);
+			expect(resolveSystemMetricsSettings(settings({date_preset: DateRangePreset.Last2Days})).interval).toBe(
+				SystemMetricsInterval.Hour,
+			);
+		});
+
+		it('keeps a stored interval over the preset-derived one', () => {
+			const resolved = resolveSystemMetricsSettings(
+				settings({date_preset: DateRangePreset.Last5Minutes, interval: SystemMetricsInterval.Day}),
+			);
+			expect(resolved.interval).toBe(SystemMetricsInterval.Day);
+		});
+
+		it('falls back to the hourly interval when no preset or interval is mappable', () => {
+			expect(resolveSystemMetricsSettings(settings({date_preset: DateRangePreset.AllTime})).interval).toBe(
+				SystemMetricsInterval.Hour,
+			);
 		});
 	});
 });

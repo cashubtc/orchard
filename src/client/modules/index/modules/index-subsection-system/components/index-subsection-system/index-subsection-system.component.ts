@@ -10,10 +10,14 @@ import {AiService} from '@client/modules/ai/services/ai/ai.service';
 import {AiChatToolCall} from '@client/modules/ai/classes/ai-chat-chunk.class';
 import {NonNullableSystemMetricsSettings} from '@client/modules/settings/types/setting.types';
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
-import {resolveDateRangePreset} from '@client/modules/form/helpers/form-daterange.helpers';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 import {deviceTypeFromBreakpoints} from '@client/modules/layout/helpers/device.helpers';
-import {resolveSystemMetricsSettings, getMetricsGenesisTime} from '@client/modules/system/helpers/system-settings.helpers';
+import {
+	resolveSystemMetricsSettings,
+	resolveMetricsDateRangePreset,
+	suggestMetricsInterval,
+	refreshMetricsRange,
+} from '@client/modules/system/helpers/system-settings.helpers';
 import {buildSystemAssistantContext, parseAssistantDateRange} from '@client/modules/system/helpers/system-assistant.helpers';
 import {SystemChartReferenceLine} from '@client/modules/system/types/system.types';
 /* Native Dependencies */
@@ -230,19 +234,22 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 		return series.reduce((latest, m) => (m.date > latest.date ? m : latest)).value;
 	}
 
-	/** Forces a fresh fetch of the stored series, then pulses the page */
+	/** Forces a fresh fetch of the stored series against a re-resolved rolling window, then pulses the page */
 	public onRefresh(): void {
 		const settings = this.page_settings();
 		if (!settings || this.refreshing()) return;
+		const refreshed_settings = refreshMetricsRange(settings);
+		this.page_settings.set(refreshed_settings);
+		this.settingDeviceService.setSystemMetricsSettings(refreshed_settings);
 		this.refreshing.set(true);
 		this.loading_metrics.set(true);
 		this.systemService.clearMetricsCache();
 		this.subscriptions.add(
 			this.systemService
 				.loadSystemMetrics({
-					date_start: settings.date_start,
-					date_end: settings.date_end,
-					interval: settings.interval,
+					date_start: refreshed_settings.date_start,
+					date_end: refreshed_settings.date_end,
+					interval: refreshed_settings.interval,
 					timezone: this.settingDeviceService.getTimezone(),
 					metrics: SYSTEM_METRIC_FAMILIES,
 				})
@@ -302,14 +309,21 @@ export class IndexSubsectionSystemComponent implements OnInit, OnDestroy {
 	public onPresetChange(preset: DateRangePreset): void {
 		const settings = this.page_settings();
 		if (!settings) return;
-		const resolved_dates = resolveDateRangePreset(preset, getMetricsGenesisTime());
-		this.updateSettings({...settings, date_start: resolved_dates.date_start, date_end: resolved_dates.date_end, date_preset: preset});
+		const resolved_dates = resolveMetricsDateRangePreset(preset);
+		const interval = suggestMetricsInterval(preset) ?? settings.interval;
+		this.updateSettings({
+			...settings,
+			date_start: resolved_dates.date_start,
+			date_end: resolved_dates.date_end,
+			date_preset: preset,
+			interval,
+		});
 	}
 
 	public onIntervalChange(interval: SystemMetricsInterval): void {
 		const settings = this.page_settings();
 		if (!settings) return;
-		this.updateSettings({...settings, interval});
+		this.updateSettings(refreshMetricsRange({...settings, interval}));
 	}
 
 	/* *******************************************************

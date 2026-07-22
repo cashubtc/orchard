@@ -38,12 +38,12 @@ describe('SystemControlComponent', () => {
 		expect(component).toBeTruthy();
 	});
 
-	it('should reset to the last-7-days preset and hourly interval on clear', () => {
+	it('should reset to the last-7-days preset on clear and leave the interval to the parent', () => {
 		const preset_spy = spyOn(component.presetChange, 'emit');
 		const interval_spy = spyOn(component.intervalChange, 'emit');
 		component.onClearFilter();
 		expect(preset_spy).toHaveBeenCalledWith(DateRangePreset.Last7Days);
-		expect(interval_spy).toHaveBeenCalledWith(SystemMetricsInterval.Hour);
+		expect(interval_spy).not.toHaveBeenCalled();
 	});
 
 	it('should emit a day-snapped range on a manual date change when no sub-day window is active', () => {

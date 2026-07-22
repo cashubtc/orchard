@@ -144,10 +144,9 @@ export class SystemControlComponent {
 		return false;
 	}
 
-	/** Resets the panel to default filters — last 7 days and hourly interval — then closes the menu */
+	/** Resets the panel to the default preset — the parent derives the matching interval — then closes the menu */
 	public onClearFilter(): void {
 		this.presetChange.emit(DateRangePreset.Last7Days);
-		this.intervalChange.emit(SystemMetricsInterval.Hour);
 		this.filter_menu_trigger()?.closeMenu();
 	}
 

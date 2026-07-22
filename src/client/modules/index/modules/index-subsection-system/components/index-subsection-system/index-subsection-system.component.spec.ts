@@ -11,6 +11,7 @@ import {SettingDeviceService} from '@client/modules/settings/services/setting-de
 import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 import {AiService} from '@client/modules/ai/services/ai/ai.service';
 import {AiChatToolCall} from '@client/modules/ai/classes/ai-chat-chunk.class';
+import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 /* Native Dependencies */
 import {OrcIndexSubsectionSystemModule} from '@client/modules/index/modules/index-subsection-system/index-subsection-system.module';
 import {SystemService} from '@client/modules/index/services/system/system.service';
@@ -151,6 +152,45 @@ describe('IndexSubsectionSystemComponent', () => {
 		component.onRefresh();
 		expect(system_service.clearMetricsCache).toHaveBeenCalled();
 		expect(component.refreshing()).toBeFalse();
+	});
+
+	it('should resolve a rolling window and derive the interval on preset change', () => {
+		component.onPresetChange(DateRangePreset.Last5Minutes);
+		const settings = component.page_settings();
+		expect(settings?.date_preset).toBe(DateRangePreset.Last5Minutes);
+		expect(settings?.interval).toBe(SystemMetricsInterval.Minute);
+		expect((settings?.date_end ?? 0) - (settings?.date_start ?? 0)).toBe(5 * 60);
+	});
+
+	it('should re-resolve a rolling preset window on interval change', () => {
+		const before = Math.floor(Date.now() / 1000);
+		component.page_settings.set({
+			date_start: 0,
+			date_end: 900,
+			date_preset: DateRangePreset.Last15Minutes,
+			interval: SystemMetricsInterval.Minute,
+		});
+		component.onIntervalChange(SystemMetricsInterval.Hour);
+		const settings = component.page_settings();
+		expect(settings?.interval).toBe(SystemMetricsInterval.Hour);
+		expect(settings?.date_end).toBeGreaterThanOrEqual(before);
+		expect((settings?.date_end ?? 0) - (settings?.date_start ?? 0)).toBe(15 * 60);
+	});
+
+	it('should slide a rolling preset window forward on refresh', () => {
+		const system_service = TestBed.inject(SystemService) as unknown as {loadSystemMetrics: jasmine.Spy};
+		const before = Math.floor(Date.now() / 1000);
+		component.page_settings.set({
+			date_start: 0,
+			date_end: 900,
+			date_preset: DateRangePreset.Last15Minutes,
+			interval: SystemMetricsInterval.Minute,
+		});
+		component.onRefresh();
+		const args = system_service.loadSystemMetrics.calls.mostRecent().args[0];
+		expect(args.date_end).toBeGreaterThanOrEqual(before);
+		expect(args.date_end - args.date_start).toBe(15 * 60);
+		expect(component.page_settings()?.date_end).toBe(args.date_end);
 	});
 
 	it('should route a DATE_RANGE_UPDATE tool call to onDateChange with unix timestamps', () => {
