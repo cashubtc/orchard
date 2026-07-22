@@ -37,6 +37,12 @@ describe('form-daterange.helpers', () => {
 			expect(resolved.date_end).toBe(Math.floor(now.endOf('day').toSeconds()));
 			expect(resolved.date_start).toBe(Math.floor(now.minus({days: 2}).startOf('day').toSeconds()));
 		});
+
+		it('snaps Last90Days to the retention-window boundary', () => {
+			const resolved = resolveDateRangePreset(DateRangePreset.Last90Days, 0, now);
+			expect(resolved.date_end).toBe(Math.floor(now.endOf('day').toSeconds()));
+			expect(resolved.date_start).toBe(Math.floor(now.minus({days: 90}).startOf('day').toSeconds()));
+		});
 	});
 
 	describe('isSubDayDateRangePreset', () => {
@@ -58,6 +64,11 @@ describe('form-daterange.helpers', () => {
 		it('returns the human-readable label for a preset', () => {
 			expect(getDateRangePresetLabel(DateRangePreset.Last5Minutes)).toBe('Last 5 minutes');
 			expect(getDateRangePresetLabel(DateRangePreset.Last1Hour)).toBe('Last 1 hour');
+		});
+
+		it('returns an empty string for a preset outside the metrics list or null', () => {
+			expect(getDateRangePresetLabel(DateRangePreset.ThisQuarter)).toBe('');
+			expect(getDateRangePresetLabel(null)).toBe('');
 		});
 	});
 });

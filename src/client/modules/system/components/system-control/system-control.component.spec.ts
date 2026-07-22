@@ -2,6 +2,7 @@
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 /* Vendor Dependencies */
 import {MatIconTestingModule} from '@angular/material/icon/testing';
+import {DateTime} from 'luxon';
 /* Native Dependencies */
 import {OrcSystemModule} from '@client/modules/system/system.module';
 /* Application Dependencies */
@@ -43,6 +44,16 @@ describe('SystemControlComponent', () => {
 		component.onClearFilter();
 		expect(preset_spy).toHaveBeenCalledWith(DateRangePreset.Last7Days);
 		expect(interval_spy).toHaveBeenCalledWith(SystemMetricsInterval.Hour);
+	});
+
+	it('should emit a day-snapped range on a manual date change when no sub-day window is active', () => {
+		const spy = spyOn(component.dateChange, 'emit');
+		const start = DateTime.fromSeconds(1_000_000);
+		const end = DateTime.fromSeconds(2_000_000);
+		component.panel.controls.daterange.controls.date_start.setValue(start);
+		component.panel.controls.daterange.controls.date_end.setValue(end);
+		component.onDateChange();
+		expect(spy).toHaveBeenCalledWith([Math.floor(start.toSeconds()), Math.floor(end.endOf('day').toSeconds())]);
 	});
 
 	describe('sub-day window', () => {
