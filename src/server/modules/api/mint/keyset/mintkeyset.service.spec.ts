@@ -70,6 +70,12 @@ describe('MintKeysetService', () => {
 		expect(result[0]).toBeInstanceOf(OrchardMintKeyset);
 	});
 
+	it('getMintKeysets maps final_expiry onto the model', async () => {
+		mintDbService.getKeysets.mockResolvedValue([{id: 'k', final_expiry: 1893456000}] as any);
+		const result = await mintKeysetService.getMintKeysets('TAG');
+		expect(result[0].final_expiry).toBe(1893456000);
+	});
+
 	it('getMintKeysetCounts returns OrchardMintKeysetCount[] from cache', async () => {
 		analyticsService.getCachedAnalytics.mockResolvedValue([
 			makeCacheRow({keyset_id: 'ks1', metric: MintAnalyticsMetric.keyset_issued, count: 10}),

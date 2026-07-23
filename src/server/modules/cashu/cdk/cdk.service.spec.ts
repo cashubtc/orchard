@@ -435,6 +435,7 @@ describe('CdkService', () => {
 		await cdkService.getKeysets({} as any);
 		call = (helpers.queryRows as jest.Mock).mock.calls[(helpers.queryRows as jest.Mock).mock.calls.length - 1];
 		expect(call[1]).toContain('unit != ?');
+		expect(call[1]).toContain('valid_to AS final_expiry');
 		expect(call[2]).toEqual(['auth']);
 	});
 });

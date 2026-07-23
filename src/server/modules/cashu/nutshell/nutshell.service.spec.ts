@@ -204,11 +204,13 @@ describe('NutshellService', () => {
 
 	it('getKeysets converts dates and derives path index', async () => {
 		(helpers.queryRows as jest.Mock).mockResolvedValueOnce([
-			{valid_from: '2024-01-01', valid_to: '2024-01-02', derivation_path: "m/86'/0'/0'"},
+			{valid_from: '2024-01-01', valid_to: '2024-01-02', final_expiry: 1893456000, derivation_path: "m/86'/0'/0'"},
 		]);
 		const out = await nutshellService.getKeysets({} as any);
 		expect(out[0].valid_from).toBe(1);
 		expect(out[0].valid_to).toBe(1);
+		// final_expiry is a raw unix int — passed through unchanged, NOT date-converted
+		expect(out[0].final_expiry).toBe(1893456000);
 		expect(out[0].derivation_path_index).toBe(0);
 	});
 

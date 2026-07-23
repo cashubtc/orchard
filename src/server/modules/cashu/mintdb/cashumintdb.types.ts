@@ -28,6 +28,7 @@ export type CashuMintKeyset = {
 	derivation_path_index: number;
 	valid_from: number;
 	valid_to: number | null;
+	final_expiry: number | null;
 	active: number;
 	unit: MintUnit;
 	input_fee_ppk: number | null;

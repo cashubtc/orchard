@@ -149,6 +149,7 @@ export class NutshellService {
 				...row,
 				valid_from: convertDateToUnixTimestamp(row.valid_from),
 				valid_to: convertDateToUnixTimestamp(row.valid_to),
+				final_expiry: row.final_expiry ?? null,
 				derivation_path_index: this.extractDerivationIndex(row.derivation_path),
 			}));
 			const has_legacy = keysets.some((k) => k.derivation_path_index === null);
