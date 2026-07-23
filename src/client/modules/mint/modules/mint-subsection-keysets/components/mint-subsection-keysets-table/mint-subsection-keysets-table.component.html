@@ -132,18 +132,7 @@
 															<div class="text-nowrap orc-outline-color">No fee</div>
 														}
 													</div>
-													<div class="flex flex-column flex-gap-0-5">
-														<div class="orc-outline-color font-weight-extra-light">Created</div>
-														<div class="text-nowrap">
-															@if (keyset.valid_from !== null) {
-																{{ keyset.valid_from | localTime: 'date-only' }}
-															} @else {
-																<span class="font-size-xs font-weight-bold orc-status-warning-color">
-																	MISSING
-																</span>
-															}
-														</div>
-													</div>
+													<ng-container *ngTemplateOutlet="keyset_dates; context: {$implicit: keyset}"></ng-container>
 												</div>
 												<div class="flex-1 flex flex-column flex-gap-1">
 													<div class="flex flex-column flex-gap-0-5">
@@ -229,6 +218,11 @@
 												</div>
 											</div>
 										}
+										@if (device_type() === 'desktop') {
+											<div class="flex flex-row flex-wrap flex-gap-3">
+												<ng-container *ngTemplateOutlet="keyset_dates; context: {$implicit: keyset}"></ng-container>
+											</div>
+										}
 										<div class="flex flex-column flex-gap-0-5">
 											<div class="orc-outline-color font-weight-extra-light text-nowrap">Ecash Amounts</div>
 											<div class="flex flex-wrap flex-gap-0-5">
@@ -263,3 +257,36 @@
 		}
 	</mat-card>
 </div>
+
+<ng-template #keyset_dates let-keyset>
+	<div class="flex flex-column flex-gap-0-5">
+		<div class="orc-outline-color font-weight-extra-light text-nowrap">Created</div>
+		<div class="text-nowrap">
+			@if (keyset.valid_from !== null) {
+				{{ keyset.valid_from | localTime: 'medium' }}
+			} @else {
+				<span class="font-size-xs font-weight-bold orc-status-warning-color">MISSING</span>
+			}
+		</div>
+	</div>
+	<div class="flex flex-column flex-gap-0-5">
+		<div class="orc-outline-color font-weight-extra-light text-nowrap">Deactivated</div>
+		<div class="text-nowrap">
+			@if (keyset.valid_to !== null) {
+				{{ keyset.valid_to | localTime: 'medium' }}
+			} @else {
+				<span class="orc-outline-color">&mdash;</span>
+			}
+		</div>
+	</div>
+	<div class="flex flex-column flex-gap-0-5">
+		<div class="orc-outline-color font-weight-extra-light text-nowrap">Final expiry</div>
+		<div class="text-nowrap">
+			@if (keyset.final_expiry !== null) {
+				{{ keyset.final_expiry | localTime: 'medium' }}
+			} @else {
+				<span class="orc-outline-color">&mdash;</span>
+			}
+		</div>
+	</div>
+</ng-template>

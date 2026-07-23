@@ -18,6 +18,7 @@ describe('MintSubsectionKeysetsTableRow', () => {
 			unit: 'sat',
 			valid_from: 1777504327,
 			valid_to: null,
+			final_expiry: 1893456000,
 			fees_paid: 199,
 			amounts: [1, 2, 4, 8],
 			...overrides,
@@ -90,6 +91,9 @@ describe('MintSubsectionKeysetsTableRow', () => {
 			expect(row.derivation_path_index).toBe(1);
 			expect(row.input_fee_ppk).toBe(50);
 			expect(row.fees_paid).toBe(1234);
+			expect(row.valid_from).toBe(1777504327);
+			expect(row.valid_to).toBeNull();
+			expect(row.final_expiry).toBe(1893456000);
 			expect(row.proof_count).toBe(43);
 			expect(row.promise_count).toBe(83);
 		});

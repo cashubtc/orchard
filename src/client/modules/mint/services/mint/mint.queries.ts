@@ -146,6 +146,7 @@ export const MINT_KEYSETS_QUERY = `{
 		unit
 		valid_from
 		valid_to
+		final_expiry
 		fees_paid
 		amounts
     }

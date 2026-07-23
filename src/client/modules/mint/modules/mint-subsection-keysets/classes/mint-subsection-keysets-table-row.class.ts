@@ -11,6 +11,7 @@ export class MintSubsectionKeysetsTableRow {
 	unit: string;
 	valid_from: number | null;
 	valid_to: number | null;
+	final_expiry: number | null;
 	fees_paid: number | null;
 	balance: number;
 	proof_count: number;
@@ -30,6 +31,7 @@ export class MintSubsectionKeysetsTableRow {
 		this.unit = keyset.unit;
 		this.valid_from = keyset.valid_from;
 		this.valid_to = keyset.valid_to;
+		this.final_expiry = keyset.final_expiry;
 		this.fees_paid = keyset.fees_paid;
 		this.balance = this.getBalance(keyset_analytics, keyset_analytics_pre);
 		this.proof_count = keyset_count?.proof_count ?? 0;
