@@ -5,6 +5,7 @@ import {FormGroup} from '@angular/forms';
 import {MatChipEditedEvent, MatChipInputEvent} from '@angular/material/chips';
 import {MatSelectChange} from '@angular/material/select';
 import {COMMA, ENTER} from '@angular/cdk/keycodes';
+import {DateTime} from 'luxon';
 /* Native Dependencies */
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
@@ -32,7 +33,10 @@ export class MintSubsectionKeysetsFormComponent {
 	public help_unit = signal<boolean>(false);
 	public help_fee = signal<boolean>(true);
 	public help_amounts = signal<boolean>(false);
+	public help_final_expiry = signal<boolean>(true);
 	public advanced = signal<boolean>(false);
+
+	public readonly today = DateTime.now();
 
 	public readonly keyset_v2_desc = computed(() => {
 		return this.mint_type() === 'nutshell' ? 'Unsupported in Nutshell' : '33 byte keyset IDs';

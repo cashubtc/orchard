@@ -242,6 +242,55 @@
 											</div>
 										</div>
 									</div>
+									<div>
+										<div class="title-form-section p-b-1">
+											<span>Final Expiry</span>
+										</div>
+										<div class="flex flex-row flex-gap-1 flex-wrap">
+											<div>
+												<div class="flex flex-row flex-gap-0-5">
+													<div class="orc-small-form-field-wrapper">
+														<mat-form-field
+															appearance="fill"
+															hideRequiredMarker="true"
+															class="w-full orc-dynamic-form-field orc-hot-form-field"
+														>
+															<mat-label>Final Expiry</mat-label>
+															<input matInput [matDatepicker]="final_expiry_picker" [min]="today" formControlName="final_expiry" />
+															<mat-datepicker-toggle matIconSuffix [for]="final_expiry_picker"></mat-datepicker-toggle>
+															<mat-datepicker #final_expiry_picker></mat-datepicker>
+															<mat-error>
+																<orc-form-error [errors]="form_group().get('final_expiry')?.errors">Invalid date</orc-form-error>
+															</mat-error>
+														</mat-form-field>
+													</div>
+													<div class="p-t-0-5">
+														<button
+															type="button"
+															tabindex="-1"
+															mat-icon-button
+															class="orc-icon-button"
+															(click)="help_final_expiry.set(!help_final_expiry())"
+														>
+															<mat-icon class="orc-outline-color">info</mat-icon>
+														</button>
+													</div>
+												</div>
+											</div>
+											<div class="orc-animation-expand-collapse" [class.animation-expanded]="help_final_expiry()">
+												<div class="orc-animation-expand-collapse-inner">
+													<div class="flex p-b-1 w-max-18">
+														<orc-form-help-text class="orc-surface-container-high-bg">
+															<div>
+																An optional date after which the mint is no longer obliged to redeem ecash from this keyset.
+																The keyset expires at the end of the chosen day. Leave empty for no expiry.
+															</div>
+														</orc-form-help-text>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>

@@ -26,6 +26,7 @@ describe('MintSubsectionKeysetsFormComponent', () => {
 				max_order: new FormControl(0, [Validators.required]),
 				default_amounts: new FormControl(true),
 				amounts: new FormControl([1, 2, 4, 8]),
+				final_expiry: new FormControl(null),
 			}),
 		);
 		fixture.componentRef.setInput('unit_options', [{value: 'sat', label: 'sat'}]);
@@ -37,5 +38,15 @@ describe('MintSubsectionKeysetsFormComponent', () => {
 
 	it('should create', () => {
 		expect(component).toBeTruthy();
+	});
+
+	it('defaults the final expiry help panel to expanded', () => {
+		expect(component.help_final_expiry()).toBe(true);
+	});
+
+	it('renders the Final Expiry datepicker field in the advanced section', () => {
+		const text = fixture.nativeElement.textContent;
+		expect(text).toContain('Final Expiry');
+		expect(fixture.nativeElement.querySelector('mat-datepicker-toggle')).toBeTruthy();
 	});
 });

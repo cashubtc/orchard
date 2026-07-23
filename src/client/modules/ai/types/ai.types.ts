@@ -106,6 +106,7 @@ export type AiFunction =
 	| AiFunctionUpdateMintKeysetRotationUnit
 	| AiFunctionUpdateMintKeysetRotationInputFeePpk
 	| AiFunctionUpdateMintKeysetRotationAmounts
+	| AiFunctionUpdateMintKeysetRotationFinalExpiry
 	| AiFunctionUpdateMintDatabaseDataType
 	| AiFunctionUpdateMintDatabaseStates
 	| AiFunctionUpdateMintBackupFilename
@@ -367,6 +368,13 @@ export type AiFunctionUpdateMintKeysetRotationAmounts = {
 	name: AssistantToolName.MintKeysetRotationAmountsUpdate;
 	arguments: {
 		amounts: number[];
+	};
+};
+
+export type AiFunctionUpdateMintKeysetRotationFinalExpiry = {
+	name: AssistantToolName.MintKeysetRotationFinalExpiryUpdate;
+	arguments: {
+		final_expiry: string;
 	};
 };
 

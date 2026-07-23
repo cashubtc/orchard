@@ -1134,8 +1134,9 @@ export class MintService {
 		input_fee_ppk: number,
 		amounts: number[],
 		keyset_v2: boolean,
+		final_expiry: number | null,
 	): Observable<MintKeysetRotationResponse> {
-		const query = getApiQuery(MINT_KEYSETS_ROTATION_MUTATION, {unit, input_fee_ppk, amounts, keyset_v2});
+		const query = getApiQuery(MINT_KEYSETS_ROTATION_MUTATION, {unit, input_fee_ppk, amounts, keyset_v2, final_expiry});
 
 		return this.http.post<OrchardRes<MintKeysetRotationResponse>>(this.apiService.api, query).pipe(
 			map((response) => {

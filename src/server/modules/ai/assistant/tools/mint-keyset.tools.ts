@@ -75,3 +75,18 @@ export const UpdateMintKeysetRotationAmountsTool = {
 		},
 	},
 };
+
+export const UpdateMintKeysetRotationFinalExpiryTool = {
+	type: 'function',
+	function: {
+		name: 'MINT_KEYSET_ROTATION_FINAL_EXPIRY_UPDATE',
+		description: 'Update the final expiry date of the keyset rotation. The keyset expires at the end of this day.',
+		parameters: {
+			type: 'object',
+			properties: {
+				final_expiry: {type: 'string', description: 'The final expiry date, in the format YYYY-MM-DD'},
+			},
+			required: ['final_expiry'],
+		},
+	},
+};
