@@ -146,6 +146,12 @@ describe('MintKeysetService', () => {
 		expect(result).toBeDefined();
 	});
 
+	it('mintRotateKeyset forwards final_expiry to rotateNextKeyset', async () => {
+		mintRpcService.rotateNextKeyset.mockResolvedValue({} as any);
+		await mintKeysetService.mintRotateKeyset('TAG', {unit: 'sat', final_expiry: 1893456000} as any);
+		expect(mintRpcService.rotateNextKeyset).toHaveBeenCalledWith({unit: 'sat', final_expiry: 1893456000});
+	});
+
 	it('wraps errors via resolveError and throws OrchardApiError (db)', async () => {
 		mintDbService.getKeysets.mockRejectedValue(new Error('boom'));
 		errorService.resolveError.mockReturnValue({code: OrchardErrorCode.MintDatabaseSelectError});

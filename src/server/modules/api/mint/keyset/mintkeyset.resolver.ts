@@ -46,9 +46,15 @@ export class MintKeysetResolver {
 		@Args('amounts', {type: () => [Float], nullable: true, description: 'Denomination amounts for the keyset'}) amounts?: number[],
 		@Args('input_fee_ppk', {type: () => Int, nullable: true, description: 'Input fee in parts per thousand'}) input_fee_ppk?: number,
 		@Args('keyset_v2', {nullable: true, description: 'Whether to create a v2 keyset'}) keyset_v2?: boolean,
+		@Args('final_expiry', {
+			type: () => UnixTimestamp,
+			nullable: true,
+			description: 'NUT-02 final expiry — unix timestamp after which the mint stops honoring promises from this keyset',
+		})
+		final_expiry?: number,
 	): Promise<OrchardMintKeysetRotation> {
 		const tag = 'MUTATION { mint_rotate_keyset }';
 		this.logger.debug(tag);
-		return await this.mintKeysetService.mintRotateKeyset(tag, {unit, amounts, input_fee_ppk, keyset_v2});
+		return await this.mintKeysetService.mintRotateKeyset(tag, {unit, amounts, input_fee_ppk, keyset_v2, final_expiry});
 	}
 }

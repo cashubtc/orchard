@@ -299,5 +299,11 @@ describe('CashuMintRpcService', () => {
 			expect.any(Object),
 			expect.any(Function),
 		);
+		await cashuMintRpcService.rotateNextKeyset({unit: 'sat', final_expiry: 1893456000});
+		expect(client.RotateNextKeyset).toHaveBeenCalledWith(
+			{unit: 'sat', final_expiry: 1893456000},
+			expect.any(Object),
+			expect.any(Function),
+		);
 	});
 });
