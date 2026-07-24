@@ -189,16 +189,20 @@ export class CashuMintRpcService implements OnModuleInit {
 		amounts,
 		input_fee_ppk,
 		keyset_v2,
+		final_expiry,
 	}: {
 		unit: string;
 		amounts?: number[];
 		input_fee_ppk?: number;
 		keyset_v2?: boolean;
+		final_expiry?: number | null;
 	}): Promise<{id: string; unit: string; amounts: number[]; input_fee_ppk: number}> {
 		const request: any = {unit};
 		if (amounts !== undefined) request.amounts = amounts;
 		if (input_fee_ppk !== undefined) request.input_fee_ppk = input_fee_ppk;
 		if (keyset_v2 !== undefined) request.use_keyset_v2 = keyset_v2;
+		// Nullish, not undefined-only: an explicit null would encode as proto3 0 (epoch), stamping a bogus expiry.
+		if (final_expiry != null) request.final_expiry = final_expiry;
 		return this.makeGrpcRequest('RotateNextKeyset', request);
 	}
 }

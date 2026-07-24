@@ -10,6 +10,7 @@ export class MintKeyset implements OrchardMintKeyset {
 	unit: MintUnit;
 	valid_from: number | null;
 	valid_to: number | null;
+	final_expiry: number | null;
 	fees_paid: number;
 	amounts: number[] | null;
 
@@ -22,6 +23,7 @@ export class MintKeyset implements OrchardMintKeyset {
 		this.unit = omk.unit as MintUnit;
 		this.valid_from = omk.valid_from ?? null;
 		this.valid_to = omk.valid_to ?? null;
+		this.final_expiry = omk.final_expiry ?? null;
 		this.fees_paid = omk.fees_paid;
 		this.amounts = omk.amounts ?? null;
 	}

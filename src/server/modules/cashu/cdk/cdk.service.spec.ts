@@ -435,6 +435,8 @@ describe('CdkService', () => {
 		await cdkService.getKeysets({} as any);
 		call = (helpers.queryRows as jest.Mock).mock.calls[(helpers.queryRows as jest.Mock).mock.calls.length - 1];
 		expect(call[1]).toContain('unit != ?');
+		// NULLIF so a 0 (epoch) stamp reads as "no expiry", matching the nutshell mapper.
+		expect(call[1]).toContain('NULLIF(valid_to, 0) AS final_expiry');
 		expect(call[2]).toEqual(['auth']);
 	});
 });

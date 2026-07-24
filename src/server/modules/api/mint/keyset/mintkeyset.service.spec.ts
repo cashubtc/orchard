@@ -70,6 +70,12 @@ describe('MintKeysetService', () => {
 		expect(result[0]).toBeInstanceOf(OrchardMintKeyset);
 	});
 
+	it('getMintKeysets maps final_expiry onto the model', async () => {
+		mintDbService.getKeysets.mockResolvedValue([{id: 'k', final_expiry: 1893456000}] as any);
+		const result = await mintKeysetService.getMintKeysets('TAG');
+		expect(result[0].final_expiry).toBe(1893456000);
+	});
+
 	it('getMintKeysetCounts returns OrchardMintKeysetCount[] from cache', async () => {
 		analyticsService.getCachedAnalytics.mockResolvedValue([
 			makeCacheRow({keyset_id: 'ks1', metric: MintAnalyticsMetric.keyset_issued, count: 10}),
@@ -138,6 +144,12 @@ describe('MintKeysetService', () => {
 		mintRpcService.rotateNextKeyset.mockResolvedValue({} as any);
 		const result = await mintKeysetService.mintRotateKeyset('TAG', {unit: 'sat'} as any);
 		expect(result).toBeDefined();
+	});
+
+	it('mintRotateKeyset forwards final_expiry to rotateNextKeyset', async () => {
+		mintRpcService.rotateNextKeyset.mockResolvedValue({} as any);
+		await mintKeysetService.mintRotateKeyset('TAG', {unit: 'sat', final_expiry: 1893456000} as any);
+		expect(mintRpcService.rotateNextKeyset).toHaveBeenCalledWith({unit: 'sat', final_expiry: 1893456000});
 	});
 
 	it('wraps errors via resolveError and throws OrchardApiError (db)', async () => {

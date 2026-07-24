@@ -22,6 +22,12 @@ export class OrchardMintKeyset {
 	@Field(() => UnixTimestamp, {nullable: true, description: 'Timestamp when the keyset expires'})
 	valid_to: number;
 
+	@Field(() => UnixTimestamp, {
+		nullable: true,
+		description: 'NUT-02 final expiry — unix timestamp after which the mint no longer honors promises from this keyset',
+	})
+	final_expiry: number;
+
 	@Field({description: 'Whether the keyset is currently active'})
 	active: boolean;
 
@@ -43,6 +49,7 @@ export class OrchardMintKeyset {
 		this.derivation_path_index = cashu_keyset.derivation_path_index;
 		this.valid_from = cashu_keyset.valid_from;
 		this.valid_to = cashu_keyset.valid_to;
+		this.final_expiry = cashu_keyset.final_expiry;
 		this.active = !!cashu_keyset.active;
 		this.unit = cashu_keyset.unit;
 		this.input_fee_ppk = cashu_keyset.input_fee_ppk;

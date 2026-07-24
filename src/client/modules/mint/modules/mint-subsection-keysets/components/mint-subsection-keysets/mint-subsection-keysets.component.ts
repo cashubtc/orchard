@@ -105,6 +105,7 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 			max_order: new FormControl(null),
 			default_amounts: new FormControl(true),
 			keyset_v2: new FormControl(this.mint_type === 'nutshell' ? false : true),
+			final_expiry: new FormControl(null),
 		});
 	}
 
@@ -296,6 +297,7 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 			max_order: 32,
 			default_amounts: true,
 			keyset_v2: this.mint_type === 'nutshell' ? false : true,
+			final_expiry: null,
 		});
 		if (this.mint_type === 'nutshell') {
 			this.form_keyset.get('default_amounts')?.disable();
@@ -338,8 +340,9 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 			);
 		}
 		this.eventService.registerEvent(new EventData({type: 'SAVING'}));
-		const {unit, input_fee_ppk, amounts, keyset_v2} = this.form_keyset.value;
-		this.mintService.rotateMintKeysets(unit, input_fee_ppk, amounts, keyset_v2).subscribe({
+		const {unit, input_fee_ppk, amounts, keyset_v2, final_expiry} = this.form_keyset.value;
+		const final_expiry_unix = final_expiry ? final_expiry.endOf('day').toUnixInteger() : null;
+		this.mintService.rotateMintKeysets(unit, input_fee_ppk, amounts, keyset_v2, final_expiry_unix).subscribe({
 			next: () => {
 				this.eventService.registerEvent(
 					new EventData({
@@ -425,6 +428,7 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 		let context = `* **Current Unit:** ${this.form_keyset.value.unit}\n`;
 		context += `* **Input Fee PPK:** ${this.form_keyset.value.input_fee_ppk}\n`;
 		context += `* **Amounts:** ${this.form_keyset.value.amounts}\n`;
+		context += `* **Final Expiry:** ${this.form_keyset.value.final_expiry ? this.form_keyset.value.final_expiry.toFormat('yyyy-MM-dd') : 'None'}\n`;
 		context += `* **Available Units:** ${this.unit_options.map((unit) => unit.value).join(', ')}\n`;
 		this.aiService.openAiSocket(assistant, content, context);
 	}
@@ -460,6 +464,11 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 		if (tool_call.function.name === AssistantToolName.MintKeysetRotationAmountsUpdate) {
 			this.form_keyset.patchValue({
 				amounts: tool_call.function.arguments.amounts,
+			});
+		}
+		if (tool_call.function.name === AssistantToolName.MintKeysetRotationFinalExpiryUpdate) {
+			this.form_keyset.patchValue({
+				final_expiry: DateTime.fromFormat(tool_call.function.arguments.final_expiry, 'yyyy-MM-dd'),
 			});
 		}
 	}

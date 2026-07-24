@@ -146,6 +146,7 @@ export const MINT_KEYSETS_QUERY = `{
 		unit
 		valid_from
 		valid_to
+		final_expiry
 		fees_paid
 		amounts
     }
@@ -380,8 +381,8 @@ mutation MintNut05Update($unit: String!, $method: String!, $disabled: Boolean, $
 }`;
 
 export const MINT_KEYSETS_ROTATION_MUTATION = `
-mutation MintRotateKeyset($unit: String!, $amounts: [Float!], $input_fee_ppk: Int, $keyset_v2: Boolean) {
-	mint_rotate_keyset(unit: $unit, amounts: $amounts, input_fee_ppk: $input_fee_ppk, keyset_v2: $keyset_v2) {
+mutation MintRotateKeyset($unit: String!, $amounts: [Float!], $input_fee_ppk: Int, $keyset_v2: Boolean, $final_expiry: UnixTimestamp) {
+	mint_rotate_keyset(unit: $unit, amounts: $amounts, input_fee_ppk: $input_fee_ppk, keyset_v2: $keyset_v2, final_expiry: $final_expiry) {
 		unit
 		input_fee_ppk
 		amounts

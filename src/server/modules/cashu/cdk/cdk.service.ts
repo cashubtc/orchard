@@ -158,7 +158,7 @@ export class CdkService {
 
 	public async getKeysets(client: CashuMintDatabase): Promise<CashuMintKeyset[]> {
 		const sql = `
-            SELECT *, CAST(COALESCE(fee_collected, 0) AS INTEGER) AS fees_paid FROM keyset
+            SELECT *, NULLIF(valid_to, 0) AS final_expiry, CAST(COALESCE(fee_collected, 0) AS INTEGER) AS fees_paid FROM keyset
             LEFT JOIN keyset_amounts ON keyset_amounts.keyset_id = keyset.id
             WHERE unit != ?;
             `;

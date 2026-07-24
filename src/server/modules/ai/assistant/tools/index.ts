@@ -35,6 +35,7 @@ export {
 	UpdateMintKeysetRotationUnitTool,
 	UpdateMintKeysetRotationInputFeePpkTool,
 	UpdateMintKeysetRotationAmountsTool,
+	UpdateMintKeysetRotationFinalExpiryTool,
 } from './mint-keyset.tools';
 export {UpdateMintDatabaseDataTypeTool, UpdateMintDatabaseStatesTool, UpdateMintBackupFilenameTool} from './mint-database.tools';
 export {
