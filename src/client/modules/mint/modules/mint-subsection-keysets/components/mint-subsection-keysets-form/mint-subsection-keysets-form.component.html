@@ -256,11 +256,21 @@
 															class="w-full orc-dynamic-form-field orc-hot-form-field"
 														>
 															<mat-label>Final Expiry</mat-label>
-															<input matInput [matDatepicker]="final_expiry_picker" [min]="today" formControlName="final_expiry" />
-															<mat-datepicker-toggle matIconSuffix [for]="final_expiry_picker"></mat-datepicker-toggle>
+															<input
+																matInput
+																[matDatepicker]="final_expiry_picker"
+																[min]="today"
+																formControlName="final_expiry"
+															/>
+															<mat-datepicker-toggle
+																matIconSuffix
+																[for]="final_expiry_picker"
+															></mat-datepicker-toggle>
 															<mat-datepicker #final_expiry_picker></mat-datepicker>
 															<mat-error>
-																<orc-form-error [errors]="form_group().get('final_expiry')?.errors">Invalid date</orc-form-error>
+																<orc-form-error [errors]="form_group().get('final_expiry')?.errors"
+																	>Invalid date</orc-form-error
+																>
 															</mat-error>
 														</mat-form-field>
 													</div>
@@ -282,8 +292,9 @@
 													<div class="flex p-b-1 w-max-18">
 														<orc-form-help-text class="orc-surface-container-high-bg">
 															<div>
-																An optional date after which the mint is no longer obliged to redeem ecash from this keyset.
-																The keyset expires at the end of the chosen day. Leave empty for no expiry.
+																An optional date after which the mint is no longer obliged to redeem ecash
+																from this keyset. The keyset expires at the end of the chosen day. Leave
+																empty for no expiry.
 															</div>
 														</orc-form-help-text>
 													</div>
