@@ -305,5 +305,9 @@ describe('CashuMintRpcService', () => {
 			expect.any(Object),
 			expect.any(Function),
 		);
+		// A null expiry must be omitted, not forwarded — proto3 encodes null as 0 (epoch),
+		// which nutshell stores verbatim as a bogus "already expired" stamp.
+		await cashuMintRpcService.rotateNextKeyset({unit: 'sat', final_expiry: null});
+		expect(client.RotateNextKeyset).toHaveBeenCalledWith({unit: 'sat'}, expect.any(Object), expect.any(Function));
 	});
 });

@@ -214,6 +214,16 @@ describe('NutshellService', () => {
 		expect(out[0].derivation_path_index).toBe(0);
 	});
 
+	it('getKeysets normalizes a 0 final_expiry to null', async () => {
+		// Older rotations stamped 0 (epoch) instead of leaving the column null;
+		// 0 means "no expiry", so it must not surface as a 1970 timestamp.
+		(helpers.queryRows as jest.Mock).mockResolvedValueOnce([
+			{valid_from: '2024-01-01', valid_to: '2024-01-02', final_expiry: 0, derivation_path: "m/86'/0'/0'"},
+		]);
+		const out = await nutshellService.getKeysets({} as any);
+		expect(out[0].final_expiry).toBeNull();
+	});
+
 	it('getKeysets skips index resolution when all derivation paths are valid', async () => {
 		(helpers.queryRows as jest.Mock).mockResolvedValueOnce([
 			{valid_from: 100, valid_to: 100, derivation_path: "m/0'/0'/0'", unit: 'sat'},

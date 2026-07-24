@@ -51,7 +51,7 @@ export class MintKeysetResolver {
 			nullable: true,
 			description: 'NUT-02 final expiry — unix timestamp after which the mint stops honoring promises from this keyset',
 		})
-		final_expiry?: number,
+		final_expiry?: number | null,
 	): Promise<OrchardMintKeysetRotation> {
 		const tag = 'MUTATION { mint_rotate_keyset }';
 		this.logger.debug(tag);

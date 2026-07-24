@@ -80,7 +80,7 @@ export class MintKeysetService {
 
 	async mintRotateKeyset(
 		tag: string,
-		mint_rotate_keyset: {unit: string; amounts?: number[]; input_fee_ppk?: number; keyset_v2?: boolean; final_expiry?: number},
+		mint_rotate_keyset: {unit: string; amounts?: number[]; input_fee_ppk?: number; keyset_v2?: boolean; final_expiry?: number | null},
 	): Promise<OrchardMintKeysetRotation> {
 		try {
 			return await this.cashuMintRpcService.rotateNextKeyset(mint_rotate_keyset);
