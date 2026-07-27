@@ -26,6 +26,32 @@ describe('MintService', () => {
 		expect(service).toBeTruthy();
 	});
 
+	describe('loadMintMetrics', () => {
+		it('cancels an in-flight request when the metrics arguments change', () => {
+			let fresh_metric = '';
+			service.loadMintMetrics({date_start: 1}).subscribe();
+			const stale_request = http_mock.expectOne(() => true);
+
+			service.loadMintMetrics({date_start: 2}).subscribe((metrics) => {
+				fresh_metric = metrics[0].metric;
+			});
+			const fresh_request = http_mock.expectOne(() => true);
+
+			expect(stale_request.cancelled).toBeTrue();
+			fresh_request.flush({
+				data: {
+					mint_metrics: [{metric: 'fresh_metric', labels: [], type: 'gauge', date: 2, value: 2}],
+				},
+			});
+			expect(fresh_metric).toBe('fresh_metric');
+
+			service.loadMintMetrics({date_start: 2}).subscribe((metrics) => {
+				expect(metrics[0].metric).toBe('fresh_metric');
+			});
+			http_mock.expectNone(() => true);
+		});
+	});
+
 	describe('loadMintMetricsHealth', () => {
 		it('resolves the boolean when the exporter is reachable', (done) => {
 			service.loadMintMetricsHealth().subscribe((healthy) => {
