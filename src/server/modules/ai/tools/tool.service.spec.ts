@@ -1,4 +1,5 @@
 /* Vendor Dependencies */
+import {ConfigService} from '@nestjs/config';
 import {Test, TestingModule} from '@nestjs/testing';
 import {GraphQLSchemaHost} from '@nestjs/graphql';
 import {makeExecutableSchema} from '@graphql-tools/schema';
@@ -7,12 +8,30 @@ import {AgentToolCategory, AgentToolName} from '@server/modules/ai/agent/agent.e
 /* Local Dependencies */
 import {ToolService} from './tool.service';
 
+const mock_mint_metrics_resolver = jest.fn().mockReturnValue([
+	{
+		metric: 'cdk_errors_total',
+		labels: [{name: 'kind', value: 'payment'}],
+		type: 'counter',
+		date: 1700000000,
+		value: 2,
+		min: null,
+		max: null,
+		count: null,
+		p50: null,
+		p95: null,
+		p99: null,
+	},
+]);
+
 const mock_schema = makeExecutableSchema({
 	typeDefs: `
 		scalar UnixTimestamp
 		scalar Timezone
 
 		enum AnalyticsInterval { hour day week month custom }
+		enum SystemMetricsInterval { minute hour day }
+		enum MintMetricType { gauge counter histogram }
 		enum LightningAnalyticsMetric {
 			payments_out payments_failed payments_pending
 			invoices_in forward_fees
@@ -79,6 +98,13 @@ const mock_schema = makeExecutableSchema({
 				interval: AnalyticsInterval,
 				metrics: [MintAnalyticsMetric!]
 			): [MintAnalyticsMetric_Type!]!
+			mint_metrics(
+				date_start: UnixTimestamp,
+				date_end: UnixTimestamp,
+				interval: SystemMetricsInterval,
+				timezone: Timezone,
+				metrics: [String!]
+			): [MintMetrics!]!
 		}
 
 		type LightningAnalytics {
@@ -109,6 +135,25 @@ const mock_schema = makeExecutableSchema({
 			date: Int!
 			count: Int
 		}
+
+		type MintMetricLabel {
+			name: String!
+			value: String!
+		}
+
+		type MintMetrics {
+			metric: String!
+			labels: [MintMetricLabel!]!
+			type: MintMetricType!
+			date: UnixTimestamp!
+			value: Float
+			min: Float
+			max: Float
+			count: Float
+			p50: Float
+			p95: Float
+			p99: Float
+		}
 	`,
 	resolvers: {
 		Query: {
@@ -120,16 +165,30 @@ const mock_schema = makeExecutableSchema({
 			mint_analytics_melts: () => [{unit: 'sat', amount: '2000', date: 1700000000, count: 3}],
 			mint_analytics_fees: () => [{unit: 'sat', amount: '100', date: 1700000000, count: 8}],
 			mint_analytics_metrics: () => [{unit: 'sat', metric: 'mints_amount', amount: '3000', date: 1700000000, count: 5}],
+			mint_metrics: mock_mint_metrics_resolver,
 		},
 	},
 });
 
 describe('ToolService', () => {
 	let service: ToolService;
+	const mock_config_service = {
+		get: jest.fn(),
+	};
 
 	beforeEach(async () => {
+		mock_config_service.get.mockImplementation((key: string) => {
+			if (key === 'cashu.type') return 'cdk';
+			if (key === 'cashu.metrics_api') return 'http://mint:9090';
+			return null;
+		});
+		mock_mint_metrics_resolver.mockClear();
 		const module: TestingModule = await Test.createTestingModule({
-			providers: [ToolService, {provide: GraphQLSchemaHost, useValue: {schema: mock_schema}}],
+			providers: [
+				ToolService,
+				{provide: GraphQLSchemaHost, useValue: {schema: mock_schema}},
+				{provide: ConfigService, useValue: mock_config_service},
+			],
 		}).compile();
 		service = module.get<ToolService>(ToolService);
 	});
@@ -163,6 +222,7 @@ describe('ToolService', () => {
 			expect(tools).toContain(AgentToolName.GET_LIGHTNING_ANALYTICS_METRICS);
 			expect(tools).toContain(AgentToolName.GET_MINT_ANALYTICS);
 			expect(tools).toContain(AgentToolName.GET_MINT_ANALYTICS_METRICS);
+			expect(tools).toContain(AgentToolName.GET_MINT_METRICS);
 		});
 	});
 
@@ -183,6 +243,84 @@ describe('ToolService', () => {
 			const result = await service.executeTool(AgentToolName.GET_MINT_ANALYTICS_METRICS, {});
 			expect(result.success).toBe(true);
 			expect(result.data).toBeDefined();
+		});
+
+		it('executes the stored mint metrics tool with bounded variables', async () => {
+			const args = {
+				date_start: 1700000000,
+				date_end: 1700003600,
+				interval: 'hour',
+				timezone: 'UTC',
+				metrics: ['cdk_errors_total'],
+			};
+
+			const result = await service.executeTool(AgentToolName.GET_MINT_METRICS, args);
+
+			expect(result.success).toBe(true);
+			expect(result.data).toEqual({
+				mint_metrics: [
+					expect.objectContaining({
+						metric: 'cdk_errors_total',
+						labels: [{name: 'kind', value: 'payment'}],
+						type: 'counter',
+						value: 2,
+					}),
+				],
+			});
+			expect(mock_mint_metrics_resolver).toHaveBeenCalledWith(undefined, args, expect.anything(), expect.anything());
+		});
+
+		it('rejects mint metrics when the mint backend is not CDK', async () => {
+			mock_config_service.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'nutshell' : null));
+
+			const result = await service.executeTool(AgentToolName.GET_MINT_METRICS, {
+				date_start: 1700000000,
+				interval: 'hour',
+				metrics: ['cdk_errors_total'],
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.error).toContain('MINT_TYPE=cdk');
+			expect(mock_mint_metrics_resolver).not.toHaveBeenCalled();
+		});
+
+		it('rejects mint metrics when the exporter endpoint is not configured', async () => {
+			mock_config_service.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'cdk' : null));
+
+			const result = await service.executeTool(AgentToolName.GET_MINT_METRICS, {
+				date_start: 1700000000,
+				interval: 'hour',
+				metrics: ['cdk_errors_total'],
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.error).toContain('MINT_METRICS_API');
+			expect(mock_mint_metrics_resolver).not.toHaveBeenCalled();
+		});
+
+		it('rejects mint metrics queries that exceed the response budget', async () => {
+			const result = await service.executeTool(AgentToolName.GET_MINT_METRICS, {
+				date_start: 1700000000,
+				date_end: 1700086400,
+				interval: 'minute',
+				metrics: ['cdk_errors_total'],
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.error).toContain('max 500');
+			expect(mock_mint_metrics_resolver).not.toHaveBeenCalled();
+		});
+
+		it('rejects mint metrics queries without explicit metric families', async () => {
+			const result = await service.executeTool(AgentToolName.GET_MINT_METRICS, {
+				date_start: 1700000000,
+				date_end: 1700003600,
+				interval: 'hour',
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.error).toContain('explicit metric family');
+			expect(mock_mint_metrics_resolver).not.toHaveBeenCalled();
 		});
 	});
 

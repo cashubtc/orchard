@@ -11,6 +11,7 @@ import {DateTime} from 'luxon';
 import {AiService} from '@server/modules/ai/ai.service';
 import {AiMessage, AiTool, AiToolCall, AiStreamChunk} from '@server/modules/ai/ai.types';
 import {AiMessageRole} from '@server/modules/ai/ai.enums';
+import {MintType} from '@server/modules/cashu/cashu.enums';
 import {safeParse} from '@server/modules/utilities';
 /* Native Dependencies */
 import {ToolService} from '@server/modules/ai/tools/tool.service';
@@ -498,6 +499,7 @@ export class AgentService implements OnModuleInit {
 		const bitcoin = this.configService.get<string>('bitcoin.type');
 		const lightning = this.configService.get<string>('lightning.type');
 		const mint = this.configService.get<string>('cashu.type');
+		const mint_metrics_enabled = mint === MintType.CDK && !!this.configService.get<string>('cashu.metrics_api');
 		if (bitcoin) services.push(`bitcoin (${bitcoin})`);
 		if (lightning) services.push(`lightning (${lightning})`);
 		if (mint) services.push(`mint (${mint})`);
@@ -511,6 +513,7 @@ export class AgentService implements OnModuleInit {
 			`Timezone: ${timezone}`,
 			`App version: ${version}`,
 			`Configured services: ${services.length ? services.join(', ') : 'none'}`,
+			`Mint metrics: ${mint_metrics_enabled ? 'enabled' : 'disabled'}`,
 			`Schedule: ${cadence}`,
 		].join('\n');
 	}

@@ -5,7 +5,7 @@ describe('AiToolsService', () => {
 	let service: AiToolsService;
 
 	beforeEach(() => {
-		const toolService = new ToolService({} as any);
+		const toolService = new ToolService({} as any, {get: jest.fn()} as any);
 		service = new AiToolsService(toolService);
 	});
 
@@ -13,6 +13,7 @@ describe('AiToolsService', () => {
 		it('should return all registered tools', () => {
 			const tools = service.getTools();
 			expect(tools.length).toBeGreaterThanOrEqual(16);
+			expect(tools.map((tool) => tool.name)).toContain('GET_MINT_METRICS');
 		});
 
 		it('should return tools with correct shape', () => {

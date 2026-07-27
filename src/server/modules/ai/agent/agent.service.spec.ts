@@ -831,6 +831,7 @@ describe('AgentService', () => {
 				if (key === 'bitcoin.type') return 'bitcoind';
 				if (key === 'lightning.type') return 'lnd';
 				if (key === 'cashu.type') return 'cdk';
+				if (key === 'cashu.metrics_api') return 'http://mint:9090';
 				return null;
 			});
 
@@ -840,6 +841,19 @@ describe('AgentService', () => {
 			expect(result).toContain('bitcoin (bitcoind)');
 			expect(result).toContain('lightning (lnd)');
 			expect(result).toContain('mint (cdk)');
+			expect(result).toContain('Mint metrics: enabled');
+		});
+
+		it('should identify mint metrics as disabled without an exporter endpoint', () => {
+			mock_config_service.get.mockImplementation((key: string) => {
+				if (key === 'cashu.type') return 'cdk';
+				return null;
+			});
+
+			const agent = {id: 'agent-1', name: 'Test', schedules: '[]'} as Agent;
+			const result = service.buildRuntimeContext(agent);
+
+			expect(result).toContain('Mint metrics: disabled');
 		});
 
 		it('should show on-demand only when no schedules', () => {

@@ -58,6 +58,39 @@ const GET_MINT_ANALYTICS_METRICS_QUERY = `
 	}
 `;
 
+const GET_MINT_METRICS_QUERY = `
+	query GetMintMetrics(
+		$date_start: UnixTimestamp,
+		$date_end: UnixTimestamp,
+		$interval: SystemMetricsInterval,
+		$timezone: Timezone,
+		$metrics: [String!]
+	) {
+		mint_metrics(
+			date_start: $date_start,
+			date_end: $date_end,
+			interval: $interval,
+			timezone: $timezone,
+			metrics: $metrics
+		) {
+			metric
+			labels {
+				name
+				value
+			}
+			type
+			date
+			value
+			min
+			max
+			count
+			p50
+			p95
+			p99
+		}
+	}
+`;
+
 const GET_MINT_INFO_QUERY = `
 	query GetMintInfo {
 		mint_info {
@@ -116,7 +149,7 @@ export const GetMintInfoTool: AiToolEntry = {
 export const GetMintAnalyticsMetricsTool: AiToolEntry = {
 	category: AgentToolCategory.MINT,
 	role: AgentToolRole.READ,
-	title: 'Mint Metrics',
+	title: 'Mint Analytics Metrics',
 	description: 'Analyze mint and melt volumes, swap fees, and issuance over time.',
 	tool: {
 		type: 'function',
@@ -194,6 +227,74 @@ export const GetMintAnalyticsMetricsTool: AiToolEntry = {
 	throttle_max_calls: 15,
 	throttle_window_seconds: 60,
 	guards: [ToolGuardName.AnalyticsBucketBudget],
+};
+
+/** Fetches stored CDK Prometheus mint metrics with interval aggregation */
+export const GetMintMetricsTool: AiToolEntry = {
+	category: AgentToolCategory.MINT,
+	role: AgentToolRole.READ,
+	title: 'Mint Metrics',
+	description: 'Query stored CDK mint Prometheus metrics for operations, errors, latency, and resource usage.',
+	tool: {
+		type: 'function',
+		function: {
+			name: AgentToolName.GET_MINT_METRICS,
+			description: [
+				'Retrieve stored metrics collected from the configured CDK mint Prometheus exporter.',
+				'This tool requires `MINT_TYPE=cdk` and `MINT_METRICS_API` to be configured.',
+				'',
+				'**Returns** one data point per metric series and interval:',
+				'- `metric`, `labels`, `type`, and `date` identify the series and bucket',
+				'- `value` is a gauge average, counter delta, or histogram average duration',
+				'- `min` / `max` apply to gauges',
+				'- `count` / `p50` / `p95` / `p99` apply to histograms',
+				'',
+				'**Common metric families:**',
+				'- `cdk_mint_operations_total` / `cdk_mint_operation_duration_seconds`',
+				'- `cdk_http_requests_total` / `cdk_http_request_duration_seconds`',
+				'- `cdk_db_operations_total` / `cdk_db_operation_duration_seconds`',
+				'- `cdk_errors_total` / `cdk_mint_in_flight_requests`',
+				'- `cdk_wallet_operations_total` / `cdk_payments_total`',
+				'- `process_cpu_usage_percent` / `process_memory_bytes` / `process_memory_percent`',
+				'',
+				'Always request only the metric families needed and choose an interval appropriate for the time range.',
+			].join('\n'),
+			parameters: {
+				type: 'object',
+				properties: {
+					date_start: {
+						type: 'number',
+						description: 'Start of the bounded time range as a unix timestamp in seconds.',
+					},
+					date_end: {
+						type: 'number',
+						description: 'End of the time range as a unix timestamp in seconds. Defaults to now.',
+					},
+					interval: {
+						type: 'string',
+						description: 'Aggregation bucket size.',
+						enum: ['minute', 'hour', 'day'],
+					},
+					timezone: {
+						type: 'string',
+						description: 'IANA timezone for date bucketing (e.g. "America/New_York"). Defaults to UTC.',
+					},
+					metrics: {
+						type: 'array',
+						description: 'Specific Prometheus metric family names to retrieve.',
+						items: {
+							type: 'string',
+						},
+					},
+				},
+				required: ['date_start', 'interval', 'metrics'],
+			},
+		},
+	},
+	query: GET_MINT_METRICS_QUERY,
+	throttle_max_calls: 15,
+	throttle_window_seconds: 60,
+	guards: [ToolGuardName.MintMetricsEnabled, ToolGuardName.MintMetricsQueryBudget],
 };
 
 /** Fetches mint analytics for balances, mints, melts, and fees */
