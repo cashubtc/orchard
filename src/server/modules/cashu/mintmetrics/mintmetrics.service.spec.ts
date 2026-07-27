@@ -43,7 +43,9 @@ const HISTOGRAM_FAMILY: PromFamily = {
 const rawBuilder = (rows: unknown[]) => ({
 	select: jest.fn().mockReturnThis(),
 	addSelect: jest.fn().mockReturnThis(),
+	leftJoin: jest.fn().mockReturnThis(),
 	where: jest.fn().mockReturnThis(),
+	andWhere: jest.fn().mockReturnThis(),
 	groupBy: jest.fn().mockReturnThis(),
 	addGroupBy: jest.fn().mockReturnThis(),
 	getRawMany: jest.fn().mockResolvedValue(rows),
@@ -281,24 +283,30 @@ describe('MintMetricsService', () => {
 					row_count: '4',
 				},
 			];
-			// two snapshots for the same histogram hour: the higher-count row is the representative one
-			const bucket_rows = [
+			// latest chronological snapshots preserve the post-reset baselines even when earlier values were higher
+			const cumulative_snapshot_rows = [
 				{
-					metric: 'cdk_mint_operation_duration_seconds',
+					metric: 'cdk_mint_operations_total',
 					labels: 'operation=swap',
-					hour_bucket: '7200',
-					count: '10',
-					buckets: '{"0.005":5}',
+					hour_bucket: '3600',
+					value: '5',
+					sum: null,
+					count: null,
+					buckets: null,
 				},
 				{
 					metric: 'cdk_mint_operation_duration_seconds',
 					labels: 'operation=swap',
 					hour_bucket: '7200',
-					count: '14',
-					buckets: '{"0.005":8}',
+					value: null,
+					sum: '1',
+					count: '4',
+					buckets: '{"0.005":3}',
 				},
 			];
-			repository.createQueryBuilder.mockReturnValueOnce(rawBuilder(hourly_buckets)).mockReturnValueOnce(rawBuilder(bucket_rows));
+			repository.createQueryBuilder
+				.mockReturnValueOnce(rawBuilder(hourly_buckets))
+				.mockReturnValueOnce(rawBuilder(cumulative_snapshot_rows));
 
 			await mintMetricsService.cleanupOldMetrics();
 
@@ -316,13 +324,13 @@ describe('MintMetricsService', () => {
 			const gauge_row = rows.find((r: MintMetrics) => r.type === 'gauge');
 			expect(gauge_row).toMatchObject({metric: 'process_memory_bytes', date: 3600, value: 20, sum: null, count: null, buckets: null});
 
-			// counter keeps the hourly max to preserve cumulative semantics
+			// counter keeps the final post-reset snapshot instead of the larger pre-reset maximum
 			const counter_row = rows.find((r: MintMetrics) => r.type === 'counter');
-			expect(counter_row).toMatchObject({date: 3600, value: 25, buckets: null});
+			expect(counter_row).toMatchObject({date: 3600, value: 5, buckets: null});
 
-			// histogram keeps the max sum/count and the representative (max-count) bucket blob
+			// histogram sum/count/buckets come from the same final post-reset snapshot
 			const histogram_row = rows.find((r: MintMetrics) => r.type === 'histogram');
-			expect(histogram_row).toMatchObject({date: 7200, value: 0.6, sum: 3, count: 14, buckets: '{"0.005":8}'});
+			expect(histogram_row).toMatchObject({date: 7200, value: null, sum: 1, count: 4, buckets: '{"0.005":3}'});
 		});
 	});
 });

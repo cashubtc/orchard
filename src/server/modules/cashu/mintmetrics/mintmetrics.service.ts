@@ -19,6 +19,7 @@ const MAX_LABEL_SETS_PER_FAMILY = 100;
 const MAX_BUCKETS_PER_SERIES = 64;
 
 type MintMetricsRow = Omit<MintMetrics, 'id'>;
+type HourlyCumulativeSnapshot = Pick<MintMetrics, 'value' | 'sum' | 'count' | 'buckets'>;
 
 @Injectable()
 export class MintMetricsService {
@@ -177,8 +178,8 @@ export class MintMetricsService {
 
 	/**
 	 * Downsamples minute-granularity data to hourly for records older than METRICS_DOWNSAMPLE_AFTER_DAYS.
-	 * Gauges keep the hourly average; counters and histograms keep the hourly max so
-	 * cumulative last-value semantics (and query-time deltas) stay correct.
+	 * Gauges keep the hourly average; counters and histograms keep the latest chronological
+	 * snapshot so cumulative query-time deltas remain correct across process resets.
 	 */
 	private async downsampleToHourly(now: DateTime): Promise<void> {
 		const downsample_cutoff = now.minus({days: METRICS_DOWNSAMPLE_AFTER_DAYS}).startOf('hour').toUnixInteger();
@@ -191,9 +192,6 @@ export class MintMetricsService {
 			type: string;
 			hour_bucket: number;
 			avg_value: number | null;
-			max_value: number | null;
-			max_sum: number | null;
-			max_count: number | null;
 			row_count: number;
 		}[] = await this.mintMetricsRepository
 			.createQueryBuilder('m')
@@ -202,9 +200,6 @@ export class MintMetricsService {
 			.addSelect('MAX(m.type)', 'type')
 			.addSelect('(m.date - (m.date % 3600))', 'hour_bucket')
 			.addSelect('AVG(m.value)', 'avg_value')
-			.addSelect('MAX(m.value)', 'max_value')
-			.addSelect('MAX(m.sum)', 'max_sum')
-			.addSelect('MAX(m.count)', 'max_count')
 			.addSelect('COUNT(*)', 'row_count')
 			.where('m.date >= :start AND m.date < :end', {start: retention_cutoff, end: downsample_cutoff})
 			.groupBy('m.metric')
@@ -215,21 +210,24 @@ export class MintMetricsService {
 		if (hourly_buckets.length === 0) return;
 
 		const total_rows = hourly_buckets.reduce((sum, r) => sum + Number(r.row_count), 0);
-		const hourly_bucket_blobs = await this.getHourlyBucketBlobs(retention_cutoff, downsample_cutoff);
+		const hourly_cumulative_snapshots = await this.getHourlyCumulativeSnapshots(retention_cutoff, downsample_cutoff);
 
-		// Gauges keep the hourly average; counters and histograms keep the hourly max
+		// Gauges keep the hourly average; counters and histograms keep the final snapshot
 		const toNumber = (v: number | null): number | null => (v !== null ? Number(v) : null);
-		const rows = hourly_buckets.map((r) => ({
-			metric: r.metric,
-			labels: r.labels,
-			type: r.type,
-			date: Number(r.hour_bucket),
-			value: toNumber(r.type === MintMetricType.gauge ? r.avg_value : r.max_value),
-			sum: toNumber(r.max_sum),
-			count: toNumber(r.max_count),
-			buckets: hourly_bucket_blobs.get(`${r.metric}|${r.labels}|${Number(r.hour_bucket)}`)?.buckets ?? null,
-			updated_at,
-		}));
+		const rows = hourly_buckets.map((r) => {
+			const snapshot = hourly_cumulative_snapshots.get(`${r.metric}|${r.labels}|${Number(r.hour_bucket)}`);
+			return {
+				metric: r.metric,
+				labels: r.labels,
+				type: r.type,
+				date: Number(r.hour_bucket),
+				value: toNumber(r.type === MintMetricType.gauge ? r.avg_value : (snapshot?.value ?? null)),
+				sum: toNumber(snapshot?.sum ?? null),
+				count: toNumber(snapshot?.count ?? null),
+				buckets: snapshot?.buckets ?? null,
+				updated_at,
+			};
+		});
 
 		await this.mintMetricsRepository.manager.transaction(async (manager) => {
 			await manager
@@ -246,30 +244,45 @@ export class MintMetricsService {
 	}
 
 	/**
-	 * Loads the representative histogram bucket blob per series per hour in a window.
-	 * Histograms are cumulative, so the max-count row is the latest snapshot and the right hourly value.
+	 * Loads the latest counter or histogram snapshot per series per hour.
+	 * A self anti-join selects by timestamp rather than cumulative value, which remains correct when a process reset occurs within the hour.
+	 * @param {number} start - Inclusive unix timestamp for the downsample window.
+	 * @param {number} end - Exclusive unix timestamp for the downsample window.
+	 * @returns {Promise<Map<string, HourlyCumulativeSnapshot>>} Latest cumulative snapshot keyed by metric, labels, and hour.
 	 */
-	private async getHourlyBucketBlobs(start: number, end: number): Promise<Map<string, {count: number; buckets: string}>> {
-		const bucket_rows: {metric: string; labels: string; hour_bucket: number; count: number | null; buckets: string | null}[] =
+	private async getHourlyCumulativeSnapshots(start: number, end: number): Promise<Map<string, HourlyCumulativeSnapshot>> {
+		const snapshot_rows: (HourlyCumulativeSnapshot & {metric: string; labels: string; hour_bucket: number})[] =
 			await this.mintMetricsRepository
 				.createQueryBuilder('m')
 				.select('m.metric', 'metric')
 				.addSelect('m.labels', 'labels')
 				.addSelect('(m.date - (m.date % 3600))', 'hour_bucket')
+				.addSelect('m.value', 'value')
+				.addSelect('m.sum', 'sum')
 				.addSelect('m.count', 'count')
 				.addSelect('m.buckets', 'buckets')
-				.where('m.date >= :start AND m.date < :end AND m.buckets IS NOT NULL', {start, end})
+				.leftJoin(
+					MintMetrics,
+					'newer',
+					'newer.metric = m.metric AND newer.labels = m.labels AND ' +
+						'(newer.date - (newer.date % 3600)) = (m.date - (m.date % 3600)) AND newer.date > m.date',
+				)
+				.where('m.date >= :start AND m.date < :end', {start, end})
+				.andWhere('m.type IN (:...types)', {types: [MintMetricType.counter, MintMetricType.histogram]})
+				.andWhere('newer.id IS NULL')
 				.getRawMany();
 
-		const representative = new Map<string, {count: number; buckets: string}>();
-		for (const row of bucket_rows) {
-			if (row.buckets === null) continue;
+		const snapshots = new Map<string, HourlyCumulativeSnapshot>();
+		for (const row of snapshot_rows) {
 			const key = `${row.metric}|${row.labels}|${Number(row.hour_bucket)}`;
-			const count = Number(row.count ?? 0);
-			const existing = representative.get(key);
-			if (!existing || count >= existing.count) representative.set(key, {count, buckets: row.buckets});
+			snapshots.set(key, {
+				value: row.value !== null ? Number(row.value) : null,
+				sum: row.sum !== null ? Number(row.sum) : null,
+				count: row.count !== null ? Number(row.count) : null,
+				buckets: row.buckets,
+			});
 		}
 
-		return representative;
+		return snapshots;
 	}
 }
