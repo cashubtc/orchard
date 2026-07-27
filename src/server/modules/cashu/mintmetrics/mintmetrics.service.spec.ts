@@ -77,7 +77,16 @@ describe('MintMetricsService', () => {
 				MintMetricsService,
 				{provide: getRepositoryToken(MintMetrics), useValue: repository},
 				{provide: PrometheusService, useValue: {scrapeMetrics: jest.fn()}},
-				{provide: ConfigService, useValue: {get: jest.fn().mockReturnValue('http://localhost:5553')}},
+				{
+					provide: ConfigService,
+					useValue: {
+						get: jest.fn().mockImplementation((key: string) => {
+							if (key === 'cashu.type') return 'cdk';
+							if (key === 'cashu.metrics_api') return 'http://localhost:5553';
+							return undefined;
+						}),
+					},
+				},
 			],
 		}).compile();
 
@@ -88,6 +97,24 @@ describe('MintMetricsService', () => {
 
 	it('should be defined', () => {
 		expect(mintMetricsService).toBeDefined();
+	});
+
+	describe('isEnabled', () => {
+		it('returns true for a CDK mint with a configured metrics endpoint', () => {
+			expect(mintMetricsService.isEnabled()).toBe(true);
+		});
+
+		it('returns false for a non-CDK mint', () => {
+			configService.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'nutshell' : 'http://localhost:5553'));
+
+			expect(mintMetricsService.isEnabled()).toBe(false);
+		});
+
+		it('returns false without a configured metrics endpoint', () => {
+			configService.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'cdk' : undefined));
+
+			expect(mintMetricsService.isEnabled()).toBe(false);
+		});
 	});
 
 	describe('scrapeMintMetrics', () => {

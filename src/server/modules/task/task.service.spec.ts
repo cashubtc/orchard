@@ -21,7 +21,6 @@ import {TaskService} from './task.service';
 describe('TaskService', () => {
 	let taskService: TaskService;
 	let authService: jest.Mocked<AuthService>;
-	let configService: jest.Mocked<ConfigService>;
 	let mintMetricsService: jest.Mocked<MintMetricsService>;
 	let logger_spy: jest.SpyInstance;
 
@@ -105,6 +104,7 @@ describe('TaskService', () => {
 				{
 					provide: MintMetricsService,
 					useValue: {
+						isEnabled: jest.fn(),
 						collectAndStore: jest.fn(),
 						cleanupOldMetrics: jest.fn(),
 					},
@@ -114,7 +114,6 @@ describe('TaskService', () => {
 
 		taskService = module.get<TaskService>(TaskService);
 		authService = module.get(AuthService);
-		configService = module.get(ConfigService);
 		mintMetricsService = module.get(MintMetricsService);
 
 		// Spy on logger methods
@@ -174,7 +173,7 @@ describe('TaskService', () => {
 
 	describe('collectMintMetrics', () => {
 		it('should skip when mint type is not cdk', async () => {
-			configService.get.mockReturnValue('nutshell');
+			mintMetricsService.isEnabled.mockReturnValue(false);
 
 			await taskService.collectMintMetrics();
 
@@ -182,7 +181,7 @@ describe('TaskService', () => {
 		});
 
 		it('should skip when the metrics endpoint env config is unset', async () => {
-			configService.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'cdk' : undefined));
+			mintMetricsService.isEnabled.mockReturnValue(false);
 
 			await taskService.collectMintMetrics();
 
@@ -190,7 +189,7 @@ describe('TaskService', () => {
 		});
 
 		it('should collect for cdk mints with a metrics endpoint configured', async () => {
-			configService.get.mockReturnValue('cdk');
+			mintMetricsService.isEnabled.mockReturnValue(true);
 			mintMetricsService.collectAndStore.mockResolvedValue();
 
 			await taskService.collectMintMetrics();
@@ -199,7 +198,7 @@ describe('TaskService', () => {
 		});
 
 		it('should log errors without throwing', async () => {
-			configService.get.mockReturnValue('cdk');
+			mintMetricsService.isEnabled.mockReturnValue(true);
 			mintMetricsService.collectAndStore.mockRejectedValue(new Error('db locked'));
 			const error_spy = jest.spyOn(Logger.prototype, 'error');
 
@@ -211,7 +210,7 @@ describe('TaskService', () => {
 
 	describe('cleanupMintMetrics', () => {
 		it('should skip when mint type is not cdk', async () => {
-			configService.get.mockReturnValue('nutshell');
+			mintMetricsService.isEnabled.mockReturnValue(false);
 
 			await taskService.cleanupMintMetrics();
 
@@ -219,7 +218,7 @@ describe('TaskService', () => {
 		});
 
 		it('should cleanup for cdk mints with a metrics endpoint configured', async () => {
-			configService.get.mockReturnValue('cdk');
+			mintMetricsService.isEnabled.mockReturnValue(true);
 			mintMetricsService.cleanupOldMetrics.mockResolvedValue();
 
 			await taskService.cleanupMintMetrics();

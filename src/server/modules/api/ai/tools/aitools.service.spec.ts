@@ -5,7 +5,7 @@ describe('AiToolsService', () => {
 	let service: AiToolsService;
 
 	beforeEach(() => {
-		const toolService = new ToolService({} as any, {get: jest.fn()} as any);
+		const toolService = new ToolService({} as any, {isEnabled: jest.fn()} as any);
 		service = new AiToolsService(toolService);
 	});
 

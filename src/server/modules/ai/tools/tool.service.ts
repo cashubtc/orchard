@@ -1,6 +1,5 @@
 /* Core Dependencies */
 import {Injectable, Logger, Optional} from '@nestjs/common';
-import {ConfigService} from '@nestjs/config';
 import {ModuleRef} from '@nestjs/core';
 /* Vendor Dependencies */
 import {GraphQLSchemaHost} from '@nestjs/graphql';
@@ -9,7 +8,7 @@ import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {AiTool} from '@server/modules/ai/ai.types';
 import {AgentToolCategory, AgentToolName} from '@server/modules/ai/agent/agent.enums';
-import {MintType} from '@server/modules/cashu/cashu.enums';
+import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 import {
 	GetBitcoinAnalyticsMetricsTool,
 	GetBitcoinBlockchainInfoTool,
@@ -61,7 +60,7 @@ export class ToolService {
 
 	constructor(
 		private readonly moduleRef: ModuleRef,
-		private readonly configService: ConfigService,
+		private readonly mintMetricsService: MintMetricsService,
 		@Optional() private readonly messageService?: MessageService,
 	) {
 		this.register(AgentToolName.GET_BITCOIN_ANALYTICS_METRICS, GetBitcoinAnalyticsMetricsTool);
@@ -260,12 +259,8 @@ export class ToolService {
 	 * @returns {string | null} An actionable configuration error, or null when enabled
 	 */
 	private guardMintMetricsEnabled(): string | null {
-		if (this.configService.get<string>('cashu.type') !== MintType.CDK) {
-			return 'Mint metrics are unavailable: GET_MINT_METRICS requires MINT_TYPE=cdk.';
-		}
-		if (!this.configService.get<string>('cashu.metrics_api')) {
-			return 'Mint metrics are unavailable: configure MINT_METRICS_API for the CDK mint exporter.';
-		}
+		if (!this.mintMetricsService.isEnabled())
+			return 'Mint metrics are unavailable: GET_MINT_METRICS requires MINT_TYPE=cdk and MINT_METRICS_API.';
 		return null;
 	}
 

@@ -1,10 +1,10 @@
 /* Vendor Dependencies */
-import {ConfigService} from '@nestjs/config';
 import {Test, TestingModule} from '@nestjs/testing';
 import {GraphQLSchemaHost} from '@nestjs/graphql';
 import {makeExecutableSchema} from '@graphql-tools/schema';
 /* Application Dependencies */
 import {AgentToolCategory, AgentToolName} from '@server/modules/ai/agent/agent.enums';
+import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 /* Local Dependencies */
 import {ToolService} from './tool.service';
 
@@ -172,22 +172,18 @@ const mock_schema = makeExecutableSchema({
 
 describe('ToolService', () => {
 	let service: ToolService;
-	const mock_config_service = {
-		get: jest.fn(),
+	const mock_mint_metrics_service = {
+		isEnabled: jest.fn(),
 	};
 
 	beforeEach(async () => {
-		mock_config_service.get.mockImplementation((key: string) => {
-			if (key === 'cashu.type') return 'cdk';
-			if (key === 'cashu.metrics_api') return 'http://mint:9090';
-			return null;
-		});
+		mock_mint_metrics_service.isEnabled.mockReturnValue(true);
 		mock_mint_metrics_resolver.mockClear();
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				ToolService,
 				{provide: GraphQLSchemaHost, useValue: {schema: mock_schema}},
-				{provide: ConfigService, useValue: mock_config_service},
+				{provide: MintMetricsService, useValue: mock_mint_metrics_service},
 			],
 		}).compile();
 		service = module.get<ToolService>(ToolService);
@@ -270,8 +266,8 @@ describe('ToolService', () => {
 			expect(mock_mint_metrics_resolver).toHaveBeenCalledWith(undefined, args, expect.anything(), expect.anything());
 		});
 
-		it('rejects mint metrics when the mint backend is not CDK', async () => {
-			mock_config_service.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'nutshell' : null));
+		it('rejects mint metrics when the feature is disabled', async () => {
+			mock_mint_metrics_service.isEnabled.mockReturnValue(false);
 
 			const result = await service.executeTool(AgentToolName.GET_MINT_METRICS, {
 				date_start: 1700000000,
@@ -281,20 +277,6 @@ describe('ToolService', () => {
 
 			expect(result.success).toBe(false);
 			expect(result.error).toContain('MINT_TYPE=cdk');
-			expect(mock_mint_metrics_resolver).not.toHaveBeenCalled();
-		});
-
-		it('rejects mint metrics when the exporter endpoint is not configured', async () => {
-			mock_config_service.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'cdk' : null));
-
-			const result = await service.executeTool(AgentToolName.GET_MINT_METRICS, {
-				date_start: 1700000000,
-				interval: 'hour',
-				metrics: ['cdk_errors_total'],
-			});
-
-			expect(result.success).toBe(false);
-			expect(result.error).toContain('MINT_METRICS_API');
 			expect(mock_mint_metrics_resolver).not.toHaveBeenCalled();
 		});
 

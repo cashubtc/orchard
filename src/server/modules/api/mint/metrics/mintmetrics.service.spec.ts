@@ -1,6 +1,5 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
-import {ConfigService} from '@nestjs/config';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
 import {OrchardErrorCode} from '@server/modules/error/error.types';
@@ -31,26 +30,22 @@ const row = (overrides: Partial<MintMetrics>): MintMetrics =>
 describe('ApiMintMetricsService', () => {
 	let apiMintMetricsService: ApiMintMetricsService;
 	let mintMetricsService: jest.Mocked<MintMetricsService>;
-	let configService: jest.Mocked<ConfigService>;
 	let errorService: jest.Mocked<ErrorService>;
 
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				ApiMintMetricsService,
-				{provide: MintMetricsService, useValue: {getMetrics: jest.fn(), scrapeMintMetrics: jest.fn()}},
-				{provide: ConfigService, useValue: {get: jest.fn()}},
+				{provide: MintMetricsService, useValue: {isEnabled: jest.fn(), getMetrics: jest.fn(), scrapeMintMetrics: jest.fn()}},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
 			],
 		}).compile();
 
 		apiMintMetricsService = module.get<ApiMintMetricsService>(ApiMintMetricsService);
 		mintMetricsService = module.get(MintMetricsService);
-		configService = module.get(ConfigService);
 		errorService = module.get(ErrorService);
 
-		// cdk mint with a configured exporter — the enabled path
-		configService.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'cdk' : 'http://localhost:5553'));
+		mintMetricsService.isEnabled.mockReturnValue(true);
 		errorService.resolveError.mockImplementation((_logger, error, _tag, {errord}) => ({
 			code: typeof error === 'number' ? error : errord,
 		}));
@@ -62,7 +57,7 @@ describe('ApiMintMetricsService', () => {
 
 	describe('support gating', () => {
 		it('throws MintSupportError for nutshell mints', async () => {
-			configService.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'nutshell' : 'http://localhost:5553'));
+			mintMetricsService.isEnabled.mockReturnValue(false);
 			await expect(apiMintMetricsService.getMetrics('tag', {})).rejects.toBeInstanceOf(OrchardApiError);
 			expect(errorService.resolveError).toHaveBeenCalledWith(
 				expect.anything(),
@@ -73,7 +68,7 @@ describe('ApiMintMetricsService', () => {
 		});
 
 		it('throws MintSupportError when the metrics endpoint env config is unset', async () => {
-			configService.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'cdk' : undefined));
+			mintMetricsService.isEnabled.mockReturnValue(false);
 			await expect(apiMintMetricsService.getMetrics('tag', {})).rejects.toBeInstanceOf(OrchardApiError);
 		});
 	});
@@ -282,7 +277,7 @@ describe('ApiMintMetricsService', () => {
 		});
 
 		it('throws without scraping when the backend is unsupported', async () => {
-			configService.get.mockImplementation((key: string) => (key === 'cashu.type' ? 'nutshell' : 'http://localhost:5553'));
+			mintMetricsService.isEnabled.mockReturnValue(false);
 			await expect(apiMintMetricsService.checkHealth('tag')).rejects.toBeInstanceOf(OrchardApiError);
 			expect(mintMetricsService.scrapeMintMetrics).not.toHaveBeenCalled();
 		});

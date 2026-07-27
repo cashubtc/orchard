@@ -17,7 +17,6 @@ import {ConversationService} from '@server/modules/ai/conversation/conversation.
 import {SystemMetricsService} from '@server/modules/system/metrics/sysmetrics.service';
 import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 import {BitcoinType} from '@server/modules/bitcoin/bitcoin.enums';
-import {MintType} from '@server/modules/cashu/cashu.enums';
 import {SettingKey} from '@server/modules/setting/setting.enums';
 
 @Injectable()
@@ -313,7 +312,7 @@ export class TaskService {
 		timeZone: 'UTC',
 	})
 	async collectMintMetrics() {
-		if (!this.isMintMetricsEnabled()) return;
+		if (!this.mintMetricsService.isEnabled()) return;
 
 		try {
 			await this.mintMetricsService.collectAndStore();
@@ -331,7 +330,7 @@ export class TaskService {
 		timeZone: 'UTC',
 	})
 	async cleanupMintMetrics() {
-		if (!this.isMintMetricsEnabled()) return;
+		if (!this.mintMetricsService.isEnabled()) return;
 
 		this.logger.log('Starting mint metrics cleanup...');
 		try {
@@ -340,14 +339,6 @@ export class TaskService {
 		} catch (error) {
 			this.logger.error(`Error cleaning up mint metrics: ${error.message}`, error.stack);
 		}
-	}
-
-	/**
-	 * Whether mint prometheus metrics are enabled — a cdk mint with a configured endpoint
-	 */
-	private isMintMetricsEnabled(): boolean {
-		if (this.configService.get('cashu.type') !== MintType.CDK) return false;
-		return !!this.configService.get('cashu.metrics_api');
 	}
 
 	/**

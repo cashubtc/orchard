@@ -10,6 +10,7 @@ import {PrometheusService} from '@server/modules/prometheus/prometheus.service';
 import {flattenFamily} from '@server/modules/prometheus/prometheus.helpers';
 import {PromFamily} from '@server/modules/prometheus/prometheus.types';
 import {METRICS_RETENTION_DAYS, METRICS_DOWNSAMPLE_AFTER_DAYS} from '@server/modules/system/metrics/sysmetrics.constants';
+import {MintType} from '@server/modules/cashu/cashu.enums';
 /* Local Dependencies */
 import {MintMetrics} from './mintmetrics.entity';
 import {MintMetricType} from './mintmetrics.enums';
@@ -35,6 +36,15 @@ export class MintMetricsService {
 		private prometheusService: PrometheusService,
 		private configService: ConfigService,
 	) {}
+
+	/**
+	 * Determines whether Prometheus metrics are supported and configured for the active mint.
+	 * @returns {boolean} True when a CDK mint metrics endpoint is configured
+	 */
+	public isEnabled(): boolean {
+		if (this.configService.get<string>('cashu.type') !== MintType.CDK) return false;
+		return !!this.configService.get<string>('cashu.metrics_api');
+	}
 
 	/* *******************************************************
 		Collection

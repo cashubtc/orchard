@@ -6,6 +6,7 @@ import {SchedulerRegistry} from '@nestjs/schedule';
 /* Application Dependencies */
 import {AiService} from '@server/modules/ai/ai.service';
 import {AiMessageRole} from '@server/modules/ai/ai.enums';
+import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 /* Local Dependencies */
 import {AgentService} from './agent.service';
 import {Agent} from './agent.entity';
@@ -66,9 +67,13 @@ describe('AgentService', () => {
 	const mock_config_service = {
 		get: jest.fn().mockReturnValue(null),
 	};
+	const mock_mint_metrics_service = {
+		isEnabled: jest.fn(),
+	};
 
 	beforeEach(async () => {
 		jest.clearAllMocks();
+		mock_mint_metrics_service.isEnabled.mockReturnValue(true);
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				AgentService,
@@ -78,6 +83,7 @@ describe('AgentService', () => {
 				{provide: AiService, useValue: mock_ai_service},
 				{provide: ConfigService, useValue: mock_config_service},
 				{provide: ToolService, useValue: mock_tool_executor},
+				{provide: MintMetricsService, useValue: mock_mint_metrics_service},
 			],
 		}).compile();
 		service = module.get<AgentService>(AgentService);
@@ -831,7 +837,6 @@ describe('AgentService', () => {
 				if (key === 'bitcoin.type') return 'bitcoind';
 				if (key === 'lightning.type') return 'lnd';
 				if (key === 'cashu.type') return 'cdk';
-				if (key === 'cashu.metrics_api') return 'http://mint:9090';
 				return null;
 			});
 
@@ -845,6 +850,7 @@ describe('AgentService', () => {
 		});
 
 		it('should identify mint metrics as disabled without an exporter endpoint', () => {
+			mock_mint_metrics_service.isEnabled.mockReturnValue(false);
 			mock_config_service.get.mockImplementation((key: string) => {
 				if (key === 'cashu.type') return 'cdk';
 				return null;
