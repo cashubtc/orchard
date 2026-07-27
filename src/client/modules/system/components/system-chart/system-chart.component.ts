@@ -173,9 +173,7 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 	}
 
 	/** Builds three line datasets (p50/p95/p99) per series: color by series, line style by percentile */
-	private getPercentileDatasets(
-		series_map: Map<string, SystemChartPoint[]>,
-	): ChartConfiguration<SystemChartJsType>['data']['datasets'] {
+	private getPercentileDatasets(series_map: Map<string, SystemChartPoint[]>): ChartConfiguration<SystemChartJsType>['data']['datasets'] {
 		const percentile_configs: {key: 'p50' | 'p95' | 'p99'; label: string; dash: number[]}[] = [
 			{key: 'p50', label: 'p50', dash: [4, 4]},
 			{key: 'p95', label: 'p95', dash: []},
@@ -277,7 +275,8 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 						label: (context) =>
 							`${context.dataset.label}: ${context.parsed.y === null ? '—' : this.formatValue(context.parsed.y)}`,
 						labelColor: (context) => {
-							const border_color = typeof context.dataset.borderColor === 'string' ? context.dataset.borderColor : 'transparent';
+							const border_color =
+								typeof context.dataset.borderColor === 'string' ? context.dataset.borderColor : 'transparent';
 							return {
 								borderColor: border_color,
 								backgroundColor: border_color,
