@@ -43,7 +43,8 @@ export function shouldAutoRefreshMetrics(settings: NonNullableSystemMetricsSetti
 
 /** Resolves stored device settings into fully-defaulted page settings for a first visit */
 export function resolveSystemMetricsSettings(settings: AllSystemMetricsSettings): NonNullableSystemMetricsSettings {
-	const date_preset = settings.date_preset ?? null;
+	const has_explicit_range = settings.date_start !== null && settings.date_end !== null;
+	const date_preset = settings.date_preset ?? (has_explicit_range ? null : DateRangePreset.Last7Days);
 	const resolved_dates = date_preset ? resolveMetricsDateRangePreset(date_preset) : null;
 	const default_dates = resolveMetricsDateRangePreset(DateRangePreset.Last7Days);
 	return {

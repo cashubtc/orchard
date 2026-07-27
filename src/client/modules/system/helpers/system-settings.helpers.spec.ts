@@ -139,14 +139,20 @@ describe('system-settings.helpers', () => {
 	});
 
 	describe('resolveSystemMetricsSettings', () => {
-		it('defaults to a rolling last-7-days range and daily interval on a first visit', () => {
+		it('defaults to a refreshable rolling last-7-days preset and daily interval on a first visit', () => {
 			const before = Math.floor(Date.now() / 1000);
 			const resolved = resolveSystemMetricsSettings(settings());
 			expect(resolved.date_end).toBeGreaterThanOrEqual(before);
 			// wall-clock rolling window; allow an hour of slack for DST transitions in the local zone
 			expect(Math.abs(resolved.date_end - resolved.date_start - 7 * 86400)).toBeLessThanOrEqual(3600);
-			expect(resolved.date_preset).toBeNull();
+			expect(resolved.date_preset).toBe(DateRangePreset.Last7Days);
 			expect(resolved.interval).toBe(SystemMetricsInterval.Day);
+		});
+
+		it('repairs an incomplete stored range with the rolling default preset', () => {
+			const resolved = resolveSystemMetricsSettings(settings({date_start: 111}));
+			expect(resolved.date_preset).toBe(DateRangePreset.Last7Days);
+			expect(resolved.date_start).not.toBe(111);
 		});
 
 		it('uses stored explicit dates and interval when no preset is set', () => {
