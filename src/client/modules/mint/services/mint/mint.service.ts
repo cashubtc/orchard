@@ -2,7 +2,7 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 /* Vendor Dependencies */
-import {BehaviorSubject, catchError, map, Observable, of, shareReplay, switchMap, tap, throwError} from 'rxjs';
+import {BehaviorSubject, catchError, map, Observable, of, shareReplay, Subject, switchMap, takeUntil, tap, throwError} from 'rxjs';
 /* Application Dependencies */
 import {getApiQuery} from '@client/modules/api/helpers/api.helpers';
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
@@ -213,6 +213,7 @@ export class MintService {
 	private readonly mint_database_info_subject: BehaviorSubject<MintDatabaseInfo | null>;
 	private readonly mint_activity_summary_subject: BehaviorSubject<MintActivitySummary | null>;
 	private readonly mint_metrics_subject: BehaviorSubject<MintMetric[] | null>;
+	private readonly mint_metrics_cancel = new Subject<void>(); // Cancels superseded mint metrics requests before they can update the shared cache.
 
 	/* Observables for caching (rapid request caching) */
 	private mint_info_observable!: Observable<MintInfo> | null;
@@ -356,7 +357,9 @@ export class MintService {
 		this.cache.clearCache(this.CACHE_KEYS.MINT_ACTIVITY_SUMMARY);
 	}
 
-	public clearMetricsCache() {
+	/** Clears cached mint metrics and cancels requests using superseded arguments. */
+	public clearMetricsCache(): void {
+		this.mint_metrics_cancel.next();
 		this.cached_metrics_args = null;
 		this.cache.clearCache(this.CACHE_KEYS.MINT_METRICS);
 	}
@@ -856,6 +859,7 @@ export class MintService {
 		const query = getApiQuery(MINT_METRICS_QUERY, args);
 
 		return this.http.post<OrchardRes<MintMetricsResponse>>(this.apiService.api, query).pipe(
+			takeUntil(this.mint_metrics_cancel),
 			map((response) => {
 				if (response.errors) throw new OrchardErrors(response.errors);
 				return response.data.mint_metrics;

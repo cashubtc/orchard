@@ -14,7 +14,15 @@ export function buildSystemAssistantContext(settings: NonNullableSystemMetricsSe
 	return context;
 }
 
-/** Parses assistant yyyy-MM-dd date strings into a [start, end] unix-second range */
-export function parseAssistantDateRange(date_start: string, date_end: string): number[] {
-	return [DateTime.fromFormat(date_start, 'yyyy-MM-dd').toUnixInteger(), DateTime.fromFormat(date_end, 'yyyy-MM-dd').toUnixInteger()];
+/**
+ * Parses assistant yyyy-MM-dd date strings into an inclusive unix-second day range.
+ * @param {string} date_start - First calendar day in the requested range.
+ * @param {string} date_end - Last calendar day in the requested range.
+ * @returns {[number, number] | null} Inclusive start/end timestamps, or null when either date or the range is invalid.
+ */
+export function parseAssistantDateRange(date_start: string, date_end: string): [number, number] | null {
+	const parsed_start = DateTime.fromFormat(date_start, 'yyyy-MM-dd').startOf('day');
+	const parsed_end = DateTime.fromFormat(date_end, 'yyyy-MM-dd').endOf('day');
+	if (!parsed_start.isValid || !parsed_end.isValid || parsed_end.toMillis() < parsed_start.toMillis()) return null;
+	return [parsed_start.toUnixInteger(), parsed_end.toUnixInteger()];
 }

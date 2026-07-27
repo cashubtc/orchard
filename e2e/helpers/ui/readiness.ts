@@ -45,18 +45,23 @@ const BITCOIN_ANALYTICS_PROBE_QUERY = `{
 	}
 }`;
 const AI_HEALTH_QUERY = `{ ai_health { status } }`;
-/** Probe `metrics_system` for any minute bucket — the host-metrics cron
+/** Probe a single `metrics_system` family over a short recent window — the host-metrics cron
  *  (gated on the `system.metrics` setting, default true) has collected at
- *  least once. Host families are stored gauge-style, so one row is enough
+ *  least once recently. Host families are stored gauge-style, so one row is enough
  *  for every chart on `/system`. */
-const SYSTEM_METRICS_PROBE_QUERY = `{ system_metrics(interval: minute) { date } }`;
-/** Probe `metrics_mint` via a gauge family the cdk exporter always serves —
+const SYSTEM_METRICS_PROBE_QUERY = `query RecentSystemMetrics($date_start: UnixTimestamp, $date_end: UnixTimestamp) {
+	system_metrics(date_start: $date_start, date_end: $date_end, interval: minute, metrics: [cpu_percent]) { date }
+}`;
+/** Probe `metrics_mint` over a short recent window via a gauge family the cdk exporter always serves —
  *  one stored scrape is enough for gauges (counters need two). Empty when
  *  `MINT_METRICS_API` is unset or the mint isn't cdk (the resolver throws
  *  MintSupportError, which `probe` collapses to `[]`). */
-const MINT_METRICS_PROBE_QUERY = `{ mint_metrics(interval: minute, metrics: ["process_memory_bytes"]) { date } }`;
+const MINT_METRICS_PROBE_QUERY = `query RecentMintMetrics($date_start: UnixTimestamp, $date_end: UnixTimestamp) {
+	mint_metrics(date_start: $date_start, date_end: $date_end, interval: minute, metrics: ["process_memory_bytes"]) { date }
+}`;
 
 const SECONDS_PER_DAY = 86_400;
+const METRICS_PROBE_WINDOW_SECONDS = 10 * 60;
 
 /** Run a probe query and collapse any backend-side error into a safe
  *  default. The readiness probes fire across all stacks even when a
@@ -69,9 +74,9 @@ const SECONDS_PER_DAY = 86_400;
  *  Throwing-style errors (auth, transport) still propagate via the
  *  inner `gql()` if the request itself fails — only resolver-level
  *  GraphQL errors are caught here. */
-async function probe<T>(page: Page, query: string, field: string, fallback: T): Promise<T> {
+async function probe<T>(page: Page, query: string, field: string, fallback: T, variables?: Record<string, unknown>): Promise<T> {
 	try {
-		const data = await gql(page, query);
+		const data = await gql(page, query, variables);
 		return (data[field] as T) ?? fallback;
 	} catch {
 		return fallback;
@@ -84,6 +89,9 @@ async function probe<T>(page: Page, query: string, field: string, fallback: T): 
 export async function getReadiness(page: Page): Promise<Readiness> {
 	const now_unix = Math.floor(Date.now() / 1000);
 	const start = now_unix - 7 * SECONDS_PER_DAY;
+	const metrics_start = now_unix - METRICS_PROBE_WINDOW_SECONDS;
+	const recent_variables = {date_start: start, date_end: now_unix};
+	const metrics_variables = {date_start: metrics_start, date_end: now_unix};
 	const [bitcoin_data, oracle_data, mint_probe, ln_probe, btc_probe, ai_health_data, system_metrics_probe, mint_metrics_probe] =
 		await Promise.all([
 			// Bitcoin chain-info errors on no-bitcoin stacks (`fake-cdk-postgres`),
@@ -95,13 +103,13 @@ export async function getReadiness(page: Page): Promise<Readiness> {
 				initialblockdownload: true,
 				blocks: 0,
 			}),
-			probe<OraclePrice[]>(page, BITCOIN_ORACLE_RECENT_QUERY, 'bitcoin_oracle', []),
+			probe<OraclePrice[]>(page, BITCOIN_ORACLE_RECENT_QUERY, 'bitcoin_oracle', [], recent_variables),
 			probe<AnalyticsCacheRow[]>(page, MINT_ANALYTICS_PROBE_QUERY, 'mint_analytics_metrics', []),
 			probe<AnalyticsCacheRow[]>(page, LIGHTNING_ANALYTICS_PROBE_QUERY, 'lightning_analytics_metrics', []),
 			probe<AnalyticsCacheRow[]>(page, BITCOIN_ANALYTICS_PROBE_QUERY, 'bitcoin_analytics_metrics', []),
 			probe<{status: boolean}>(page, AI_HEALTH_QUERY, 'ai_health', {status: false}),
-			probe<MetricSampleRow[]>(page, SYSTEM_METRICS_PROBE_QUERY, 'system_metrics', []),
-			probe<MetricSampleRow[]>(page, MINT_METRICS_PROBE_QUERY, 'mint_metrics', []),
+			probe<MetricSampleRow[]>(page, SYSTEM_METRICS_PROBE_QUERY, 'system_metrics', [], metrics_variables),
+			probe<MetricSampleRow[]>(page, MINT_METRICS_PROBE_QUERY, 'mint_metrics', [], metrics_variables),
 		]);
 	return {
 		bitcoin: bitcoin_data,
@@ -183,7 +191,7 @@ export const bitcoinAnalyticsHasRows: ReadinessPredicate = (r) => ({
 	reason: `bitcoin_analytics_has_rows rows=${r.bitcoin_analytics_recent.length}`,
 });
 
-/** `metrics_system` has at least one row — the per-minute host-metrics cron
+/** `metrics_system` has at least one recent row — the per-minute host-metrics cron
  *  (gated on `system.metrics`, default true) has collected. Gate for any
  *  spec asserting populated charts on `/system`. */
 export const systemMetricsHasRows: ReadinessPredicate = (r) => ({
@@ -191,7 +199,7 @@ export const systemMetricsHasRows: ReadinessPredicate = (r) => ({
 	reason: `system_metrics_has_rows rows=${r.system_metrics_recent.length}`,
 });
 
-/** `metrics_mint` has at least one row — `MINT_METRICS_API` is set AND the
+/** `metrics_mint` has at least one recent row — `MINT_METRICS_API` is set AND the
  *  per-minute scrape cron has stored a sample from the cdk exporter. Gauges
  *  chart from one sample; counters need two. */
 export const mintMetricsHasRows: ReadinessPredicate = (r) => ({

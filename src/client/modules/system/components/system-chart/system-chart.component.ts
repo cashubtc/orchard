@@ -13,7 +13,8 @@ import {
 } from '@angular/core';
 /* Vendor Dependencies */
 import {BaseChartDirective} from 'ng2-charts';
-import {ChartConfiguration, ChartType as ChartJsType, Plugin} from 'chart.js';
+import {ChartConfiguration, Plugin, ScriptableContext, TooltipItem} from 'chart.js';
+import type {AnnotationPluginOptions} from 'chartjs-plugin-annotation';
 import {DateTime} from 'luxon';
 import {Subscription} from 'rxjs';
 /* Application Dependencies */
@@ -22,6 +23,8 @@ import {ChartService} from '@client/modules/chart/services/chart/chart.service';
 import {SystemChartUnit, SystemChartPoint, SystemChartReferenceLine} from '@client/modules/system/types/system.types';
 /* Shared Dependencies */
 import {SystemMetricsInterval} from '@shared/generated.types';
+
+type SystemChartJsType = 'line' | 'bar';
 
 @Component({
 	selector: 'orc-system-chart',
@@ -53,10 +56,10 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 	public ceiling = input<number | undefined>(undefined);
 	public loading = input.required<boolean>();
 
-	public chart_type!: ChartJsType;
-	public chart_data: ChartConfiguration['data'] = {datasets: []};
-	public chart_options: ChartConfiguration['options'] = {};
-	public chart_plugins: Plugin[] = [];
+	public chart_type!: SystemChartJsType;
+	public chart_data: ChartConfiguration<SystemChartJsType>['data'] = {datasets: []};
+	public chart_options: ChartConfiguration<SystemChartJsType>['options'] = {};
+	public chart_plugins: Plugin<SystemChartJsType>[] = [];
 	public readonly displayed = signal<boolean>(true);
 
 	public readonly has_data = computed(() => this.metrics().length > 0);
@@ -127,7 +130,7 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 	}
 
 	/** Groups metrics by label set into one themed dataset per series */
-	private getChartData(): ChartConfiguration['data'] {
+	private getChartData(): ChartConfiguration<SystemChartJsType>['data'] {
 		const series_map = new Map<string, SystemChartPoint[]>();
 		for (const metric of this.metrics()) {
 			const key = this.getSeriesKey(metric);
@@ -146,7 +149,9 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 			return {
 				data: series.map((metric) => ({x: metric.date * 1000, y: this.convertValue(metric.value ?? null)})),
 				label: this.getSeriesLabel(series[0]),
-				backgroundColor: is_line ? (context: any) => this.chartService.createAreaGradient(context, color.border) : muted_color,
+				backgroundColor: is_line
+					? (context: ScriptableContext<SystemChartJsType>) => this.chartService.createAreaGradient(context, color.border)
+					: muted_color,
 				borderColor: muted_color,
 				borderWidth: is_line ? 2 : 0,
 				borderRadius: 0,
@@ -168,7 +173,7 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 	}
 
 	/** Builds three line datasets (p50/p95/p99) per series: color by series, line style by percentile */
-	private getPercentileDatasets(series_map: Map<string, SystemChartPoint[]>): ChartConfiguration['data']['datasets'] {
+	private getPercentileDatasets(series_map: Map<string, SystemChartPoint[]>): ChartConfiguration<SystemChartJsType>['data']['datasets'] {
 		const percentile_configs: {key: 'p50' | 'p95' | 'p99'; label: string; dash: number[]}[] = [
 			{key: 'p50', label: 'p50', dash: [4, 4]},
 			{key: 'p95', label: 'p95', dash: []},
@@ -201,7 +206,7 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 	}
 
 	/** Line charts get the shared point-glow plugin, matching the dashboard */
-	private getChartPlugins(): Plugin[] {
+	private getChartPlugins(): Plugin<SystemChartJsType>[] {
 		if (this.type() !== 'line') return [];
 		const first_color = this.chart_data?.datasets?.[0]?.borderColor as string;
 		return first_color ? [this.chartService.createGlowPlugin(first_color)] : [];
@@ -227,7 +232,8 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 			.replace(/_/g, ' ');
 	}
 
-	private getChartOptions(): ChartConfiguration['options'] {
+	/** Builds responsive axes, tooltips, interactions, and optional annotations for the chart. */
+	private getChartOptions(): ChartConfiguration<SystemChartJsType>['options'] {
 		return {
 			responsive: true,
 			maintainAspectRatio: false,
@@ -265,14 +271,19 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 					mode: 'index',
 					intersect: false,
 					callbacks: {
-						title: (tooltip_items: any) => this.getTooltipTitle(tooltip_items),
-						label: (context: any) => `${context.dataset.label}: ${this.formatValue(context.parsed.y)}`,
-						labelColor: (context: any) => ({
-							borderColor: context.dataset.borderColor,
-							backgroundColor: context.dataset.borderColor,
-							borderWidth: 2,
-							borderRadius: 0,
-						}),
+						title: (tooltip_items) => this.getTooltipTitle(tooltip_items),
+						label: (context) =>
+							`${context.dataset.label}: ${context.parsed.y === null ? '—' : this.formatValue(context.parsed.y)}`,
+						labelColor: (context) => {
+							const border_color =
+								typeof context.dataset.borderColor === 'string' ? context.dataset.borderColor : 'transparent';
+							return {
+								borderColor: border_color,
+								backgroundColor: border_color,
+								borderWidth: 2,
+								borderRadius: 0,
+							};
+						},
 					},
 				},
 				legend: {
@@ -288,7 +299,7 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 	}
 
 	/** Builds a dashed horizontal annotation line at the reference value */
-	private getReferenceAnnotation(): any {
+	private getReferenceAnnotation(): AnnotationPluginOptions {
 		const reference = this.reference_line()!;
 		const config = this.chartService.getFormAnnotationConfig(false);
 		return {
@@ -307,7 +318,7 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 						color: config.text_color,
 						font: {
 							size: 12,
-							weight: '300',
+							weight: 300,
 						},
 						borderColor: config.label_border_color,
 						borderWidth: 1,
@@ -355,9 +366,15 @@ export class SystemChartComponent implements OnChanges, OnDestroy {
 		}
 	}
 
-	private getTooltipTitle(tooltip_items: any): string {
-		if (tooltip_items.length === 0) return '';
-		return DateTime.fromMillis(tooltip_items[0].parsed.x).toLocaleString({
+	/**
+	 * Formats the timestamp shared by the hovered chart points.
+	 * @param {TooltipItem<SystemChartJsType>[]} tooltip_items - Chart.js tooltip entries at the active x-coordinate.
+	 * @returns {string} Localized tooltip timestamp, or an empty string when no point is active.
+	 */
+	private getTooltipTitle(tooltip_items: TooltipItem<SystemChartJsType>[]): string {
+		const timestamp = tooltip_items[0]?.parsed.x;
+		if (timestamp === null || timestamp === undefined) return '';
+		return DateTime.fromMillis(timestamp).toLocaleString({
 			year: 'numeric',
 			month: 'short',
 			day: 'numeric',

@@ -8,6 +8,7 @@ import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {AiTool} from '@server/modules/ai/ai.types';
 import {AgentToolCategory, AgentToolName} from '@server/modules/ai/agent/agent.enums';
+import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 import {
 	GetBitcoinAnalyticsMetricsTool,
 	GetBitcoinBlockchainInfoTool,
@@ -23,6 +24,7 @@ import {
 	GetMintAnalyticsMetricsTool,
 	GetMintAnalyticsTool,
 	GetMintInfoTool,
+	GetMintMetricsTool,
 	GetPastRunsTool,
 	GetSystemMetricsTool,
 	createSendMessageTool,
@@ -35,13 +37,15 @@ import {AiAgentContext, AiToolResult, AiToolEntry, ToolGuard, ToolGuardContext, 
 
 @Injectable()
 export class ToolService {
-	private static readonly INTERVAL_SECONDS: Record<'hour' | 'day' | 'week' | 'month', number> = {
+	private static readonly INTERVAL_SECONDS: Record<'minute' | 'hour' | 'day' | 'week' | 'month', number> = {
+		minute: 60,
 		hour: 3_600,
 		day: 86_400,
 		week: 604_800,
 		month: 2_592_000,
 	};
 	private static readonly MAX_ANALYTICS_BUCKETS = 500;
+	private static readonly MAX_MINT_METRIC_POINTS = 500;
 
 	private readonly logger = new Logger(ToolService.name);
 	private readonly registry = new Map<string, AiToolEntry>();
@@ -49,11 +53,14 @@ export class ToolService {
 	private readonly parsed_queries = new Map<string, DocumentNode>();
 	private readonly guards: ReadonlyMap<ToolGuardName, ToolGuard> = new Map([
 		[ToolGuardName.AnalyticsBucketBudget, (context: ToolGuardContext) => this.guardAnalyticsBucketBudget(context)],
+		[ToolGuardName.MintMetricsEnabled, () => this.guardMintMetricsEnabled()],
+		[ToolGuardName.MintMetricsQueryBudget, (context: ToolGuardContext) => this.guardMintMetricsQueryBudget(context)],
 	]);
 	private schema: GraphQLSchema | null = null;
 
 	constructor(
 		private readonly moduleRef: ModuleRef,
+		private readonly mintMetricsService: MintMetricsService,
 		@Optional() private readonly messageService?: MessageService,
 	) {
 		this.register(AgentToolName.GET_BITCOIN_ANALYTICS_METRICS, GetBitcoinAnalyticsMetricsTool);
@@ -70,6 +77,7 @@ export class ToolService {
 		this.register(AgentToolName.GET_MINT_ANALYTICS, GetMintAnalyticsTool);
 		this.register(AgentToolName.GET_MINT_ANALYTICS_METRICS, GetMintAnalyticsMetricsTool);
 		this.register(AgentToolName.GET_MINT_INFO, GetMintInfoTool);
+		this.register(AgentToolName.GET_MINT_METRICS, GetMintMetricsTool);
 		this.register(AgentToolName.GET_PAST_RUNS, GetPastRunsTool);
 		this.register(AgentToolName.GET_SYSTEM_METRICS, GetSystemMetricsTool);
 		this.register(AgentToolName.SEND_MESSAGE, createSendMessageTool(this.messageService));
@@ -240,6 +248,58 @@ export class ToolService {
 				`interval='${interval}' over the requested range would return ~${estimated_buckets} buckets ` +
 				`(max ${ToolService.MAX_ANALYTICS_BUCKETS}). ` +
 				`Use a coarser interval (e.g. 'week'/'month'), narrow date_start, or use interval='custom' for a single aggregate.`
+			);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Reject mint metrics calls when the configured mint cannot provide Prometheus metrics.
+	 * @returns {string | null} An actionable configuration error, or null when enabled
+	 */
+	private guardMintMetricsEnabled(): string | null {
+		if (!this.mintMetricsService.isEnabled())
+			return 'Mint metrics are unavailable: GET_MINT_METRICS requires MINT_TYPE=cdk and MINT_METRICS_API.';
+		return null;
+	}
+
+	/**
+	 * Reject mint metrics calls that are unbounded, malformed, or likely to overflow the model context.
+	 * @param {ToolGuardContext} context - Pending tool call variables
+	 * @returns {string | null} A teaching error, or null when the query is within budget
+	 */
+	private guardMintMetricsQueryBudget({variables}: ToolGuardContext): string | null {
+		const date_start = variables.date_start;
+		const date_end = variables.date_end ?? DateTime.utc().toUnixInteger();
+		const interval = variables.interval;
+		const metrics = variables.metrics;
+
+		if (typeof date_start !== 'number' || !Number.isFinite(date_start) || date_start <= 0) {
+			return 'GET_MINT_METRICS requires a valid, positive date_start to bound the query.';
+		}
+		if (typeof date_end !== 'number' || !Number.isFinite(date_end) || date_end <= date_start) {
+			return 'GET_MINT_METRICS requires date_end to be later than date_start. Omit date_end to use the current time.';
+		}
+		if (typeof interval !== 'string' || !['minute', 'hour', 'day'].includes(interval)) {
+			return "GET_MINT_METRICS requires interval='minute', 'hour', or 'day'.";
+		}
+		if (
+			!Array.isArray(metrics) ||
+			metrics.length === 0 ||
+			!metrics.every((metric) => typeof metric === 'string' && metric.length > 0)
+		) {
+			return 'GET_MINT_METRICS requires at least one explicit metric family name.';
+		}
+
+		const interval_seconds = ToolService.INTERVAL_SECONDS[interval as 'minute' | 'hour' | 'day'];
+		const bucket_count = Math.ceil((date_end - date_start) / interval_seconds);
+		const metric_count = new Set(metrics).size;
+		const estimated_points = bucket_count * metric_count;
+		if (estimated_points > ToolService.MAX_MINT_METRIC_POINTS) {
+			return (
+				`The mint metrics query would return at least ~${estimated_points} points before label expansion ` +
+				`(max ${ToolService.MAX_MINT_METRIC_POINTS}). Narrow the date range, request fewer metrics, or use a coarser interval.`
 			);
 		}
 

@@ -57,14 +57,13 @@ export interface Readiness {
 	 *  (resolver errors → probe falls back to false) or when the configured
 	 *  vendor (Ollama/OpenRouter) is unreachable. Gate `@ai` specs on this. */
 	ai_health: boolean;
-	/** Probe of `system_metrics(interval: minute)`. Empty until the host
-	 *  metrics cron (gated on `system.metrics`, default true) has stored
-	 *  its first minute bucket in `metrics_system`. */
+	/** Recent probe of `system_metrics(interval: minute)` for one gauge family.
+	 *  Empty until the host metrics cron (gated on `system.metrics`, default true)
+	 *  has stored a minute bucket in the probe window. */
 	system_metrics_recent: MetricSampleRow[];
-	/** Probe of `mint_metrics` on a gauge family. Empty on non-cdk stacks
+	/** Recent probe of `mint_metrics` on a gauge family. Empty on non-cdk stacks
 	 *  or when `MINT_METRICS_API` is unset (resolver throws — collapsed to
-	 *  `[]`), and until the first successful exporter scrape lands in
-	 *  `metrics_mint`. */
+	 *  `[]`), and until a successful exporter scrape lands in the probe window. */
 	mint_metrics_recent: MetricSampleRow[];
 }
 

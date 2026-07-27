@@ -1,13 +1,11 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
-import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 import {ErrorService} from '@server/modules/error/error.service';
-import {MintType} from '@server/modules/cashu/cashu.enums';
 import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 import {MintMetrics} from '@server/modules/cashu/mintmetrics/mintmetrics.entity';
 import {MintMetricType} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
@@ -30,7 +28,6 @@ export class ApiMintMetricsService {
 
 	constructor(
 		private mintMetricsService: MintMetricsService,
-		private configService: ConfigService,
 		private errorService: ErrorService,
 	) {}
 
@@ -78,8 +75,7 @@ export class ApiMintMetricsService {
 	 * Throws when the mint backend has no prometheus metrics support or no endpoint is configured
 	 */
 	private guardSupport(): void {
-		if (this.configService.get('cashu.type') !== MintType.CDK) throw OrchardErrorCode.MintSupportError;
-		if (!this.configService.get('cashu.metrics_api')) throw OrchardErrorCode.MintSupportError;
+		if (!this.mintMetricsService.isEnabled()) throw OrchardErrorCode.MintSupportError;
 	}
 
 	/* *******************************************************

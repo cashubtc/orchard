@@ -30,6 +30,8 @@ export type AiToolResult = {
 /** Identifiers for opt-in tool guards. Tool entries declare which guards apply via `guards`. */
 export enum ToolGuardName {
 	AnalyticsBucketBudget = 'analytics_bucket_budget',
+	MintMetricsEnabled = 'mint_metrics_enabled',
+	MintMetricsQueryBudget = 'mint_metrics_query_budget',
 }
 
 /** Context passed to a guard when inspecting a pending tool call */
