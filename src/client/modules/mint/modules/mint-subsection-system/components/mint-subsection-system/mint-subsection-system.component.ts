@@ -271,7 +271,8 @@ export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 	/** Routes an assistant tool call to the corresponding page action */
 	private executeAssistantFunction(tool_call: AiChatToolCall): void {
 		if (tool_call.function.name === AssistantToolName.DateRangeUpdate) {
-			this.onDateChange(parseAssistantDateRange(tool_call.function.arguments.date_start, tool_call.function.arguments.date_end));
+			const date_range = parseAssistantDateRange(tool_call.function.arguments.date_start, tool_call.function.arguments.date_end);
+			if (date_range) this.onDateChange(date_range);
 		}
 		if (tool_call.function.name === AssistantToolName.MetricsIntervalUpdate) {
 			this.onIntervalChange(tool_call.function.arguments.interval);

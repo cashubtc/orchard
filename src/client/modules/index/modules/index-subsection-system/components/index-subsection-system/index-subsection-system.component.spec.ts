@@ -264,9 +264,18 @@ describe('IndexSubsectionSystemComponent', () => {
 			function: {name: AssistantToolName.DateRangeUpdate, arguments: {date_start: '2025-01-01', date_end: '2025-01-31'}},
 		} as unknown as AiChatToolCall;
 		component['executeAssistantFunction'](tool_call);
-		const expected_start = DateTime.fromFormat('2025-01-01', 'yyyy-MM-dd').toUnixInteger();
-		const expected_end = DateTime.fromFormat('2025-01-31', 'yyyy-MM-dd').toUnixInteger();
+		const expected_start = DateTime.fromFormat('2025-01-01', 'yyyy-MM-dd').startOf('day').toUnixInteger();
+		const expected_end = DateTime.fromFormat('2025-01-31', 'yyyy-MM-dd').endOf('day').toUnixInteger();
 		expect(on_date_change).toHaveBeenCalledWith([expected_start, expected_end]);
+	});
+
+	it('should ignore a DATE_RANGE_UPDATE tool call with invalid dates', () => {
+		const on_date_change = spyOn(component, 'onDateChange');
+		const tool_call = {
+			function: {name: AssistantToolName.DateRangeUpdate, arguments: {date_start: 'invalid', date_end: '2025-01-31'}},
+		} as unknown as AiChatToolCall;
+		component['executeAssistantFunction'](tool_call);
+		expect(on_date_change).not.toHaveBeenCalled();
 	});
 
 	it('should route a METRICS_INTERVAL_UPDATE tool call to onIntervalChange', () => {
