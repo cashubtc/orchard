@@ -84,8 +84,9 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	public active_chat = signal<boolean>(false);
 	public active_section = signal<string>('');
 	public active_sub_section = signal<string>('');
-	public active_assistant = this.aiService.active_assistant;
+	public staged_assistant = this.aiService.staged_assistant;
 	public pending_assistant = this.aiService.pending_assistant;
+	public staged_assistant_definition = this.aiService.staged_assistant_definition;
 	public active_event = signal<EventData | null>(null);
 	public enabled_bitcoin = signal<boolean>(false);
 	public enabled_lightning = signal<boolean>(false);
@@ -163,6 +164,7 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	private initAi(): void {
 		if (this.ai_initialized) return;
 		this.ai_initialized = true;
+		this.aiService.syncAssistantDefinition();
 		this.subscriptions.add(this.getAssistantSubscription());
 		this.subscriptions.add(this.getActiveAiSubscription());
 		this.subscriptions.add(this.getAiMessagesSubscription());
@@ -414,7 +416,7 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 
 	private startChat() {
 		if (!this.ai_user_content()) return;
-		const assistant = this.active_assistant() || AiAssistant.Default;
+		const assistant = this.staged_assistant() || AiAssistant.Default;
 		this.aiService.requestAssistant(assistant, this.ai_user_content());
 		this.ai_user_content.set('');
 	}
@@ -467,7 +469,7 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 
 	private openChatLog(): void {
 		this.sidenav.open();
-		const resolved_assistant = this.ai_conversation()?.assistant || this.active_assistant();
+		const resolved_assistant = this.ai_conversation()?.assistant || this.staged_assistant();
 		this.aiService.getAiAssistant(resolved_assistant).subscribe((assistant: AiAssistantDefinition) => {
 			this.ai_assistant_definition.set(assistant);
 		});

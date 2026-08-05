@@ -1,11 +1,12 @@
 <div class="ai-nav-container" [class.collapsed]="!opened()" [class.mobile-assistant]="mobile_assistant()">
 	<div class="ai-user-input">
 		<orc-ai-input
-			[active_assistant]="active_assistant()"
+			[assistant_definition]="assistant_definition()"
 			[active_chat]="active_chat()"
 			[model]="model()"
 			[content]="content()"
 			[focus]="focus()"
+			[icon_only]="device_type() === 'mobile'"
 			(chat)="command.emit()"
 			(contentChange)="contentChange.emit($event)"
 		></orc-ai-input>

@@ -363,7 +363,7 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 	}
 
 	private async onSuccessEvent(): Promise<void> {
-		this.keysets_rotation = false;
+		this.setKeysetsRotation(false);
 		this.cdr.detectChanges();
 		this.mintService.clearKeysetsCache();
 		const mint_keysets = await lastValueFrom(this.mintService.loadMintKeysets());
@@ -372,8 +372,15 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 		await this.reloadDynamicData();
 	}
 
+	/** Single write path for `keysets_rotation` so the assistant override always tracks it. */
+	private setKeysetsRotation(active: boolean): void {
+		this.keysets_rotation = active;
+		if (active) this.aiService.setAssistantOverride(AiAssistant.MintKeysetRotation);
+		else this.aiService.clearAssistantOverride();
+	}
+
 	private initKeysetsRotation(): void {
-		this.keysets_rotation = true;
+		this.setKeysetsRotation(true);
 		this.eventService.registerEvent(
 			new EventData({
 				type: 'PENDING',
@@ -524,7 +531,7 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 	}
 
 	public onCloseRotation(): void {
-		this.keysets_rotation = false;
+		this.setKeysetsRotation(false);
 		this.eventService.registerEvent(null);
 		this.cdr.detectChanges();
 	}
@@ -562,7 +569,7 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 	******************************************************** */
 
 	ngOnDestroy(): void {
-		this.keysets_rotation = false;
+		this.setKeysetsRotation(false);
 		this.subscriptions.unsubscribe();
 	}
 }

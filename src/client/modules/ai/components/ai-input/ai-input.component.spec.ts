@@ -12,7 +12,6 @@ describe('AiInputComponent', () => {
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
 			imports: [OrcAiModule],
-			declarations: [AiInputComponent],
 		}).compileComponents();
 
 		fixture = TestBed.createComponent(AiInputComponent);

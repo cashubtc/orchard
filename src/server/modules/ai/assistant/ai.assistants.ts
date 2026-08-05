@@ -53,10 +53,10 @@ import {
 
 export const AI_ASSISTANTS = {
 	[AiAssistant.DEFAULT]: {
-		name: 'Orchard Agent',
+		name: 'Orchard Assistant',
 		icon: 'spa',
 		section: null,
-		description: 'The general purpose agent',
+		description: 'The general purpose assistant',
 		system_message: {
 			role: 'system',
 			content: 'You are a helpful assistant that can answer questions and help with tasks.',
@@ -64,8 +64,8 @@ export const AI_ASSISTANTS = {
 		tools: [],
 	},
 	[AiAssistant.INDEX_CREW]: {
-		name: 'Crew Agent',
-		icon: 'spa',
+		name: 'Crew Assistant',
+		icon: 'home',
 		section: 'index',
 		description: 'Control the filters of the crew table',
 		system_message: {
@@ -76,8 +76,8 @@ export const AI_ASSISTANTS = {
 		tools: [UpdateSearchTool, UpdateCrewStatesTool, UpdateCrewRolesTool],
 	},
 	[AiAssistant.INDEX_CREW_INVITE]: {
-		name: 'Crew Invite Agent',
-		icon: 'spa',
+		name: 'Crew Invite Assistant',
+		icon: 'home',
 		section: 'index',
 		description: 'Control the filters of the crew invite table',
 		system_message: {
@@ -95,8 +95,8 @@ export const AI_ASSISTANTS = {
 		tools: [UpdateCrewInviteRoleTool, UpdateCrewLabelTool, UpdateCrewInviteExpirationEnabledTool, UpdateCrewInviteExpirationTool],
 	},
 	[AiAssistant.INDEX_CREW_USER]: {
-		name: 'Crew User Agent',
-		icon: 'spa',
+		name: 'Crew User Assistant',
+		icon: 'home',
 		section: 'index',
 		description: 'Control user settings',
 		system_message: {
@@ -108,8 +108,8 @@ export const AI_ASSISTANTS = {
 		tools: [UpdateCrewUserActiveTool, UpdateCrewInviteRoleTool, UpdateCrewLabelTool],
 	},
 	[AiAssistant.MINT_DASHBOARD]: {
-		name: 'Mint Dashboard Agent',
-		icon: 'spa',
+		name: 'Mint Dashboard Assistant',
+		icon: 'account_balance',
 		section: 'mint',
 		description: 'Control the filters of the mint analytics',
 		system_message: {
@@ -119,9 +119,9 @@ export const AI_ASSISTANTS = {
 		tools: [UpdateDateRangeTool, UpdateMintAnalyticsUnitsTool, UpdateMintAnalyticsIntervalTool],
 	},
 	[AiAssistant.SYSTEM]: {
-		name: 'System Agent',
-		icon: 'spa',
-		section: 'mint',
+		name: 'System Assistant',
+		icon: 'account_balance',
+		section: 'spa',
 		description: 'Control the filters of the system metrics',
 		system_message: {
 			role: 'system',
@@ -130,8 +130,8 @@ export const AI_ASSISTANTS = {
 		tools: [UpdateDateRangeTool, UpdateMetricsIntervalTool],
 	},
 	[AiAssistant.MINT_INFO]: {
-		name: 'Mint Info Agent',
-		icon: 'spa',
+		name: 'Mint Info Assistant',
+		icon: 'account_balance',
 		section: 'mint',
 		description: 'Mint info agent',
 		system_message: {
@@ -154,8 +154,8 @@ export const AI_ASSISTANTS = {
 		],
 	},
 	[AiAssistant.MINT_CONFIG]: {
-		name: 'Mint Config',
-		icon: 'spa',
+		name: 'Mint Config Assistant',
+		icon: 'account_balance',
 		section: 'mint',
 		description: 'Mint config agent',
 		system_message: {
@@ -172,8 +172,8 @@ export const AI_ASSISTANTS = {
 		],
 	},
 	[AiAssistant.MINT_KEYSETS]: {
-		name: 'Mint Keysets',
-		icon: 'spa',
+		name: 'Mint Keysets Assistant',
+		icon: 'account_balance',
 		section: 'mint',
 		description: 'Mint keysets agent',
 		system_message: {
@@ -184,8 +184,8 @@ export const AI_ASSISTANTS = {
 		tools: [UpdateDateRangeTool, UpdateMintAnalyticsUnitsTool, UpdateMintKeysetStatusTool],
 	},
 	[AiAssistant.MINT_KEYSET_ROTATION]: {
-		name: 'Mint Keyset Rotation',
-		icon: 'spa',
+		name: 'Mint Keyset Rotation Assistant',
+		icon: 'account_balance',
 		section: 'mint',
 		description: 'Mint keyset rotation agent',
 		system_message: {
@@ -201,8 +201,8 @@ export const AI_ASSISTANTS = {
 		],
 	},
 	[AiAssistant.MINT_DATABASE]: {
-		name: 'Mint Database',
-		icon: 'spa',
+		name: 'Mint Database Assistant',
+		icon: 'account_balance',
 		section: 'mint',
 		description: 'Mint database agent',
 		system_message: {
@@ -213,8 +213,8 @@ export const AI_ASSISTANTS = {
 		tools: [UpdateDateRangeTool, UpdateMintAnalyticsUnitsTool, UpdateMintDatabaseDataTypeTool, UpdateMintDatabaseStatesTool],
 	},
 	[AiAssistant.MINT_BACKUP]: {
-		name: 'Mint Backup',
-		icon: 'spa',
+		name: 'Mint Backup Assistant',
+		icon: 'account_balance',
 		section: 'mint',
 		description: 'Mint backup agent',
 		system_message: {
@@ -225,8 +225,8 @@ export const AI_ASSISTANTS = {
 		tools: [UpdateMintBackupFilenameTool],
 	},
 	[AiAssistant.EVENT_LOG]: {
-		name: 'Event Log Agent',
-		icon: 'spa',
+		name: 'Event Log Assistant',
+		icon: 'settings',
 		section: 'settings',
 		description: 'Control the filters of the event log',
 		system_message: {
@@ -245,7 +245,7 @@ export const AI_ASSISTANTS = {
 	},
 	[AiAssistant.SETTINGS_AGENT]: {
 		name: 'Agent Settings Assistant',
-		icon: 'spa',
+		icon: 'settings',
 		section: 'settings',
 		description: 'Help configure AI agents through natural language',
 		system_message: {

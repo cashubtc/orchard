@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {ChangeDetectionStrategy, Component, computed, effect, ElementRef, input, output, viewChild} from '@angular/core';
-/* Shared Dependencies */
-import {AiAssistant} from '@shared/generated.types';
+/* Native Dependencies */
+import {AiAssistantDefinition} from '@client/modules/ai/classes/ai-assistant-definition.class';
 
 @Component({
 	selector: 'orc-ai-input',
@@ -12,10 +12,11 @@ import {AiAssistant} from '@shared/generated.types';
 })
 export class AiInputComponent {
 	public active_chat = input.required<boolean>();
-	public active_assistant = input.required<AiAssistant>();
 	public model = input.required<string | null>();
 	public content = input.required<string>();
 	public focus = input<boolean>(false);
+	public assistant_definition = input<AiAssistantDefinition | null>(null);
+	public icon_only = input<boolean>(false);
 
 	public chat = output<void>();
 	public contentChange = output<string>();

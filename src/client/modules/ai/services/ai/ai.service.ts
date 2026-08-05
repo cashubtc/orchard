@@ -1,9 +1,10 @@
 /* Core Dependencies */
 import {Injectable, signal, computed} from '@angular/core';
+import {toObservable} from '@angular/core/rxjs-interop';
 import {HttpClient} from '@angular/common/http';
 import {Router} from '@angular/router';
 /* Vendor Dependencies */
-import {Observable, catchError, Subject, BehaviorSubject, of, map, tap, throwError, shareReplay, finalize} from 'rxjs';
+import {Observable, catchError, Subject, BehaviorSubject, of, map, tap, switchMap, throwError, shareReplay, finalize} from 'rxjs';
 import {v4 as uuidv4} from 'uuid';
 /* Application Dependencies */
 import {CacheService} from '@client/modules/cache/services/cache/cache.service';
@@ -89,8 +90,12 @@ export class AiService {
 	private active_subject = new Subject<boolean>();
 	private readonly route_assistant = signal<AiAssistant>(AiAssistant.Default);
 	private readonly override_assistant = signal<AiAssistant | null>(null);
-	public readonly active_assistant = computed(() => this.override_assistant() ?? this.route_assistant());
+	public readonly staged_assistant = computed(() => this.override_assistant() ?? this.route_assistant());
 	public readonly pending_assistant = signal<boolean>(false);
+	public readonly staged_assistant_definition = signal<AiAssistantDefinition | null>(null);
+	private readonly staged_assistant$ = toObservable(this.staged_assistant);
+	private readonly assistant_definitions = new Map<AiAssistant, AiAssistantDefinition>();
+	private assistant_sync_started = false;
 	private ai_models_observable!: Observable<AiModel[]> | null;
 
 	private readonly CACHE_KEYS = {AI_AGENT_TOOLS: 'AI_AGENT_TOOLS'};
@@ -130,7 +135,7 @@ export class AiService {
 		this.route_assistant.set(assistant);
 	}
 
-	/** Imperatively overrides the active assistant (e.g. when a form panel opens) */
+	/** Imperatively overrides the staged assistant (e.g. when a form panel opens) */
 	public setAssistantOverride(assistant: AiAssistant): void {
 		this.override_assistant.set(assistant);
 	}
@@ -252,6 +257,8 @@ export class AiService {
 	}
 
 	public getAiAssistant(assistant: AiAssistant): Observable<AiAssistantDefinition> {
+		const cached = this.assistant_definitions.get(assistant);
+		if (cached) return of(cached);
 		const query = getApiQuery(AI_ASSISTANT_QUERY, {assistant});
 
 		return this.http.post<OrchardRes<AiAssistantResponse>>(this.apiService.api, query).pipe(
@@ -260,11 +267,22 @@ export class AiService {
 				return response.data.ai_assistant;
 			}),
 			map((oaa) => new AiAssistantDefinition(oaa)),
+			tap((definition) => this.assistant_definitions.set(assistant, definition)),
 			catchError((error) => {
 				console.error('Error loading ai assistant:', error);
 				return throwError(() => error);
 			}),
 		);
+	}
+
+	/** Keeps `staged_assistant_definition` in step with the staged assistant.
+	 *  Idempotent, and never started for AI-disabled installs. */
+	public syncAssistantDefinition(): void {
+		if (this.assistant_sync_started) return;
+		this.assistant_sync_started = true;
+		this.staged_assistant$
+			.pipe(switchMap((assistant) => this.getAiAssistant(assistant).pipe(catchError(() => of(null)))))
+			.subscribe((definition) => this.staged_assistant_definition.set(definition));
 	}
 
 	/* *******************************************************

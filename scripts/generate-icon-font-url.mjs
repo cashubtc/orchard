@@ -110,6 +110,7 @@ const ICONS = [
   'open_with',
   'play_circle',
   'merge',
+  'home'
 ];
 
 // Sort alphabetically and remove duplicates

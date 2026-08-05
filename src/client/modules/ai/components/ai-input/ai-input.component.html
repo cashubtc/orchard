@@ -1,4 +1,5 @@
 <div class="ai-input-container">
+	<orc-ai-agent-chip [definition]="assistant_definition()" [icon_only]="icon_only()"></orc-ai-agent-chip>
 	@if (!active_chat()) {
 		<form class="ai-input-form" (keydown.enter)="onSubmit($event)" (ngSubmit)="onSubmit()">
 			<textarea

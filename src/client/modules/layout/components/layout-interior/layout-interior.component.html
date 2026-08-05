@@ -62,7 +62,7 @@
 			></orc-nav-mobile>
 			@if (ai_enabled()) {
 				<orc-ai-nav
-					[active_assistant]="active_assistant()"
+					[assistant_definition]="staged_assistant_definition()"
 					[active_chat]="active_chat()"
 					[model]="ai_model()"
 					[model_options]="ai_models()"

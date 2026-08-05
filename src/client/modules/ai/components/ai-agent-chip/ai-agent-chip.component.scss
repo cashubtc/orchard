@@ -1,0 +1,53 @@
+@use 'molecule/molecule';
+
+:host {
+	@extend %flex;
+	@extend %flex-shrink-0;
+}
+
+.ai-agent-chip-container {
+	@extend %flex;
+	@extend %flex-row;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-25;
+	@extend %orc-surface-container-high-bg;
+	@extend %border;
+	@extend %border-solid;
+	@extend %orc-outline-variant-border;
+	@extend %orc-corner-full;
+	@extend %p-t-0-25;
+	@extend %p-b-0-25;
+	@extend %p-l-0-5;
+	@extend %p-r-0-5;
+	@extend %text-nowrap;
+}
+
+.ai-agent-chip-icon {
+	@extend %orc-status-active-color;
+}
+
+.ai-agent-chip-name {
+	@extend %orc-on-surface-variant-color;
+}
+
+.ai-agent-chip-promoted {
+	animation: ai-agent-chip-pulse 500ms ease-in-out;
+}
+
+@keyframes ai-agent-chip-pulse {
+	0%,
+	100% {
+		background-color: var(--mat-sys-surface-container-high);
+		border-color: var(--mat-sys-outline-variant);
+	}
+	50% {
+		background-color: color-mix(in srgb, var(--mat-sys-on-surface) 22%, var(--mat-sys-surface-container-high));
+		border-color: color-mix(in srgb, var(--mat-sys-on-surface) 45%, var(--mat-sys-outline-variant));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ai-agent-chip-promoted {
+		animation: none;
+	}
+}

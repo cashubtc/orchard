@@ -1,0 +1,8 @@
+@if (definition(); as chip_definition) {
+	<div class="ai-agent-chip-container" [class.ai-agent-chip-promoted]="promoted()">
+		<mat-icon class="mat-symbol-outline icon-sm ai-agent-chip-icon">{{ chip_definition.icon }}</mat-icon>
+		@if (!icon_only()) {
+			<div class="ai-agent-chip-name font-size-xs font-weight-bold p-r-0-5">{{ display_name() }}</div>
+		}
+	</div>
+}

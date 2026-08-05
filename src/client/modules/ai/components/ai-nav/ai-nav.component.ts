@@ -6,8 +6,7 @@ import {AiFavorites} from '@client/modules/cache/services/local-storage/local-st
 /* Native Dependencies */
 import {AiModel} from '@client/modules/ai/classes/ai-model.class';
 import {AiChatConversation} from '@client/modules/ai/classes/ai-chat-conversation.class';
-/* Shared Dependencies */
-import {AiAssistant} from '@shared/generated.types';
+import {AiAssistantDefinition} from '@client/modules/ai/classes/ai-assistant-definition.class';
 
 @Component({
 	selector: 'orc-ai-nav',
@@ -21,7 +20,7 @@ import {AiAssistant} from '@shared/generated.types';
 })
 export class AiNavComponent {
 	/* Inputs */
-	public active_assistant = input.required<AiAssistant>();
+	public assistant_definition = input<AiAssistantDefinition | null>(null);
 	public active_chat = input.required<boolean>();
 	public model = input.required<string | null>();
 	public model_options = input.required<AiModel[]>();
