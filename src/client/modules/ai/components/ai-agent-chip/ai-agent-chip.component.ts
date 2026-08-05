@@ -15,11 +15,15 @@ const PULSE_MS = 600;
 export class AiAgentChipComponent implements OnDestroy {
 	public readonly definition = input<AiAssistantDefinition | null>(null);
 	public readonly icon_only = input<boolean>(false);
+	public readonly full_name = input<boolean>(false);
 
 	public readonly promoted = signal<boolean>(false);
 
 	// Names read cleaner in the compact chip without the shared "Assistant" suffix
-	public readonly display_name = computed(() => this.definition()?.name.replace(/\s+Assistant$/, '') ?? '');
+	public readonly display_name = computed(() => {
+		const name = this.definition()?.name ?? '';
+		return this.full_name() ? name : name.replace(/\s+Assistant$/, '');
+	});
 
 	private previous_name: string | null = null;
 	private pulse_timeout?: ReturnType<typeof setTimeout>;
