@@ -53,6 +53,7 @@ export const UpdateMintBackupFilenameTool = {
 					description: 'The filename of the backup',
 				},
 			},
+			required: ['filename'],
 		},
 	},
 };
