@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild, signal, computed, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnDestroy, OnInit, ViewChild, signal, computed, inject} from '@angular/core';
 import {
 	Event,
 	Router,
@@ -65,7 +65,6 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	private readonly breakpointObserver = inject(BreakpointObserver);
 	private readonly router = inject(Router);
 	private readonly route = inject(ActivatedRoute);
-	private readonly cdr = inject(ChangeDetectorRef);
 
 	@ViewChild('primarySidenav') primarySidenav!: MatSidenav;
 	@ViewChild('aiSidenav') sidenav!: MatSidenav;
@@ -86,6 +85,7 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	public active_section = signal<string>('');
 	public active_sub_section = signal<string>('');
 	public active_assistant = this.aiService.active_assistant;
+	public pending_assistant = this.aiService.pending_assistant;
 	public active_event = signal<EventData | null>(null);
 	public enabled_bitcoin = signal<boolean>(false);
 	public enabled_lightning = signal<boolean>(false);
@@ -308,7 +308,6 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	private getActiveAiSubscription(): Subscription {
 		return this.aiService.active$.subscribe((active: boolean) => {
 			this.active_chat.set(active);
-			this.cdr.detectChanges();
 		});
 	}
 

@@ -31,6 +31,7 @@ import {AiChatAvatarComponent} from './components/ai-chat-avatar/ai-chat-avatar.
 import {AiChatMessageSystemComponent} from './components/ai-chat-message-system/ai-chat-message-system.component';
 import {AiChatMessageUserComponent} from './components/ai-chat-message-user/ai-chat-message-user.component';
 import {AiChatMessageAssistantComponent} from './components/ai-chat-message-assistant/ai-chat-message-assistant.component';
+import {AiChatMessagePendingComponent} from './components/ai-chat-message-pending/ai-chat-message-pending.component';
 import {AiChatMessageToolcallComponent} from './components/ai-chat-message-toolcall/ai-chat-message-toolcall.component';
 import {AiThoughtPipe} from './pipes/ai-thought/ai-thought.pipe';
 import {AiAssistantDefinitionComponent} from './components/ai-assistant-definition/ai-assistant-definition.component';
@@ -51,6 +52,7 @@ import {AiVendorIconComponent} from './components/ai-vendor-icon/ai-vendor-icon.
 		AiChatMessageSystemComponent,
 		AiChatMessageUserComponent,
 		AiChatMessageAssistantComponent,
+		AiChatMessagePendingComponent,
 		AiChatMessageToolcallComponent,
 		AiThoughtPipe,
 		AiAssistantDefinitionComponent,

@@ -90,6 +90,7 @@ export class AiService {
 	private readonly route_assistant = signal<AiAssistant>(AiAssistant.Default);
 	private readonly override_assistant = signal<AiAssistant | null>(null);
 	public readonly active_assistant = computed(() => this.override_assistant() ?? this.route_assistant());
+	public readonly pending_assistant = signal<boolean>(false);
 	private ai_models_observable!: Observable<AiModel[]> | null;
 
 	private readonly CACHE_KEYS = {AI_AGENT_TOOLS: 'AI_AGENT_TOOLS'};
@@ -144,6 +145,7 @@ export class AiService {
 		const ai_model = this.settingDeviceService.getModel();
 		this.subscription_id = subscription_id;
 		this.active_subject.next(true);
+		this.pending_assistant.set(true);
 
 		const conversation = !this.conversation_cache
 			? this.createConversation(subscription_id, assistant, content, context)
@@ -159,6 +161,7 @@ export class AiService {
 				next: (response) => {
 					if (!response.data?.ai_chat) return;
 					const chunk = new AiChatChunk(response.data.ai_chat, subscription_id);
+					if (chunk.has_output) this.pending_assistant.set(false);
 					this.message_subject.next(chunk);
 					chunk.message.tool_calls?.forEach((tool_call) => this.toolcall_subject.next(tool_call));
 					if (chunk.done) this.closeAiSocket();
@@ -204,6 +207,7 @@ export class AiService {
 		if (!dispose) return;
 		this.dispose_subscription = undefined;
 		this.subscription_id = null;
+		this.pending_assistant.set(false);
 		this.active_subject.next(false);
 		dispose();
 	}

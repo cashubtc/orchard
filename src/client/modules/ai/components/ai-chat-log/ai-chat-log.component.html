@@ -39,6 +39,9 @@
 						}
 					}
 				}
+				@if (pending()) {
+					<orc-ai-chat-message-pending [assistant]="assistant_definition()" [vendor]="vendor()"></orc-ai-chat-message-pending>
+				}
 			</div>
 		</mat-expansion-panel>
 	</mat-accordion>
