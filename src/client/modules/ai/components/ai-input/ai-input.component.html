@@ -7,8 +7,10 @@
 				matInput
 				[placeholder]="placeholder()"
 				class="ai-input"
-				[class.ai-input-empty]="!content().value"
-				[formControl]="content()"
+				[class.ai-input-empty]="!content()"
+				[value]="content()"
+				[disabled]="!model()"
+				(input)="onInput($event)"
 				[style.fontSize]="'smaller'"
 				[formAutogrow]="true"
 			></textarea>

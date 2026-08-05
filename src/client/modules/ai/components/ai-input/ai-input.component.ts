@@ -1,6 +1,5 @@
 /* Core Dependencies */
 import {ChangeDetectionStrategy, Component, computed, effect, ElementRef, input, output, viewChild} from '@angular/core';
-import {FormControl} from '@angular/forms';
 /* Shared Dependencies */
 import {AiAssistant} from '@shared/generated.types';
 
@@ -15,10 +14,11 @@ export class AiInputComponent {
 	public active_chat = input.required<boolean>();
 	public active_assistant = input.required<AiAssistant>();
 	public model = input.required<string | null>();
-	public content = input.required<FormControl>();
+	public content = input.required<string>();
 	public focus = input<boolean>(false);
 
 	public chat = output<void>();
+	public contentChange = output<string>();
 
 	public input_el = viewChild<ElementRef<HTMLTextAreaElement>>('inputEl');
 
@@ -26,17 +26,20 @@ export class AiInputComponent {
 
 	constructor() {
 		effect(() => {
-			const model = this.model();
-			model ? this.content().enable() : this.content().disable();
-		});
-
-		effect(() => {
 			if (this.focus()) {
 				setTimeout(() => {
 					this.input_el()?.nativeElement.focus();
 				}, 100);
 			}
 		});
+	}
+
+	/**
+	 * Sends the typed value up so the owning component can store it
+	 * @param event the native input event
+	 */
+	public onInput(event: Event): void {
+		this.contentChange.emit((event.target as HTMLTextAreaElement).value);
 	}
 
 	public onSubmit(event?: Event): void {

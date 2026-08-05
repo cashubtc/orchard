@@ -3,6 +3,11 @@
  * on `/event` (`orc-event-subsection-log`) plus the reply-only smoke on the
  * mint dashboard (`/mint`).
  *
+ * Two describe blocks, with different costs. The first drives real inference
+ * and asserts a tool call against the DB. The second asserts the send button's
+ * enablement state (`ai_actionable`) and needs NO generation — it submits and
+ * immediately aborts. Keep them separate: only the first needs a quiet ollama.
+ *
  * The behavior under test is the assistant's TOOL CALLS, not its prose. On
  * `/event` the `orc-ai-input` box drives a streamed conversation against the
  * `AiAssistant.EventLog` assistant; each streamed tool call arrives on
@@ -50,6 +55,9 @@
  *   - Tool-call argument-table interior (`orc-ai-chat-message-toolcall` detail
  *     rows) — Karma covers the argument-row mapping; the LLM's exact arg text
  *     is nondeterministic, so this asserts on the RESULTING UI/DB state.
+ *   - A click-submitted prompt run to COMPLETION — the button-state block
+ *     aborts instead. Click and Enter converge on the same `command` output
+ *     one hop in, so the completion path is already covered above.
  */
 
 import {test, expect, type Locator, type Page} from '@playwright/test';
@@ -121,6 +129,13 @@ async function askAssistant(page: Page, prompt: string): Promise<void> {
  *  `Filters {{ filter_count() > 0 ? '('+count+')' : '' }}`. */
 function filtersBadge(page: Page): Locator {
 	return page.locator('orc-event-subsection-log-control button').filter({hasText: /Filters \(\d+\)/});
+}
+
+/** The send/stop button (`orc-ai-command`), gated by `[disabled]="!actionable()"`.
+ *  `ai-nav` renders it in both arms of its `mobile_assistant()` @if, but only
+ *  one arm is in the DOM at a time, so this resolves to a single element. */
+function commandButton(page: Page): Locator {
+	return page.locator('orc-ai-command button');
 }
 
 test.describe('ai assistant chat — event log tool calls', {tag: '@ai'}, () => {
@@ -198,6 +213,77 @@ test.describe('ai assistant chat — event log tool calls', {tag: '@ai'}, () => 
 				timeout: 15_000,
 			})
 			.toBe(baseline_db);
+	});
+});
+
+test.describe('ai assistant chat — send button state', {tag: '@ai'}, () => {
+	// No inference in this block: `active_subject.next(true)` fires synchronously
+	// inside `openAiSocket()`, and the abort leg is one HTTP round-trip. Budget
+	// covers page load plus that round-trip, not a generation.
+	test.setTimeout(120_000);
+
+	test.beforeEach(async ({page}) => {
+		await page.goto('/event', {waitUntil: 'networkidle'});
+		// `aiIsHealthy` only — deliberately NO `waitForOllamaIdle`. Nothing here
+		// waits on a reply, so a busy model doesn't starve this test; the health
+		// gate is still needed because the textarea is `[disabled]="!model()"`
+		// and the model only resolves against a reachable vendor.
+		await requireReady(page, aiIsHealthy);
+		await settle(page);
+	});
+
+	test.afterEach(async ({page}) => {
+		// The aborted prompt is a greeting, not a filter instruction, so a tool
+		// call shouldn't land — but it opens a real socket, so clear the log
+		// settings on the same belt-and-suspenders basis as the block above.
+		await page.evaluate((key) => localStorage.removeItem(key), EVENT_LOG_KEY);
+		// Don't hand the next @ai spec a draining generation. The abort tells
+		// the server to stop, but ollama may still be emitting tokens, and the
+		// downstream idle gate probes RESPONSIVENESS not exclusivity — with
+		// OLLAMA_NUM_PARALLEL > 1 it can read idle while our leftover still
+		// competes, slowing an inference assertion that is already tight.
+		await waitForOllamaIdle(60_000);
+	});
+
+	// REGRESSION: `ai_actionable` was a `computed()` reading `FormControl.value`
+	// — a plain property, invisible to the signal graph — so it never
+	// recomputed on typing and the send button was permanently disabled. Every
+	// other assistant test in the suite submits with `press('Enter')`, which
+	// routes straight to the `chat` output and never consults `actionable()`,
+	// so a wholly dead button went unnoticed. This drives the button itself.
+	test('send button enables on typed content, disables when cleared, and submits on click', async ({page}) => {
+		const input = aiInput(page);
+		const send = commandButton(page);
+
+		// Empty box → not actionable. (A model must have resolved, or the
+		// textarea itself would be disabled and typing would prove nothing.)
+		await expect(input).toBeVisible();
+		await expect(input).toBeEnabled();
+		await expect(send).toBeDisabled();
+
+		// Typing is the differential the regression broke.
+		await input.fill('Hello');
+		await expect(send).toBeEnabled();
+
+		// ...and it tracks back down, proving the state is live rather than
+		// latched true by the first keystroke.
+		await input.fill('');
+		await expect(send).toBeDisabled();
+
+		// Click (not Enter) submits: `active_chat()` flips on socket open and
+		// swaps the textarea for the "Executing..." shimmer.
+		await input.fill('Hello');
+		await expect(send).toBeEnabled();
+		await send.click();
+		await expect(page.locator('orc-ai-input .orc-animation-shimmer-text')).toBeVisible();
+
+		// While streaming the same button is the stop control and stays
+		// actionable regardless of content (`active_chat()` short-circuits
+		// `ai_actionable`). Clicking it aborts and restores the input.
+		await expect(send).toBeEnabled();
+		await send.click();
+		await expect(input).toBeVisible({timeout: 30_000});
+		await expect(send).toBeDisabled();
 	});
 });
 

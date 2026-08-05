@@ -10,7 +10,6 @@ import {
 	NavigationCancel,
 	NavigationError,
 } from '@angular/router';
-import {FormControl} from '@angular/forms';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 /* Vendor Dependencies */
 import {Subscription, timer, EMPTY} from 'rxjs';
@@ -71,9 +70,8 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	@ViewChild('primarySidenav') primarySidenav!: MatSidenav;
 	@ViewChild('aiSidenav') sidenav!: MatSidenav;
 
-	public ai_user_content = new FormControl('');
-
 	// ── Public signals ──
+	public ai_user_content = signal<string>('');
 	public user_name = signal<string>('');
 	public user_error = signal<boolean>(false);
 	public ai_enabled = signal<boolean>(false);
@@ -111,7 +109,7 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 
 	public ai_actionable = computed(() => {
 		if (this.active_chat()) return true;
-		if (this.ai_user_content.value) return true;
+		if (this.ai_user_content()) return true;
 		return false;
 	});
 
@@ -416,10 +414,10 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	}
 
 	private startChat() {
-		if (!this.ai_user_content.value) return;
+		if (!this.ai_user_content()) return;
 		const assistant = this.active_assistant() || AiAssistant.Default;
-		this.aiService.requestAssistant(assistant, this.ai_user_content.value);
-		this.ai_user_content.reset();
+		this.aiService.requestAssistant(assistant, this.ai_user_content());
+		this.ai_user_content.set('');
 	}
 
 	public stopChat(): void {

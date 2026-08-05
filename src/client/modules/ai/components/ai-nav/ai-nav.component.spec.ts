@@ -1,6 +1,5 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {FormControl} from '@angular/forms';
 /* Native Dependencies */
 import {OrcAiModule} from '@client/modules/ai/ai.module';
 /* Shared Dependencies */
@@ -24,7 +23,7 @@ describe('AiNavComponent', () => {
 		fixture.componentRef.setInput('model', null);
 		fixture.componentRef.setInput('model_options', []);
 		fixture.componentRef.setInput('actionable', false);
-		fixture.componentRef.setInput('content', new FormControl(''));
+		fixture.componentRef.setInput('content', '');
 		fixture.componentRef.setInput('conversation', null);
 		fixture.componentRef.setInput('tool_length', 0);
 		fixture.componentRef.setInput('log_open', false);
