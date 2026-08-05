@@ -34,7 +34,7 @@ export class AiChatChunk implements ParsedOrchardAiChatChunk {
 	public model: string;
 	public usage: AiChatUsage | null;
 
-    /** True once the chunk carries something renderable — leading empty chunks don't count.
+	/** True once the chunk carries something renderable — leading empty chunks don't count.
 	 *  Errors arrive as a normal ERROR-role chunk, so they count even if content is blank. */
 	public get has_output(): boolean {
 		const message = this.message;
@@ -65,7 +65,6 @@ export class AiChatMessage implements ParsedOrchardAiChatMessage {
 		this.thinking = message.thinking ?? null;
 		this.tool_calls = message.tool_calls?.map((tool_call: OrchardAiChatToolCall) => new AiChatToolCall(tool_call));
 	}
-
 }
 
 export class AiChatToolCall implements ParsedOrchardAiChatToolCall {

@@ -120,8 +120,9 @@ export const AI_ASSISTANTS = {
 	},
 	[AiAssistant.SYSTEM]: {
 		name: 'System Assistant',
-		icon: 'account_balance',
-		section: 'spa',
+		// Serves both /mint/system and the root /system, so it is not section-scoped
+		icon: 'monitor_heart',
+		section: null,
 		description: 'Control the filters of the system metrics',
 		system_message: {
 			role: 'system',
