@@ -28,6 +28,12 @@
 	max-height: calc(100vh - 177px);
 }
 
+.ai-chat-log-switch {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+}
+
 .ai-chat-log-footer {
 	@extend %flex;
 	@extend %flex-items-center;

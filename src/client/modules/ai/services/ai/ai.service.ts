@@ -96,7 +96,6 @@ export class AiService {
 	private conversation_cache: AiChatConversation | null = null;
 	private assistant_sync_started = false;
 	private ai_models_observable!: Observable<AiModel[]> | null;
-	private readonly assistant_definitions = new Map<AiAssistant, AiAssistantDefinition>();
 
 	private readonly CACHE_KEYS = {AI_AGENT_TOOLS: 'AI_AGENT_TOOLS'};
 	private readonly CACHE_DURATION = 60 * 60 * 1000; // 60 minutes
@@ -104,6 +103,7 @@ export class AiService {
 
 	private readonly route_assistant = signal<AiAssistant>(AiAssistant.Default);
 	private readonly override_assistant = signal<AiAssistant | null>(null);
+	private readonly assistant_definitions = signal<ReadonlyMap<AiAssistant, AiAssistantDefinition>>(new Map());
 
 	// Declared last: toObservable() runs at field init, so its source signals must already be assigned
 	private readonly staged_assistant$ = toObservable(this.staged_assistant);
@@ -155,6 +155,10 @@ export class AiService {
 		this.subscription_id = subscription_id;
 		this.active_subject.next(true);
 		this.pending_assistant.set(true);
+
+		// A different assistant starts fresh — inherited turns and stale form state would
+		// otherwise land in the new assistant's context window
+		if (this.conversation_cache && this.conversation_cache.assistant !== assistant) this.clearConversation();
 
 		const conversation = !this.conversation_cache
 			? this.createConversation(subscription_id, assistant, content, context)
@@ -261,7 +265,7 @@ export class AiService {
 	}
 
 	public getAiAssistant(assistant: AiAssistant): Observable<AiAssistantDefinition> {
-		const cached = this.assistant_definitions.get(assistant);
+		const cached = this.assistant_definitions().get(assistant);
 		if (cached) return of(cached);
 		const query = getApiQuery(AI_ASSISTANT_QUERY, {assistant});
 
@@ -271,12 +275,17 @@ export class AiService {
 				return response.data.ai_assistant;
 			}),
 			map((oaa) => new AiAssistantDefinition(oaa)),
-			tap((definition) => this.assistant_definitions.set(assistant, definition)),
+			tap((definition) => this.assistant_definitions.update((definitions) => new Map(definitions).set(assistant, definition))),
 			catchError((error) => {
 				console.error('Error loading ai assistant:', error);
 				return throwError(() => error);
 			}),
 		);
+	}
+
+	/** Returns an assistant definition already fetched this session, or null if it has not loaded yet */
+	public getLoadedAssistant(assistant: AiAssistant): AiAssistantDefinition | null {
+		return this.assistant_definitions().get(assistant) ?? null;
 	}
 
 	/** Keeps `staged_assistant_definition` in step with the staged assistant.

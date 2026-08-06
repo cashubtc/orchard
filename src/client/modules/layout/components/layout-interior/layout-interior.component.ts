@@ -36,7 +36,6 @@ import {AiChatChunk} from '@client/modules/ai/classes/ai-chat-chunk.class';
 import {AiModel} from '@client/modules/ai/classes/ai-model.class';
 import {AiChatConversation} from '@client/modules/ai/classes/ai-chat-conversation.class';
 import {AiChatCompiledMessage} from '@client/modules/ai/classes/ai-chat-compiled-message.class';
-import {AiAssistantDefinition} from '@client/modules/ai/classes/ai-assistant-definition.class';
 import {AiFavorites} from '@client/modules/cache/services/local-storage/local-storage.types';
 /* Native Dependencies */
 import {DeviceType} from '@client/modules/layout/types/device.types';
@@ -98,7 +97,6 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	public syncing_lightning = signal<boolean>(false);
 	public block_count = signal<number>(0);
 
-	public ai_assistant_definition = signal<AiAssistantDefinition | null>(null);
 	public overlayed = signal(false);
 	public show_mobile_assistant = signal(false);
 	public device_type = signal<DeviceType>('desktop');
@@ -112,6 +110,21 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 		if (this.active_chat()) return true;
 		if (this.ai_user_content()) return true;
 		return false;
+	});
+
+	// The log reflects the conversation's own assistant, while the input chip reflects the staged one
+	public ai_assistant_definition = computed(() => {
+		const assistant = this.ai_conversation()?.assistant;
+		if (!assistant) return this.staged_assistant_definition();
+		return this.aiService.getLoadedAssistant(assistant) ?? this.staged_assistant_definition();
+	});
+
+	// Set when the next message would hand off to another assistant and start a new conversation
+	public ai_switching_assistant = computed(() => {
+		const conversation = this.ai_conversation();
+		if (!conversation || this.active_chat()) return null;
+		if (conversation.assistant === this.staged_assistant()) return null;
+		return this.staged_assistant_definition();
 	});
 
 	// ── Private properties ──
@@ -326,6 +339,7 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 		return this.aiService.conversation$.subscribe((conversation: AiChatConversation | null) => {
 			this.ai_conversation.set(conversation);
 			this.ai_revision.set(0);
+			if (!conversation) this.ai_tool_calls.set(0);
 		});
 	}
 
@@ -469,10 +483,6 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 
 	private openChatLog(): void {
 		this.sidenav.open();
-		const resolved_assistant = this.ai_conversation()?.assistant || this.staged_assistant();
-		this.aiService.getAiAssistant(resolved_assistant).subscribe((assistant: AiAssistantDefinition) => {
-			this.ai_assistant_definition.set(assistant);
-		});
 	}
 
 	public closeChatLog(): void {

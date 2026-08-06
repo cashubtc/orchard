@@ -20,8 +20,9 @@ export class AiAgentChipComponent implements OnDestroy {
 
 	// Names read cleaner in the compact chip without the shared "Assistant" suffix
 	public readonly display_name = computed(() => {
-		const name = this.definition()?.name ?? '';
-		return this.display_mode() === 'full' ? name : name.replace(/\s+Assistant$/, '');
+		const definition = this.definition();
+		if (!definition) return '';
+		return this.display_mode() === 'full' ? definition.name : definition.short_name;
 	});
 
 	private previous_name: string | null = null;
