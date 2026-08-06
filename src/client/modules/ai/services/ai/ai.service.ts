@@ -196,7 +196,7 @@ export class AiService {
 	public abortAiSocket(id?: string): void {
 		const subscription_id = id || this.subscription_id;
 		if (!subscription_id) return;
-		const query = getApiQuery(AI_CHAT_ABORT_MUTATION, {id});
+		const query = getApiQuery(AI_CHAT_ABORT_MUTATION, {id: subscription_id});
 		this.http
 			.post<OrchardRes<AiChatAbortResponse>>(this.apiService.api, query)
 			.pipe(
