@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, input, output, signal, effect} from '@angular/core';
+import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
 /* Application Dependencies */
 import {DeviceType} from '@client/modules/layout/types/device.types';
 import {AiFavorites} from '@client/modules/cache/services/local-storage/local-storage.types';
@@ -44,22 +44,4 @@ export class AiNavComponent {
 	public favoritesChange = output<AiFavorites>();
 	public toggleLog = output<void>();
 	public hideAssistant = output<void>();
-
-	public focus = signal<boolean>(false);
-
-	constructor() {
-		effect(() => {
-			if (this.mobile_assistant()) {
-				this.focus.set(true);
-			}
-		});
-	}
-
-	/**
-	 * Hides the assistant and resets the focus
-	 */
-	public onHideAssistant(): void {
-		this.focus.set(false);
-		this.hideAssistant.emit();
-	}
 }

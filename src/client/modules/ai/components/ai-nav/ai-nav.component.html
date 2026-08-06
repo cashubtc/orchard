@@ -5,7 +5,7 @@
 			[active_chat]="active_chat()"
 			[model]="model()"
 			[content]="content()"
-			[focus]="focus()"
+			[focus]="mobile_assistant()"
 			[icon_only]="device_type() === 'mobile'"
 			(chat)="command.emit()"
 			(contentChange)="contentChange.emit($event)"
@@ -34,7 +34,7 @@
 		</orc-ai-model>
 
 		@if (mobile_assistant()) {
-			<button mat-icon-button type="button" (click)="onHideAssistant()" class="orc-icon-button">
+			<button mat-icon-button type="button" (click)="hideAssistant.emit()" class="orc-icon-button">
 				<mat-icon class="orc-outline-color">{{ event_pending() ? 'cancel' : 'close' }}</mat-icon>
 			</button>
 			<ng-content></ng-content>
