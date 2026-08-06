@@ -8,7 +8,6 @@ import {
 	signal,
 	untracked,
 	viewChild,
-	WritableSignal,
 	OnDestroy,
 } from '@angular/core';
 /* Vendor Dependencies */
@@ -45,12 +44,12 @@ export class BitcoinSubsectionOracleChartComponent implements OnDestroy {
 
 	public backfill_date = output<number>();
 
-	public chart_type: WritableSignal<ChartJsType> = signal('line');
-	public chart_data: WritableSignal<ChartConfiguration['data']> = signal({datasets: []});
-	public chart_options: WritableSignal<ChartConfiguration['options']> = signal({});
-	public chart_plugins: WritableSignal<Plugin[]> = signal([]);
-	public displayed: WritableSignal<boolean> = signal(false);
-	public animations_embedded_enabled: WritableSignal<boolean> = signal(false);
+	public chart_type = signal<ChartJsType>('line');
+	public chart_data = signal<ChartConfiguration['data']>({datasets: []});
+	public chart_options = signal<ChartConfiguration['options']>({});
+	public chart_plugins = signal<Plugin[]>([]);
+	public displayed = signal<boolean>(false);
+	public animations_embedded_enabled = signal<boolean>(false);
 
 	private subscriptions: Subscription = new Subscription();
 	private animations_chart_enabled: boolean = true;

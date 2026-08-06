@@ -5,7 +5,6 @@ import {
 	OnInit,
 	OnDestroy,
 	ChangeDetectorRef,
-	WritableSignal,
 	signal,
 	HostListener,
 } from '@angular/core';
@@ -68,7 +67,7 @@ export class MintSubsectionInfoComponent implements ComponentCanDeactivate, OnIn
 
 	private subscriptions: Subscription = new Subscription();
 	private active_event: EventData | null = null;
-	private dirty_count: WritableSignal<number> = signal(0);
+	private dirty_count = signal<number>(0);
 	private dirty_count$ = toObservable(this.dirty_count);
 
 	constructor(

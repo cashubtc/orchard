@@ -4,7 +4,6 @@ import {
 	Component,
 	OnInit,
 	OnDestroy,
-	WritableSignal,
 	signal,
 	ChangeDetectorRef,
 	HostListener,
@@ -189,7 +188,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 
 	private subscriptions: Subscription = new Subscription();
 	private active_event: EventData | null = null;
-	private dirty_count: WritableSignal<number> = signal(0);
+	private dirty_count = signal<number>(0);
 	private dirty_count$ = toObservable(this.dirty_count);
 	private scroll_to: string | null = null;
 
