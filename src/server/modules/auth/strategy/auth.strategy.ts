@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Injectable} from '@nestjs/common';
+import {Injectable, UnauthorizedException} from '@nestjs/common';
 import {PassportStrategy} from '@nestjs/passport';
 import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
@@ -18,7 +18,16 @@ export class AuthStrategy extends PassportStrategy(Strategy) {
 		});
 	}
 
+	/**
+	 * Maps a verified JWT payload to the request user
+	 * Rejects refresh tokens so they cannot be used as long-lived bearer credentials
+	 * (revocation via the blacklist only applies to the refresh flow)
+	 * @param {any} req - The incoming HTTP request
+	 * @param {JwtPayload} payload - The verified JWT payload
+	 * @returns {object} The authenticated user attached to the request context
+	 */
 	async validate(req: any, payload: JwtPayload) {
+		if (payload.type !== 'access') throw new UnauthorizedException('Invalid token type. Access token required');
 		const auth_token = req.get('Authorization').replace('Bearer', '').trim();
 		return {
 			id: payload.sub,
