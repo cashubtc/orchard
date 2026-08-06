@@ -202,7 +202,6 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 			this.setSection(route_data);
 			this.setSubSection(route_data);
 			this.setAssistant(route_data);
-			this.onClearConversation();
 		});
 	}
 
