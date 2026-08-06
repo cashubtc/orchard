@@ -200,8 +200,18 @@ test.describe('mint-general-balance-sheet — card', {tag: '@mint'}, () => {
 		// keysets.fees_paid — both summed per unit to mirror the component's
 		// per-unit aggregation. The card is only present after expansion, so
 		// click the row first.
+		//
+		// Bracketed instead of compared to one read: collected fees only ever
+		// grow, and the activity simulator's swaps/melts grow them mid-test, so
+		// a lone read taken after the UI snapshot legitimately runs ahead of it
+		// (observed as UI 11 vs DB 13). Reloading puts the component's fetch
+		// between the two oracle reads, so the rendered figure must land in
+		// [before, after]. On an idle mint both reads agree and this is exact
+		// equality — the differential keeps its full strength.
 		const config = getConfig(testInfo.project.name);
 		const units = mintUnitsFor(config);
+		const fees_before = units.map((unit) => mint.feesPaid(config, unit));
+		await page.reload();
 		const sheet = await openSheet(page);
 		await waitForRows(sheet);
 		const cards = sheet.locator('.balance-sheet-card');
@@ -212,9 +222,11 @@ test.describe('mint-general-balance-sheet — card', {tag: '@mint'}, () => {
 			await card.locator('.balance-sheet-row').click();
 			const fee_card = card.locator('.balance-sheet-details .orc-high-card').filter({hasText: 'Fee revenue'});
 			await expect(fee_card).toBeVisible();
-			const expected = mint.feesPaid(config, unit);
-			const ui_text = await fee_card.locator('.orc-amount').first().textContent();
-			expect(amountFromText(ui_text), `row ${i} (${unit}) Fee revenue should match mint DB`).toBe(expected);
+			const ui_fees = amountFromText(await fee_card.locator('.orc-amount').first().textContent());
+			const fees_after = mint.feesPaid(config, unit);
+			const label = `row ${i} (${unit}) Fee revenue should match mint DB (expected ${fees_before[i]}..${fees_after})`;
+			expect(ui_fees, label).toBeGreaterThanOrEqual(fees_before[i]);
+			expect(ui_fees, label).toBeLessThanOrEqual(fees_after);
 		}
 	});
 
