@@ -1,10 +1,12 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, WritableSignal, signal, OnInit, OnDestroy} from '@angular/core';
+import {ChangeDetectionStrategy, Component, signal, OnInit, OnDestroy, inject} from '@angular/core';
 import {Router, Event, ActivatedRoute, NavigationStart, NavigationEnd, NavigationCancel, NavigationError} from '@angular/router';
 /* Vendor Dependencies */
 import {filter, Subscription} from 'rxjs';
 /* Application Dependencies */
 import {ConfigService} from '@client/modules/config/services/config.service';
+import {NavService} from '@client/modules/nav/services/nav/nav.service';
+import {NavSecondaryItem} from '@client/modules/nav/types/nav-secondary-item.type';
 
 @Component({
 	selector: 'orc-index-section',
@@ -14,17 +16,20 @@ import {ConfigService} from '@client/modules/config/services/config.service';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IndexSectionComponent implements OnInit, OnDestroy {
-	public version: WritableSignal<string> = signal('');
-	public active_sub_section: WritableSignal<string> = signal('');
-	public overlayed: WritableSignal<boolean> = signal(false);
+	private readonly navService = inject(NavService);
+	private readonly configService = inject(ConfigService);
+	private readonly router = inject(Router);
+	private readonly route = inject(ActivatedRoute);
+
+	public readonly menu_items: NavSecondaryItem[] = this.navService.getMenuItems('index');
+
+	public version = signal<string>('');
+	public active_sub_section = signal<string>('');
+	public overlayed = signal<boolean>(false);
 
 	private subscriptions: Subscription = new Subscription();
 
-	constructor(
-		private configService: ConfigService,
-		private router: Router,
-		private route: ActivatedRoute,
-	) {
+	constructor() {
 		this.version.set(this.configService.config.mode.version);
 	}
 

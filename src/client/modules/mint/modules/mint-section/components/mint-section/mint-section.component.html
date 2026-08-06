@@ -5,17 +5,13 @@
 			<orc-mint-general-name [name]="mint_info()?.name ?? null" [loading]="loading()" [error]="error()"> </orc-mint-general-name>
 		</div>
 		<div nav-secondary-items>
-			<orc-nav-secondary-item name="Dashboard" navroute="mint" [active]="active_sub_section() === 'dashboard'">
-			</orc-nav-secondary-item>
-			<orc-nav-secondary-item name="Info" navroute="mint/info" [active]="active_sub_section() === 'info'"> </orc-nav-secondary-item>
-			<orc-nav-secondary-item name="Config" navroute="mint/config" [active]="active_sub_section() === 'config'">
-			</orc-nav-secondary-item>
-			<orc-nav-secondary-item name="Keysets" navroute="mint/keysets" [active]="active_sub_section() === 'keysets'">
-			</orc-nav-secondary-item>
-			<orc-nav-secondary-item name="Database" navroute="mint/database" [active]="active_sub_section() === 'database'">
-			</orc-nav-secondary-item>
-			<orc-nav-secondary-item name="System" navroute="mint/system" [active]="active_sub_section() === 'system'">
-			</orc-nav-secondary-item>
+			@for (item of menu_items; track item.navroute) {
+				<orc-nav-secondary-item
+					[name]="item.name"
+					[navroute]="item.navroute"
+					[active]="active_sub_section() === item.subsection"
+				></orc-nav-secondary-item>
+			}
 		</div>
 		<div nav-secondary-toolbar class="nav-secondary-toolbar">
 			<div class="section-implementation">{{ mint_info()?.version }}</div>

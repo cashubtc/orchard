@@ -18,7 +18,9 @@ import {MatSidenav} from '@angular/material/sidenav';
 /* Application Dependencies */
 import {ConfigService} from '@client/modules/config/services/config.service';
 import {FormPanelService} from '@client/modules/form/services/form-panel';
+import {NavService} from '@client/modules/nav/services/nav/nav.service';
 import {DeviceType} from '@client/modules/layout/types/device.types';
+import {NavSecondaryItem} from '@client/modules/nav/types/nav-secondary-item.type';
 
 @Component({
 	selector: 'orc-settings-section',
@@ -34,6 +36,10 @@ export class SettingsSectionComponent implements OnInit, AfterViewInit, OnDestro
 	private readonly route = inject(ActivatedRoute);
 	private readonly breakpointObserver = inject(BreakpointObserver);
 	private readonly formPanelService = inject(FormPanelService);
+	private readonly navService = inject(NavService);
+
+	/* ── Public properties ── */
+	public readonly menu_items: NavSecondaryItem[] = this.navService.getMenuItems('settings');
 
 	/* ── ViewChild references ── */
 	private readonly formSidenav = viewChild<MatSidenav>('formSidenav');

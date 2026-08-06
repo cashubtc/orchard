@@ -4,21 +4,13 @@
 			<div class="font-size-s">Orchard Settings</div>
 		</div>
 		<div nav-secondary-items>
-			<orc-nav-secondary-item
-				name="Application"
-				navroute="settings/app"
-				[active]="active_sub_section() === 'app'"
-			></orc-nav-secondary-item>
-			<orc-nav-secondary-item
-				name="Device"
-				navroute="settings/device"
-				[active]="active_sub_section() === 'device'"
-			></orc-nav-secondary-item>
-			<orc-nav-secondary-item
-				name="User"
-				navroute="settings/user"
-				[active]="active_sub_section() === 'user'"
-			></orc-nav-secondary-item>
+			@for (item of menu_items; track item.navroute) {
+				<orc-nav-secondary-item
+					[name]="item.name"
+					[navroute]="item.navroute"
+					[active]="active_sub_section() === item.subsection"
+				></orc-nav-secondary-item>
+			}
 		</div>
 		<div nav-secondary-toolbar class="nav-secondary-toolbar">
 			<div class="section-implementation">{{ version() }}</div>

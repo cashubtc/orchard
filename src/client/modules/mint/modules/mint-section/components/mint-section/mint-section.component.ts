@@ -6,8 +6,10 @@ import {filter, Subscription} from 'rxjs';
 /* Application Dependencies */
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {PublicService} from '@client/modules/public/services/image/public.service';
+import {NavService} from '@client/modules/nav/services/nav/nav.service';
 import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
 import {PublicImage} from '@client/modules/public/classes/public-image.class';
+import {NavSecondaryItem} from '@client/modules/nav/types/nav-secondary-item.type';
 
 @Component({
 	selector: 'orc-mint-section',
@@ -21,6 +23,9 @@ export class MintSectionComponent implements OnInit, OnDestroy {
 	private readonly route = inject(ActivatedRoute);
 	private readonly mintService = inject(MintService);
 	private readonly publicService = inject(PublicService);
+	private readonly navService = inject(NavService);
+
+	public readonly menu_items: NavSecondaryItem[] = this.navService.getMenuItems('mint');
 
 	public readonly mint_info = signal<MintInfo | null>(null);
 	public readonly icon_data = signal<string | null>(null);
