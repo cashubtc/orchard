@@ -81,6 +81,11 @@ export class AiService {
 		return this.assistant_subject.asObservable();
 	}
 
+	public readonly pending_assistant = signal<boolean>(false);
+	public readonly staged_assistant_definition = signal<AiAssistantDefinition | null>(null);
+
+	public readonly staged_assistant = computed(() => this.override_assistant() ?? this.route_assistant());
+
 	private dispose_subscription?: () => void;
 	private subscription_id?: string | null;
 	private conversation_subject = new Subject<AiChatConversation | null>();
@@ -88,21 +93,20 @@ export class AiService {
 	private toolcall_subject = new Subject<AiChatToolCall>();
 	private assistant_subject = new Subject<{assistant: AiAssistant; content: string | null}>();
 	private active_subject = new Subject<boolean>();
-	private readonly route_assistant = signal<AiAssistant>(AiAssistant.Default);
-	private readonly override_assistant = signal<AiAssistant | null>(null);
-	public readonly staged_assistant = computed(() => this.override_assistant() ?? this.route_assistant());
-	public readonly pending_assistant = signal<boolean>(false);
-	public readonly staged_assistant_definition = signal<AiAssistantDefinition | null>(null);
-	private readonly staged_assistant$ = toObservable(this.staged_assistant);
-	private readonly assistant_definitions = new Map<AiAssistant, AiAssistantDefinition>();
+	private conversation_cache: AiChatConversation | null = null;
 	private assistant_sync_started = false;
 	private ai_models_observable!: Observable<AiModel[]> | null;
+	private readonly assistant_definitions = new Map<AiAssistant, AiAssistantDefinition>();
 
 	private readonly CACHE_KEYS = {AI_AGENT_TOOLS: 'AI_AGENT_TOOLS'};
 	private readonly CACHE_DURATION = 60 * 60 * 1000; // 60 minutes
 	private agent_tools_subject: BehaviorSubject<OrchardAgentTool[] | null>;
 
-	private conversation_cache: AiChatConversation | null = null;
+	private readonly route_assistant = signal<AiAssistant>(AiAssistant.Default);
+	private readonly override_assistant = signal<AiAssistant | null>(null);
+
+	// Declared last: toObservable() runs at field init, so its source signals must already be assigned
+	private readonly staged_assistant$ = toObservable(this.staged_assistant);
 
 	constructor(
 		private cacheService: CacheService,

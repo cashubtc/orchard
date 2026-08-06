@@ -1,7 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, input, signal} from '@angular/core';
-/* Vendor Dependencies */
-import {Subscription, timer} from 'rxjs';
+import {ChangeDetectionStrategy, Component, OnDestroy, computed, input, signal} from '@angular/core';
 /* Native Dependencies */
 import {AiAssistantDefinition} from '@client/modules/ai/classes/ai-assistant-definition.class';
 /* Shared Dependencies */
@@ -16,7 +14,7 @@ const CONNECTING_MS = 2000;
 	styleUrl: './ai-chat-message-pending.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AiChatMessagePendingComponent implements OnInit, OnDestroy {
+export class AiChatMessagePendingComponent implements OnDestroy {
 	public assistant = input.required<AiAssistantDefinition | null>();
 	public vendor = input.required<string>();
 
@@ -31,10 +29,10 @@ export class AiChatMessagePendingComponent implements OnInit, OnDestroy {
 		return this.vendor() === 'ollama' ? 'Loading model' : 'Contacting provider';
 	});
 
-	private subscriptions = new Subscription();
+	private connecting_timeout?: ReturnType<typeof setTimeout>;
 
-	ngOnInit(): void {
-		this.subscriptions.add(timer(CONNECTING_MS).subscribe(() => this.connecting.set(false)));
+	constructor() {
+		this.connecting_timeout = setTimeout(() => this.connecting.set(false), CONNECTING_MS);
 	}
 
 	/* *******************************************************
@@ -42,6 +40,6 @@ export class AiChatMessagePendingComponent implements OnInit, OnDestroy {
 	******************************************************** */
 
 	ngOnDestroy(): void {
-		this.subscriptions.unsubscribe();
+		if (this.connecting_timeout) clearTimeout(this.connecting_timeout);
 	}
 }

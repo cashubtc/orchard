@@ -43,8 +43,12 @@ export class AiInputComponent {
 		this.contentChange.emit((event.target as HTMLTextAreaElement).value);
 	}
 
-	public onSubmit(event?: Event): void {
-		if (event) event.preventDefault();
+	/**
+	 * Sends the chat request up, suppressing the newline the key press would insert
+	 * @param event the native keydown event
+	 */
+	public onSubmit(event: Event): void {
+		event.preventDefault();
 		this.chat.emit();
 	}
 }
