@@ -28,6 +28,9 @@ export class AuthAuthenticationResolver {
 		return await this.authenticationService.authenticate(tag, authentication);
 	}
 
+	/* @Public skips the global access-token guard; GqlRefreshGuard provides the actual authentication
+	   for these endpoints, requiring a valid signed refresh token as the Bearer credential */
+	@Public()
 	@Mutation(() => OrchardAuthentication, {description: 'Refresh an expired access token using a refresh token'})
 	@UseGuards(GqlRefreshGuard)
 	async auth_authentication_refresh(@Context() context: any) {
@@ -40,6 +43,7 @@ export class AuthAuthenticationResolver {
 		return await this.authenticationService.refreshAuthentication(tag, user.refresh_token);
 	}
 
+	@Public()
 	@Mutation(() => Boolean, {description: 'Revoke a refresh token to log out'})
 	@UseGuards(GqlRefreshGuard)
 	async auth_authentication_revoke(@Context() context: any) {
