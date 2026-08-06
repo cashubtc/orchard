@@ -114,6 +114,10 @@ export class IndexSubsectionCrewComponent implements OnInit, OnDestroy {
 			const dirty = this.form_dirty();
 			this.createPendingEvent(dirty);
 		});
+
+		effect(() => {
+			this.syncAssistantOverride();
+		});
 	}
 
 	/* *******************************************************
@@ -670,6 +674,22 @@ export class IndexSubsectionCrewComponent implements OnInit, OnDestroy {
 	}
 
 	/**
+	 * Keeps the AI assistant override in step with whichever crew form is open,
+	 * so the chat bar shows the agent that would actually be hired
+	 */
+	private syncAssistantOverride(): void {
+		switch (this.getActiveFormType()) {
+			case CrewFormType.INVITE_CREATE:
+			case CrewFormType.INVITE_EDIT:
+				return this.aiService.setAssistantOverride(AiAssistant.IndexCrewInvite);
+			case CrewFormType.USER_EDIT:
+				return this.aiService.setAssistantOverride(AiAssistant.IndexCrewUser);
+			default:
+				return this.aiService.clearAssistantOverride();
+		}
+	}
+
+	/**
 	 * Returns the active form group based on which form is currently open
 	 * @returns {FormGroup | null} The active form group or null if no form is open
 	 */
@@ -786,6 +806,7 @@ export class IndexSubsectionCrewComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnDestroy(): void {
+		this.aiService.clearAssistantOverride();
 		this.subscriptions.unsubscribe();
 	}
 }

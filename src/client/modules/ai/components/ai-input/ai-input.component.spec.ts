@@ -1,6 +1,5 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {FormControl} from '@angular/forms';
 /* Native Dependencies */
 import {OrcAiModule} from '@client/modules/ai/ai.module';
 /* Local Dependencies */
@@ -13,12 +12,11 @@ describe('AiInputComponent', () => {
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
 			imports: [OrcAiModule],
-			declarations: [AiInputComponent],
 		}).compileComponents();
 
 		fixture = TestBed.createComponent(AiInputComponent);
 		component = fixture.componentInstance;
-		fixture.componentRef.setInput('content', new FormControl(''));
+		fixture.componentRef.setInput('content', '');
 		fixture.componentRef.setInput('model', 'test-model');
 		fixture.componentRef.setInput('active_chat', false);
 		fixture.detectChanges();

@@ -22,6 +22,8 @@ describe('AiChatLogComponent', () => {
 		fixture.componentRef.setInput('revision', 0);
 		fixture.componentRef.setInput('assistant_definition', null);
 		fixture.componentRef.setInput('user_name', '');
+		fixture.componentRef.setInput('pending', false);
+		fixture.componentRef.setInput('vendor', 'ollama');
 		fixture.detectChanges();
 	});
 

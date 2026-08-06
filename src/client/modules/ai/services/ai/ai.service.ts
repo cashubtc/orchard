@@ -1,9 +1,10 @@
 /* Core Dependencies */
 import {Injectable, signal, computed} from '@angular/core';
+import {toObservable} from '@angular/core/rxjs-interop';
 import {HttpClient} from '@angular/common/http';
 import {Router} from '@angular/router';
 /* Vendor Dependencies */
-import {Observable, catchError, Subject, BehaviorSubject, of, map, tap, throwError, shareReplay, finalize} from 'rxjs';
+import {Observable, catchError, Subject, BehaviorSubject, of, map, tap, switchMap, throwError, shareReplay, finalize} from 'rxjs';
 import {v4 as uuidv4} from 'uuid';
 /* Application Dependencies */
 import {CacheService} from '@client/modules/cache/services/cache/cache.service';
@@ -80,6 +81,11 @@ export class AiService {
 		return this.assistant_subject.asObservable();
 	}
 
+	public readonly pending_assistant = signal<boolean>(false);
+	public readonly staged_assistant_definition = signal<AiAssistantDefinition | null>(null);
+
+	public readonly staged_assistant = computed(() => this.override_assistant() ?? this.route_assistant());
+
 	private dispose_subscription?: () => void;
 	private subscription_id?: string | null;
 	private conversation_subject = new Subject<AiChatConversation | null>();
@@ -87,16 +93,20 @@ export class AiService {
 	private toolcall_subject = new Subject<AiChatToolCall>();
 	private assistant_subject = new Subject<{assistant: AiAssistant; content: string | null}>();
 	private active_subject = new Subject<boolean>();
-	private readonly route_assistant = signal<AiAssistant>(AiAssistant.Default);
-	private readonly override_assistant = signal<AiAssistant | null>(null);
-	public readonly active_assistant = computed(() => this.override_assistant() ?? this.route_assistant());
+	private conversation_cache: AiChatConversation | null = null;
+	private assistant_sync_started = false;
 	private ai_models_observable!: Observable<AiModel[]> | null;
 
 	private readonly CACHE_KEYS = {AI_AGENT_TOOLS: 'AI_AGENT_TOOLS'};
 	private readonly CACHE_DURATION = 60 * 60 * 1000; // 60 minutes
 	private agent_tools_subject: BehaviorSubject<OrchardAgentTool[] | null>;
 
-	private conversation_cache: AiChatConversation | null = null;
+	private readonly route_assistant = signal<AiAssistant>(AiAssistant.Default);
+	private readonly override_assistant = signal<AiAssistant | null>(null);
+	private readonly assistant_definitions = signal<ReadonlyMap<AiAssistant, AiAssistantDefinition>>(new Map());
+
+	// Declared last: toObservable() runs at field init, so its source signals must already be assigned
+	private readonly staged_assistant$ = toObservable(this.staged_assistant);
 
 	constructor(
 		private cacheService: CacheService,
@@ -129,7 +139,7 @@ export class AiService {
 		this.route_assistant.set(assistant);
 	}
 
-	/** Imperatively overrides the active assistant (e.g. when a form panel opens) */
+	/** Imperatively overrides the staged assistant (e.g. when a form panel opens) */
 	public setAssistantOverride(assistant: AiAssistant): void {
 		this.override_assistant.set(assistant);
 	}
@@ -144,6 +154,11 @@ export class AiService {
 		const ai_model = this.settingDeviceService.getModel();
 		this.subscription_id = subscription_id;
 		this.active_subject.next(true);
+		this.pending_assistant.set(true);
+
+		// A different assistant starts fresh — inherited turns and stale form state would
+		// otherwise land in the new assistant's context window
+		if (this.conversation_cache && this.conversation_cache.assistant !== assistant) this.clearConversation();
 
 		const conversation = !this.conversation_cache
 			? this.createConversation(subscription_id, assistant, content, context)
@@ -159,6 +174,7 @@ export class AiService {
 				next: (response) => {
 					if (!response.data?.ai_chat) return;
 					const chunk = new AiChatChunk(response.data.ai_chat, subscription_id);
+					if (chunk.has_output) this.pending_assistant.set(false);
 					this.message_subject.next(chunk);
 					chunk.message.tool_calls?.forEach((tool_call) => this.toolcall_subject.next(tool_call));
 					if (chunk.done) this.closeAiSocket();
@@ -180,7 +196,7 @@ export class AiService {
 	public abortAiSocket(id?: string): void {
 		const subscription_id = id || this.subscription_id;
 		if (!subscription_id) return;
-		const query = getApiQuery(AI_CHAT_ABORT_MUTATION, {id});
+		const query = getApiQuery(AI_CHAT_ABORT_MUTATION, {id: subscription_id});
 		this.http
 			.post<OrchardRes<AiChatAbortResponse>>(this.apiService.api, query)
 			.pipe(
@@ -204,6 +220,7 @@ export class AiService {
 		if (!dispose) return;
 		this.dispose_subscription = undefined;
 		this.subscription_id = null;
+		this.pending_assistant.set(false);
 		this.active_subject.next(false);
 		dispose();
 	}
@@ -248,6 +265,8 @@ export class AiService {
 	}
 
 	public getAiAssistant(assistant: AiAssistant): Observable<AiAssistantDefinition> {
+		const cached = this.assistant_definitions().get(assistant);
+		if (cached) return of(cached);
 		const query = getApiQuery(AI_ASSISTANT_QUERY, {assistant});
 
 		return this.http.post<OrchardRes<AiAssistantResponse>>(this.apiService.api, query).pipe(
@@ -256,11 +275,27 @@ export class AiService {
 				return response.data.ai_assistant;
 			}),
 			map((oaa) => new AiAssistantDefinition(oaa)),
+			tap((definition) => this.assistant_definitions.update((definitions) => new Map(definitions).set(assistant, definition))),
 			catchError((error) => {
 				console.error('Error loading ai assistant:', error);
 				return throwError(() => error);
 			}),
 		);
+	}
+
+	/** Returns an assistant definition already fetched this session, or null if it has not loaded yet */
+	public getLoadedAssistant(assistant: AiAssistant): AiAssistantDefinition | null {
+		return this.assistant_definitions().get(assistant) ?? null;
+	}
+
+	/** Keeps `staged_assistant_definition` in step with the staged assistant.
+	 *  Idempotent, and never started for AI-disabled installs. */
+	public syncAssistantDefinition(): void {
+		if (this.assistant_sync_started) return;
+		this.assistant_sync_started = true;
+		this.staged_assistant$
+			.pipe(switchMap((assistant) => this.getAiAssistant(assistant).pipe(catchError(() => of(null)))))
+			.subscribe((definition) => this.staged_assistant_definition.set(definition));
 	}
 
 	/* *******************************************************

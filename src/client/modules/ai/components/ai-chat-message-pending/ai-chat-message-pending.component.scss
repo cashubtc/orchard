@@ -1,0 +1,15 @@
+@use 'molecule/molecule';
+
+.ai-chat-message-pending-container {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-1;
+}
+
+.ai-pending {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+	@extend %font-size-xs;
+	@extend %h-1-5;
+}

@@ -16,7 +16,10 @@ export class AiChatLogComponent {
 	public active_chat = input.required<boolean>();
 	public revision = input.required<number>();
 	public assistant_definition = input.required<AiAssistantDefinition | null>();
+	public switching_assistant = input<AiAssistantDefinition | null>(null);
 	public user_name = input.required<string>();
+	public pending = input.required<boolean>();
+	public vendor = input.required<string>();
 
 	public clear = output<void>();
 	public close = output<void>();

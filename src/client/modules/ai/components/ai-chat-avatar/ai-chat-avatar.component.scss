@@ -4,33 +4,31 @@
 	@extend %flex;
 	@extend %flex-items-center;
 	@extend %flex-justify-center;
-	@extend %flex-gap-1;
 	@extend %w-2;
 	@extend %h-2;
 	@extend %orc-corner-full;
+	@extend %orc-surface-container-high-bg;
+	@extend %border;
+	@extend %border-solid;
+	@extend %orc-outline-variant-border;
 }
 
 .avatar-role-assistant {
-	background: linear-gradient(to bottom, #fff9a0 0%, #ffe14c 25%, #ff9a3c 50%, #e94e1b 75%, #8c1a1a 100%);
-	@extend %orc-surface-container-high-color;
+	@extend %orc-status-active-color;
 }
 
 .avatar-role-user {
-	@extend %orc-primary-bg;
-	@extend %orc-on-primary-color;
+	@extend %orc-primary-color;
 }
 
 .avatar-role-system {
-	@extend %orc-neutral-bg;
-	@extend %orc-surface-container-high-color;
+	@extend %orc-outline-color;
 }
 
 .avatar-role-tool {
-	background: linear-gradient(to bottom, #fff9a0 0%, #ffe14c 25%, #ff9a3c 50%, #e94e1b 75%, #8c1a1a 100%);
-	@extend %orc-surface-container-high-color;
+	@extend %orc-status-warning-color;
 }
 
 .avatar-role-error {
-	@extend %orc-error-bg;
-	@extend %orc-on-error-color;
+	@extend %orc-error-color;
 }

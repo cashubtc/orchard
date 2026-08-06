@@ -39,6 +39,15 @@
 						}
 					}
 				}
+				@if (pending()) {
+					<orc-ai-chat-message-pending [assistant]="assistant_definition()" [vendor]="vendor()"></orc-ai-chat-message-pending>
+				}
+				@if (switching_assistant(); as next_assistant) {
+					<div class="ai-chat-log-switch p-h-1">
+						<mat-icon class="mat-symbol-outline icon-sm orc-outline-color">arrow_forward</mat-icon>
+						<div class="orc-outline-color font-size-xs">New chat with {{ next_assistant.short_name }}</div>
+					</div>
+				}
 			</div>
 		</mat-expansion-panel>
 	</mat-accordion>

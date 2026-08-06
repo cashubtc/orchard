@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild, signal, computed, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnDestroy, OnInit, ViewChild, signal, computed, inject} from '@angular/core';
 import {
 	Event,
 	Router,
@@ -10,7 +10,6 @@ import {
 	NavigationCancel,
 	NavigationError,
 } from '@angular/router';
-import {FormControl} from '@angular/forms';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 /* Vendor Dependencies */
 import {Subscription, timer, EMPTY} from 'rxjs';
@@ -37,7 +36,6 @@ import {AiChatChunk} from '@client/modules/ai/classes/ai-chat-chunk.class';
 import {AiModel} from '@client/modules/ai/classes/ai-model.class';
 import {AiChatConversation} from '@client/modules/ai/classes/ai-chat-conversation.class';
 import {AiChatCompiledMessage} from '@client/modules/ai/classes/ai-chat-compiled-message.class';
-import {AiAssistantDefinition} from '@client/modules/ai/classes/ai-assistant-definition.class';
 import {AiFavorites} from '@client/modules/cache/services/local-storage/local-storage.types';
 /* Native Dependencies */
 import {DeviceType} from '@client/modules/layout/types/device.types';
@@ -66,14 +64,12 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	private readonly breakpointObserver = inject(BreakpointObserver);
 	private readonly router = inject(Router);
 	private readonly route = inject(ActivatedRoute);
-	private readonly cdr = inject(ChangeDetectorRef);
 
 	@ViewChild('primarySidenav') primarySidenav!: MatSidenav;
 	@ViewChild('aiSidenav') sidenav!: MatSidenav;
 
-	public ai_user_content = new FormControl('');
-
 	// ── Public signals ──
+	public ai_user_content = signal<string>('');
 	public user_name = signal<string>('');
 	public user_error = signal<boolean>(false);
 	public ai_enabled = signal<boolean>(false);
@@ -87,7 +83,9 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	public active_chat = signal<boolean>(false);
 	public active_section = signal<string>('');
 	public active_sub_section = signal<string>('');
-	public active_assistant = this.aiService.active_assistant;
+	public staged_assistant = this.aiService.staged_assistant;
+	public pending_assistant = this.aiService.pending_assistant;
+	public staged_assistant_definition = this.aiService.staged_assistant_definition;
 	public active_event = signal<EventData | null>(null);
 	public enabled_bitcoin = signal<boolean>(false);
 	public enabled_lightning = signal<boolean>(false);
@@ -99,7 +97,6 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	public syncing_lightning = signal<boolean>(false);
 	public block_count = signal<number>(0);
 
-	public ai_assistant_definition = signal<AiAssistantDefinition | null>(null);
 	public overlayed = signal(false);
 	public show_mobile_assistant = signal(false);
 	public device_type = signal<DeviceType>('desktop');
@@ -111,8 +108,23 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 
 	public ai_actionable = computed(() => {
 		if (this.active_chat()) return true;
-		if (this.ai_user_content.value) return true;
+		if (this.ai_user_content()) return true;
 		return false;
+	});
+
+	// The log reflects the conversation's own assistant, while the input chip reflects the staged one
+	public ai_assistant_definition = computed(() => {
+		const assistant = this.ai_conversation()?.assistant;
+		if (!assistant) return this.staged_assistant_definition();
+		return this.aiService.getLoadedAssistant(assistant) ?? this.staged_assistant_definition();
+	});
+
+	// Set when the next message would hand off to another assistant and start a new conversation
+	public ai_switching_assistant = computed(() => {
+		const conversation = this.ai_conversation();
+		if (!conversation || this.active_chat()) return null;
+		if (conversation.assistant === this.staged_assistant()) return null;
+		return this.staged_assistant_definition();
 	});
 
 	// ── Private properties ──
@@ -165,6 +177,7 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	private initAi(): void {
 		if (this.ai_initialized) return;
 		this.ai_initialized = true;
+		this.aiService.syncAssistantDefinition();
 		this.subscriptions.add(this.getAssistantSubscription());
 		this.subscriptions.add(this.getActiveAiSubscription());
 		this.subscriptions.add(this.getAiMessagesSubscription());
@@ -189,7 +202,6 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 			this.setSection(route_data);
 			this.setSubSection(route_data);
 			this.setAssistant(route_data);
-			this.onClearConversation();
 		});
 	}
 
@@ -310,7 +322,6 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	private getActiveAiSubscription(): Subscription {
 		return this.aiService.active$.subscribe((active: boolean) => {
 			this.active_chat.set(active);
-			this.cdr.detectChanges();
 		});
 	}
 
@@ -327,6 +338,7 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 		return this.aiService.conversation$.subscribe((conversation: AiChatConversation | null) => {
 			this.ai_conversation.set(conversation);
 			this.ai_revision.set(0);
+			if (!conversation) this.ai_tool_calls.set(0);
 		});
 	}
 
@@ -416,10 +428,10 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	}
 
 	private startChat() {
-		if (!this.ai_user_content.value) return;
-		const assistant = this.active_assistant() || AiAssistant.Default;
-		this.aiService.requestAssistant(assistant, this.ai_user_content.value);
-		this.ai_user_content.reset();
+		if (!this.ai_user_content()) return;
+		const assistant = this.staged_assistant() || AiAssistant.Default;
+		this.aiService.requestAssistant(assistant, this.ai_user_content());
+		this.ai_user_content.set('');
 	}
 
 	public stopChat(): void {
@@ -470,10 +482,6 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 
 	private openChatLog(): void {
 		this.sidenav.open();
-		const resolved_assistant = this.ai_conversation()?.assistant || this.active_assistant();
-		this.aiService.getAiAssistant(resolved_assistant).subscribe((assistant: AiAssistantDefinition) => {
-			this.ai_assistant_definition.set(assistant);
-		});
 	}
 
 	public closeChatLog(): void {

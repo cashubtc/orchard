@@ -429,7 +429,7 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 	public onClose(): void {
 		this.form_backup.reset();
 		this.form_restore.reset();
-		this.form_mode = null;
+		this.setFormMode(null);
 		this.eventService.registerEvent(null);
 		this.cdr.detectChanges();
 	}
@@ -541,8 +541,16 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 		Database Forms                
 	******************************************************** */
 
+	/** Single write path for `form_mode` so the assistant override always tracks it.
+	 *  RESTORE clears deliberately — its hire path uses the route assistant. */
+	private setFormMode(mode: FormMode | null): void {
+		this.form_mode = mode;
+		if (mode === FormMode.CREATE) this.aiService.setAssistantOverride(AiAssistant.MintBackup);
+		else this.aiService.clearAssistantOverride();
+	}
+
 	private initCreateBackup(): void {
-		this.form_mode = FormMode.CREATE;
+		this.setFormMode(FormMode.CREATE);
 		this.eventService.registerEvent(
 			new EventData({
 				type: 'PENDING',
@@ -558,7 +566,7 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 	}
 
 	private initRestoreBackup(): void {
-		this.form_mode = FormMode.RESTORE;
+		this.setFormMode(FormMode.RESTORE);
 		this.restore_form.nativeElement.scrollIntoView({
 			behavior: 'smooth',
 			block: 'start',
@@ -675,13 +683,13 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 		a.href = url;
 		a.download = this.form_backup.get('filename')?.value;
 		a.click();
-		this.form_mode = null;
+		this.setFormMode(null);
 		this.backup_encoded = '';
 		this.cdr.detectChanges();
 	}
 
 	private async eventRestoreSuccess(): Promise<void> {
-		this.form_mode = null;
+		this.setFormMode(null);
 		this.form_restore.reset();
 		this.cdr.detectChanges();
 		await this.getDynamicData();
@@ -689,7 +697,7 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 	}
 
 	private eventError(): void {
-		this.form_mode = null;
+		this.setFormMode(null);
 		this.form_backup.reset();
 		this.form_restore.reset();
 		this.cdr.detectChanges();
@@ -768,7 +776,7 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 	******************************************************** */
 
 	ngOnDestroy(): void {
-		this.form_mode = null;
+		this.setFormMode(null);
 		this.subscriptions.unsubscribe();
 	}
 }

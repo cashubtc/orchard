@@ -5,12 +5,17 @@
 }
 
 .ai-input-container {
+	@extend %flex;
+	@extend %flex-row;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
 	@extend %p-t-0-5;
 	@extend %p-b-0-5;
 }
 
 .ai-input-form {
-	@extend %w-full;
+	@extend %flex-grow;
+	@extend %w-min-0;
 }
 
 .ai-input {

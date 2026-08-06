@@ -1,8 +1,7 @@
 /* Core Dependencies */
 import {ChangeDetectionStrategy, Component, computed, effect, ElementRef, input, output, viewChild} from '@angular/core';
-import {FormControl} from '@angular/forms';
-/* Shared Dependencies */
-import {AiAssistant} from '@shared/generated.types';
+/* Native Dependencies */
+import {AiAssistantDefinition} from '@client/modules/ai/classes/ai-assistant-definition.class';
 
 @Component({
 	selector: 'orc-ai-input',
@@ -13,23 +12,20 @@ import {AiAssistant} from '@shared/generated.types';
 })
 export class AiInputComponent {
 	public active_chat = input.required<boolean>();
-	public active_assistant = input.required<AiAssistant>();
 	public model = input.required<string | null>();
-	public content = input.required<FormControl>();
+	public content = input.required<string>();
 	public focus = input<boolean>(false);
+	public assistant_definition = input<AiAssistantDefinition | null>(null);
+	public icon_only = input<boolean>(false);
 
 	public chat = output<void>();
+	public contentChange = output<string>();
 
 	public input_el = viewChild<ElementRef<HTMLTextAreaElement>>('inputEl');
 
 	public placeholder = computed(() => (this.active_chat() ? 'Generating...' : 'Message assistant...'));
 
 	constructor() {
-		effect(() => {
-			const model = this.model();
-			model ? this.content().enable() : this.content().disable();
-		});
-
 		effect(() => {
 			if (this.focus()) {
 				setTimeout(() => {
@@ -39,8 +35,20 @@ export class AiInputComponent {
 		});
 	}
 
-	public onSubmit(event?: Event): void {
-		if (event) event.preventDefault();
+	/**
+	 * Sends the typed value up so the owning component can store it
+	 * @param event the native input event
+	 */
+	public onInput(event: Event): void {
+		this.contentChange.emit((event.target as HTMLTextAreaElement).value);
+	}
+
+	/**
+	 * Sends the chat request up, suppressing the newline the key press would insert
+	 * @param event the native keydown event
+	 */
+	public onSubmit(event: Event): void {
+		event.preventDefault();
 		this.chat.emit();
 	}
 }

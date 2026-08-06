@@ -16,4 +16,9 @@ export class AiAssistantDefinition implements OrchardAiAssistant {
 		this.system_message = oaa.system_message;
 		this.tools = oaa.tools;
 	}
+
+	/** Name without the shared "Assistant" suffix, for compact surfaces */
+	public get short_name(): string {
+		return this.name.replace(/\s+Assistant$/, '');
+	}
 }

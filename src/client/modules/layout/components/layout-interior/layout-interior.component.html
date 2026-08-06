@@ -62,14 +62,14 @@
 			></orc-nav-mobile>
 			@if (ai_enabled()) {
 				<orc-ai-nav
-					[active_assistant]="active_assistant()"
+					[assistant_definition]="staged_assistant_definition()"
 					[active_chat]="active_chat()"
 					[model]="ai_model()"
 					[model_options]="ai_models()"
 					[vendor]="ai_vendor()"
 					[favorites]="ai_favorites()"
 					[actionable]="ai_actionable()"
-					[content]="ai_user_content"
+					[content]="ai_user_content()"
 					[conversation]="ai_conversation()"
 					[tool_length]="ai_tool_calls()"
 					[message_length]="ai_conversation()?.messages?.length"
@@ -79,6 +79,7 @@
 					[opened]="!show_mobile_nav()"
 					[event_pending]="active_event()?.type === 'PENDING'"
 					(command)="onCommand()"
+					(contentChange)="ai_user_content.set($event)"
 					(modelChange)="onModelChange($event)"
 					(favoritesChange)="onFavoritesChange($event)"
 					(toggleLog)="onToggleLog()"
@@ -103,7 +104,10 @@
 			[active_chat]="active_chat()"
 			[revision]="ai_revision()"
 			[assistant_definition]="ai_assistant_definition()"
+			[switching_assistant]="ai_switching_assistant()"
 			[user_name]="user_name()"
+			[pending]="pending_assistant()"
+			[vendor]="ai_vendor()"
 			(clear)="onClearConversation()"
 			(close)="closeChatLog()"
 		></orc-ai-chat-log>

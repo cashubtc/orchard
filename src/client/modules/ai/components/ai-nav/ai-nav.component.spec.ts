@@ -1,10 +1,7 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {FormControl} from '@angular/forms';
 /* Native Dependencies */
 import {OrcAiModule} from '@client/modules/ai/ai.module';
-/* Shared Dependencies */
-import {AiAssistant} from '@shared/generated.types';
 /* Local Dependencies */
 import {AiNavComponent} from './ai-nav.component';
 
@@ -19,12 +16,11 @@ describe('AiNavComponent', () => {
 
 		fixture = TestBed.createComponent(AiNavComponent);
 		component = fixture.componentInstance;
-		fixture.componentRef.setInput('active_assistant', AiAssistant.Default);
 		fixture.componentRef.setInput('active_chat', false);
 		fixture.componentRef.setInput('model', null);
 		fixture.componentRef.setInput('model_options', []);
 		fixture.componentRef.setInput('actionable', false);
-		fixture.componentRef.setInput('content', new FormControl(''));
+		fixture.componentRef.setInput('content', '');
 		fixture.componentRef.setInput('conversation', null);
 		fixture.componentRef.setInput('tool_length', 0);
 		fixture.componentRef.setInput('log_open', false);

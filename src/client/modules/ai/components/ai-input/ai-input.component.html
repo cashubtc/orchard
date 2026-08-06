@@ -1,14 +1,17 @@
 <div class="ai-input-container">
+	<orc-ai-agent-chip [definition]="assistant_definition()" [display_mode]="icon_only() ? 'icon' : 'short'"></orc-ai-agent-chip>
 	@if (!active_chat()) {
-		<form class="ai-input-form" (keydown.enter)="onSubmit($event)" (ngSubmit)="onSubmit()">
+		<form class="ai-input-form" (keydown.enter)="onSubmit($event)">
 			<textarea
 				#inputEl
 				rows="1"
 				matInput
 				[placeholder]="placeholder()"
 				class="ai-input"
-				[class.ai-input-empty]="!content().value"
-				[formControl]="content()"
+				[class.ai-input-empty]="!content()"
+				[value]="content()"
+				[disabled]="!model()"
+				(input)="onInput($event)"
 				[style.fontSize]="'smaller'"
 				[formAutogrow]="true"
 			></textarea>
