@@ -19,6 +19,9 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "allowedCommonJsDependencies": [
+              "qr-code-styling"
+            ],
             "stylePreprocessorOptions": {
               "includePaths": [
                 "src/client/styles"
