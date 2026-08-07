@@ -4,13 +4,12 @@ import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 import {Logger} from '@nestjs/common';
 /* Application Dependencies */
+import {mockGrpcModules} from '@server/test/grpc-esm-mocks';
 import {CredentialService} from '@server/modules/credential/credential.service';
 /* Local Dependencies */
-import {CdkService} from './cdk.service.js';
-import * as grpc from '@grpc/grpc-js';
+import type {CdkService as CdkServiceType} from './cdk.service.js';
 
-jest.mock('@server/modules/cashu/mintdb/cashumintdb.helpers', () => ({
-	__esModule: true,
+jest.unstable_mockModule('@server/modules/cashu/mintdb/cashumintdb.helpers', () => ({
 	buildDynamicQuery: jest.fn().mockReturnValue({sql: 'SQL', params: []}),
 	buildCountQuery: jest.fn().mockReturnValue({sql: 'COUNTSQL', params: []}),
 	queryRows: jest.fn(),
@@ -18,10 +17,12 @@ jest.mock('@server/modules/cashu/mintdb/cashumintdb.helpers', () => ({
 	extractRequestString: jest.fn().mockImplementation((s: string) => s?.replace(/^.*:/, '')),
 	convertDateToUnixTimestamp: jest.fn((v: any) => (typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : null)),
 }));
-import * as helpers from '@server/modules/cashu/mintdb/cashumintdb.helpers';
+const helpers = (await import('@server/modules/cashu/mintdb/cashumintdb.helpers')) as any;
+const {proto_loader, grpc} = await mockGrpcModules();
+const {CdkService} = await import('./cdk.service.js');
 
 describe('CdkService', () => {
-	let cdkService: CdkService;
+	let cdkService: CdkServiceType;
 	let configService: jest.Mocked<ConfigService>;
 	let credentialService: jest.Mocked<CredentialService>;
 
@@ -36,7 +37,7 @@ describe('CdkService', () => {
 
 		jest.clearAllMocks();
 
-		cdkService = module.get<CdkService>(CdkService);
+		cdkService = module.get(CdkService);
 		configService = module.get(ConfigService);
 		credentialService = module.get(CredentialService);
 	});
@@ -73,14 +74,12 @@ describe('CdkService', () => {
 		});
 		credentialService.loadPemOrPath.mockReturnValue(Buffer.from('x'));
 		const createSsl = jest.spyOn(grpc.credentials, 'createSsl').mockReturnValue({} as any);
-		const loadSync = jest.spyOn(require('@grpc/proto-loader'), 'loadSync').mockReturnValue({} as any);
-		const loadPackageDefinition = jest
-			.spyOn(grpc, 'loadPackageDefinition')
-			.mockReturnValue({cdk_mint_management_v1: {CdkMint: jest.fn()}} as any);
+		proto_loader.loadSync.mockReturnValue({});
+		grpc.loadPackageDefinition.mockReturnValue({cdk_mint_management_v1: {CdkMint: jest.fn()}});
 		cdkService.initializeGrpcClient();
 		expect(createSsl).toHaveBeenCalled();
-		expect(loadSync).toHaveBeenCalled();
-		expect(loadPackageDefinition).toHaveBeenCalled();
+		expect(proto_loader.loadSync).toHaveBeenCalled();
+		expect(grpc.loadPackageDefinition).toHaveBeenCalled();
 	});
 
 	it('initializes client with docker channel options when host.docker.internal', () => {
@@ -105,8 +104,8 @@ describe('CdkService', () => {
 		});
 		credentialService.loadPemOrPath.mockReturnValue(Buffer.from('x'));
 		jest.spyOn(grpc.credentials, 'createSsl').mockReturnValue({} as any);
-		jest.spyOn(require('@grpc/proto-loader'), 'loadSync').mockReturnValue({} as any);
-		jest.spyOn(grpc, 'loadPackageDefinition').mockReturnValue({cdk_mint_management_v1: {CdkMint: CdkMintMock}} as any);
+		proto_loader.loadSync.mockReturnValue({});
+		grpc.loadPackageDefinition.mockReturnValue({cdk_mint_management_v1: {CdkMint: CdkMintMock}});
 		cdkService.initializeGrpcClient();
 		expect(CdkMintMock).toHaveBeenCalled();
 		const args = CdkMintMock.mock.calls[0];
@@ -133,8 +132,8 @@ describe('CdkService', () => {
 		const log_spy = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined as any);
 		const createInsecure = jest.spyOn(grpc.credentials, 'createInsecure').mockReturnValue({} as any);
 		const createSsl = jest.spyOn(grpc.credentials, 'createSsl').mockReturnValue({} as any);
-		jest.spyOn(require('@grpc/proto-loader'), 'loadSync').mockReturnValue({} as any);
-		jest.spyOn(grpc, 'loadPackageDefinition').mockReturnValue({cdk_mint_management_v1: {CdkMint: CdkMintMock}} as any);
+		proto_loader.loadSync.mockReturnValue({});
+		grpc.loadPackageDefinition.mockReturnValue({cdk_mint_management_v1: {CdkMint: CdkMintMock}});
 		const client = cdkService.initializeGrpcClient();
 		expect(client).toBeDefined();
 		expect(createInsecure).toHaveBeenCalled();
@@ -162,7 +161,7 @@ describe('CdkService', () => {
 			}
 		});
 		credentialService.loadPemOrPath.mockReturnValue(Buffer.from('x'));
-		jest.spyOn(require('@grpc/proto-loader'), 'loadSync').mockImplementation(() => {
+		proto_loader.loadSync.mockImplementation(() => {
 			throw new Error('boom');
 		});
 		const client = cdkService.initializeGrpcClient();

@@ -3,13 +3,16 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
+import {mockGrpcModules} from '@server/test/grpc-esm-mocks';
 import {CredentialService} from '@server/modules/credential/credential.service';
 /* Local Dependencies */
-import {TapdService} from './tapd.service.js';
-import * as grpc from '@grpc/grpc-js';
+import type {TapdService as TapdServiceType} from './tapd.service.js';
+
+const {proto_loader, grpc} = await mockGrpcModules();
+const {TapdService} = await import('./tapd.service.js');
 
 describe('TapdService', () => {
-	let tapdService: TapdService;
+	let tapdService: TapdServiceType;
 	let configService: jest.Mocked<ConfigService>;
 	let credentialService: jest.Mocked<CredentialService>;
 
@@ -22,7 +25,7 @@ describe('TapdService', () => {
 			],
 		}).compile();
 
-		tapdService = module.get<TapdService>(TapdService);
+		tapdService = module.get(TapdService);
 		configService = module.get(ConfigService);
 		credentialService = module.get(CredentialService);
 	});
@@ -66,19 +69,17 @@ describe('TapdService', () => {
 		const combine = jest.spyOn(grpc.credentials, 'combineChannelCredentials').mockReturnValue({} as any);
 
 		// Mock loadPackageDefinition -> namespace and client constructor
-		const loadSync = jest.spyOn(require('@grpc/proto-loader'), 'loadSync').mockReturnValue({} as any);
+		proto_loader.loadSync.mockReturnValue({});
 		const client_ctor = jest.fn();
-		const loadPackageDefinition = jest
-			.spyOn(grpc, 'loadPackageDefinition')
-			.mockReturnValue({taprpc: {TaprootAssets: client_ctor}} as any);
+		grpc.loadPackageDefinition.mockReturnValue({taprpc: {TaprootAssets: client_ctor}});
 
 		tapdService.initializeTaprootAssetsClient();
 
 		expect(createFromMetadataGenerator).toHaveBeenCalled();
 		expect(createSsl).toHaveBeenCalled();
 		expect(combine).toHaveBeenCalled();
-		expect(loadSync).toHaveBeenCalled();
-		expect(loadPackageDefinition).toHaveBeenCalled();
+		expect(proto_loader.loadSync).toHaveBeenCalled();
+		expect(grpc.loadPackageDefinition).toHaveBeenCalled();
 		expect(client_ctor).toHaveBeenCalled();
 		metadata_add.mockRestore();
 	});

@@ -2,34 +2,42 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Local Dependencies */
-import {CashuMintDatabaseService} from './cashumintdb.service.js';
+import type {CashuMintDatabaseService as CashuMintDatabaseServiceType} from './cashumintdb.service.js';
 import {ConfigService} from '@nestjs/config';
 import {CredentialService} from '@server/modules/credential/credential.service';
 import {NutshellService} from '@server/modules/cashu/nutshell/nutshell.service';
 import {CdkService} from '@server/modules/cashu/cdk/cdk.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {MintDatabaseType} from './cashumintdb.enums.js';
-import * as child_process from 'child_process';
 import {promises as fs_promises} from 'fs';
 
-jest.mock('pg', () => ({
-	Client: jest.fn().mockImplementation(() => ({})),
-}));
+// Core modules bypass the ESM mock registry, and better-sqlite3 is consumed as a default
+// export, so each module is replaced explicitly. fs.promises is deliberately left real —
+// its spies work because the core namespace is the shared object.
+jest.unstable_mockModule('pg', () => {
+	const mock = {Client: jest.fn().mockImplementation(() => ({}))};
+	return {...mock, default: mock};
+});
 
-jest.mock('better-sqlite3', () => {
-	return jest.fn().mockImplementation(() => ({
+jest.unstable_mockModule('better-sqlite3', () => ({
+	default: jest.fn().mockImplementation(() => ({
 		pragma: jest.fn(),
 		backup: jest.fn(),
 		close: jest.fn(),
-	}));
-});
-
-jest.mock('child_process', () => ({
-	spawn: jest.fn(),
+	})),
 }));
 
+jest.unstable_mockModule('child_process', () => {
+	const mock = {spawn: jest.fn()};
+	return {...mock, default: mock};
+});
+
+const child_process = (await import('child_process')) as any;
+const BetterSqlite3 = ((await import('better-sqlite3')) as any).default;
+const {CashuMintDatabaseService} = await import('./cashumintdb.service.js');
+
 describe('CashuMintDatabaseService', () => {
-	let cashuMintDatabaseService: CashuMintDatabaseService;
+	let cashuMintDatabaseService: CashuMintDatabaseServiceType;
 	let configService: jest.Mocked<ConfigService>;
 	let nutshellService: jest.Mocked<NutshellService>;
 	let cdkService: jest.Mocked<CdkService>;
@@ -45,7 +53,7 @@ describe('CashuMintDatabaseService', () => {
 			],
 		}).compile();
 
-		cashuMintDatabaseService = module.get<CashuMintDatabaseService>(CashuMintDatabaseService);
+		cashuMintDatabaseService = module.get(CashuMintDatabaseService);
 		configService = module.get(ConfigService);
 		nutshellService = module.get(NutshellService);
 		cdkService = module.get(CdkService);
@@ -93,7 +101,6 @@ describe('CashuMintDatabaseService', () => {
 	});
 
 	it('getMintDatabase throws MintDatabaseConnectionError on constructor failure', async () => {
-		const BetterSqlite3 = require('better-sqlite3');
 		(BetterSqlite3 as jest.Mock).mockImplementationOnce(() => {
 			throw new Error('boom');
 		});
@@ -122,7 +129,7 @@ describe('CashuMintDatabaseService', () => {
 	it('delegates remaining getters to correct services', async () => {
 		const client = {} as any;
 		const args = {a: 1} as any;
-		const nutshell_map: Array<[keyof CashuMintDatabaseService, keyof NutshellService]> = [
+		const nutshell_map: Array<[keyof CashuMintDatabaseServiceType, keyof NutshellService]> = [
 			['getBalancesIssued', 'getBalancesIssued'],
 			['getBalancesRedeemed', 'getBalancesRedeemed'],
 			['getKeysets', 'getKeysets'],
@@ -149,7 +156,7 @@ describe('CashuMintDatabaseService', () => {
 		nutshell_map.forEach(([_, n_method]) => {
 			(nutshellService[n_method as any] as any) = jest.fn();
 		});
-		const cdk_map: Array<[keyof CashuMintDatabaseService, keyof CdkService]> = [
+		const cdk_map: Array<[keyof CashuMintDatabaseServiceType, keyof CdkService]> = [
 			['getBalancesIssued', 'getBalancesIssued'],
 			['getBalancesRedeemed', 'getBalancesRedeemed'],
 			['getKeysets', 'getKeysets'],
@@ -192,7 +199,6 @@ describe('CashuMintDatabaseService', () => {
 		});
 
 		it('createBackup sqlite: success and cleanup', async () => {
-			const BetterSqlite3 = require('better-sqlite3');
 			const db_instance = new BetterSqlite3();
 			(db_instance.backup as jest.Mock).mockResolvedValue(undefined);
 			const read_file = jest.spyOn(fs_promises, 'readFile').mockResolvedValue(Buffer.from('ok'));
@@ -204,7 +210,6 @@ describe('CashuMintDatabaseService', () => {
 		});
 
 		it('createBackup sqlite: error path cleans up and rethrows', async () => {
-			const BetterSqlite3 = require('better-sqlite3');
 			const db_instance = new BetterSqlite3();
 			(db_instance.backup as jest.Mock).mockRejectedValue(new Error('fail'));
 			const unlink = jest.spyOn(fs_promises, 'unlink').mockResolvedValue(undefined as any);

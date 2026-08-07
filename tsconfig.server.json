@@ -25,5 +25,5 @@
     "esModuleInterop": true,
   },
   "include": ["src/server"],
-  "exclude": ["src/server/**/*.spec.ts"]
+  "exclude": ["src/server/**/*.spec.ts", "src/server/test/**"]
 }

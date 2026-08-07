@@ -1,13 +1,14 @@
 import {Request, Response, NextFunction} from 'express';
-import {readFileSync} from 'fs';
+import type {readFileSync as ReadFileSync} from 'fs';
 
-import {indexHtml} from './index-html.middleware.js';
+// Core modules bypass the ESM mock registry unless replaced at the module level.
+jest.unstable_mockModule('fs', () => {
+	const readFileSync = jest.fn();
+	return {readFileSync, default: {readFileSync}};
+});
 
-jest.mock('fs', () => ({
-	readFileSync: jest.fn(),
-}));
-
-const mockedReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
+const {readFileSync: mockedReadFileSync} = (await import('fs')) as unknown as {readFileSync: jest.MockedFunction<typeof ReadFileSync>};
+const {indexHtml} = await import('./index-html.middleware.js');
 
 describe('indexHtml', () => {
 	let req: Partial<Request>;

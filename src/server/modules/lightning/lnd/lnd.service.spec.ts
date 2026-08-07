@@ -3,13 +3,16 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
+import {mockGrpcModules} from '@server/test/grpc-esm-mocks';
 import {CredentialService} from '@server/modules/credential/credential.service';
 /* Local Dependencies */
-import {LndService} from './lnd.service.js';
-import * as grpc from '@grpc/grpc-js';
+import type {LndService as LndServiceType} from './lnd.service.js';
+
+const {proto_loader, grpc} = await mockGrpcModules();
+const {LndService} = await import('./lnd.service.js');
 
 describe('LndService', () => {
-	let lndService: LndService;
+	let lndService: LndServiceType;
 	let configService: jest.Mocked<ConfigService>;
 	let credentialService: jest.Mocked<CredentialService>;
 
@@ -22,7 +25,7 @@ describe('LndService', () => {
 			],
 		}).compile();
 
-		lndService = module.get<LndService>(LndService);
+		lndService = module.get(LndService);
 		configService = module.get(ConfigService);
 		credentialService = module.get(CredentialService);
 	});
@@ -56,17 +59,15 @@ describe('LndService', () => {
 		const createFromMetadataGenerator = jest.spyOn(grpc.credentials, 'createFromMetadataGenerator').mockReturnValue({} as any);
 		const createSsl = jest.spyOn(grpc.credentials, 'createSsl').mockReturnValue({} as any);
 		const combine = jest.spyOn(grpc.credentials, 'combineChannelCredentials').mockReturnValue({} as any);
-		const loadSync = jest.spyOn(require('@grpc/proto-loader'), 'loadSync').mockReturnValue({} as any);
-		const loadPackageDefinition = jest
-			.spyOn(grpc, 'loadPackageDefinition')
-			.mockReturnValue({lnrpc: {Lightning: jest.fn()}, walletrpc: {WalletKit: jest.fn()}} as any);
+		proto_loader.loadSync.mockReturnValue({});
+		grpc.loadPackageDefinition.mockReturnValue({lnrpc: {Lightning: jest.fn()}, walletrpc: {WalletKit: jest.fn()}});
 		lndService.initializeLightningClient();
 		lndService.initializeWalletKitClient();
 		expect(createFromMetadataGenerator).toHaveBeenCalled();
 		expect(createSsl).toHaveBeenCalled();
 		expect(combine).toHaveBeenCalled();
-		expect(loadSync).toHaveBeenCalled();
-		expect(loadPackageDefinition).toHaveBeenCalled();
+		expect(proto_loader.loadSync).toHaveBeenCalled();
+		expect(grpc.loadPackageDefinition).toHaveBeenCalled();
 	});
 
 	it('mapLndRequest constructs a LightningRequest', () => {

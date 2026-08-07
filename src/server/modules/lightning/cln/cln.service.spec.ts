@@ -3,13 +3,16 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
+import {mockGrpcModules} from '@server/test/grpc-esm-mocks';
 import {CredentialService} from '@server/modules/credential/credential.service';
 /* Local Dependencies */
-import {ClnService} from './cln.service.js';
-import * as grpc from '@grpc/grpc-js';
+import type {ClnService as ClnServiceType} from './cln.service.js';
+
+const {proto_loader, grpc} = await mockGrpcModules();
+const {ClnService} = await import('./cln.service.js');
 
 describe('ClnService', () => {
-	let clnService: ClnService;
+	let clnService: ClnServiceType;
 	let configService: jest.Mocked<ConfigService>;
 	let credentialService: jest.Mocked<CredentialService>;
 
@@ -22,7 +25,7 @@ describe('ClnService', () => {
 			],
 		}).compile();
 
-		clnService = module.get<ClnService>(ClnService);
+		clnService = module.get(ClnService);
 		configService = module.get(ConfigService);
 		credentialService = module.get(CredentialService);
 	});
@@ -55,12 +58,12 @@ describe('ClnService', () => {
 		});
 		credentialService.loadPemOrPath.mockReturnValue(Buffer.from('x'));
 		const createSsl = jest.spyOn(grpc.credentials, 'createSsl').mockReturnValue({} as any);
-		const loadSync = jest.spyOn(require('@grpc/proto-loader'), 'loadSync').mockReturnValue({} as any);
-		const loadPackageDefinition = jest.spyOn(grpc, 'loadPackageDefinition').mockReturnValue({cln: {Node: jest.fn()}} as any);
+		proto_loader.loadSync.mockReturnValue({});
+		grpc.loadPackageDefinition.mockReturnValue({cln: {Node: jest.fn()}});
 		clnService.initializeLightningClient();
 		expect(createSsl).toHaveBeenCalled();
-		expect(loadSync).toHaveBeenCalled();
-		expect(loadPackageDefinition).toHaveBeenCalled();
+		expect(proto_loader.loadSync).toHaveBeenCalled();
+		expect(grpc.loadPackageDefinition).toHaveBeenCalled();
 	});
 
 	it('mapClnInfo maps fields and uris correctly', async () => {
