@@ -3,7 +3,6 @@ import {
 	ChangeDetectionStrategy,
 	Component,
 	HostListener,
-	WritableSignal,
 	signal,
 	effect,
 	inject,
@@ -113,7 +112,7 @@ export class SettingsSubsectionAppComponent implements OnInit, AfterViewInit, On
 
 	private active_event: EventData | null = null;
 	private subscriptions: Subscription = new Subscription();
-	private dirty_count: WritableSignal<number> = signal(0);
+	private dirty_count = signal<number>(0);
 
 	constructor() {
 		effect(() => {

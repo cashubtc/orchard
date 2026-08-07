@@ -1,6 +1,8 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {provideRouter} from '@angular/router';
+/* Application Dependencies */
+import {NavService} from '@client/modules/nav/services/nav/nav.service';
 /* Native Dependencies */
 import {OrcLightningSectionModule} from '@client/modules/lightning/modules/lightning-section/lightning-section.module';
 /* Local Dependencies */
@@ -23,5 +25,9 @@ describe('LightningSectionComponent', () => {
 
 	it('should create', () => {
 		expect(component).toBeTruthy();
+	});
+
+	it('should source menu items from the nav service', () => {
+		expect(component.menu_items).toEqual(TestBed.inject(NavService).getMenuItems('lightning'));
 	});
 });

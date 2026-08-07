@@ -1,6 +1,9 @@
 /* Core Dependencies */
-import {Component, ChangeDetectionStrategy, OnInit, ChangeDetectorRef, OnDestroy, WritableSignal, signal} from '@angular/core';
+import {Component, ChangeDetectionStrategy, OnInit, OnDestroy, signal, inject} from '@angular/core';
 import {Router, Event, ActivatedRoute, NavigationStart} from '@angular/router';
+/* Application Dependencies */
+import {NavService} from '@client/modules/nav/services/nav/nav.service';
+import {NavSecondaryItem} from '@client/modules/nav/types/nav-secondary-item.type';
 /* Native Dependencies */
 import {LightningService} from '@client/modules/lightning/services/lightning/lightning.service';
 import {LightningInfo} from '@client/modules/lightning/classes/lightning-info.class';
@@ -15,27 +18,26 @@ import {filter, Subscription} from 'rxjs';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LightningSectionComponent implements OnInit, OnDestroy {
-	public lightning_info: LightningInfo | null = null;
-	public active_sub_section: WritableSignal<string> = signal('');
-	public loading: boolean = true;
-	public error: boolean = false;
+	private readonly navService = inject(NavService);
+	private readonly lightningService = inject(LightningService);
+	private readonly router = inject(Router);
+	private readonly route = inject(ActivatedRoute);
+
+	public readonly menu_items: NavSecondaryItem[] = this.navService.getMenuItems('lightning');
+
+	public lightning_info = signal<LightningInfo | null>(null);
+	public active_sub_section = signal<string>('');
+	public loading = signal<boolean>(true);
+	public error = signal<boolean>(false);
 
 	private subscriptions: Subscription = new Subscription();
-
-	constructor(
-		private lightningService: LightningService,
-		private router: Router,
-		private route: ActivatedRoute,
-		private cdr: ChangeDetectorRef,
-	) {}
 
 	ngOnInit(): void {
 		this.lightningService.loadLightningInfo().subscribe({
 			error: (error) => {
 				console.error(error);
-				this.error = true;
-				this.loading = false;
-				this.cdr.detectChanges();
+				this.error.set(true);
+				this.loading.set(false);
 			},
 		});
 		this.subscriptions.add(this.getLightningInfoSubscription());
@@ -44,8 +46,9 @@ export class LightningSectionComponent implements OnInit, OnDestroy {
 
 	private getLightningInfoSubscription(): Subscription {
 		return this.lightningService.lightning_info$.subscribe((info: LightningInfo | null) => {
-			if (info) this.lightning_info = info;
-			this.cdr.detectChanges();
+			if (!info) return;
+			this.lightning_info.set(info);
+			this.loading.set(false);
 		});
 	}
 

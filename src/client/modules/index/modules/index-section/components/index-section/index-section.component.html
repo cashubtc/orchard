@@ -4,9 +4,13 @@
 			<div class="font-size-s">Orchard</div>
 		</div>
 		<div nav-secondary-items>
-			<orc-nav-secondary-item name="Home" navroute="" [active]="active_sub_section() === 'home'"></orc-nav-secondary-item>
-			<orc-nav-secondary-item name="Crew" navroute="crew" [active]="active_sub_section() === 'crew'"></orc-nav-secondary-item>
-			<orc-nav-secondary-item name="System" navroute="system" [active]="active_sub_section() === 'system'"></orc-nav-secondary-item>
+			@for (item of menu_items; track item.navroute) {
+				<orc-nav-secondary-item
+					[name]="item.name"
+					[navroute]="item.navroute"
+					[active]="active_sub_section() === item.subsection"
+				></orc-nav-secondary-item>
+			}
 		</div>
 		<div nav-secondary-toolbar class="nav-secondary-toolbar">
 			<div class="section-implementation">{{ version() }}</div>

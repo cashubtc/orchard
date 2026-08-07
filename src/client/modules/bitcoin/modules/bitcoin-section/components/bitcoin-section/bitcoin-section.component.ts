@@ -1,8 +1,11 @@
 /* Core Dependencies */
-import {Component, ChangeDetectionStrategy, OnInit, OnDestroy, signal, WritableSignal} from '@angular/core';
+import {Component, ChangeDetectionStrategy, OnInit, OnDestroy, signal, inject} from '@angular/core';
 import {Router, Event, ActivatedRoute, NavigationStart, NavigationEnd, NavigationCancel, NavigationError} from '@angular/router';
 /* Vendor Dependencies */
 import {filter, Subscription} from 'rxjs';
+/* Application Dependencies */
+import {NavService} from '@client/modules/nav/services/nav/nav.service';
+import {NavSecondaryItem} from '@client/modules/nav/types/nav-secondary-item.type';
 /* Native Dependencies */
 import {BitcoinService} from '@client/modules/bitcoin/services/bitcoin/bitcoin.service';
 import {BitcoinNetworkInfo} from '@client/modules/bitcoin/classes/bitcoin-network-info.class';
@@ -16,18 +19,19 @@ import {BitcoinBlockchainInfo} from '@client/modules/bitcoin/classes/bitcoin-blo
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BitcoinSectionComponent implements OnInit, OnDestroy {
-	public bitcoin_blockchain_info: WritableSignal<BitcoinBlockchainInfo | null> = signal(null);
-	public bitcoin_network_info: WritableSignal<BitcoinNetworkInfo | null> = signal(null);
-	public active_sub_section: WritableSignal<string> = signal('');
-	public overlayed: WritableSignal<boolean> = signal(false);
+	private readonly navService = inject(NavService);
+	private readonly bitcoinService = inject(BitcoinService);
+	private readonly router = inject(Router);
+	private readonly route = inject(ActivatedRoute);
+
+	public readonly menu_items: NavSecondaryItem[] = this.navService.getMenuItems('bitcoin');
+
+	public bitcoin_blockchain_info = signal<BitcoinBlockchainInfo | null>(null);
+	public bitcoin_network_info = signal<BitcoinNetworkInfo | null>(null);
+	public active_sub_section = signal<string>('');
+	public overlayed = signal<boolean>(false);
 
 	private subscriptions: Subscription = new Subscription();
-
-	constructor(
-		private bitcoinService: BitcoinService,
-		private router: Router,
-		private route: ActivatedRoute,
-	) {}
 
 	ngOnInit(): void {
 		this.bitcoinService.loadBitcoinNetworkInfo().subscribe({

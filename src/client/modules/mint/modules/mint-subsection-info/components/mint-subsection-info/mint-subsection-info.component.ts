@@ -1,14 +1,5 @@
 /* Core Dependencies */
-import {
-	ChangeDetectionStrategy,
-	Component,
-	OnInit,
-	OnDestroy,
-	ChangeDetectorRef,
-	WritableSignal,
-	signal,
-	HostListener,
-} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnInit, OnDestroy, ChangeDetectorRef, signal, HostListener} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {FormGroup, FormControl, Validators, FormArray} from '@angular/forms';
 import {toObservable} from '@angular/core/rxjs-interop';
@@ -68,7 +59,7 @@ export class MintSubsectionInfoComponent implements ComponentCanDeactivate, OnIn
 
 	private subscriptions: Subscription = new Subscription();
 	private active_event: EventData | null = null;
-	private dirty_count: WritableSignal<number> = signal(0);
+	private dirty_count = signal<number>(0);
 	private dirty_count$ = toObservable(this.dirty_count);
 
 	constructor(

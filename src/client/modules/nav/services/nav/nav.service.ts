@@ -70,6 +70,11 @@ export class NavService {
 				navroute: 'mint/database',
 				subsection: 'database',
 			},
+			{
+				name: 'System',
+				navroute: 'mint/system',
+				subsection: 'system',
+			},
 		],
 		ecash: [
 			{
@@ -80,6 +85,11 @@ export class NavService {
 		],
 		settings: [
 			{
+				name: 'Application',
+				navroute: 'settings/app',
+				subsection: 'app',
+			},
+			{
 				name: 'Device',
 				navroute: 'settings/device',
 				subsection: 'device',
@@ -88,11 +98,6 @@ export class NavService {
 				name: 'User',
 				navroute: 'settings/user',
 				subsection: 'user',
-			},
-			{
-				name: 'App',
-				navroute: 'settings/app',
-				subsection: 'app',
 			},
 		],
 	};

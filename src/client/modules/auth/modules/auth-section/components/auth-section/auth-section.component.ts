@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, WritableSignal, signal, OnInit, OnDestroy} from '@angular/core';
+import {ChangeDetectionStrategy, Component, signal, OnInit, OnDestroy} from '@angular/core';
 import {Router, NavigationStart, NavigationEnd, NavigationCancel, NavigationError} from '@angular/router';
 /* Vendor Dependencies */
 import {Subscription} from 'rxjs';
@@ -12,7 +12,7 @@ import {Subscription} from 'rxjs';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AuthSectionComponent implements OnInit, OnDestroy {
-	public overlayed: WritableSignal<boolean> = signal(false);
+	public overlayed = signal<boolean>(false);
 
 	private subscriptions: Subscription = new Subscription();
 

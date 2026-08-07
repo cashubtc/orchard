@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, OnInit, OnDestroy, WritableSignal, signal, effect, HostListener} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnInit, OnDestroy, signal, effect, HostListener} from '@angular/core';
 import {FormGroup, FormControl, Validators} from '@angular/forms';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 /* Vendor Dependencies */
@@ -36,7 +36,7 @@ export class SettingsSubsectionUserComponent implements ComponentCanDeactivate, 
 	public user = signal<User | null>(null);
 	public device_type = signal<DeviceType>('desktop');
 	public settings = signal<ParsedAppSettings | null>(null);
-	private dirty_count: WritableSignal<number> = signal(0);
+	private dirty_count = signal<number>(0);
 
 	private active_event: EventData | null = null;
 	private subscriptions: Subscription = new Subscription();
