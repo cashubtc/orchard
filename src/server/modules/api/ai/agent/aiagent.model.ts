@@ -38,16 +38,16 @@ export class OrchardAgent {
 	@Field({description: 'Agent name'})
 	name: string;
 
-	@Field({nullable: true, description: 'Agent description'})
+	@Field(() => String, {nullable: true, description: 'Agent description'})
 	description: string | null;
 
 	@Field({description: 'Whether the agent is active'})
 	active: boolean;
 
-	@Field({nullable: true, description: 'LLM model identifier'})
+	@Field(() => String, {nullable: true, description: 'LLM model identifier'})
 	model: string | null;
 
-	@Field({nullable: true, description: 'System message used to instruct the agent'})
+	@Field(() => String, {nullable: true, description: 'System message used to instruct the agent'})
 	system_message: string | null;
 
 	@Field(() => [String], {nullable: true, description: 'List of tool identifiers available to the agent'})
@@ -59,7 +59,7 @@ export class OrchardAgent {
 	@Field(() => AgentScheduleKind, {description: 'Schedule type'})
 	schedule_kind: AgentScheduleKind;
 
-	@Field({nullable: true, description: 'IANA timezone for schedule evaluation'})
+	@Field(() => String, {nullable: true, description: 'IANA timezone for schedule evaluation'})
 	schedule_tz: string | null;
 
 	@Field(() => UnixTimestamp, {nullable: true, description: 'Timestamp of the last execution'})
@@ -102,7 +102,7 @@ export class OrchardAgentRun {
 	@Field(() => AgentRunStatus, {description: 'Current status of the run'})
 	status: AgentRunStatus;
 
-	@Field({nullable: true, description: 'Cron schedule that triggered the run'})
+	@Field(() => String, {nullable: true, description: 'Cron schedule that triggered the run'})
 	schedule_trigger: string | null;
 
 	@Field(() => UnixTimestamp, {description: 'Timestamp when the run started'})
@@ -111,10 +111,10 @@ export class OrchardAgentRun {
 	@Field(() => UnixTimestamp, {nullable: true, description: 'Timestamp when the run completed'})
 	completed_at: number | null;
 
-	@Field({nullable: true, description: 'Result output of the run'})
+	@Field(() => String, {nullable: true, description: 'Result output of the run'})
 	result: string | null;
 
-	@Field({nullable: true, description: 'Error message if the run failed'})
+	@Field(() => String, {nullable: true, description: 'Error message if the run failed'})
 	error: string | null;
 
 	@Field(() => Int, {nullable: true, description: 'Number of tokens consumed during the run'})

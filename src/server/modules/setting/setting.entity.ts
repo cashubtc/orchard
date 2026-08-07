@@ -5,7 +5,7 @@ import {SettingKey, SettingValue} from './setting.enums';
 
 @Entity('settings')
 export class Setting {
-	@PrimaryColumn({length: 100})
+	@PrimaryColumn({type: 'varchar', length: 100})
 	key: SettingKey; // unique setting key
 
 	@Column({type: 'text'})

@@ -1,5 +1,5 @@
 /* Vendor Dependencies */
-import {Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn} from 'typeorm';
+import {Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, type Relation} from 'typeorm';
 /* Local Dependencies */
 import {EventLogDetailStatus} from './event.enums';
 import {EventLog} from './event.entity';
@@ -11,7 +11,7 @@ export class EventLogDetail {
 
 	@ManyToOne(() => EventLog, (event) => event.details, {onDelete: 'CASCADE'})
 	@JoinColumn({name: 'event_id'})
-	event: EventLog;
+	event: Relation<EventLog>;
 
 	@Column({type: 'text', length: 100})
 	field: string;

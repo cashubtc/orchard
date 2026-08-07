@@ -19,10 +19,10 @@ export class OrchardCrewUser {
 	@Field({description: 'Whether the user account is active'})
 	active: boolean;
 
-	@Field({nullable: true, description: 'Optional display label for the user'})
+	@Field(() => String, {nullable: true, description: 'Optional display label for the user'})
 	label: string | null;
 
-	@Field({nullable: true, description: 'Telegram chat ID for notifications'})
+	@Field(() => String, {nullable: true, description: 'Telegram chat ID for notifications'})
 	telegram_chat_id: string | null;
 
 	@Field(() => UnixTimestamp, {description: 'Account creation timestamp'})

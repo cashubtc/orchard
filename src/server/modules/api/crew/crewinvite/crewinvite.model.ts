@@ -13,7 +13,7 @@ export class OrchardCrewInvite {
 	@Field({description: '12-character invite code'})
 	token: string;
 
-	@Field({nullable: true, description: 'Suggested username or label for the invitee'})
+	@Field(() => String, {nullable: true, description: 'Suggested username or label for the invitee'})
 	label: string | null;
 
 	@Field(() => UserRole, {description: 'Role to assign when the invite is claimed'})
@@ -22,7 +22,7 @@ export class OrchardCrewInvite {
 	@Field({description: 'ID of the admin who created the invite'})
 	created_by_id: string;
 
-	@Field({nullable: true, description: 'ID of the user who claimed the invite'})
+	@Field(() => String, {nullable: true, description: 'ID of the user who claimed the invite'})
 	claimed_by_id: string | null;
 
 	@Field(() => UnixTimestamp, {nullable: true, description: 'Timestamp when the invite was claimed'})

@@ -1,5 +1,5 @@
 /* Vendor Dependencies */
-import {Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, Index} from 'typeorm';
+import {Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, Index, type Relation} from 'typeorm';
 /* Application Dependencies */
 import {Agent} from '@server/modules/ai/agent/agent.entity';
 /* Local Dependencies */
@@ -14,7 +14,7 @@ export class Conversation {
 
 	@ManyToOne(() => Agent, {onDelete: 'CASCADE'})
 	@JoinColumn({name: 'source_agent_id'})
-	source_agent: Agent;
+	source_agent: Relation<Agent>;
 
 	@Column({type: 'text'})
 	user_id: string;

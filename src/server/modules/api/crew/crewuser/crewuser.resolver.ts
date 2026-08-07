@@ -60,7 +60,8 @@ export class CrewUserResolver {
 	@Mutation(() => OrchardCrewUser, {description: "Update the current user's Telegram chat ID"})
 	async crew_user_update_telegram(
 		@Context() context: any,
-		@Args('telegram_chat_id', {nullable: true, description: 'Telegram chat ID for notifications'}) telegram_chat_id: string | null,
+		@Args('telegram_chat_id', {type: () => String, nullable: true, description: 'Telegram chat ID for notifications'})
+		telegram_chat_id: string | null,
 	): Promise<OrchardCrewUser> {
 		const tag = 'MUTATION { crew_user_update_telegram }';
 		this.logger.debug(tag);
