@@ -1,20 +1,29 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
-import * as fs from 'fs';
-jest.mock('fs');
 /* Local Dependencies */
-import {CredentialService} from './credential.service.js';
+import type {CredentialService as CredentialServiceType} from './credential.service.js';
+
+// Core modules bypass the ESM mock registry, and unstable_mockModule has no automock
+// equivalent, so the surface the service uses is stubbed explicitly. existsSync must stay
+// falsy — the isProbablyPath assertions depend on it.
+jest.unstable_mockModule('fs', () => {
+	const mock = {existsSync: jest.fn(), readFileSync: jest.fn()};
+	return {...mock, default: mock};
+});
+
+const fs = (await import('fs')) as any;
+const {CredentialService} = await import('./credential.service.js');
 
 describe('CredentialService', () => {
-	let credentialService: CredentialService;
+	let credentialService: CredentialServiceType;
 
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [CredentialService],
 		}).compile();
 
-		credentialService = module.get<CredentialService>(CredentialService);
+		credentialService = module.get(CredentialService);
 	});
 
 	it('should be defined', () => {

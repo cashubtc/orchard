@@ -3,16 +3,23 @@ import {Test, TestingModule} from '@nestjs/testing';
 /* Vendor Dependencies */
 import {getRepositoryToken} from '@nestjs/typeorm';
 import {expect} from '@jest/globals';
-import * as bcrypt from 'bcrypt';
 /* Local Dependencies */
-import {UserService} from './user.service.js';
+import type {UserService as UserServiceType} from './user.service.js';
 import {User} from './user.entity.js';
 import {UserRole} from './user.enums.js';
 
-jest.mock('bcrypt');
+// unstable_mockModule has no automock equivalent, so the surface the service uses is
+// stubbed explicitly.
+jest.unstable_mockModule('bcrypt', () => {
+	const mock = {compare: jest.fn(), hash: jest.fn()};
+	return {...mock, default: mock};
+});
+
+const bcrypt = (await import('bcrypt')) as any;
+const {UserService} = await import('./user.service.js');
 
 describe('UserService', () => {
-	let userService: UserService;
+	let userService: UserServiceType;
 	let mockRepository: any;
 
 	beforeEach(async () => {
@@ -28,7 +35,7 @@ describe('UserService', () => {
 			providers: [UserService, {provide: getRepositoryToken(User), useValue: mockRepository}],
 		}).compile();
 
-		userService = module.get<UserService>(UserService);
+		userService = module.get(UserService);
 	});
 
 	it('should be defined', () => {

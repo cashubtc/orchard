@@ -45,6 +45,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Typecheck Specs
+        run: npm run typecheck:spec
+
       - name: Generate Types
         run: npm run generate:types
 

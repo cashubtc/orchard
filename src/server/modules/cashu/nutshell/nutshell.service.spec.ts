@@ -1,27 +1,30 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
+/* Vendor Dependencies */
+import Database from 'better-sqlite3';
 import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 import {Logger} from '@nestjs/common';
 /* Application Dependencies */
+import {mockGrpcModules} from '@server/test/grpc-esm-mocks';
 import {CredentialService} from '@server/modules/credential/credential.service';
 import {MintDatabaseType} from '@server/modules/cashu/mintdb/cashumintdb.enums';
 /* Local Dependencies */
-import {NutshellService} from './nutshell.service.js';
-import * as grpc from '@grpc/grpc-js';
+import type {NutshellService as NutshellServiceType} from './nutshell.service.js';
 
-jest.mock('@server/modules/cashu/mintdb/cashumintdb.helpers', () => ({
-	__esModule: true,
+jest.unstable_mockModule('@server/modules/cashu/mintdb/cashumintdb.helpers', () => ({
 	buildDynamicQuery: jest.fn().mockReturnValue({sql: 'SQL', params: []}),
 	buildCountQuery: jest.fn().mockReturnValue({sql: 'COUNTSQL', params: []}),
 	convertDateToUnixTimestamp: jest.fn().mockImplementation((d: any) => (typeof d === 'number' ? d : 1)),
 	queryRows: jest.fn(),
 	queryRow: jest.fn().mockResolvedValue({count: 1}),
 }));
-import * as helpers from '@server/modules/cashu/mintdb/cashumintdb.helpers';
+const helpers = (await import('@server/modules/cashu/mintdb/cashumintdb.helpers')) as any;
+const {proto_loader, grpc} = await mockGrpcModules();
+const {NutshellService} = await import('./nutshell.service.js');
 
 describe('NutshellService', () => {
-	let nutshellService: NutshellService;
+	let nutshellService: NutshellServiceType;
 	let configService: jest.Mocked<ConfigService>;
 	let credentialService: jest.Mocked<CredentialService>;
 
@@ -34,7 +37,7 @@ describe('NutshellService', () => {
 			],
 		}).compile();
 
-		nutshellService = module.get<NutshellService>(NutshellService);
+		nutshellService = module.get(NutshellService);
 		configService = module.get(ConfigService);
 		credentialService = module.get(CredentialService);
 		jest.clearAllMocks();
@@ -70,12 +73,12 @@ describe('NutshellService', () => {
 		});
 		credentialService.loadPemOrPath.mockReturnValue(Buffer.from('x'));
 		const createSsl = jest.spyOn(grpc.credentials, 'createSsl').mockReturnValue({} as any);
-		const loadSync = jest.spyOn(require('@grpc/proto-loader'), 'loadSync').mockReturnValue({} as any);
-		const loadPackageDefinition = jest.spyOn(grpc, 'loadPackageDefinition').mockReturnValue({cashu: {Mint: jest.fn()}} as any);
+		proto_loader.loadSync.mockReturnValue({});
+		grpc.loadPackageDefinition.mockReturnValue({cashu: {Mint: jest.fn()}});
 		nutshellService.initializeGrpcClient();
 		expect(createSsl).toHaveBeenCalled();
-		expect(loadSync).toHaveBeenCalled();
-		expect(loadPackageDefinition).toHaveBeenCalled();
+		expect(proto_loader.loadSync).toHaveBeenCalled();
+		expect(grpc.loadPackageDefinition).toHaveBeenCalled();
 	});
 
 	it('initializes client with docker host channel options when using mTLS', () => {
@@ -99,9 +102,9 @@ describe('NutshellService', () => {
 		});
 		credentialService.loadPemOrPath.mockReturnValue(Buffer.from('x'));
 		jest.spyOn(grpc.credentials, 'createSsl').mockReturnValue({} as any);
-		jest.spyOn(require('@grpc/proto-loader'), 'loadSync').mockReturnValue('DEF' as any);
+		proto_loader.loadSync.mockReturnValue('DEF');
 		const mint_ctor = jest.fn();
-		jest.spyOn(grpc, 'loadPackageDefinition').mockReturnValue({cashu: {Mint: mint_ctor}} as any);
+		grpc.loadPackageDefinition.mockReturnValue({cashu: {Mint: mint_ctor}});
 		nutshellService.initializeGrpcClient();
 		const args = mint_ctor.mock.calls[0];
 		expect(args[2]).toMatchObject({
@@ -125,12 +128,12 @@ describe('NutshellService', () => {
 		});
 		const createInsecure = jest.spyOn(grpc.credentials, 'createInsecure').mockReturnValue({} as any);
 		const createSsl = jest.spyOn(grpc.credentials, 'createSsl').mockReturnValue({} as any);
-		const loadSync = jest.spyOn(require('@grpc/proto-loader'), 'loadSync').mockReturnValue({} as any);
-		jest.spyOn(grpc, 'loadPackageDefinition').mockReturnValue({cashu: {Mint: jest.fn()}} as any);
+		proto_loader.loadSync.mockReturnValue({});
+		grpc.loadPackageDefinition.mockReturnValue({cashu: {Mint: jest.fn()}});
 		nutshellService.initializeGrpcClient();
 		expect(createInsecure).toHaveBeenCalled();
 		expect(createSsl).not.toHaveBeenCalled();
-		expect(loadSync).toHaveBeenCalled();
+		expect(proto_loader.loadSync).toHaveBeenCalled();
 	});
 
 	it('initializeGrpcClient logs error and returns undefined when loader throws', () => {
@@ -154,8 +157,7 @@ describe('NutshellService', () => {
 		});
 		credentialService.loadPemOrPath.mockReturnValue(Buffer.from('x'));
 		jest.spyOn(grpc.credentials, 'createSsl').mockReturnValue({} as any);
-		const loadSync = jest.spyOn(require('@grpc/proto-loader'), 'loadSync');
-		loadSync.mockImplementation(() => {
+		proto_loader.loadSync.mockImplementation(() => {
 			throw new Error('boom');
 		});
 		const logger_error = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined as any);
@@ -188,10 +190,10 @@ describe('NutshellService', () => {
 		const ca_buf = Buffer.from('a');
 		credentialService.loadPemOrPath.mockReturnValueOnce(key_buf).mockReturnValueOnce(cert_buf).mockReturnValueOnce(ca_buf);
 		const createSsl = jest.spyOn(grpc.credentials, 'createSsl').mockReturnValue({} as any);
-		const loadSync = jest.spyOn(require('@grpc/proto-loader'), 'loadSync').mockReturnValue({} as any);
-		jest.spyOn(grpc, 'loadPackageDefinition').mockReturnValue({cashu: {Mint: jest.fn()}} as any);
+		proto_loader.loadSync.mockReturnValue({});
+		grpc.loadPackageDefinition.mockReturnValue({cashu: {Mint: jest.fn()}});
 		nutshellService.initializeGrpcClient();
-		const load_arg = loadSync.mock.calls[0][0];
+		const load_arg = proto_loader.loadSync.mock.calls[0][0];
 		expect(String(load_arg)).toContain('proto/nutshell/management.proto');
 		expect(createSsl).toHaveBeenCalledWith(ca_buf, key_buf, cert_buf);
 		const logger_log = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined as any);
@@ -424,7 +426,6 @@ describe('NutshellService', () => {
 	});
 
 	it('listFees inner SELECT drops the first row of each partition against an in-memory sqlite', async () => {
-		const Database = require('better-sqlite3');
 		const db = new Database(':memory:');
 		db.exec(`
 			CREATE TABLE balance_log (unit TEXT, time INTEGER, keyset_fees_paid INTEGER);

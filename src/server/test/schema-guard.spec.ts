@@ -1,6 +1,7 @@
 /* Core Dependencies */
 import {readdirSync, readFileSync} from 'fs';
-import {join} from 'path';
+import {join, dirname} from 'path';
+import {fileURLToPath} from 'url';
 
 /**
  * Ensures every onModuleInit / onApplicationBootstrap implementation
@@ -11,8 +12,10 @@ import {join} from 'path';
  * must check this flag and return early, otherwise the build can
  * hang or consume excessive memory on constrained hosts.
  */
+const CURRENT_DIR = dirname(fileURLToPath(import.meta.url));
+
 describe('SCHEMA_ONLY guard', () => {
-	const MODULES_DIR = join(__dirname, '..', 'modules');
+	const MODULES_DIR = join(CURRENT_DIR, '..', 'modules');
 	const HOOK_PATTERN = /(?:async\s+)?(?:public\s+)?(?:async\s+)?on(?:ModuleInit|ApplicationBootstrap)\s*\(/;
 	const GUARD_PATTERN = /process\.env\.SCHEMA_ONLY/;
 
@@ -37,7 +40,7 @@ describe('SCHEMA_ONLY guard', () => {
 		for (const file of files) {
 			const content = readFileSync(file, 'utf-8');
 			if (HOOK_PATTERN.test(content) && !GUARD_PATTERN.test(content)) {
-				const relative = file.replace(join(__dirname, '..', '..', '..') + '/', '');
+				const relative = file.replace(join(CURRENT_DIR, '..', '..', '..') + '/', '');
 				missing.push(relative);
 			}
 		}
