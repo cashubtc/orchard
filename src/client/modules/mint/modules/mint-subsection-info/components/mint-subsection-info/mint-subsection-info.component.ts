@@ -1,13 +1,5 @@
 /* Core Dependencies */
-import {
-	ChangeDetectionStrategy,
-	Component,
-	OnInit,
-	OnDestroy,
-	ChangeDetectorRef,
-	signal,
-	HostListener,
-} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnInit, OnDestroy, ChangeDetectorRef, signal, HostListener} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {FormGroup, FormControl, Validators, FormArray} from '@angular/forms';
 import {toObservable} from '@angular/core/rxjs-interop';

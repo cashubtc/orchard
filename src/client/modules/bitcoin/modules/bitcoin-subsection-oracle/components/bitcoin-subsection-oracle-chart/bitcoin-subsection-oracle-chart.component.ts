@@ -1,15 +1,5 @@
 /* Core Dependencies */
-import {
-	ChangeDetectionStrategy,
-	Component,
-	input,
-	output,
-	effect,
-	signal,
-	untracked,
-	viewChild,
-	OnDestroy,
-} from '@angular/core';
+import {ChangeDetectionStrategy, Component, input, output, effect, signal, untracked, viewChild, OnDestroy} from '@angular/core';
 /* Vendor Dependencies */
 import {BaseChartDirective} from 'ng2-charts';
 import {ChartConfiguration, ChartType as ChartJsType, Plugin} from 'chart.js';
