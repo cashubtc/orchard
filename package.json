@@ -20,6 +20,8 @@
     "start:server:nowatch": "NODE_ENV=development nest start",
     "start:server:debug": "NODE_ENV=development nest start --debug --watch",
     "generate:types": "node -r ./scripts/register.cjs scripts/generate-schema.ts && npx graphql-codegen",
+    "typecheck:spec": "tsc -p tsconfig.server.spec.json --noEmit",
+    "ci": "npm run format:check && npm run lint && npm run typecheck:spec && npm run generate:types && npm run test && npm run build",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js && ng test --watch=false --browsers=ChromeHeadless --progress=false",
