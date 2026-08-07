@@ -7,9 +7,9 @@ import {LightningService} from '@server/modules/lightning/lightning/lightning.se
 import {TaprootAssetsService} from '@server/modules/tapass/tapass/tapass.service';
 import {AnalyticsCheckpoint} from '@server/modules/analytics/analytics-checkpoint.entity';
 /* Local Dependencies */
-import {BitcoinAnalyticsService} from './btcanalytics.service';
-import {BitcoinAnalytics} from './btcanalytics.entity';
-import {BitcoinAnalyticsMetric} from './btcanalytics.enums';
+import {BitcoinAnalyticsService} from './btcanalytics.service.js';
+import {BitcoinAnalytics} from './btcanalytics.entity.js';
+import {BitcoinAnalyticsMetric} from './btcanalytics.enums.js';
 
 describe('BitcoinAnalyticsService', () => {
 	let service: BitcoinAnalyticsService;

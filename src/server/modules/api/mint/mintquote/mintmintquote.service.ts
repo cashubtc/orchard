@@ -10,8 +10,8 @@ import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.cla
 import {MintService} from '@server/modules/api/mint/mint.service';
 import {ErrorService} from '@server/modules/error/error.service';
 /* Local Dependencies */
-import {OrchardMintMintQuote} from './mintmintquote.model';
-import {OrchardMintNut04Update, OrchardMintNut04QuoteUpdate} from './mintmintquote.model';
+import {OrchardMintMintQuote} from './mintmintquote.model.js';
+import {OrchardMintNut04Update, OrchardMintNut04QuoteUpdate} from './mintmintquote.model.js';
 
 @Injectable()
 export class MintMintQuoteService {

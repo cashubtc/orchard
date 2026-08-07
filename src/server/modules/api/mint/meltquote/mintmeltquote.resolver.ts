@@ -9,10 +9,10 @@ import {UserRole} from '@server/modules/user/user.enums';
 import {LogEvent} from '@server/modules/event/event.decorator';
 import {EventLogType} from '@server/modules/event/event.enums';
 /* Local Dependencies */
-import {MintMeltQuoteService} from './mintmeltquote.service';
-import {MintMeltQuoteInterceptor} from './mintmeltquote.interceptor';
-import {OrchardMintMeltQuote} from './mintmeltquote.model';
-import {OrchardMintNut05Update, OrchardMintNut05QuoteUpdate} from './mintmeltquote.model';
+import {MintMeltQuoteService} from './mintmeltquote.service.js';
+import {MintMeltQuoteInterceptor} from './mintmeltquote.interceptor.js';
+import {OrchardMintMeltQuote} from './mintmeltquote.model.js';
+import {OrchardMintNut05Update, OrchardMintNut05QuoteUpdate} from './mintmeltquote.model.js';
 
 @Resolver()
 export class MintMeltQuoteResolver {

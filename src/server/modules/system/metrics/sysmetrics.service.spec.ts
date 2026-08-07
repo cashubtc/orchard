@@ -3,8 +3,8 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {getRepositoryToken} from '@nestjs/typeorm';
 import {expect} from '@jest/globals';
 /* Local Dependencies */
-import {SystemMetricsService} from './sysmetrics.service';
-import {SystemMetrics} from './sysmetrics.entity';
+import {SystemMetricsService} from './sysmetrics.service.js';
+import {SystemMetrics} from './sysmetrics.entity.js';
 
 describe('SystemMetricsService', () => {
 	let service: SystemMetricsService;
@@ -136,7 +136,7 @@ describe('SystemMetricsService', () => {
 		});
 
 		it('should filter by metrics when provided', async () => {
-			const {SystemMetric} = await import('./sysmetrics.enums');
+			const {SystemMetric} = await import('./sysmetrics.enums.js');
 			await service.getMetrics(1000, 2000, [SystemMetric.cpu_percent, SystemMetric.memory_percent]);
 			expect(repository.find).toHaveBeenCalledTimes(1);
 		});

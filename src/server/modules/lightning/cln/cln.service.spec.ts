@@ -5,7 +5,7 @@ import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
 import {CredentialService} from '@server/modules/credential/credential.service';
 /* Local Dependencies */
-import {ClnService} from './cln.service';
+import {ClnService} from './cln.service.js';
 import * as grpc from '@grpc/grpc-js';
 
 describe('ClnService', () => {

@@ -8,8 +8,8 @@ import {DateTime} from 'luxon';
 import {UserRole} from '@server/modules/user/user.enums';
 import {EVENT_LOG_KEY, EventLogMetadata} from '@server/modules/event/event.decorator';
 /* Local Dependencies */
-import {EventLogActorType} from './event.enums';
-import {EventLogContext, EventLogError} from './event.interfaces';
+import {EventLogActorType} from './event.enums.js';
+import {EventLogContext, EventLogError} from './event.interfaces.js';
 
 /**
  * Derive the event log actor type from the request user context.

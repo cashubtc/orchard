@@ -9,7 +9,7 @@ import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.cla
 import {SettingKey, SettingValue} from '@server/modules/setting/setting.enums';
 import {MessageService} from '@server/modules/message/message.service';
 /* Local Dependencies */
-import {ApiSettingService} from './setting.service';
+import {ApiSettingService} from './setting.service.js';
 
 /**
  * Test suite for ApiSettingService

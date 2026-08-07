@@ -9,7 +9,7 @@ import {NutshellService} from '@server/modules/cashu/nutshell/nutshell.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {MintType} from '@server/modules/cashu/cashu.enums';
 /* Local Dependencies */
-import {CashuMintInfoRpc} from './cashumintrpc.types';
+import {CashuMintInfoRpc} from './cashumintrpc.types.js';
 
 @Injectable()
 export class CashuMintRpcService implements OnModuleInit {

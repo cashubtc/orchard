@@ -3,7 +3,7 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {promises as fs} from 'fs';
 /* Local Dependencies */
-import {SystemInfoService} from './sysinfo.service';
+import {SystemInfoService} from './sysinfo.service.js';
 
 describe('SystemInfoService', () => {
 	let service: SystemInfoService;

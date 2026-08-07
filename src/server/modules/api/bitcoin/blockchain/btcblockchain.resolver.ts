@@ -5,8 +5,8 @@ import {Resolver, Subscription, Query} from '@nestjs/graphql';
 /* Vendor Dependencies */
 import {PubSub} from 'graphql-subscriptions';
 /* Local Dependencies */
-import {BitcoinBlockchainService} from './btcblockchain.service';
-import {OrchardBitcoinBlockCount, OrchardBitcoinBlockchainInfo} from './btcblockchain.model';
+import {BitcoinBlockchainService} from './btcblockchain.service.js';
+import {OrchardBitcoinBlockCount, OrchardBitcoinBlockchainInfo} from './btcblockchain.model.js';
 
 const pubSub = new PubSub();
 

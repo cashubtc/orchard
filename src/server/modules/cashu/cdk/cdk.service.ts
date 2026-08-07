@@ -39,7 +39,7 @@ import {
 } from '@server/modules/cashu/mintdb/cashumintdb.helpers';
 import {MintDatabaseType} from '@server/modules/cashu/mintdb/cashumintdb.enums';
 /* Local Dependencies */
-import {CdkMintProof} from './cdk.types';
+import {CdkMintProof} from './cdk.types.js';
 
 @Injectable()
 export class CdkService {

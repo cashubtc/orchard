@@ -7,10 +7,10 @@ import {SettingService} from '@server/modules/setting/setting.service';
 import {SettingKey} from '@server/modules/setting/setting.enums';
 import {safeParse} from '@server/modules/utilities';
 /* Local Dependencies */
-import {AiVendor} from '../ai.vendor';
-import {AiModel, AiMessage, AiTool, AiStreamChunk, AiToolCall} from '../ai.types';
-import {AiMessageRole} from '../ai.enums';
-import {OpenRouterModelsResponse, OpenRouterModel, OpenRouterChatChunk, OpenRouterToolCallDelta} from './openrouter.types';
+import {AiVendor} from '../ai.vendor.js';
+import {AiModel, AiMessage, AiTool, AiStreamChunk, AiToolCall} from '../ai.types.js';
+import {AiMessageRole} from '../ai.enums.js';
+import {OpenRouterModelsResponse, OpenRouterModel, OpenRouterChatChunk, OpenRouterToolCallDelta} from './openrouter.types.js';
 
 @Injectable()
 export class OpenRouterService implements AiVendor {

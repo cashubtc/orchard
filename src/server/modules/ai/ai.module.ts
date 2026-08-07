@@ -4,9 +4,9 @@ import {Module} from '@nestjs/common';
 import {FetchModule} from '@server/modules/fetch/fetch.module';
 import {SettingModule} from '@server/modules/setting/setting.module';
 /* Local Dependencies */
-import {AiService} from './ai.service';
-import {OllamaService} from './ollama/ollama.service';
-import {OpenRouterService} from './openrouter/openrouter.service';
+import {AiService} from './ai.service.js';
+import {OllamaService} from './ollama/ollama.service.js';
+import {OpenRouterService} from './openrouter/openrouter.service.js';
 
 @Module({
 	imports: [FetchModule, SettingModule],

@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {AgentToolCategory, AgentToolName, AgentToolRole} from '../agent.enums';
+import {AgentToolCategory, AgentToolName, AgentToolRole} from '../agent.enums.js';
 import {AiToolEntry, ToolGuardName} from '@server/modules/ai/tools/tool.types';
 
 /* *******************************************************

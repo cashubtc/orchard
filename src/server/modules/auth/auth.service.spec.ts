@@ -10,8 +10,8 @@ import {getRepositoryToken} from '@nestjs/typeorm';
 import {UserService} from '@server/modules/user/user.service';
 import {UserRole} from '@server/modules/user/user.enums';
 /* Local Dependencies */
-import {AuthService} from './auth.service';
-import {TokenBlacklist} from './token-blacklist.entity';
+import {AuthService} from './auth.service.js';
+import {TokenBlacklist} from './token-blacklist.entity.js';
 
 describe('AuthService', () => {
 	let authService: AuthService;

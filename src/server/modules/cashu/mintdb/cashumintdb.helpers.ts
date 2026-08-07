@@ -1,8 +1,8 @@
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
 /* Local Dependencies */
-import {CashuMintDatabase} from './cashumintdb.types';
-import {MintDatabaseType} from './cashumintdb.enums';
+import {CashuMintDatabase} from './cashumintdb.types.js';
+import {MintDatabaseType} from './cashumintdb.enums.js';
 
 interface BuildQueryOptions {
 	db_type: MintDatabaseType;

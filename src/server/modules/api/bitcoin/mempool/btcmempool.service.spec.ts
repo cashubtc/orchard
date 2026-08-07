@@ -7,8 +7,8 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {BitcoinMempoolService} from './btcmempool.service';
-import {OrchardBitcoinMempoolTransaction} from './btcmempool.model';
+import {BitcoinMempoolService} from './btcmempool.service.js';
+import {OrchardBitcoinMempoolTransaction} from './btcmempool.model.js';
 
 describe('BitcoinMempoolService', () => {
 	let bitcoinMempoolService: BitcoinMempoolService;

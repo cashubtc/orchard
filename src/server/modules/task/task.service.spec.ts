@@ -16,7 +16,7 @@ import {ConversationService} from '@server/modules/ai/conversation/conversation.
 import {SystemMetricsService} from '@server/modules/system/metrics/sysmetrics.service';
 import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 /* Local Dependencies */
-import {TaskService} from './task.service';
+import {TaskService} from './task.service.js';
 
 describe('TaskService', () => {
 	let taskService: TaskService;

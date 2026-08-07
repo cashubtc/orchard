@@ -6,7 +6,7 @@ import {AiService} from '@server/modules/ai/ai.service';
 import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 /* Local Dependencies */
-import {AiChatService} from './aichat.service';
+import {AiChatService} from './aichat.service.js';
 
 describe('AiChatService', () => {
 	let aiChatService: AiChatService;

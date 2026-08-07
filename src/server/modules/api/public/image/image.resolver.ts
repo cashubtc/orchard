@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Local Dependencies */
-import {PublicImageService} from './image.service';
-import {OrchardPublicImage} from './image.model';
+import {PublicImageService} from './image.service.js';
+import {OrchardPublicImage} from './image.model.js';
 
 @Resolver(() => OrchardPublicImage)
 export class PublicImageResolver {

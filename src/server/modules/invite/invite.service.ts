@@ -8,7 +8,7 @@ import {DateTime} from 'luxon';
 import {UserRole} from '@server/modules/user/user.enums';
 import {User} from '@server/modules/user/user.entity';
 /* Local Dependencies */
-import {Invite} from './invite.entity';
+import {Invite} from './invite.entity.js';
 
 @Injectable()
 export class InviteService {

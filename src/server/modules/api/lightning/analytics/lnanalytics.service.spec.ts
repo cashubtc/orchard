@@ -9,7 +9,7 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {ApiLightningAnalyticsService} from './lnanalytics.service';
+import {ApiLightningAnalyticsService} from './lnanalytics.service.js';
 
 describe('ApiLightningAnalyticsService', () => {
 	let service: ApiLightningAnalyticsService;

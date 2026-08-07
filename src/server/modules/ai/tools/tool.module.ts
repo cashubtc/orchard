@@ -4,7 +4,7 @@ import {Module} from '@nestjs/common';
 import {MessageModule} from '@server/modules/message/message.module';
 import {MintMetricsModule} from '@server/modules/cashu/mintmetrics/mintmetrics.module';
 /* Local Dependencies */
-import {ToolService} from './tool.service';
+import {ToolService} from './tool.service.js';
 
 @Module({
 	imports: [MessageModule, MintMetricsModule],

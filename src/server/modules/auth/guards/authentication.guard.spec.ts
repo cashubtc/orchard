@@ -10,7 +10,7 @@ import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.cla
 import {UserRole} from '@server/modules/user/user.enums';
 import {AuthService} from '@server/modules/auth/auth.service';
 /* Local Dependencies */
-import {GqlAuthenticationGuard} from './authentication.guard';
+import {GqlAuthenticationGuard} from './authentication.guard.js';
 
 describe('GqlAuthenticationGuard', () => {
 	let guard: GqlAuthenticationGuard;

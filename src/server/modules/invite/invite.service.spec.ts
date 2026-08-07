@@ -8,8 +8,8 @@ import {DateTime} from 'luxon';
 import {UserRole} from '@server/modules/user/user.enums';
 import {User} from '@server/modules/user/user.entity';
 /* Local Dependencies */
-import {InviteService} from './invite.service';
-import {Invite} from './invite.entity';
+import {InviteService} from './invite.service.js';
+import {Invite} from './invite.entity.js';
 
 describe('InviteService', () => {
 	let inviteService: InviteService;

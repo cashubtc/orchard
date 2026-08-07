@@ -10,8 +10,8 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {MintActivityService} from './mintactivity.service';
-import {OrchardMintActivitySummary} from './mintactivity.model';
+import {MintActivityService} from './mintactivity.service.js';
+import {OrchardMintActivitySummary} from './mintactivity.model.js';
 
 /** Fixed "now" aligned to an hour boundary for predictable bucket math */
 const MOCK_NOW_SECONDS = 1700006400;

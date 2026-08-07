@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {expect} from '@jest/globals';
 /* Local Dependencies */
-import {parsePrometheusText, canonicalizeLabels, parseCanonicalLabels, flattenFamily} from './prometheus.helpers';
+import {parsePrometheusText, canonicalizeLabels, parseCanonicalLabels, flattenFamily} from './prometheus.helpers.js';
 
 /** Trimmed fixture copied from a live cdk-mintd /metrics response */
 const CDK_METRICS_FIXTURE = `# HELP cdk_auth_attempts_total Total authentication attempts

@@ -3,8 +3,8 @@ import {Module} from '@nestjs/common';
 /* Application Dependencies */
 import {ToolModule} from '@server/modules/ai/tools/tool.module';
 /* Local Dependencies */
-import {AiToolsResolver} from './aitools.resolver';
-import {AiToolsService} from './aitools.service';
+import {AiToolsResolver} from './aitools.resolver.js';
+import {AiToolsService} from './aitools.service.js';
 
 @Module({
 	imports: [ToolModule],

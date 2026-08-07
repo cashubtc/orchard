@@ -21,9 +21,9 @@ import {
 import {MintQuoteState, MeltQuoteState, MintProofState} from '@server/modules/cashu/cashu.enums';
 import {AnalyticsBackfillStatus} from '@server/modules/analytics/analytics.interfaces';
 /* Native Dependencies */
-import {MintAnalytics} from './mintanalytics.entity';
-import {MintAnalyticsMetric} from './mintanalytics.enums';
-import {MintAnalyticsCachedArgs} from './mintanalytics.interfaces';
+import {MintAnalytics} from './mintanalytics.entity.js';
+import {MintAnalyticsMetric} from './mintanalytics.enums.js';
+import {MintAnalyticsCachedArgs} from './mintanalytics.interfaces.js';
 
 const BATCH_SIZE = 500;
 const BATCH_DELAY_MS = 5000;

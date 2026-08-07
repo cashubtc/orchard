@@ -4,7 +4,7 @@ import {expect} from '@jest/globals';
 import * as fs from 'fs';
 jest.mock('fs');
 /* Local Dependencies */
-import {CredentialService} from './credential.service';
+import {CredentialService} from './credential.service.js';
 
 describe('CredentialService', () => {
 	let credentialService: CredentialService;

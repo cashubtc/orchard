@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Local Dependencies */
-import {OrchardErrorCode, OrchardErrorMessages} from './error.types';
+import {OrchardErrorCode, OrchardErrorMessages} from './error.types.js';
 
 @Injectable()
 export class ErrorService {

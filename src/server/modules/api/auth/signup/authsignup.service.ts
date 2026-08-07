@@ -10,7 +10,7 @@ import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.cla
 /* Native Dependencies */
 import {OrchardAuthentication} from '@server/modules/api/auth/authentication/authentication.model';
 /* Local Dependencies */
-import {AuthSignupInput} from './authsignup.input';
+import {AuthSignupInput} from './authsignup.input.js';
 
 @Injectable()
 export class AuthSignupService {

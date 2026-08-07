@@ -4,8 +4,8 @@ import {Module} from '@nestjs/common';
 import {ErrorModule} from '@server/modules/error/error.module';
 import {EventLogModule} from '@server/modules/event/event.module';
 /* Local Dependencies */
-import {EventLogResolver} from './event.resolver';
-import {ApiEventLogService} from './event.service';
+import {EventLogResolver} from './event.resolver.js';
+import {ApiEventLogService} from './event.service.js';
 
 @Module({
 	imports: [ErrorModule, EventLogModule],

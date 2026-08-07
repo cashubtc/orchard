@@ -4,8 +4,8 @@ import {Module} from '@nestjs/common';
 import {CashuMintAnalyticsModule} from '@server/modules/cashu/mintanalytics/mintanalytics.module';
 import {ErrorModule} from '@server/modules/error/error.module';
 /* Local Dependencies */
-import {MintAnalyticsResolver} from './mintanalytics.resolver';
-import {MintAnalyticsService} from './mintanalytics.service';
+import {MintAnalyticsResolver} from './mintanalytics.resolver.js';
+import {MintAnalyticsService} from './mintanalytics.service.js';
 
 @Module({
 	imports: [CashuMintAnalyticsModule, ErrorModule],

@@ -1,7 +1,7 @@
 /* Vendor Dependencies */
 import {Entity, Column, PrimaryColumn} from 'typeorm';
 /* Local Dependencies */
-import {SettingKey, SettingValue} from './setting.enums';
+import {SettingKey, SettingValue} from './setting.enums.js';
 
 @Entity('settings')
 export class Setting {

@@ -6,8 +6,8 @@ import {LightningModule} from '@server/modules/lightning/lightning/lightning.mod
 import {TaprootAssetsModule} from '@server/modules/tapass/tapass/tapass.module';
 import {AnalyticsCheckpoint} from '@server/modules/analytics/analytics-checkpoint.entity';
 /* Local Dependencies */
-import {BitcoinAnalytics} from './btcanalytics.entity';
-import {BitcoinAnalyticsService} from './btcanalytics.service';
+import {BitcoinAnalytics} from './btcanalytics.entity.js';
+import {BitcoinAnalyticsService} from './btcanalytics.service.js';
 
 @Module({
 	imports: [TypeOrmModule.forFeature([BitcoinAnalytics, AnalyticsCheckpoint]), LightningModule, TaprootAssetsModule],

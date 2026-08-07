@@ -6,8 +6,8 @@ import {FetchService} from '@server/modules/fetch/fetch.service';
 import {SettingService} from '@server/modules/setting/setting.service';
 import {SettingKey} from '@server/modules/setting/setting.enums';
 /* Local Dependencies */
-import {OpenRouterService} from './openrouter.service';
-import {AiMessageRole} from '../ai.enums';
+import {OpenRouterService} from './openrouter.service.js';
+import {AiMessageRole} from '../ai.enums.js';
 
 describe('OpenRouterService', () => {
 	let service: OpenRouterService;

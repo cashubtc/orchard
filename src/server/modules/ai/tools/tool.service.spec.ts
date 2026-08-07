@@ -6,7 +6,7 @@ import {makeExecutableSchema} from '@graphql-tools/schema';
 import {AgentToolCategory, AgentToolName} from '@server/modules/ai/agent/agent.enums';
 import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 /* Local Dependencies */
-import {ToolService} from './tool.service';
+import {ToolService} from './tool.service.js';
 
 const mock_mint_metrics_resolver = jest.fn().mockReturnValue([
 	{

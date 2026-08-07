@@ -7,10 +7,10 @@ import {UserRole} from '@server/modules/user/user.enums';
 import {LogEvent} from '@server/modules/event/event.decorator';
 import {EventLogType} from '@server/modules/event/event.enums';
 /* Local Dependencies */
-import {MintQuoteService} from './mintquote.service';
-import {MintQuoteInterceptor} from './mintquote.interceptor';
-import {OrchardMintQuoteTtls} from './mintquote.model';
-import {MintQuoteTtlUpdateInput} from './mintquote.input';
+import {MintQuoteService} from './mintquote.service.js';
+import {MintQuoteInterceptor} from './mintquote.interceptor.js';
+import {OrchardMintQuoteTtls} from './mintquote.model.js';
+import {MintQuoteTtlUpdateInput} from './mintquote.input.js';
 
 @Resolver(() => [OrchardMintQuoteTtls])
 export class MintQuoteResolver {

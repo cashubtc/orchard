@@ -4,9 +4,9 @@ import {InjectRepository} from '@nestjs/typeorm';
 /* Vendor Dependencies */
 import {Repository, SelectQueryBuilder} from 'typeorm';
 /* Local Dependencies */
-import {EventLog} from './event.entity';
-import {EventLogDetail} from './event-detail.entity';
-import {CreateEventLogInput, EventLogFilters} from './event.interfaces';
+import {EventLog} from './event.entity.js';
+import {EventLogDetail} from './event-detail.entity.js';
+import {CreateEventLogInput, EventLogFilters} from './event.interfaces.js';
 
 @Injectable()
 export class EventLogService {

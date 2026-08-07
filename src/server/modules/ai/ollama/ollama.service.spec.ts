@@ -6,8 +6,8 @@ import {FetchService} from '@server/modules/fetch/fetch.service';
 import {SettingService} from '@server/modules/setting/setting.service';
 import {SettingKey} from '@server/modules/setting/setting.enums';
 /* Local Dependencies */
-import {OllamaService} from './ollama.service';
-import {AiMessageRole} from '../ai.enums';
+import {OllamaService} from './ollama.service.js';
+import {AiMessageRole} from '../ai.enums.js';
 
 describe('OllamaService', () => {
 	let service: OllamaService;

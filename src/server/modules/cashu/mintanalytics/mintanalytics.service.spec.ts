@@ -8,8 +8,8 @@ import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb
 import {CashuMintApiService} from '@server/modules/cashu/mintapi/cashumintapi.service';
 import {AnalyticsCheckpoint} from '@server/modules/analytics/analytics-checkpoint.entity';
 /* Local Dependencies */
-import {CashuMintAnalyticsService} from './mintanalytics.service';
-import {MintAnalytics} from './mintanalytics.entity';
+import {CashuMintAnalyticsService} from './mintanalytics.service.js';
+import {MintAnalytics} from './mintanalytics.entity.js';
 
 describe('CashuMintAnalyticsService', () => {
 	let service: CashuMintAnalyticsService;

@@ -7,9 +7,9 @@ import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {BitcoinRpcService} from '@server/modules/bitcoin/rpc/btcrpc.service';
 /* Local Dependencies */
-import {UTXOracleRunOptions, UTXOracleResult} from './utxoracle.types';
-import {UTXOracle} from './utxoracle.entity';
-import {UTXOracleProgressTracker} from './utxoracle.progress';
+import {UTXOracleRunOptions, UTXOracleResult} from './utxoracle.types.js';
+import {UTXOracle} from './utxoracle.entity.js';
+import {UTXOracleProgressTracker} from './utxoracle.progress.js';
 
 @Injectable()
 export class BitcoinUTXOracleService {

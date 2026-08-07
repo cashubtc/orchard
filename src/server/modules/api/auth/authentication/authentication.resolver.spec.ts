@@ -5,7 +5,7 @@ import {expect} from '@jest/globals';
 import {PUBLIC_KEY} from '@server/modules/auth/decorators/auth.decorator';
 import {GqlRefreshGuard} from '@server/modules/security/guards/refresh.guard';
 /* Local Dependencies */
-import {AuthAuthenticationResolver} from './authentication.resolver';
+import {AuthAuthenticationResolver} from './authentication.resolver.js';
 
 describe('AuthAuthenticationResolver guard metadata', () => {
 	/**

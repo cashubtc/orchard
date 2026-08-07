@@ -12,8 +12,8 @@ import {PromFamily} from '@server/modules/prometheus/prometheus.types';
 import {METRICS_RETENTION_DAYS, METRICS_DOWNSAMPLE_AFTER_DAYS} from '@server/modules/system/metrics/sysmetrics.constants';
 import {MintType} from '@server/modules/cashu/cashu.enums';
 /* Local Dependencies */
-import {MintMetrics} from './mintmetrics.entity';
-import {MintMetricType} from './mintmetrics.enums';
+import {MintMetrics} from './mintmetrics.entity.js';
+import {MintMetricType} from './mintmetrics.enums.js';
 
 const STORED_FAMILY_REGEX = /^(cdk_|process_)/;
 const MAX_LABEL_SETS_PER_FAMILY = 100;

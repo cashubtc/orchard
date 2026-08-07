@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Local Dependencies */
-import {BitcoinBlockService} from './btcblock.service';
-import {OrchardBitcoinBlock, OrchardBitcoinBlockTemplate} from './btcblock.model';
+import {BitcoinBlockService} from './btcblock.service.js';
+import {OrchardBitcoinBlock, OrchardBitcoinBlockTemplate} from './btcblock.model.js';
 
 @Resolver(() => OrchardBitcoinBlock)
 export class BitcoinBlockResolver {

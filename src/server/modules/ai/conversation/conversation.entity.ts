@@ -3,7 +3,7 @@ import {Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, Index, ty
 /* Application Dependencies */
 import {Agent} from '@server/modules/ai/agent/agent.entity';
 /* Local Dependencies */
-import {ConversationStatus} from './conversation.enums';
+import {ConversationStatus} from './conversation.enums.js';
 
 @Entity('conversations')
 @Index('IDX_conversations_chat_status', ['chat_id', 'status'])

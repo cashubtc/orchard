@@ -5,7 +5,7 @@ import {expect} from '@jest/globals';
 import {ErrorService} from '@server/modules/error/error.service';
 import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
 /* Local Dependencies */
-import {LightningChannelService} from './lnchannel.service';
+import {LightningChannelService} from './lnchannel.service.js';
 
 describe('LightningChannelService', () => {
 	let lightningChannelService: LightningChannelService;

@@ -2,7 +2,7 @@
 import {Module} from '@nestjs/common';
 import {TypeOrmModule} from '@nestjs/typeorm';
 /* Local Dependencies */
-import {AnalyticsCheckpoint} from './analytics-checkpoint.entity';
+import {AnalyticsCheckpoint} from './analytics-checkpoint.entity.js';
 
 /**
  * Shared analytics module providing common entities and utilities

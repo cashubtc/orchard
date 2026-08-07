@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query} from '@nestjs/graphql';
 /* Internal Dependencies */
-import {AiHealthService} from './aihealth.service';
-import {OrchardAiHealth} from './aihealth.model';
+import {AiHealthService} from './aihealth.service.js';
+import {OrchardAiHealth} from './aihealth.model.js';
 
 @Resolver(() => OrchardAiHealth)
 export class AiHealthResolver {

@@ -7,8 +7,8 @@ import {EventLogActorType, EventLogSection, EventLogEntityType, EventLogType, Ev
 import {OrchardCommonCount} from '@server/modules/api/common/entity-count.model';
 import {OrchardCommonGenesis} from '@server/modules/api/common/entity-genesis.model';
 /* Local Dependencies */
-import {ApiEventLogService} from './event.service';
-import {OrchardEventLog} from './event.model';
+import {ApiEventLogService} from './event.service.js';
+import {OrchardEventLog} from './event.model.js';
 
 @Resolver()
 export class EventLogResolver {

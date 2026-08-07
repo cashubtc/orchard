@@ -4,7 +4,7 @@ import {Module} from '@nestjs/common';
 import {FetchModule} from '@server/modules/fetch/fetch.module';
 import {CoreModule} from '@server/modules/bitcoin/core/core.module';
 /* Local Dependencies */
-import {BitcoinRpcService} from './btcrpc.service';
+import {BitcoinRpcService} from './btcrpc.service.js';
 
 @Module({
 	imports: [FetchModule, CoreModule],

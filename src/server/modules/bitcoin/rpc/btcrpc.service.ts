@@ -13,7 +13,7 @@ import {
 	BitcoinTransaction,
 	BitcoinFeeEstimate,
 	BitcoinBlockTemplate,
-} from './btcrpc.types';
+} from './btcrpc.types.js';
 
 @Injectable()
 export class BitcoinRpcService implements OnModuleInit {

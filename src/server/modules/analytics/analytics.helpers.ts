@@ -1,7 +1,7 @@
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
 /* Native Dependencies */
-import {AnalyticsInterval} from './analytics.enums';
+import {AnalyticsInterval} from './analytics.enums.js';
 
 /**
  * Computes the interval bucket start date for a given timestamp

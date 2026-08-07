@@ -8,9 +8,9 @@ import {ErrorModule} from '@server/modules/error/error.module';
 import {EventLogModule} from '@server/modules/event/event.module';
 import {MintService} from '@server/modules/api/mint/mint.service';
 /* Local Dependencies */
-import {MintKeysetService} from './mintkeyset.service';
-import {MintKeysetResolver} from './mintkeyset.resolver';
-import {MintKeysetInterceptor} from './mintkeyset.interceptor';
+import {MintKeysetService} from './mintkeyset.service.js';
+import {MintKeysetResolver} from './mintkeyset.resolver.js';
+import {MintKeysetInterceptor} from './mintkeyset.interceptor.js';
 
 @Module({
 	imports: [CashuMintDatabaseModule, CashuMintAnalyticsModule, CashuMintRpcModule, ErrorModule, EventLogModule],

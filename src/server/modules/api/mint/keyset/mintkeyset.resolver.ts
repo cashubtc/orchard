@@ -8,9 +8,9 @@ import {UserRole} from '@server/modules/user/user.enums';
 import {LogEvent} from '@server/modules/event/event.decorator';
 import {EventLogType} from '@server/modules/event/event.enums';
 /* Local Dependencies */
-import {MintKeysetService} from './mintkeyset.service';
-import {OrchardMintKeyset, OrchardMintKeysetCount, OrchardMintKeysetRotation} from './mintkeyset.model';
-import {MintKeysetInterceptor} from './mintkeyset.interceptor';
+import {MintKeysetService} from './mintkeyset.service.js';
+import {OrchardMintKeyset, OrchardMintKeysetCount, OrchardMintKeysetRotation} from './mintkeyset.model.js';
+import {MintKeysetInterceptor} from './mintkeyset.interceptor.js';
 
 @Resolver()
 export class MintKeysetResolver {

@@ -39,7 +39,7 @@ import {
 } from '@server/modules/cashu/mintdb/cashumintdb.helpers';
 import {MintDatabaseType} from '@server/modules/cashu/mintdb/cashumintdb.enums';
 /* Local Dependencies */
-import {NutshellMintMintQuote, NutshellMintMeltQuote, NutshellMintEcash} from './nutshell.types';
+import {NutshellMintMintQuote, NutshellMintMeltQuote, NutshellMintEcash} from './nutshell.types.js';
 
 @Injectable()
 export class NutshellService {

@@ -6,7 +6,7 @@ import {MintAnalyticsMetric} from '@server/modules/cashu/mintanalytics/mintanaly
 import {AnalyticsInterval} from '@server/modules/analytics/analytics.enums';
 import {ErrorService} from '@server/modules/error/error.service';
 /* Local Dependencies */
-import {MintAnalyticsService} from './mintanalytics.service';
+import {MintAnalyticsService} from './mintanalytics.service.js';
 
 describe('MintAnalyticsService', () => {
 	let service: MintAnalyticsService;

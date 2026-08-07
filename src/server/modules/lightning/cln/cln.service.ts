@@ -12,7 +12,7 @@ import {LightningInfo, LightningChannelBalance, LightningRequest} from '@server/
 import {LightningAddresses} from '@server/modules/lightning/walletkit/lnwalletkit.types';
 import {LightningAddressType} from '@server/modules/lightning/lightning.enums';
 /* Local Dependencies */
-import {asBigIntMsat, sumMsat, mapRequestType, mapRequestExpiry, mapRequestDescription} from './cln.helpers';
+import {asBigIntMsat, sumMsat, mapRequestType, mapRequestExpiry, mapRequestDescription} from './cln.helpers.js';
 
 @Injectable()
 export class ClnService {

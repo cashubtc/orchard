@@ -4,8 +4,8 @@ import {Module} from '@nestjs/common';
 import {ErrorModule} from '@server/modules/error/error.module';
 import {BitcoinRpcModule} from '@server/modules/bitcoin/rpc/btcrpc.module';
 /* Internal Dependencies */
-import {BitcoinBlockResolver} from './btcblock.resolver';
-import {BitcoinBlockService} from './btcblock.service';
+import {BitcoinBlockResolver} from './btcblock.resolver.js';
+import {BitcoinBlockService} from './btcblock.service.js';
 
 @Module({
 	imports: [ErrorModule, BitcoinRpcModule],

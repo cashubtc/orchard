@@ -3,8 +3,8 @@ import {Module} from '@nestjs/common';
 /* Application Dependencies */
 import {FetchModule} from '@server/modules/fetch/fetch.module';
 /* Local Dependencies */
-import {PublicUrlService} from './url.service';
-import {PublicUrlResolver} from './url.resolver';
+import {PublicUrlService} from './url.service.js';
+import {PublicUrlResolver} from './url.resolver.js';
 
 @Module({
 	imports: [FetchModule],

@@ -7,7 +7,7 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
 import {LightningChannel, LightningClosedChannel} from '@server/modules/lightning/lightning/lightning.types';
 /* Local Dependencies */
-import {OrchardLightningChannel, OrchardLightningClosedChannel} from './lnchannel.model';
+import {OrchardLightningChannel, OrchardLightningClosedChannel} from './lnchannel.model.js';
 
 @Injectable()
 export class LightningChannelService {

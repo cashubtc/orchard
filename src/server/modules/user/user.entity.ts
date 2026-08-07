@@ -1,7 +1,7 @@
 /* Vendor Dependencies */
 import {Entity, Column, PrimaryGeneratedColumn, Index} from 'typeorm';
 /* Local Dependencies */
-import {UserRole} from './user.enums';
+import {UserRole} from './user.enums.js';
 
 @Entity('users')
 export class User {

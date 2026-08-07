@@ -8,7 +8,7 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {MintProofService} from './mintproof.service';
+import {MintProofService} from './mintproof.service.js';
 describe('MintProofService', () => {
 	let mintProofService: MintProofService;
 	let mintDbService: jest.Mocked<CashuMintDatabaseService>;

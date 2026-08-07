@@ -1,6 +1,6 @@
 /* Local Dependencies */
-import {AiTool} from '../ai.types';
-import {AgentToolCategory, AgentToolRole} from '../agent/agent.enums';
+import {AiTool} from '../ai.types.js';
+import {AgentToolCategory, AgentToolRole} from '../agent/agent.enums.js';
 
 /* *******************************************************
 	Agent Context

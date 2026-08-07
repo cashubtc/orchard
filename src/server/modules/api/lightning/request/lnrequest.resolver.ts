@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Local Dependencies */
-import {LightningRequestService} from './lnrequest.service';
-import {OrchardLightningRequest} from './lnrequest.model';
+import {LightningRequestService} from './lnrequest.service.js';
+import {OrchardLightningRequest} from './lnrequest.model.js';
 
 @Resolver()
 export class LightningRequestResolver {

@@ -7,8 +7,8 @@ import {Timezone, TimezoneType} from '@server/modules/graphql/scalars/timezone.s
 /* Native Dependencies */
 import {SystemMetric, SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
 /* Local Dependencies */
-import {OrchardSystemMetrics} from './sysmetrics.model';
-import {ApiSystemMetricsService} from './sysmetrics.service';
+import {OrchardSystemMetrics} from './sysmetrics.model.js';
+import {ApiSystemMetricsService} from './sysmetrics.service.js';
 
 @Resolver()
 export class SystemMetricsResolver {

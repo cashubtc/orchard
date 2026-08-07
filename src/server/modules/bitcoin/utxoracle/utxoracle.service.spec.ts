@@ -6,8 +6,8 @@ import {getRepositoryToken} from '@nestjs/typeorm';
 /* Application Dependencies */
 import {BitcoinRpcService} from '@server/modules/bitcoin/rpc/btcrpc.service';
 /* Local Dependencies */
-import {BitcoinUTXOracleService} from './utxoracle.service';
-import {UTXOracle} from './utxoracle.entity';
+import {BitcoinUTXOracleService} from './utxoracle.service.js';
+import {UTXOracle} from './utxoracle.entity.js';
 
 describe('BitcoinUTXOracleService', () => {
 	let bitcoinUtxOracleService: BitcoinUTXOracleService;

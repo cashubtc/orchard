@@ -8,7 +8,7 @@ import {BitcoinRpcService} from '@server/modules/bitcoin/rpc/btcrpc.service';
 import {LndService} from '@server/modules/lightning/lnd/lnd.service';
 import {ClnService} from '@server/modules/lightning/cln/cln.service';
 /* Local Dependencies */
-import {LightningService} from './lightning.service';
+import {LightningService} from './lightning.service.js';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 
 describe('LightningService', () => {

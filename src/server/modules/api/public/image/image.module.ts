@@ -4,8 +4,8 @@ import {Module} from '@nestjs/common';
 import {FetchModule} from '@server/modules/fetch/fetch.module';
 import {ErrorModule} from '@server/modules/error/error.module';
 /* Local Dependencies */
-import {PublicImageResolver} from './image.resolver';
-import {PublicImageService} from './image.service';
+import {PublicImageResolver} from './image.resolver.js';
+import {PublicImageService} from './image.service.js';
 
 @Module({
 	imports: [FetchModule, ErrorModule],

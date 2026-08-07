@@ -5,7 +5,7 @@ import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
 import {TapdService} from '@server/modules/tapass/tapd/tapd.service';
 /* Local Dependencies */
-import {TaprootAssetsService} from './tapass.service';
+import {TaprootAssetsService} from './tapass.service.js';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 
 describe('TaprootAssetsService', () => {

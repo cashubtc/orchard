@@ -7,7 +7,7 @@ import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 import {AiAssistant} from '@server/modules/ai/assistant/ai.assistant.enums';
 /* Local Dependencies */
-import {AiAssistantService} from './aiassistant.service';
+import {AiAssistantService} from './aiassistant.service.js';
 
 describe('AiAssistantService', () => {
 	let aiAssistantService: AiAssistantService;

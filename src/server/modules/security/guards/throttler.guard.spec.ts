@@ -4,7 +4,7 @@ import {expect} from '@jest/globals';
 /* Vendor Dependencies */
 import {ThrottlerStorage} from '@nestjs/throttler';
 /* Local Dependencies */
-import {GqlThrottlerGuard} from './throttler.guard';
+import {GqlThrottlerGuard} from './throttler.guard.js';
 
 describe('GqlThrottlerGuard', () => {
 	let guard: GqlThrottlerGuard;

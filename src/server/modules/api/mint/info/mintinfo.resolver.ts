@@ -7,8 +7,8 @@ import {UserRole} from '@server/modules/user/user.enums';
 import {LogEvent} from '@server/modules/event/event.decorator';
 import {EventLogType} from '@server/modules/event/event.enums';
 /* Local Dependencies */
-import {MintInfoService} from './mintinfo.service';
-import {MintInfoInterceptor} from './mintinfo.interceptor';
+import {MintInfoService} from './mintinfo.service.js';
+import {MintInfoInterceptor} from './mintinfo.interceptor.js';
 import {
 	OrchardMintInfo,
 	OrchardMintInfoRpc,
@@ -18,7 +18,7 @@ import {
 	OrchardMintMotdUpdate,
 	OrchardMintUrlUpdate,
 	OrchardMintContactUpdate,
-} from './mintinfo.model';
+} from './mintinfo.model.js';
 
 @Resolver()
 export class MintInfoResolver {

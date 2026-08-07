@@ -7,7 +7,7 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {ApiBitcoinAnalyticsService} from './btcanalytics.service';
+import {ApiBitcoinAnalyticsService} from './btcanalytics.service.js';
 
 describe('ApiBitcoinAnalyticsService', () => {
 	let service: ApiBitcoinAnalyticsService;

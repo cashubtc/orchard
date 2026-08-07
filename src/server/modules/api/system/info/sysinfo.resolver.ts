@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query} from '@nestjs/graphql';
 /* Local Dependencies */
-import {OrchardSystemInfo} from './sysinfo.model';
-import {ApiSystemInfoService} from './sysinfo.service';
+import {OrchardSystemInfo} from './sysinfo.model.js';
+import {ApiSystemInfoService} from './sysinfo.service.js';
 
 @Resolver()
 export class SystemInfoResolver {

@@ -12,9 +12,9 @@ import {UserRole} from '@server/modules/user/user.enums';
 import {User} from '@server/modules/user/user.entity';
 import {Invite} from '@server/modules/invite/invite.entity';
 /* Local Dependencies */
-import {CrewInviteService} from './crewinvite.service';
-import {OrchardCrewInvite} from './crewinvite.model';
-import {InviteCreateInput, InviteUpdateInput} from './crewinvite.input';
+import {CrewInviteService} from './crewinvite.service.js';
+import {OrchardCrewInvite} from './crewinvite.model.js';
+import {InviteCreateInput, InviteUpdateInput} from './crewinvite.input.js';
 
 describe('CrewInviteService', () => {
 	let crewInviteService: CrewInviteService;

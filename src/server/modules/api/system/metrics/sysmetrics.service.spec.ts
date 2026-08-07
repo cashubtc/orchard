@@ -8,7 +8,7 @@ import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 import {SystemMetric, SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
 /* Local Dependencies */
-import {ApiSystemMetricsService} from './sysmetrics.service';
+import {ApiSystemMetricsService} from './sysmetrics.service.js';
 
 describe('ApiSystemMetricsService', () => {
 	let service: ApiSystemMetricsService;

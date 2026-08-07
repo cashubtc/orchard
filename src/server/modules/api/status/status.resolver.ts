@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query} from '@nestjs/graphql';
 /* Local Dependencies */
-import {StatusService} from './status.service';
-import {OrchardStatus} from './status.model';
+import {StatusService} from './status.service.js';
+import {OrchardStatus} from './status.model.js';
 
 @Resolver(() => OrchardStatus)
 export class StatusResolver {

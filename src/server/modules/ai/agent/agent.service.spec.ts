@@ -8,11 +8,11 @@ import {AiService} from '@server/modules/ai/ai.service';
 import {AiMessageRole} from '@server/modules/ai/ai.enums';
 import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
 /* Local Dependencies */
-import {AgentService} from './agent.service';
-import {Agent} from './agent.entity';
-import {AgentRun} from './agent-run.entity';
-import {AgentKey, AgentRunStatus, AgentToolName} from './agent.enums';
-import {AGENTS} from './agent.agents';
+import {AgentService} from './agent.service.js';
+import {Agent} from './agent.entity.js';
+import {AgentRun} from './agent-run.entity.js';
+import {AgentKey, AgentRunStatus, AgentToolName} from './agent.enums.js';
+import {AGENTS} from './agent.agents.js';
 import {ToolService} from '@server/modules/ai/tools/tool.service';
 
 describe('AgentService', () => {

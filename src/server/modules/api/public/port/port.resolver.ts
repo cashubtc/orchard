@@ -2,9 +2,9 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Local Dependencies */
-import {PublicPortService} from './port.service';
-import {OrchardPublicPort} from './port.model';
-import {PublicPortInput} from './port.input';
+import {PublicPortService} from './port.service.js';
+import {OrchardPublicPort} from './port.model.js';
+import {PublicPortInput} from './port.input.js';
 
 @Resolver(() => [OrchardPublicPort])
 export class PublicPortResolver {

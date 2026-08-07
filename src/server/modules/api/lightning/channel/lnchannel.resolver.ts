@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query} from '@nestjs/graphql';
 /* Local Dependencies */
-import {LightningChannelService} from './lnchannel.service';
-import {OrchardLightningChannel, OrchardLightningClosedChannel} from './lnchannel.model';
+import {LightningChannelService} from './lnchannel.service.js';
+import {OrchardLightningChannel, OrchardLightningClosedChannel} from './lnchannel.model.js';
 
 @Resolver()
 export class LightningChannelResolver {

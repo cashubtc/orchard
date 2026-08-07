@@ -4,7 +4,7 @@ import {expect} from '@jest/globals';
 /* Application Dependencies */
 import {FetchService} from '@server/modules/fetch/fetch.service';
 /* Local Dependencies */
-import {PrometheusService} from './prometheus.service';
+import {PrometheusService} from './prometheus.service.js';
 
 describe('PrometheusService', () => {
 	let prometheusService: PrometheusService;

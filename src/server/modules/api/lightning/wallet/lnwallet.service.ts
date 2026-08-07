@@ -7,7 +7,7 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {LightningWalletKitService} from '@server/modules/lightning/walletkit/lnwalletkit.service';
 import {LightningAddresses} from '@server/modules/lightning/walletkit/lnwalletkit.types';
 /* Local Dependencies */
-import {OrchardLightningAccount} from './lnwallet.model';
+import {OrchardLightningAccount} from './lnwallet.model.js';
 
 @Injectable()
 export class LightningWalletService {

@@ -13,7 +13,7 @@ import {SystemMetrics} from '@server/modules/system/metrics/sysmetrics.entity';
 import {SystemMetric, SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
 import {bucketMinMaxAvg} from '@server/modules/system/metrics/sysmetrics.helpers';
 /* Local Dependencies */
-import {OrchardSystemMetrics} from './sysmetrics.model';
+import {OrchardSystemMetrics} from './sysmetrics.model.js';
 
 interface SystemMetricsArgs {
 	date_start?: number;

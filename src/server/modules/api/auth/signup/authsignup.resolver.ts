@@ -7,8 +7,8 @@ import {Public} from '@server/modules/auth/decorators/auth.decorator';
 /* Native Dependencies */
 import {OrchardAuthentication} from '@server/modules/api/auth/authentication/authentication.model';
 /* Local Dependencies */
-import {AuthSignupService} from './authsignup.service';
-import {AuthSignupInput} from './authsignup.input';
+import {AuthSignupService} from './authsignup.service.js';
+import {AuthSignupInput} from './authsignup.input.js';
 
 @Resolver(() => [OrchardAuthentication])
 export class AuthSignupResolver {

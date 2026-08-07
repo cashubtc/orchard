@@ -4,9 +4,9 @@ import {Resolver, Subscription, Args, Mutation} from '@nestjs/graphql';
 /* Vendor Dependencies */
 import {PubSub} from 'graphql-subscriptions';
 /* Local Dependencies */
-import {AiChatService} from './aichat.service';
-import {OrchardAiChatChunk, OrchardAiChatStream} from './aichat.model';
-import {AiChatInput} from './aichat.input';
+import {AiChatService} from './aichat.service.js';
+import {OrchardAiChatChunk, OrchardAiChatStream} from './aichat.model.js';
+import {AiChatInput} from './aichat.input.js';
 
 const pubSub = new PubSub();
 

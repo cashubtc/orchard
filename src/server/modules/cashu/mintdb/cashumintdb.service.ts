@@ -26,7 +26,7 @@ import {
 	CashuMintSwap,
 	CashuMintOperationFee,
 	CashuMintDatabaseInfo,
-} from './cashumintdb.types';
+} from './cashumintdb.types.js';
 import {
 	CashuMintMintQuotesArgs,
 	CashuMintProofsArgs,
@@ -34,8 +34,8 @@ import {
 	CashuMintMeltQuotesArgs,
 	CashuMintSwapsArgs,
 	CashuMintFeesArgs,
-} from './cashumintdb.interfaces';
-import {MintDatabaseType} from './cashumintdb.enums';
+} from './cashumintdb.interfaces.js';
+import {MintDatabaseType} from './cashumintdb.enums.js';
 
 @Injectable()
 export class CashuMintDatabaseService implements OnModuleInit {

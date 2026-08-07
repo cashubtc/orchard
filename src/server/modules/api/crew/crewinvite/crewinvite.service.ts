@@ -6,8 +6,8 @@ import {InviteService} from '@server/modules/invite/invite.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {OrchardCrewInvite} from './crewinvite.model';
-import {InviteCreateInput, InviteUpdateInput} from './crewinvite.input';
+import {OrchardCrewInvite} from './crewinvite.model.js';
+import {InviteCreateInput, InviteUpdateInput} from './crewinvite.input.js';
 
 @Injectable()
 export class CrewInviteService {

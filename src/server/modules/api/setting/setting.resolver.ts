@@ -8,9 +8,9 @@ import {SettingKey} from '@server/modules/setting/setting.enums';
 import {LogEvent} from '@server/modules/event/event.decorator';
 import {EventLogType} from '@server/modules/event/event.enums';
 /* Local Dependencies */
-import {ApiSettingService} from './setting.service';
-import {OrchardSetting} from './setting.model';
-import {SettingInterceptor} from './setting.interceptor';
+import {ApiSettingService} from './setting.service.js';
+import {OrchardSetting} from './setting.model.js';
+import {SettingInterceptor} from './setting.interceptor.js';
 
 @Resolver()
 export class SettingResolver {

@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Module} from '@nestjs/common';
 /* Local Dependencies */
-import {CredentialService} from './credential.service';
+import {CredentialService} from './credential.service.js';
 
 @Module({
 	providers: [CredentialService],

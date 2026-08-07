@@ -5,8 +5,8 @@ import {Resolver, Query, Args} from '@nestjs/graphql';
 import {MintActivityPeriod} from '@server/modules/cashu/mintdb/cashumintdb.enums';
 import {Timezone, TimezoneType} from '@server/modules/graphql/scalars/timezone.scalar';
 /* Local Dependencies */
-import {OrchardMintActivitySummary} from './mintactivity.model';
-import {MintActivityService} from './mintactivity.service';
+import {OrchardMintActivitySummary} from './mintactivity.model.js';
+import {MintActivityService} from './mintactivity.service.js';
 
 @Resolver()
 export class MintActivityResolver {

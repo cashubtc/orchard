@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query} from '@nestjs/graphql';
 /* Local Dependencies */
-import {LightningBalanceService} from './lnbalance.service';
-import {OrchardLightningBalance} from './lnbalance.model';
+import {LightningBalanceService} from './lnbalance.service.js';
+import {OrchardLightningBalance} from './lnbalance.model.js';
 
 @Resolver()
 export class LightningBalanceResolver {

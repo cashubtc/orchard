@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {expect} from '@jest/globals';
 /* Local Dependencies */
-import {assertPublicHost, assertPublicUrl} from './network-guard';
+import {assertPublicHost, assertPublicUrl} from './network-guard.js';
 
 describe('network-guard', () => {
 	describe('assertPublicUrl', () => {

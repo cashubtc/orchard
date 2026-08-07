@@ -4,12 +4,12 @@ import {Injectable} from '@nestjs/common';
 import {SettingService} from '@server/modules/setting/setting.service';
 import {SettingKey} from '@server/modules/setting/setting.enums';
 /* Local Dependencies */
-import {AiModel, AiMessage, AiTool, AiStreamChunk} from './ai.types';
-import {AiVendor} from './ai.vendor';
-import {OllamaService} from './ollama/ollama.service';
-import {OpenRouterService} from './openrouter/openrouter.service';
-import {AI_ASSISTANTS} from './assistant/ai.assistants';
-import {AiAssistant} from './assistant/ai.assistant.enums';
+import {AiModel, AiMessage, AiTool, AiStreamChunk} from './ai.types.js';
+import {AiVendor} from './ai.vendor.js';
+import {OllamaService} from './ollama/ollama.service.js';
+import {OpenRouterService} from './openrouter/openrouter.service.js';
+import {AI_ASSISTANTS} from './assistant/ai.assistants.js';
+import {AiAssistant} from './assistant/ai.assistant.enums.js';
 
 @Injectable()
 export class AiService {

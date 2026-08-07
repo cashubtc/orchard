@@ -1,7 +1,7 @@
 /* Application Dependencies */
 import {EventLogMetadata} from '@server/modules/event/event.decorator';
 /* Local Dependencies */
-import {EventLogActorType, EventLogSection, EventLogEntityType, EventLogType, EventLogStatus, EventLogDetailStatus} from './event.enums';
+import {EventLogActorType, EventLogSection, EventLogEntityType, EventLogType, EventLogStatus, EventLogDetailStatus} from './event.enums.js';
 
 export interface CreateEventLogInput {
 	actor_type: EventLogActorType;

@@ -1,5 +1,5 @@
 /* Native Dependencies */
-import {MintAnalyticsMetric} from './mintanalytics.enums';
+import {MintAnalyticsMetric} from './mintanalytics.enums.js';
 
 export interface MintAnalyticsCachedArgs {
 	date_start?: number;

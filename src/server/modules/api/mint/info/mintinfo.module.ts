@@ -6,9 +6,9 @@ import {CashuMintRpcModule} from '@server/modules/cashu/mintrpc/cashumintrpc.mod
 import {ErrorModule} from '@server/modules/error/error.module';
 import {EventLogModule} from '@server/modules/event/event.module';
 /* Local Dependencies */
-import {MintInfoService} from './mintinfo.service';
-import {MintInfoResolver} from './mintinfo.resolver';
-import {MintInfoInterceptor} from './mintinfo.interceptor';
+import {MintInfoService} from './mintinfo.service.js';
+import {MintInfoResolver} from './mintinfo.resolver.js';
+import {MintInfoInterceptor} from './mintinfo.interceptor.js';
 
 @Module({
 	imports: [CashuMintApiModule, CashuMintRpcModule, ErrorModule, EventLogModule],

@@ -7,7 +7,7 @@ import {ErrorService} from '@server/modules/error/error.service';
 /* Native Dependencies */
 import {SystemInfoService} from '@server/modules/system/info/sysinfo.service';
 /* Local Dependencies */
-import {OrchardSystemInfo} from './sysinfo.model';
+import {OrchardSystemInfo} from './sysinfo.model.js';
 
 @Injectable()
 export class ApiSystemInfoService {

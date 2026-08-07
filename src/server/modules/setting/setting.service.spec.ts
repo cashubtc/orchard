@@ -6,11 +6,11 @@ import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {Repository} from 'typeorm';
 /* Local Dependencies */
-import {SettingService} from './setting.service';
-import {Setting} from './setting.entity';
-import {SettingKey, SettingValue} from './setting.enums';
-import {DEFAULT_SETTINGS} from './setting.config';
-import {isEncrypted, deriveEncryptionKey, encryptValue} from './setting.helpers';
+import {SettingService} from './setting.service.js';
+import {Setting} from './setting.entity.js';
+import {SettingKey, SettingValue} from './setting.enums.js';
+import {DEFAULT_SETTINGS} from './setting.config.js';
+import {isEncrypted, deriveEncryptionKey, encryptValue} from './setting.helpers.js';
 
 /**
  * Test suite for SettingService

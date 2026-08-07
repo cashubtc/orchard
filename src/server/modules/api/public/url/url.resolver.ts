@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Local Dependencies */
-import {PublicUrlService} from './url.service';
-import {OrchardPublicUrl} from './url.model';
+import {PublicUrlService} from './url.service.js';
+import {OrchardPublicUrl} from './url.model.js';
 
 @Resolver(() => [OrchardPublicUrl])
 export class PublicUrlResolver {

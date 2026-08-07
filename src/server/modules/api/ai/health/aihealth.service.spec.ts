@@ -8,8 +8,8 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {AiHealthService} from './aihealth.service';
-import {OrchardAiHealth} from './aihealth.model';
+import {AiHealthService} from './aihealth.service.js';
+import {OrchardAiHealth} from './aihealth.model.js';
 
 describe('AiHealthService', () => {
 	let aiHealthService: AiHealthService;

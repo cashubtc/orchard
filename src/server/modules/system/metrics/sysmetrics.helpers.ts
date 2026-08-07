@@ -1,7 +1,7 @@
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
 /* Native Dependencies */
-import {SystemMetricsInterval} from './sysmetrics.enums';
+import {SystemMetricsInterval} from './sysmetrics.enums.js';
 
 /** Avg/min/max summary of the values falling within one interval bucket */
 export interface MinMaxAvgBucket {

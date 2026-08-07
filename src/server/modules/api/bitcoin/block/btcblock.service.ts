@@ -6,7 +6,7 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {OrchardBitcoinBlock, OrchardBitcoinBlockTemplate} from './btcblock.model';
+import {OrchardBitcoinBlock, OrchardBitcoinBlockTemplate} from './btcblock.model.js';
 
 @Injectable()
 export class BitcoinBlockService {

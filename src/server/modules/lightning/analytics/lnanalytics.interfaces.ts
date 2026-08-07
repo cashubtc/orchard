@@ -2,7 +2,7 @@
 import {TimezoneType} from '@server/modules/graphql/scalars/timezone.scalar';
 import {AnalyticsInterval} from '@server/modules/analytics/analytics.enums';
 /* Local Dependencies */
-import {LightningAnalyticsMetric} from './lnanalytics.enums';
+import {LightningAnalyticsMetric} from './lnanalytics.enums.js';
 
 export interface LightningAnalyticsArgs {
 	date_start?: number;

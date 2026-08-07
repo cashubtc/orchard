@@ -12,9 +12,9 @@ import {LightningTransaction} from '@server/modules/lightning/lightning/lightnin
 import {AssetTransfer, AddrEvent, TaprootAsset} from '@server/modules/tapass/tapass/tapass.types';
 import {AnalyticsBackfillStatus} from '@server/modules/analytics/analytics.interfaces';
 /* Local Dependencies */
-import {BitcoinAnalytics} from './btcanalytics.entity';
-import {BitcoinAnalyticsMetric} from './btcanalytics.enums';
-import {AssetInfoMap} from './btcanalytics.interfaces';
+import {BitcoinAnalytics} from './btcanalytics.entity.js';
+import {BitcoinAnalyticsMetric} from './btcanalytics.enums.js';
+import {AssetInfoMap} from './btcanalytics.interfaces.js';
 
 const RESCAN_SECONDS = 86400 * 7; // Re-scan last 7 days on daily rescan
 

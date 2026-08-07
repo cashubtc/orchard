@@ -20,7 +20,7 @@ import {CashuMintApiService} from '@server/modules/cashu/mintapi/cashumintapi.se
 import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
 import {MintService} from '@server/modules/api/mint/mint.service';
 /* Local Dependencies */
-import {MintMintQuoteInterceptor} from './mintmintquote.interceptor';
+import {MintMintQuoteInterceptor} from './mintmintquote.interceptor.js';
 
 /**
  * Test suite for MintMintQuoteInterceptor

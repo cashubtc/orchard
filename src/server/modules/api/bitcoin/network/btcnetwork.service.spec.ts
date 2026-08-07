@@ -8,7 +8,7 @@ import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
 /* Local Dependencies */
-import {BitcoinNetworkService} from './btcnetwork.service';
+import {BitcoinNetworkService} from './btcnetwork.service.js';
 
 describe('BitcoinNetworkService', () => {
 	let bitcoinNetworkService: BitcoinNetworkService;

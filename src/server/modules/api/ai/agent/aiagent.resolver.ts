@@ -11,9 +11,9 @@ import {EventLogType} from '@server/modules/event/event.enums';
 import {AgentKey} from '@server/modules/ai/agent/agent.enums';
 import {Timezone} from '@server/modules/graphql/scalars/timezone.scalar';
 /* Local Dependencies */
-import {AiAgentService} from './aiagent.service';
-import {AiAgentInterceptor} from './aiagent.interceptor';
-import {OrchardAgent, OrchardAgentDefault, OrchardAgentRun} from './aiagent.model';
+import {AiAgentService} from './aiagent.service.js';
+import {AiAgentInterceptor} from './aiagent.interceptor.js';
+import {OrchardAgent, OrchardAgentDefault, OrchardAgentRun} from './aiagent.model.js';
 
 @Resolver(() => [OrchardAgent])
 export class AiAgentResolver {

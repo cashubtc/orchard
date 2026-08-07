@@ -7,8 +7,8 @@ import {CashuMintApiModule} from '@server/modules/cashu/mintapi/cashumintapi.mod
 import {AnalyticsModule} from '@server/modules/analytics/analytics.module';
 import {AnalyticsCheckpoint} from '@server/modules/analytics/analytics-checkpoint.entity';
 /* Native Dependencies */
-import {MintAnalytics} from './mintanalytics.entity';
-import {CashuMintAnalyticsService} from './mintanalytics.service';
+import {MintAnalytics} from './mintanalytics.entity.js';
+import {CashuMintAnalyticsService} from './mintanalytics.service.js';
 
 @Module({
 	imports: [TypeOrmModule.forFeature([MintAnalytics, AnalyticsCheckpoint]), CashuMintDatabaseModule, CashuMintApiModule, AnalyticsModule],

@@ -1,8 +1,8 @@
 /* Vendor Dependencies */
 import {Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, Index, type Relation} from 'typeorm';
 /* Local Dependencies */
-import {AgentRunStatus} from './agent.enums';
-import {Agent} from './agent.entity';
+import {AgentRunStatus} from './agent.enums.js';
+import {Agent} from './agent.entity.js';
 
 @Entity('agent_runs')
 @Index('IDX_agent_runs_agent_started', ['agent', 'started_at'])

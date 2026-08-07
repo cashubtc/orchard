@@ -1,8 +1,8 @@
 /* Core Dependencies */
 import {expect} from '@jest/globals';
 /* Local Dependencies */
-import {getBucketDate, bucketMinMaxAvg} from './sysmetrics.helpers';
-import {SystemMetricsInterval} from './sysmetrics.enums';
+import {getBucketDate, bucketMinMaxAvg} from './sysmetrics.helpers.js';
+import {SystemMetricsInterval} from './sysmetrics.enums.js';
 
 describe('sysmetrics.helpers', () => {
 	describe('getBucketDate', () => {

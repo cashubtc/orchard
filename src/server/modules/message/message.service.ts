@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Local Dependencies */
-import {TelegramService} from './telegram/telegram.service';
+import {TelegramService} from './telegram/telegram.service.js';
 
 /** Result of a message broadcast across all vendors */
 export type MessageResult = {

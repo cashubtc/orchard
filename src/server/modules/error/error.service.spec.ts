@@ -3,8 +3,8 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {Logger} from '@nestjs/common';
 /* Local Dependencies */
-import {ErrorService} from './error.service';
-import {OrchardErrorCode} from './error.types';
+import {ErrorService} from './error.service.js';
+import {OrchardErrorCode} from './error.types.js';
 
 describe('ErrorService', () => {
 	let errorService: ErrorService;

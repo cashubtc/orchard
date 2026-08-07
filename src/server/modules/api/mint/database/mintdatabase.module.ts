@@ -5,8 +5,8 @@ import {CashuMintDatabaseModule} from '@server/modules/cashu/mintdb/cashumintdb.
 import {MintService} from '@server/modules/api/mint/mint.service';
 import {ErrorModule} from '@server/modules/error/error.module';
 /* Local Dependencies */
-import {MintDatabaseResolver} from './mintdatabase.resolver';
-import {MintDatabaseService} from './mintdatabase.service';
+import {MintDatabaseResolver} from './mintdatabase.resolver.js';
+import {MintDatabaseService} from './mintdatabase.service.js';
 
 @Module({
 	imports: [CashuMintDatabaseModule, ErrorModule],

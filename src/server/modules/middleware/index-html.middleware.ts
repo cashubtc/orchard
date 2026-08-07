@@ -3,7 +3,7 @@ import {readFileSync} from 'fs';
 import {join} from 'path';
 import {Request, Response, NextFunction} from 'express';
 /* Local Dependencies */
-import {CSP_NONCE_KEY, CSP_NONCE_PLACEHOLDER} from './middleware.constants';
+import {CSP_NONCE_KEY, CSP_NONCE_PLACEHOLDER} from './middleware.constants.js';
 
 const CLIENT_INDEX_PATH = join(process.cwd(), 'dist', 'client', 'browser', 'index.html');
 

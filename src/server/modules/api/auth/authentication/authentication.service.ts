@@ -7,8 +7,8 @@ import {UserService} from '@server/modules/user/user.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {OrchardAuthentication} from './authentication.model';
-import {AuthenticationInput} from './authentication.input';
+import {OrchardAuthentication} from './authentication.model.js';
+import {AuthenticationInput} from './authentication.input.js';
 
 @Injectable()
 export class AuthAuthenticationService {

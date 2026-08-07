@@ -13,7 +13,7 @@ import {ConversationModule} from '@server/modules/ai/conversation/conversation.m
 import {SystemMetricsModule} from '@server/modules/system/metrics/sysmetrics.module';
 import {MintMetricsModule} from '@server/modules/cashu/mintmetrics/mintmetrics.module';
 /* Local Dependencies */
-import {TaskService} from './task.service';
+import {TaskService} from './task.service.js';
 
 @Module({
 	imports: [

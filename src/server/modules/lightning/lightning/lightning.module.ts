@@ -6,7 +6,7 @@ import {BitcoinRpcModule} from '@server/modules/bitcoin/rpc/btcrpc.module';
 import {LndModule} from '@server/modules/lightning/lnd/lnd.module';
 import {ClnModule} from '@server/modules/lightning/cln/cln.module';
 /* Local Dependencies */
-import {LightningService} from './lightning.service';
+import {LightningService} from './lightning.service.js';
 
 @Module({
 	imports: [FetchModule, BitcoinRpcModule, LndModule, ClnModule],

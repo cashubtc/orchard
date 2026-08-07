@@ -8,7 +8,7 @@ import {AuthModule} from '@server/modules/auth/auth.module';
 import {GqlAuthenticationGuard} from '@server/modules/auth/guards/authentication.guard';
 import {GqlAuthorizationGuard} from '@server/modules/auth/guards/authorization.guard';
 /* Local Dependencies */
-import {GqlThrottlerGuard} from './guards/throttler.guard';
+import {GqlThrottlerGuard} from './guards/throttler.guard.js';
 
 @Module({
 	imports: [

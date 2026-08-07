@@ -33,7 +33,7 @@ import {
 import {MessageService} from '@server/modules/message/message.service';
 import {UserRole} from '@server/modules/user/user.enums';
 /* Local Dependencies */
-import {AiAgentContext, AiToolResult, AiToolEntry, ToolGuard, ToolGuardContext, ToolGuardName} from './tool.types';
+import {AiAgentContext, AiToolResult, AiToolEntry, ToolGuard, ToolGuardContext, ToolGuardName} from './tool.types.js';
 
 @Injectable()
 export class ToolService {

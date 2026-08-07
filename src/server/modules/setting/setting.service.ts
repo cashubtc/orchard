@@ -5,9 +5,9 @@ import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {EntityManager, Repository} from 'typeorm';
 /* Local Dependencies */
-import {Setting} from './setting.entity';
-import {DEFAULT_SETTINGS} from './setting.config';
-import {SettingKey} from './setting.enums';
+import {Setting} from './setting.entity.js';
+import {DEFAULT_SETTINGS} from './setting.config.js';
+import {SettingKey} from './setting.enums.js';
 import {
 	isSettingSensitive,
 	isEncrypted,
@@ -17,7 +17,7 @@ import {
 	encryptValue,
 	decryptValue,
 	parseSettingValue,
-} from './setting.helpers';
+} from './setting.helpers.js';
 
 @Injectable()
 export class SettingService implements OnModuleInit {

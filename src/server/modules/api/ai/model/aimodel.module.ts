@@ -4,8 +4,8 @@ import {Module} from '@nestjs/common';
 import {ErrorModule} from '@server/modules/error/error.module';
 import {AiModule} from '@server/modules/ai/ai.module';
 /* Internal Dependencies */
-import {AiModelResolver} from './aimodel.resolver';
-import {AiModelService} from './aimodel.service';
+import {AiModelResolver} from './aimodel.resolver.js';
+import {AiModelService} from './aimodel.service.js';
 
 @Module({
 	imports: [ErrorModule, AiModule],
