@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args, Int} from '@nestjs/graphql';
 /* Local Dependencies */
-import {BtcTransactionService} from './btctransaction.service';
-import {OrchardBitcoinTxFeeEstimate} from './btctransaction.model';
+import {BtcTransactionService} from './btctransaction.service.js';
+import {OrchardBitcoinTxFeeEstimate} from './btctransaction.model.js';
 
 @Resolver()
 export class BtcTransactionResolver {

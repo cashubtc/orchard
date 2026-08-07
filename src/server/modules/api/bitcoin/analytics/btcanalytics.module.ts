@@ -5,8 +5,8 @@ import {ErrorModule} from '@server/modules/error/error.module';
 /* Native Dependencies */
 import {BitcoinAnalyticsModule} from '@server/modules/bitcoin/analytics/btcanalytics.module';
 /* Local Dependencies */
-import {BitcoinAnalyticsResolver} from './btcanalytics.resolver';
-import {ApiBitcoinAnalyticsService} from './btcanalytics.service';
+import {BitcoinAnalyticsResolver} from './btcanalytics.resolver.js';
+import {ApiBitcoinAnalyticsService} from './btcanalytics.service.js';
 
 @Module({
 	imports: [BitcoinAnalyticsModule, ErrorModule],

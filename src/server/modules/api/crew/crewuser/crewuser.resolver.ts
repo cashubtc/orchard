@@ -7,9 +7,9 @@ import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.cla
 import {UserRole} from '@server/modules/user/user.enums';
 import {Roles} from '@server/modules/auth/decorators/auth.decorator';
 /* Local Dependencies */
-import {CrewUserService} from './crewuser.service';
-import {OrchardCrewUser} from './crewuser.model';
-import {UserNameUpdateInput, UserPasswordUpdateInput, UserUpdateInput} from './crewuser.input';
+import {CrewUserService} from './crewuser.service.js';
+import {OrchardCrewUser} from './crewuser.model.js';
+import {UserNameUpdateInput, UserPasswordUpdateInput, UserUpdateInput} from './crewuser.input.js';
 
 @Resolver()
 export class CrewUserResolver {

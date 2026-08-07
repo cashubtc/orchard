@@ -11,7 +11,7 @@ import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 import {ErrorService} from '@server/modules/error/error.service';
 /* Local Dependencies */
-import {OrchardMintActivitySummary, OrchardMintActivityBucket} from './mintactivity.model';
+import {OrchardMintActivitySummary, OrchardMintActivityBucket} from './mintactivity.model.js';
 
 /** All metrics needed to compute the activity summary */
 const ACTIVITY_METRICS = [

@@ -2,7 +2,7 @@
 import {randomBytes} from 'crypto';
 import {Request, Response, NextFunction} from 'express';
 /* Local Dependencies */
-import {CSP_NONCE_KEY} from './middleware.constants';
+import {CSP_NONCE_KEY} from './middleware.constants.js';
 
 const STATIC_CSP = [
 	"default-src 'self'",

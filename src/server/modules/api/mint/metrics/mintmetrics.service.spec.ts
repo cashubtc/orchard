@@ -9,7 +9,7 @@ import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.
 import {MintMetrics} from '@server/modules/cashu/mintmetrics/mintmetrics.entity';
 import {SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
 /* Local Dependencies */
-import {ApiMintMetricsService} from './mintmetrics.service';
+import {ApiMintMetricsService} from './mintmetrics.service.js';
 
 /** Builds a stored metric row with defaults */
 const row = (overrides: Partial<MintMetrics>): MintMetrics =>

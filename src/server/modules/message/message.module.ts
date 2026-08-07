@@ -1,8 +1,8 @@
 /* Core Dependencies */
 import {Module} from '@nestjs/common';
 /* Local Dependencies */
-import {TelegramModule} from './telegram/telegram.module';
-import {MessageService} from './message.service';
+import {TelegramModule} from './telegram/telegram.module.js';
+import {MessageService} from './message.service.js';
 
 @Module({
 	imports: [TelegramModule],

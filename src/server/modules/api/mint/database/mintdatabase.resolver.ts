@@ -6,8 +6,8 @@ import {Roles} from '@server/modules/auth/decorators/auth.decorator';
 import {UserRole} from '@server/modules/user/user.enums';
 import {Base64} from '@server/modules/graphql/scalars/base64.scalar';
 /* Local Dependencies */
-import {MintDatabaseService} from './mintdatabase.service';
-import {OrchardMintDatabaseBackup, OrchardMintDatabaseInfo, OrchardMintDatabaseRestore} from './mintdatabase.model';
+import {MintDatabaseService} from './mintdatabase.service.js';
+import {OrchardMintDatabaseBackup, OrchardMintDatabaseInfo, OrchardMintDatabaseRestore} from './mintdatabase.model.js';
 
 @Resolver()
 export class MintDatabaseResolver {

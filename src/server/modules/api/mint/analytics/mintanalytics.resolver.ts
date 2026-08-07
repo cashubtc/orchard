@@ -9,8 +9,8 @@ import {MintUnit} from '@server/modules/cashu/cashu.enums';
 import {MintAnalyticsMetric} from '@server/modules/cashu/mintanalytics/mintanalytics.enums';
 import {OrchardAnalyticsBackfillStatus} from '@server/modules/api/common/analytics-backfill-status.model';
 /* Local Dependencies */
-import {OrchardMintAnalytics, OrchardMintAnalyticsMetric, OrchardMintKeysetsAnalytics} from './mintanalytics.model';
-import {MintAnalyticsService} from './mintanalytics.service';
+import {OrchardMintAnalytics, OrchardMintAnalyticsMetric, OrchardMintKeysetsAnalytics} from './mintanalytics.model.js';
+import {MintAnalyticsService} from './mintanalytics.service.js';
 
 @Resolver()
 export class MintAnalyticsResolver {

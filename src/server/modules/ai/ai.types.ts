@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {AiMessageRole} from './ai.enums';
+import {AiMessageRole} from './ai.enums.js';
 
 /* *******************************************************
 	Models

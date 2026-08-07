@@ -17,8 +17,8 @@ import {extractEventContext, extractEventError, eventTimestamp} from '@server/mo
 import {CreateEventLogDetailInput} from '@server/modules/event/event.interfaces';
 import {CashuMintRpcService} from '@server/modules/cashu/mintrpc/cashumintrpc.service';
 /* Local Dependencies */
-import {OrchardMintQuoteTtls} from './mintquote.model';
-import {MintQuoteTtlUpdateInput} from './mintquote.input';
+import {OrchardMintQuoteTtls} from './mintquote.model.js';
+import {MintQuoteTtlUpdateInput} from './mintquote.input.js';
 
 @Injectable()
 export class MintQuoteInterceptor implements NestInterceptor {

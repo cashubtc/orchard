@@ -4,7 +4,7 @@ import {existsSync, readFileSync, writeFileSync, unlinkSync, mkdtempSync, rmSync
 import {join} from 'path';
 import {tmpdir} from 'os';
 /* Local Dependencies */
-import {getCryptoKeyPath, loadOrCreateCryptoKey, generateEphemeralJwtSecret} from './crypto-key';
+import {getCryptoKeyPath, loadOrCreateCryptoKey, generateEphemeralJwtSecret} from './crypto-key.js';
 
 describe('Crypto Key', () => {
 	const original_env = {...process.env};

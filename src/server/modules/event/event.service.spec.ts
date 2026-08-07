@@ -5,11 +5,11 @@ import {getRepositoryToken} from '@nestjs/typeorm';
 /* Vendor Dependencies */
 import {Repository, SelectQueryBuilder} from 'typeorm';
 /* Local Dependencies */
-import {EventLogService} from './event.service';
-import {EventLog} from './event.entity';
-import {EventLogDetail} from './event-detail.entity';
-import {EventLogActorType, EventLogSection, EventLogEntityType, EventLogType, EventLogStatus, EventLogDetailStatus} from './event.enums';
-import {CreateEventLogInput} from './event.interfaces';
+import {EventLogService} from './event.service.js';
+import {EventLog} from './event.entity.js';
+import {EventLogDetail} from './event-detail.entity.js';
+import {EventLogActorType, EventLogSection, EventLogEntityType, EventLogType, EventLogStatus, EventLogDetailStatus} from './event.enums.js';
+import {CreateEventLogInput} from './event.interfaces.js';
 
 /**
  * Test suite for EventLogService

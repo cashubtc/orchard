@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query} from '@nestjs/graphql';
 /* Local Dependencies */
-import {LightningWalletService} from './lnwallet.service';
-import {OrchardLightningAccount} from './lnwallet.model';
+import {LightningWalletService} from './lnwallet.service.js';
+import {OrchardLightningAccount} from './lnwallet.model.js';
 
 @Resolver()
 export class LightningWalletResolver {

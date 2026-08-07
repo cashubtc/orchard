@@ -4,8 +4,8 @@ import {Module} from '@nestjs/common';
 import {ErrorModule} from '@server/modules/error/error.module';
 import {LightningWalletKitModule} from '@server/modules/lightning/walletkit/lnwalletkit.module';
 /* Local Dependencies */
-import {LightningWalletService} from './lnwallet.service';
-import {LightningWalletResolver} from './lnwallet.resolver';
+import {LightningWalletService} from './lnwallet.service.js';
+import {LightningWalletResolver} from './lnwallet.resolver.js';
 
 @Module({
 	imports: [LightningWalletKitModule, ErrorModule],

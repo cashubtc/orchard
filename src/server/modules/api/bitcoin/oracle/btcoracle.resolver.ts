@@ -9,8 +9,8 @@ import {Roles} from '@server/modules/auth/decorators/auth.decorator';
 import {UserRole} from '@server/modules/user/user.enums';
 import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
 /* Local Dependencies */
-import {OrchardBitcoinOraclePrice, OrchardBitcoinOracleBackfillProgress, OrchardBitcoinOracleBackfillStream} from './btcoracle.model';
-import {BitcoinOracleService} from './btcoracle.service';
+import {OrchardBitcoinOraclePrice, OrchardBitcoinOracleBackfillProgress, OrchardBitcoinOracleBackfillStream} from './btcoracle.model.js';
+import {BitcoinOracleService} from './btcoracle.service.js';
 
 const pubSub = new PubSub();
 

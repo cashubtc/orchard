@@ -8,7 +8,7 @@ import {BitcoinRpcService} from '@server/modules/bitcoin/rpc/btcrpc.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {BitcoinOracleService} from './btcoracle.service';
+import {BitcoinOracleService} from './btcoracle.service.js';
 
 describe('BitcoinOracleService', () => {
 	let bitcoinOracleService: BitcoinOracleService;

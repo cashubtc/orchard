@@ -4,8 +4,8 @@ import {Module} from '@nestjs/common';
 import {ErrorModule} from '@server/modules/error/error.module';
 import {LightningModule} from '@server/modules/lightning/lightning/lightning.module';
 /* Local Dependencies */
-import {LightningBalanceService} from './lnbalance.service';
-import {LightningBalanceResolver} from './lnbalance.resolver';
+import {LightningBalanceService} from './lnbalance.service.js';
+import {LightningBalanceResolver} from './lnbalance.resolver.js';
 
 @Module({
 	imports: [LightningModule, ErrorModule],

@@ -32,7 +32,7 @@ import {
 	LndGetTransactionsResponse,
 	LndPeer,
 	LndListPeersResponse,
-} from './lnd.types';
+} from './lnd.types.js';
 
 export function mapRequestDescription(description: string | null): string | null {
 	if (!description) return null;

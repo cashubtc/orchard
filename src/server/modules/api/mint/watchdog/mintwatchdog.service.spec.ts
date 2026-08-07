@@ -11,8 +11,8 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {MintWatchdogService} from './mintwatchdog.service';
-import {OrchardMintWatchdogStatus} from './mintwatchdog.model';
+import {MintWatchdogService} from './mintwatchdog.service.js';
+import {OrchardMintWatchdogStatus} from './mintwatchdog.model.js';
 
 describe('MintWatchdogService', () => {
 	let mintWatchdogService: MintWatchdogService;

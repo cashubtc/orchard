@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {expect} from '@jest/globals';
 /* Local Dependencies */
-import {SettingKey, SettingSensitivity, SettingValue} from './setting.enums';
+import {SettingKey, SettingSensitivity, SettingValue} from './setting.enums.js';
 import {
 	SETTING_SENSITIVITY,
 	isFilePath,
@@ -14,7 +14,7 @@ import {
 	encryptValue,
 	decryptValue,
 	isEncrypted,
-} from './setting.helpers';
+} from './setting.helpers.js';
 
 /**
  * Test suite for setting helpers

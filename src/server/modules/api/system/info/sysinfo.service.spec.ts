@@ -8,7 +8,7 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {ApiSystemInfoService} from './sysinfo.service';
+import {ApiSystemInfoService} from './sysinfo.service.js';
 
 const mock_info: SystemInfo = {
 	os_platform: 'linux',

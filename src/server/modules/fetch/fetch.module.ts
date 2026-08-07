@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Module} from '@nestjs/common';
 /* Local Dependencies */
-import {FetchService} from './fetch.service';
+import {FetchService} from './fetch.service.js';
 
 @Module({
 	providers: [FetchService],

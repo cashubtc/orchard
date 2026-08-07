@@ -7,7 +7,7 @@ import {Logger} from '@nestjs/common';
 import {CredentialService} from '@server/modules/credential/credential.service';
 import {MintDatabaseType} from '@server/modules/cashu/mintdb/cashumintdb.enums';
 /* Local Dependencies */
-import {NutshellService} from './nutshell.service';
+import {NutshellService} from './nutshell.service.js';
 import * as grpc from '@grpc/grpc-js';
 
 jest.mock('@server/modules/cashu/mintdb/cashumintdb.helpers', () => ({

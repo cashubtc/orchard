@@ -4,8 +4,8 @@ import {Module} from '@nestjs/common';
 import {ErrorModule} from '@server/modules/error/error.module';
 import {UserModule} from '@server/modules/user/user.module';
 /* Local Dependencies */
-import {CrewUserService} from './crewuser.service';
-import {CrewUserResolver} from './crewuser.resolver';
+import {CrewUserService} from './crewuser.service.js';
+import {CrewUserResolver} from './crewuser.resolver.js';
 
 @Module({
 	imports: [ErrorModule, UserModule],

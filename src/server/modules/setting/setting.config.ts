@@ -1,6 +1,6 @@
 /* local Dependencies */
-import {Setting} from './setting.entity';
-import {SettingKey, SettingValue} from './setting.enums';
+import {Setting} from './setting.entity.js';
+import {SettingKey, SettingValue} from './setting.enums.js';
 
 export const DEFAULT_SETTINGS: Setting[] = [
 	{

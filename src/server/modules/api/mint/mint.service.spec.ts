@@ -5,7 +5,7 @@ import {expect} from '@jest/globals';
 import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
 import {ErrorService} from '@server/modules/error/error.service';
 /* Local Dependencies */
-import {MintService} from './mint.service';
+import {MintService} from './mint.service.js';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 

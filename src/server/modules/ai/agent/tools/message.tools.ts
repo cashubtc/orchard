@@ -3,7 +3,7 @@ import {Logger} from '@nestjs/common';
 /* Application Dependencies */
 import {MessageService} from '@server/modules/message/message.service';
 /* Local Dependencies */
-import {AgentToolCategory, AgentToolName, AgentToolRole} from '../agent.enums';
+import {AgentToolCategory, AgentToolName, AgentToolRole} from '../agent.enums.js';
 import {AiToolEntry} from '@server/modules/ai/tools/tool.types';
 
 /* *******************************************************

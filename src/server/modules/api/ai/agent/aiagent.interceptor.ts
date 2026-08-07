@@ -17,8 +17,8 @@ import {
 import {extractEventContext, extractEventError, eventTimestamp} from '@server/modules/event/event.helpers';
 import {CreateEventLogDetailInput} from '@server/modules/event/event.interfaces';
 /* Local Dependencies */
-import {AiAgentService} from './aiagent.service';
-import {OrchardAgent} from './aiagent.model';
+import {AiAgentService} from './aiagent.service.js';
+import {OrchardAgent} from './aiagent.model.js';
 
 /** Fields tracked for agent event logging */
 const TRACKED_FIELDS: ReadonlyArray<keyof OrchardAgent> = [

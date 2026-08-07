@@ -10,7 +10,7 @@ import {CredentialService} from '@server/modules/credential/credential.service';
 /* Native Dependencies */
 import {LightningChannelBalance, LightningRequest} from '@server/modules/lightning/lightning/lightning.types';
 /* Local Dependencies */
-import {mapRequestType, mapRequestDescription, mapRequestExpiry} from './lnd.helpers';
+import {mapRequestType, mapRequestDescription, mapRequestExpiry} from './lnd.helpers.js';
 
 @Injectable()
 export class LndService {

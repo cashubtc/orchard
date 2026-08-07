@@ -6,7 +6,7 @@ import {EventEmitter2} from '@nestjs/event-emitter';
 import {SettingService} from '@server/modules/setting/setting.service';
 import {UserService} from '@server/modules/user/user.service';
 /* Local Dependencies */
-import {TelegramService} from './telegram.service';
+import {TelegramService} from './telegram.service.js';
 
 describe('TelegramService', () => {
 	let service: TelegramService;

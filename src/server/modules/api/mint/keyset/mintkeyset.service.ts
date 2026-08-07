@@ -11,7 +11,7 @@ import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.cla
 import {MintService} from '@server/modules/api/mint/mint.service';
 import {ErrorService} from '@server/modules/error/error.service';
 /* Local Dependencies */
-import {OrchardMintKeyset, OrchardMintKeysetRotation, OrchardMintKeysetCount} from './mintkeyset.model';
+import {OrchardMintKeyset, OrchardMintKeysetRotation, OrchardMintKeysetCount} from './mintkeyset.model.js';
 
 @Injectable()
 export class MintKeysetService {

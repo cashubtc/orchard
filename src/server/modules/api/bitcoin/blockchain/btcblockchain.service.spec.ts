@@ -7,8 +7,8 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {BitcoinBlockchainService} from './btcblockchain.service';
-import {OrchardBitcoinBlockchainInfo, OrchardBitcoinBlockCount} from './btcblockchain.model';
+import {BitcoinBlockchainService} from './btcblockchain.service.js';
+import {OrchardBitcoinBlockchainInfo, OrchardBitcoinBlockCount} from './btcblockchain.model.js';
 
 describe('BitcoinBlockchainService', () => {
 	let bitcoinBlockchainService: BitcoinBlockchainService;

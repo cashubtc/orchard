@@ -6,9 +6,9 @@ import {AgentService} from '@server/modules/ai/agent/agent.service';
 import {MessageService} from '@server/modules/message/message.service';
 import {AgentKey} from '@server/modules/ai/agent/agent.enums';
 /* Local Dependencies */
-import {ConversationService} from './conversation.service';
-import {Conversation} from './conversation.entity';
-import {ConversationStatus} from './conversation.enums';
+import {ConversationService} from './conversation.service.js';
+import {Conversation} from './conversation.entity.js';
+import {ConversationStatus} from './conversation.enums.js';
 
 describe('ConversationService', () => {
 	let service: ConversationService;

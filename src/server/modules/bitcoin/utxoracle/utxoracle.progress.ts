@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {UTXOracleProgress} from './utxoracle.types';
+import {UTXOracleProgress} from './utxoracle.types.js';
 
 /**
  * Helper class to manage and emit progress updates during oracle computation

@@ -2,9 +2,9 @@
 import {Test, TestingModule} from '@nestjs/testing';
 /* Local Dependencies */
 import {SettingService} from '@server/modules/setting/setting.service';
-import {AiService} from './ai.service';
-import {OllamaService} from './ollama/ollama.service';
-import {OpenRouterService} from './openrouter/openrouter.service';
+import {AiService} from './ai.service.js';
+import {OllamaService} from './ollama/ollama.service.js';
+import {OpenRouterService} from './openrouter/openrouter.service.js';
 
 describe('AiService', () => {
 	let aiService: AiService;

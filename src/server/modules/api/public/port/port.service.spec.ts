@@ -3,8 +3,8 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {ConfigService} from '@nestjs/config';
 import {expect} from '@jest/globals';
 /* Local Dependencies */
-import {PublicPortService} from './port.service';
-import {OrchardPublicPort} from './port.model';
+import {PublicPortService} from './port.service.js';
+import {OrchardPublicPort} from './port.model.js';
 
 describe('PublicPortService', () => {
 	let service: PublicPortService;

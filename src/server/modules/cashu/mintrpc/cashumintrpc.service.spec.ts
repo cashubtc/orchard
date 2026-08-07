@@ -7,7 +7,7 @@ import {ConfigService} from '@nestjs/config';
 import {CdkService} from '@server/modules/cashu/cdk/cdk.service';
 import {NutshellService} from '@server/modules/cashu/nutshell/nutshell.service';
 /* Local Dependencies */
-import {CashuMintRpcService} from './cashumintrpc.service';
+import {CashuMintRpcService} from './cashumintrpc.service.js';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 
 describe('CashuMintRpcService', () => {

@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query} from '@nestjs/graphql';
 /* Local Dependencies */
-import {OrchardMintWatchdogStatus} from './mintwatchdog.model';
-import {MintWatchdogService} from './mintwatchdog.service';
+import {OrchardMintWatchdogStatus} from './mintwatchdog.model.js';
+import {MintWatchdogService} from './mintwatchdog.service.js';
 
 @Resolver()
 export class MintWatchdogResolver {

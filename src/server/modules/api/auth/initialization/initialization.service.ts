@@ -10,8 +10,8 @@ import {UserRole} from '@server/modules/user/user.enums';
 /* Native Dependencies */
 import {OrchardAuthentication} from '@server/modules/api/auth/authentication/authentication.model';
 /* Local Dependencies */
-import {OrchardInitialization} from './initialization.model';
-import {InitializationInput} from './initialization.input';
+import {OrchardInitialization} from './initialization.model.js';
+import {InitializationInput} from './initialization.input.js';
 
 @Injectable()
 export class AuthInitializationService {

@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query} from '@nestjs/graphql';
 /* Local Dependencies */
-import {TaprootAssetsInfoService} from './tapinfo.service';
-import {OrchardTaprootAssetsInfo} from './tapinfo.model';
+import {TaprootAssetsInfoService} from './tapinfo.service.js';
+import {OrchardTaprootAssetsInfo} from './tapinfo.model.js';
 
 @Resolver()
 export class TaprootAssetsInfoResolver {

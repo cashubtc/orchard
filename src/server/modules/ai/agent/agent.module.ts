@@ -8,9 +8,9 @@ import {SettingModule} from '@server/modules/setting/setting.module';
 import {ToolModule} from '@server/modules/ai/tools/tool.module';
 import {MintMetricsModule} from '@server/modules/cashu/mintmetrics/mintmetrics.module';
 /* Local Dependencies */
-import {Agent} from './agent.entity';
-import {AgentRun} from './agent-run.entity';
-import {AgentService} from './agent.service';
+import {Agent} from './agent.entity.js';
+import {AgentRun} from './agent-run.entity.js';
+import {AgentService} from './agent.service.js';
 
 @Module({
 	imports: [TypeOrmModule.forFeature([Agent, AgentRun]), AiModule, SettingModule, ToolModule, MintMetricsModule],

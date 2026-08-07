@@ -8,7 +8,7 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Internal Dependencies */
-import {OrchardAiHealth} from './aihealth.model';
+import {OrchardAiHealth} from './aihealth.model.js';
 
 @Injectable()
 export class AiHealthService {

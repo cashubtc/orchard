@@ -7,7 +7,7 @@ import {expect} from '@jest/globals';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 import {UserRole} from '@server/modules/user/user.enums';
 /* Local Dependencies */
-import {GqlAuthorizationGuard} from './authorization.guard';
+import {GqlAuthorizationGuard} from './authorization.guard.js';
 
 /** Creates a mock GQL execution context with the given request */
 function createMockContext(req: any): ExecutionContext {

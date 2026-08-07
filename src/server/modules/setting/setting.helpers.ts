@@ -1,8 +1,8 @@
 /* Core Dependencies */
 import {createHash, hkdfSync, randomBytes, createCipheriv, createDecipheriv} from 'crypto';
 /* Local Dependencies */
-import {Setting} from './setting.entity';
-import {SettingKey, SettingSensitivity, SettingValue} from './setting.enums';
+import {Setting} from './setting.entity.js';
+import {SettingKey, SettingSensitivity, SettingValue} from './setting.enums.js';
 
 /**
  * Map of setting keys to their sensitivity level.

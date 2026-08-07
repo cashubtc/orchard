@@ -8,7 +8,7 @@ import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.cla
 import {MintService} from '@server/modules/api/mint/mint.service';
 import {ErrorService} from '@server/modules/error/error.service';
 /* Local Dependencies */
-import {OrchardMintBalance} from './mintbalance.model';
+import {OrchardMintBalance} from './mintbalance.model.js';
 
 @Injectable()
 export class MintBalanceService {

@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {AiAssistant} from './ai.assistant.enums';
+import {AiAssistant} from './ai.assistant.enums.js';
 import {
 	UpdateSearchTool,
 	UpdateDateRangeTool,
@@ -49,7 +49,7 @@ import {
 	UpdateAgentToolsTool,
 	UpdateAgentSchedulesTool,
 	UpdateAgentActiveTool,
-} from './tools';
+} from './tools/index.js';
 
 export const AI_ASSISTANTS = {
 	[AiAssistant.DEFAULT]: {

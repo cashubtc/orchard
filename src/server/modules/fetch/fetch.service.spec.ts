@@ -5,7 +5,7 @@ import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {SocksProxyAgent} from 'socks-proxy-agent';
 /* Local Dependencies */
-import {FetchService} from './fetch.service';
+import {FetchService} from './fetch.service.js';
 
 describe('FetchService', () => {
 	let fetchService: FetchService;

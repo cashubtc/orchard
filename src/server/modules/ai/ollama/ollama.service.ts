@@ -7,10 +7,10 @@ import {FetchService} from '@server/modules/fetch/fetch.service';
 import {SettingService} from '@server/modules/setting/setting.service';
 import {SettingKey} from '@server/modules/setting/setting.enums';
 /* Local Dependencies */
-import {AiVendor} from '../ai.vendor';
-import {AiModel, AiMessage, AiTool, AiStreamChunk} from '../ai.types';
-import {AiMessageRole} from '../ai.enums';
-import {OllamaTagsResponse, OllamaChatChunk, OllamaModel} from './ollama.types';
+import {AiVendor} from '../ai.vendor.js';
+import {AiModel, AiMessage, AiTool, AiStreamChunk} from '../ai.types.js';
+import {AiMessageRole} from '../ai.enums.js';
+import {OllamaTagsResponse, OllamaChatChunk, OllamaModel} from './ollama.types.js';
 
 @Injectable()
 export class OllamaService implements AiVendor {

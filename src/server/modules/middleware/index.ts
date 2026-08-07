@@ -1,2 +1,2 @@
-export {securityHeaders} from './security-headers.middleware';
-export {indexHtml} from './index-html.middleware';
+export {securityHeaders} from './security-headers.middleware.js';
+export {indexHtml} from './index-html.middleware.js';

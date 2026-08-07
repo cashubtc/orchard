@@ -6,7 +6,7 @@ import {ConfigService} from '@nestjs/config';
 import {LndService} from '@server/modules/lightning/lnd/lnd.service';
 import {ClnService} from '@server/modules/lightning/cln/cln.service';
 /* Local Dependencies */
-import {LightningWalletKitService} from './lnwalletkit.service';
+import {LightningWalletKitService} from './lnwalletkit.service.js';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 
 describe('LightningWalletKitService', () => {

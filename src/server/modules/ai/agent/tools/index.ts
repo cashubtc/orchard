@@ -1,5 +1,5 @@
-export {GetBitcoinAnalyticsMetricsTool, GetBitcoinBlockchainInfoTool, GetBitcoinNetworkInfoTool} from './bitcoin.tools';
-export {GetPortHealthTool, GetUrlHealthTool} from './health.tools';
+export {GetBitcoinAnalyticsMetricsTool, GetBitcoinBlockchainInfoTool, GetBitcoinNetworkInfoTool} from './bitcoin.tools.js';
+export {GetPortHealthTool, GetUrlHealthTool} from './health.tools.js';
 export {
 	GetLightningAnalyticsBalancesTool,
 	GetLightningAnalyticsMetricsTool,
@@ -7,8 +7,8 @@ export {
 	GetLightningClosedChannelsTool,
 	GetLightningInfoTool,
 	GetLightningPeersTool,
-} from './lightning.tools';
-export {GetMintAnalyticsMetricsTool, GetMintAnalyticsTool, GetMintInfoTool, GetMintMetricsTool} from './mint.tools';
-export {GetPastRunsTool} from './memory.tools';
-export {GetSystemMetricsTool} from './system.tools';
-export {createSendMessageTool, SkipMessageTool} from './message.tools';
+} from './lightning.tools.js';
+export {GetMintAnalyticsMetricsTool, GetMintAnalyticsTool, GetMintInfoTool, GetMintMetricsTool} from './mint.tools.js';
+export {GetPastRunsTool} from './memory.tools.js';
+export {GetSystemMetricsTool} from './system.tools.js';
+export {createSendMessageTool, SkipMessageTool} from './message.tools.js';

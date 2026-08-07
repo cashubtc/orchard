@@ -6,8 +6,8 @@ import {Repository} from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import {DateTime} from 'luxon';
 /* Local Dependencies */
-import {User} from './user.entity';
-import {UserRole} from './user.enums';
+import {User} from './user.entity.js';
+import {UserRole} from './user.enums.js';
 
 @Injectable()
 export class UserService {

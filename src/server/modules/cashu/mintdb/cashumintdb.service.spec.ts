@@ -2,13 +2,13 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Local Dependencies */
-import {CashuMintDatabaseService} from './cashumintdb.service';
+import {CashuMintDatabaseService} from './cashumintdb.service.js';
 import {ConfigService} from '@nestjs/config';
 import {CredentialService} from '@server/modules/credential/credential.service';
 import {NutshellService} from '@server/modules/cashu/nutshell/nutshell.service';
 import {CdkService} from '@server/modules/cashu/cdk/cdk.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {MintDatabaseType} from './cashumintdb.enums';
+import {MintDatabaseType} from './cashumintdb.enums.js';
 import * as child_process from 'child_process';
 import {promises as fs_promises} from 'fs';
 

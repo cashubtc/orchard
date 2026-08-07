@@ -10,7 +10,7 @@ import {LightningInfo} from '@server/modules/lightning/lightning/lightning.types
 import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
 import {MintService} from '@server/modules/api/mint/mint.service';
 /* Local Dependencies */
-import {OrchardLightningInfo} from './lninfo.model';
+import {OrchardLightningInfo} from './lninfo.model.js';
 
 @Injectable()
 export class LightningInfoService {

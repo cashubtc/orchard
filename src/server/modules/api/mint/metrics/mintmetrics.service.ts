@@ -12,7 +12,7 @@ import {MintMetricType} from '@server/modules/cashu/mintmetrics/mintmetrics.enum
 import {SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
 import {getBucketDate, bucketMinMaxAvg} from '@server/modules/system/metrics/sysmetrics.helpers';
 /* Local Dependencies */
-import {OrchardMintMetrics} from './mintmetrics.model';
+import {OrchardMintMetrics} from './mintmetrics.model.js';
 
 interface MintMetricsArgs {
 	date_start?: number;

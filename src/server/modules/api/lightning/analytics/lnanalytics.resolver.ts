@@ -9,8 +9,8 @@ import {OrchardAnalyticsBackfillStatus} from '@server/modules/api/common/analyti
 /* Native Dependencies */
 import {LightningAnalyticsMetric} from '@server/modules/lightning/analytics/lnanalytics.enums';
 /* Local Dependencies */
-import {OrchardLightningAnalytics, OrchardLightningAnalyticsMetric} from './lnanalytics.model';
-import {ApiLightningAnalyticsService} from './lnanalytics.service';
+import {OrchardLightningAnalytics, OrchardLightningAnalyticsMetric} from './lnanalytics.model.js';
+import {ApiLightningAnalyticsService} from './lnanalytics.service.js';
 
 @Resolver()
 export class LightningAnalyticsResolver {

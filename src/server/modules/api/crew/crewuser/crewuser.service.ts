@@ -6,8 +6,8 @@ import {UserService} from '@server/modules/user/user.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {OrchardCrewUser} from './crewuser.model';
-import {UserNameUpdateInput, UserPasswordUpdateInput, UserUpdateInput} from './crewuser.input';
+import {OrchardCrewUser} from './crewuser.model.js';
+import {UserNameUpdateInput, UserPasswordUpdateInput, UserUpdateInput} from './crewuser.input.js';
 
 @Injectable()
 export class CrewUserService {

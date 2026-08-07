@@ -7,7 +7,7 @@ import {LightningType} from '@server/modules/lightning/lightning.enums';
 import {LndService} from '@server/modules/lightning/lnd/lnd.service';
 import {ClnService} from '@server/modules/lightning/cln/cln.service';
 /* Local Dependencies */
-import {LightningAddresses} from './lnwalletkit.types';
+import {LightningAddresses} from './lnwalletkit.types.js';
 
 @Injectable()
 export class LightningWalletKitService implements OnModuleInit {

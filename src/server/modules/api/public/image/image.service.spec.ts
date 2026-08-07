@@ -7,8 +7,8 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {PublicImageService} from './image.service';
-import {OrchardPublicImage} from './image.model';
+import {PublicImageService} from './image.service.js';
+import {OrchardPublicImage} from './image.model.js';
 
 describe('PublicImageService', () => {
 	let publicImageService: PublicImageService;

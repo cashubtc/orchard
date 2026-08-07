@@ -2,8 +2,8 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Local Dependencies */
-import {StatusService} from './status.service';
-import {OrchardStatus} from './status.model';
+import {StatusService} from './status.service.js';
+import {OrchardStatus} from './status.model.js';
 
 describe('StatusService', () => {
 	let service: StatusService;

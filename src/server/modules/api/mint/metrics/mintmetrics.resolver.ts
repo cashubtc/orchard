@@ -7,8 +7,8 @@ import {Timezone, TimezoneType} from '@server/modules/graphql/scalars/timezone.s
 /* Native Dependencies */
 import {SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
 /* Local Dependencies */
-import {OrchardMintMetrics} from './mintmetrics.model';
-import {ApiMintMetricsService} from './mintmetrics.service';
+import {OrchardMintMetrics} from './mintmetrics.model.js';
+import {ApiMintMetricsService} from './mintmetrics.service.js';
 
 @Resolver()
 export class MintMetricsResolver {

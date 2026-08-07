@@ -7,8 +7,8 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {ApiEventLogService} from './event.service';
-import {OrchardEventLog} from './event.model';
+import {ApiEventLogService} from './event.service.js';
+import {OrchardEventLog} from './event.model.js';
 import {OrchardCommonCount} from '@server/modules/api/common/entity-count.model';
 
 describe('ApiEventLogService', () => {

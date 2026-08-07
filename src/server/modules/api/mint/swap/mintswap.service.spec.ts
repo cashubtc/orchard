@@ -8,8 +8,8 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {MintSwapService} from './mintswap.service';
-import {OrchardMintSwap} from './mintswap.model';
+import {MintSwapService} from './mintswap.service.js';
+import {OrchardMintSwap} from './mintswap.model.js';
 
 describe('MintSwapService', () => {
 	let mintSwapService: MintSwapService;

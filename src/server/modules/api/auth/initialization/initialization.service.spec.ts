@@ -9,10 +9,10 @@ import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 import {UserRole} from '@server/modules/user/user.enums';
 /* Local Dependencies */
-import {AuthInitializationService} from './initialization.service';
-import {OrchardAuthentication} from '../authentication/authentication.model';
-import {OrchardInitialization} from './initialization.model';
-import {InitializationInput} from './initialization.input';
+import {AuthInitializationService} from './initialization.service.js';
+import {OrchardAuthentication} from '../authentication/authentication.model.js';
+import {OrchardInitialization} from './initialization.model.js';
+import {InitializationInput} from './initialization.input.js';
 
 describe('AtuhInitializationService', () => {
 	let initializationService: AuthInitializationService;

@@ -1,7 +1,7 @@
 import {Request, Response, NextFunction} from 'express';
 import {readFileSync} from 'fs';
 
-import {indexHtml} from './index-html.middleware';
+import {indexHtml} from './index-html.middleware.js';
 
 jest.mock('fs', () => ({
 	readFileSync: jest.fn(),

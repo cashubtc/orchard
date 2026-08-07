@@ -8,10 +8,10 @@ import {TypeOrmModule} from '@nestjs/typeorm';
 /* Application Dependencies */
 import {UserModule} from '@server/modules/user/user.module';
 /* Local Dependencies */
-import {AuthService} from './auth.service';
-import {AuthStrategy} from './strategy/auth.strategy';
-import {RefreshTokenStrategy} from './strategy/refresh.strategy';
-import {TokenBlacklist} from './token-blacklist.entity';
+import {AuthService} from './auth.service.js';
+import {AuthStrategy} from './strategy/auth.strategy.js';
+import {RefreshTokenStrategy} from './strategy/refresh.strategy.js';
+import {TokenBlacklist} from './token-blacklist.entity.js';
 
 @Module({
 	imports: [

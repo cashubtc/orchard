@@ -8,9 +8,9 @@ import {MintService} from '@server/modules/api/mint/mint.service';
 import {ErrorModule} from '@server/modules/error/error.module';
 import {EventLogModule} from '@server/modules/event/event.module';
 /* Local Dependencies */
-import {MintMintQuoteService} from './mintmintquote.service';
-import {MintMintQuoteResolver} from './mintmintquote.resolver';
-import {MintMintQuoteInterceptor} from './mintmintquote.interceptor';
+import {MintMintQuoteService} from './mintmintquote.service.js';
+import {MintMintQuoteResolver} from './mintmintquote.resolver.js';
+import {MintMintQuoteInterceptor} from './mintmintquote.interceptor.js';
 
 @Module({
 	imports: [CashuMintDatabaseModule, CashuMintRpcModule, CashuMintApiModule, ErrorModule, EventLogModule],

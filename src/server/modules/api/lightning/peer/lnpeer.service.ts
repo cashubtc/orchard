@@ -6,7 +6,7 @@ import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.cla
 import {ErrorService} from '@server/modules/error/error.service';
 import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
 /* Local Dependencies */
-import {OrchardLightningPeer} from './lnpeer.model';
+import {OrchardLightningPeer} from './lnpeer.model.js';
 
 @Injectable()
 export class LightningPeerService {

@@ -7,9 +7,9 @@ import {Public} from '@server/modules/auth/decorators/auth.decorator';
 /* Native Dependencies */
 import {OrchardAuthentication} from '@server/modules/api/auth/authentication/authentication.model';
 /* Local Dependencies */
-import {AuthInitializationService} from './initialization.service';
-import {OrchardInitialization} from './initialization.model';
-import {InitializationInput} from './initialization.input';
+import {AuthInitializationService} from './initialization.service.js';
+import {OrchardInitialization} from './initialization.model.js';
+import {InitializationInput} from './initialization.input.js';
 
 @Resolver(() => [OrchardAuthentication])
 export class AuthInitializationResolver {

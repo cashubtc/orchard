@@ -9,9 +9,9 @@ import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 import {Public} from '@server/modules/auth/decorators/auth.decorator';
 /* Local Dependencies */
-import {AuthAuthenticationService} from './authentication.service';
-import {OrchardAuthentication} from './authentication.model';
-import {AuthenticationInput} from './authentication.input';
+import {AuthAuthenticationService} from './authentication.service.js';
+import {OrchardAuthentication} from './authentication.model.js';
+import {AuthenticationInput} from './authentication.input.js';
 
 @Resolver(() => [OrchardAuthentication])
 export class AuthAuthenticationResolver {

@@ -7,8 +7,8 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {LightningRequestService} from './lnrequest.service';
-import {OrchardLightningRequest} from './lnrequest.model';
+import {LightningRequestService} from './lnrequest.service.js';
+import {OrchardLightningRequest} from './lnrequest.model.js';
 
 describe('LightningRequestService', () => {
 	let lightningRequestService: LightningRequestService;

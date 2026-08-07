@@ -31,7 +31,7 @@ import {
 	ClnListTransactionsResponse,
 	ClnPeer,
 	ClnListPeersResponse,
-} from './cln.types';
+} from './cln.types.js';
 
 export function asBigIntMsat(v: any): bigint {
 	if (v == null) return BigInt(0);

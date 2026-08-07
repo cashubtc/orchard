@@ -4,8 +4,8 @@ import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Application Dependencies */
 import {MintUnit} from '@server/modules/cashu/cashu.enums';
 /* Local Dependencies */
-import {MintProofService} from './mintproof.service';
-import {OrchardMintProofGroupStats} from './mintproof.model';
+import {MintProofService} from './mintproof.service.js';
+import {OrchardMintProofGroupStats} from './mintproof.model.js';
 
 @Resolver()
 export class MintProofResolver {

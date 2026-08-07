@@ -19,8 +19,8 @@ import {
 import {LightningChannelOpenInitiator} from '@server/modules/lightning/lightning.enums';
 import {AnalyticsBackfillStatus} from '@server/modules/analytics/analytics.interfaces';
 /* Local Dependencies */
-import {LightningAnalytics} from './lnanalytics.entity';
-import {LightningAnalyticsMetric} from './lnanalytics.enums';
+import {LightningAnalytics} from './lnanalytics.entity.js';
+import {LightningAnalyticsMetric} from './lnanalytics.enums.js';
 
 const BATCH_SIZE = 500;
 const BATCH_DELAY_MS = 5000;

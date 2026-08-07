@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query} from '@nestjs/graphql';
 /* Local Dependencies */
-import {OrchardBitcoinMempoolTransaction} from './btcmempool.model';
-import {BitcoinMempoolService} from './btcmempool.service';
+import {OrchardBitcoinMempoolTransaction} from './btcmempool.model.js';
+import {BitcoinMempoolService} from './btcmempool.service.js';
 
 @Resolver()
 export class BitcoinMempoolResolver {

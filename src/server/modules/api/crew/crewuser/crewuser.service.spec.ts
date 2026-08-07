@@ -9,9 +9,9 @@ import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.cla
 import {User} from '@server/modules/user/user.entity';
 import {UserRole} from '@server/modules/user/user.enums';
 /* Local Dependencies */
-import {CrewUserService} from './crewuser.service';
-import {OrchardCrewUser} from './crewuser.model';
-import {UserNameUpdateInput, UserPasswordUpdateInput} from './crewuser.input';
+import {CrewUserService} from './crewuser.service.js';
+import {OrchardCrewUser} from './crewuser.model.js';
+import {UserNameUpdateInput, UserPasswordUpdateInput} from './crewuser.input.js';
 
 describe('CrewUserService', () => {
 	let crewUserService: CrewUserService;

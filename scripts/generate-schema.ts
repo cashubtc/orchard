@@ -4,7 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { GraphQLSchemaHost } from '@nestjs/graphql';
 import { printSchema } from 'graphql';
 import { writeFileSync } from 'fs';
-import { AppModule } from '../src/server/app.module';
+import { AppModule } from '../src/server/app.module.js';
 
 async function generateSchema() {
   const app = await NestFactory.create(AppModule, { logger: ['error'] });

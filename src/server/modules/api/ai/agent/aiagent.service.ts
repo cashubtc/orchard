@@ -9,7 +9,7 @@ import {AgentService} from '@server/modules/ai/agent/agent.service';
 import {AgentKey} from '@server/modules/ai/agent/agent.enums';
 import {AGENTS} from '@server/modules/ai/agent/agent.agents';
 /* Local Dependencies */
-import {OrchardAgent, OrchardAgentDefault, OrchardAgentRun} from './aiagent.model';
+import {OrchardAgent, OrchardAgentDefault, OrchardAgentRun} from './aiagent.model.js';
 
 @Injectable()
 export class AiAgentService {

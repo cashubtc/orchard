@@ -22,8 +22,8 @@ import {
 	ResetMessagePayload,
 } from '@server/modules/message/message.types';
 /* Local Dependencies */
-import {Conversation} from './conversation.entity';
-import {ConversationStatus} from './conversation.enums';
+import {Conversation} from './conversation.entity.js';
+import {ConversationStatus} from './conversation.enums.js';
 
 @Injectable()
 export class ConversationService {

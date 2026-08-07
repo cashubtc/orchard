@@ -9,18 +9,18 @@ import {DataSource, DataSourceOptions} from 'typeorm';
 import {ScheduleModule} from '@nestjs/schedule';
 import {EventEmitterModule} from '@nestjs/event-emitter';
 /* Application Modules */
-import {SecurityModule} from './modules/security/security.module';
-import {AuthModule} from './modules/auth/auth.module';
-import {ApiModule} from './modules/api/api.module';
-import {FetchModule} from './modules/fetch/fetch.module';
-import {WebserverModule} from './modules/webserver/webserver.module';
-import {TaskModule} from './modules/task/task.module';
+import {SecurityModule} from './modules/security/security.module.js';
+import {AuthModule} from './modules/auth/auth.module.js';
+import {ApiModule} from './modules/api/api.module.js';
+import {FetchModule} from './modules/fetch/fetch.module.js';
+import {WebserverModule} from './modules/webserver/webserver.module.js';
+import {TaskModule} from './modules/task/task.module.js';
 /* Custom Graphql Type Definitions */
-import {UnixTimestamp} from './modules/graphql/scalars/unixtimestamp.scalar';
-import {Timezone} from './modules/graphql/scalars/timezone.scalar';
-import {Base64} from './modules/graphql/scalars/base64.scalar';
+import {UnixTimestamp} from './modules/graphql/scalars/unixtimestamp.scalar.js';
+import {Timezone} from './modules/graphql/scalars/timezone.scalar.js';
+import {Base64} from './modules/graphql/scalars/base64.scalar.js';
 /* Application Configuration */
-import {config} from './config/configuration';
+import {config} from './config/configuration.js';
 
 function initializeGraphQL(configService: ConfigService): ApolloDriverConfig {
 	const path = configService.get('server.path');

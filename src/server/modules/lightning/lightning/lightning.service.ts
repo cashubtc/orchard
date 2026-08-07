@@ -21,7 +21,7 @@ import {
 	LightningHistoryArgs,
 	LightningPaginatedResult,
 	LightningPeer,
-} from './lightning.types';
+} from './lightning.types.js';
 import {
 	mapLndPayments,
 	mapLndInvoices,

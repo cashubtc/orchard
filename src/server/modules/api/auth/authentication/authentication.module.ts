@@ -5,8 +5,8 @@ import {ErrorModule} from '@server/modules/error/error.module';
 import {AuthModule} from '@server/modules/auth/auth.module';
 import {UserModule} from '@server/modules/user/user.module';
 /* Internal Dependencies */
-import {AuthAuthenticationResolver} from './authentication.resolver';
-import {AuthAuthenticationService} from './authentication.service';
+import {AuthAuthenticationResolver} from './authentication.resolver.js';
+import {AuthAuthenticationService} from './authentication.service.js';
 
 @Module({
 	imports: [ErrorModule, AuthModule, UserModule],

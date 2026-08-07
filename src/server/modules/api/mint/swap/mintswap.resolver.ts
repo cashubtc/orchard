@@ -5,8 +5,8 @@ import {Resolver, Query, Args, Int} from '@nestjs/graphql';
 import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
 import {MintUnit} from '@server/modules/cashu/cashu.enums';
 /* Local Dependencies */
-import {MintSwapService} from './mintswap.service';
-import {OrchardMintSwap} from './mintswap.model';
+import {MintSwapService} from './mintswap.service.js';
+import {OrchardMintSwap} from './mintswap.model.js';
 
 @Resolver()
 export class MintSwapResolver {

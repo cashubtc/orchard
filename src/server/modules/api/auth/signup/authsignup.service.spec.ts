@@ -14,8 +14,8 @@ import {UserRole} from '@server/modules/user/user.enums';
 import {User} from '@server/modules/user/user.entity';
 import {Invite} from '@server/modules/invite/invite.entity';
 /* Local Dependencies */
-import {AuthSignupService} from './authsignup.service';
-import {AuthSignupInput} from './authsignup.input';
+import {AuthSignupService} from './authsignup.service.js';
+import {AuthSignupInput} from './authsignup.input.js';
 
 describe('AuthSignupService', () => {
 	let authSignupService: AuthSignupService;

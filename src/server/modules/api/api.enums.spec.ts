@@ -7,7 +7,7 @@ import {TypeMetadataStorage} from '@nestjs/graphql/dist/schema-builder/storages'
  * Import the file to trigger all registerEnumType() calls.
  * Registrations are deferred via LazyMetadataStorage — flush them before reading.
  */
-import './api.enums';
+import './api.enums.js';
 LazyMetadataStorage.load();
 
 /** Extracts the string keys from a TypeScript enum (filters out reverse mappings) */

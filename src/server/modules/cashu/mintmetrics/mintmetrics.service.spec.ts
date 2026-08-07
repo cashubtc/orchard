@@ -8,8 +8,8 @@ import {ConfigService} from '@nestjs/config';
 import {PrometheusService} from '@server/modules/prometheus/prometheus.service';
 import {PromFamily} from '@server/modules/prometheus/prometheus.types';
 /* Local Dependencies */
-import {MintMetrics} from './mintmetrics.entity';
-import {MintMetricsService} from './mintmetrics.service';
+import {MintMetrics} from './mintmetrics.entity.js';
+import {MintMetricsService} from './mintmetrics.service.js';
 
 const GAUGE_FAMILY: PromFamily = {
 	name: 'process_memory_bytes',

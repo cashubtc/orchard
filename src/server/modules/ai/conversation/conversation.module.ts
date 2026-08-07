@@ -6,8 +6,8 @@ import {TypeOrmModule} from '@nestjs/typeorm';
 import {MessageModule} from '@server/modules/message/message.module';
 import {AgentModule} from '@server/modules/ai/agent/agent.module';
 /* Local Dependencies */
-import {Conversation} from './conversation.entity';
-import {ConversationService} from './conversation.service';
+import {Conversation} from './conversation.entity.js';
+import {ConversationService} from './conversation.service.js';
 
 @Module({
 	imports: [TypeOrmModule.forFeature([Conversation]), MessageModule, AgentModule],

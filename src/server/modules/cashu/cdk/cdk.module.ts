@@ -3,7 +3,7 @@ import {Module} from '@nestjs/common';
 /* Application Dependencies */
 import {CredentialModule} from '@server/modules/credential/credential.module';
 /* Local Dependencies */
-import {CdkService} from './cdk.service';
+import {CdkService} from './cdk.service.js';
 
 @Module({
 	imports: [CredentialModule],

@@ -19,7 +19,7 @@ import {
 import {SettingService} from '@server/modules/setting/setting.service';
 import {SettingKey, SettingValue} from '@server/modules/setting/setting.enums';
 /* Local Dependencies */
-import {SettingInterceptor} from './setting.interceptor';
+import {SettingInterceptor} from './setting.interceptor.js';
 
 /**
  * Test suite for SettingInterceptor

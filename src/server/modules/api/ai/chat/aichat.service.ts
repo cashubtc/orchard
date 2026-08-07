@@ -11,8 +11,8 @@ import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.cla
 import {AiMessageRole} from '@server/modules/ai/ai.enums';
 import {AiStreamChunk} from '@server/modules/ai/ai.types';
 /* Local Dependencies */
-import {OrchardAiChatChunk, OrchardAiChatStream} from './aichat.model';
-import {AiChatInput} from './aichat.input';
+import {OrchardAiChatChunk, OrchardAiChatStream} from './aichat.model.js';
+import {AiChatInput} from './aichat.input.js';
 
 @Injectable()
 export class AiChatService {

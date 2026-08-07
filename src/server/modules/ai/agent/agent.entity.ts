@@ -1,8 +1,8 @@
 /* Vendor Dependencies */
 import {Entity, Column, PrimaryGeneratedColumn, OneToMany} from 'typeorm';
 /* Local Dependencies */
-import {AgentKey, AgentScheduleKind} from './agent.enums';
-import {AgentRun} from './agent-run.entity';
+import {AgentKey, AgentScheduleKind} from './agent.enums.js';
+import {AgentRun} from './agent-run.entity.js';
 
 @Entity('agents')
 export class Agent {

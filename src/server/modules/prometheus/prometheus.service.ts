@@ -3,8 +3,8 @@ import {Injectable} from '@nestjs/common';
 /* Application Dependencies */
 import {FetchService} from '@server/modules/fetch/fetch.service';
 /* Local Dependencies */
-import {parsePrometheusText} from './prometheus.helpers';
-import {PromFamily} from './prometheus.types';
+import {parsePrometheusText} from './prometheus.helpers.js';
+import {PromFamily} from './prometheus.types.js';
 
 // Bounds a scrape so a hung endpoint (accepts the connection but never responds, e.g. a stalled Tor hop) can't leave a fetch pending forever
 const SCRAPE_TIMEOUT_MS = 15_000;

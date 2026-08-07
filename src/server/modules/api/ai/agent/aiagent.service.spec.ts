@@ -7,7 +7,7 @@ import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 import {AgentService} from '@server/modules/ai/agent/agent.service';
 /* Local Dependencies */
-import {AiAgentService} from './aiagent.service';
+import {AiAgentService} from './aiagent.service.js';
 
 const mock_agent = {
 	id: 'test-uuid',

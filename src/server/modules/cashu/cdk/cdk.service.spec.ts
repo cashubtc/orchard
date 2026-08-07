@@ -6,7 +6,7 @@ import {Logger} from '@nestjs/common';
 /* Application Dependencies */
 import {CredentialService} from '@server/modules/credential/credential.service';
 /* Local Dependencies */
-import {CdkService} from './cdk.service';
+import {CdkService} from './cdk.service.js';
 import * as grpc from '@grpc/grpc-js';
 
 jest.mock('@server/modules/cashu/mintdb/cashumintdb.helpers', () => ({

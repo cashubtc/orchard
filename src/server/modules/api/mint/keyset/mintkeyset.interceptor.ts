@@ -19,7 +19,7 @@ import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb
 import {CashuMintKeyset} from '@server/modules/cashu/mintdb/cashumintdb.types';
 import {MintService} from '@server/modules/api/mint/mint.service';
 /* Local Dependencies */
-import {OrchardMintKeysetRotation} from './mintkeyset.model';
+import {OrchardMintKeysetRotation} from './mintkeyset.model.js';
 
 @Injectable()
 export class MintKeysetInterceptor implements NestInterceptor {

@@ -8,7 +8,7 @@ import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.cla
 import {AiAssistant} from '@server/modules/ai/assistant/ai.assistant.enums';
 import {AI_ASSISTANTS} from '@server/modules/ai/assistant/ai.assistants';
 /* Local Dependencies */
-import {OrchardAiAssistant} from './aiassistant.model';
+import {OrchardAiAssistant} from './aiassistant.model.js';
 
 @Injectable()
 export class AiAssistantService {

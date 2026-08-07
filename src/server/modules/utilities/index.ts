@@ -1,1 +1,1 @@
-export {safeParse} from './safe-parse';
+export {safeParse} from './safe-parse.js';

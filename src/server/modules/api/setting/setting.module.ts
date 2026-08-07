@@ -6,9 +6,9 @@ import {EventLogModule} from '@server/modules/event/event.module';
 import {SettingModule} from '@server/modules/setting/setting.module';
 import {MessageModule} from '@server/modules/message/message.module';
 /* Local Dependencies */
-import {SettingResolver} from './setting.resolver';
-import {ApiSettingService} from './setting.service';
-import {SettingInterceptor} from './setting.interceptor';
+import {SettingResolver} from './setting.resolver.js';
+import {ApiSettingService} from './setting.service.js';
+import {SettingInterceptor} from './setting.interceptor.js';
 
 @Module({
 	imports: [ErrorModule, EventLogModule, SettingModule, MessageModule],

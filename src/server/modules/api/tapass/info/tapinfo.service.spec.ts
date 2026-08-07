@@ -7,8 +7,8 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {TaprootAssetsInfoService} from './tapinfo.service';
-import {OrchardTaprootAssetsInfo} from './tapinfo.model';
+import {TaprootAssetsInfoService} from './tapinfo.service.js';
+import {OrchardTaprootAssetsInfo} from './tapinfo.model.js';
 
 describe('TaprootAssetsInfoService', () => {
 	let taprootAssetsInfoService: TaprootAssetsInfoService;

@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {AgentKey, AgentToolName} from './agent.enums';
+import {AgentKey, AgentToolName} from './agent.enums.js';
 
 /* *******************************************************
 	Agent Definitions

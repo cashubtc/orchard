@@ -7,8 +7,8 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {AiModelService} from './aimodel.service';
-import {OrchardAiModel} from './aimodel.model';
+import {AiModelService} from './aimodel.service.js';
+import {OrchardAiModel} from './aimodel.model.js';
 
 describe('AiModelService', () => {
 	let aiModelService: AiModelService;

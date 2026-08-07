@@ -11,7 +11,7 @@ import {median} from '@server/modules/math/median';
 /* Native Dependencies */
 import {MintUnit, MintProofState} from '@server/modules/cashu/cashu.enums';
 /* Local Dependencies */
-import {OrchardMintProofGroupStats} from './mintproof.model';
+import {OrchardMintProofGroupStats} from './mintproof.model.js';
 
 @Injectable()
 export class MintProofService {

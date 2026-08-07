@@ -7,12 +7,12 @@ import compression from 'compression';
 /* Vendor Dependencies */
 import * as express from 'express';
 /* Application */
-import {AppModule} from './app.module';
-import {securityHeaders, indexHtml} from './modules/middleware';
-import {BitcoinType} from './modules/bitcoin/bitcoin.enums';
-import {LightningType} from './modules/lightning/lightning.enums';
-import {TaprootAssetType} from './modules/tapass/tapass.enums';
-import {MintType} from './modules/cashu/cashu.enums';
+import {AppModule} from './app.module.js';
+import {securityHeaders, indexHtml} from './modules/middleware/index.js';
+import {BitcoinType} from './modules/bitcoin/bitcoin.enums.js';
+import {LightningType} from './modules/lightning/lightning.enums.js';
+import {TaprootAssetType} from './modules/tapass/tapass.enums.js';
+import {MintType} from './modules/cashu/cashu.enums.js';
 
 const log_levels: Record<string, LogLevel[]> = {
 	verbose: ['log', 'fatal', 'error', 'warn', 'debug', 'verbose'],

@@ -7,7 +7,7 @@ import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.cla
 import {MintService} from '@server/modules/api/mint/mint.service';
 import {ErrorService} from '@server/modules/error/error.service';
 /* Local Dependencies */
-import {OrchardMintDatabaseBackup, OrchardMintDatabaseInfo, OrchardMintDatabaseRestore} from './mintdatabase.model';
+import {OrchardMintDatabaseBackup, OrchardMintDatabaseInfo, OrchardMintDatabaseRestore} from './mintdatabase.model.js';
 
 @Injectable()
 export class MintDatabaseService {

@@ -17,10 +17,10 @@ import {safeParse} from '@server/modules/utilities';
 import {ToolService} from '@server/modules/ai/tools/tool.service';
 import {AiAgentContext} from '@server/modules/ai/tools/tool.types';
 /* Local Dependencies */
-import {Agent} from './agent.entity';
-import {AgentRun} from './agent-run.entity';
-import {AgentToolCategory, AgentToolName, AgentKey, AgentRunStatus} from './agent.enums';
-import {AGENTS} from './agent.agents';
+import {Agent} from './agent.entity.js';
+import {AgentRun} from './agent-run.entity.js';
+import {AgentToolCategory, AgentToolName, AgentKey, AgentRunStatus} from './agent.enums.js';
+import {AGENTS} from './agent.agents.js';
 
 @Injectable()
 export class AgentService implements OnModuleInit {

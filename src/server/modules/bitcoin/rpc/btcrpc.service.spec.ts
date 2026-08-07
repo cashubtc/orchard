@@ -5,7 +5,7 @@ import {ConfigService} from '@nestjs/config';
 /* Native Dependencies */
 import {CoreService} from '@server/modules/bitcoin/core/core.service';
 /* Local Dependencies */
-import {BitcoinRpcService} from './btcrpc.service';
+import {BitcoinRpcService} from './btcrpc.service.js';
 import {BitcoinType} from '@server/modules/bitcoin/bitcoin.enums';
 
 describe('BitcoinRpcService', () => {

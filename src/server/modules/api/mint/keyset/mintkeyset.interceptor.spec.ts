@@ -19,7 +19,7 @@ import {
 import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
 import {MintService} from '@server/modules/api/mint/mint.service';
 /* Local Dependencies */
-import {MintKeysetInterceptor} from './mintkeyset.interceptor';
+import {MintKeysetInterceptor} from './mintkeyset.interceptor.js';
 
 /** Flush pending microtasks (awaits floating async promises in tap callbacks) */
 const flushPromises = () => new Promise((resolve) => setImmediate(resolve));

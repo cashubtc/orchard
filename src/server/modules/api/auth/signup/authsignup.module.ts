@@ -6,8 +6,8 @@ import {AuthModule} from '@server/modules/auth/auth.module';
 import {UserModule} from '@server/modules/user/user.module';
 import {InviteModule} from '@server/modules/invite/invite.module';
 /* Internal Dependencies */
-import {AuthSignupResolver} from './authsignup.resolver';
-import {AuthSignupService} from './authsignup.service';
+import {AuthSignupResolver} from './authsignup.resolver.js';
+import {AuthSignupService} from './authsignup.service.js';
 
 @Module({
 	imports: [ErrorModule, AuthModule, UserModule, InviteModule],

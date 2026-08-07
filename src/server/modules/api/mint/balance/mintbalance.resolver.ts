@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Internal Dependencies */
-import {MintBalanceService} from './mintbalance.service';
-import {OrchardMintBalance} from './mintbalance.model';
+import {MintBalanceService} from './mintbalance.service.js';
+import {OrchardMintBalance} from './mintbalance.model.js';
 
 @Resolver(() => [OrchardMintBalance])
 export class MintBalanceResolver {

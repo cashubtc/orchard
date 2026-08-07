@@ -5,9 +5,9 @@ import * as net from 'net';
 /* Vendor Dependencies */
 import {SocksClient} from 'socks';
 /* Local Dependencies */
-import {assertPublicHost} from '../network-guard';
-import {OrchardPublicPort} from './port.model';
-import {PublicPortInput} from './port.input';
+import {assertPublicHost} from '../network-guard.js';
+import {OrchardPublicPort} from './port.model.js';
+import {PublicPortInput} from './port.input.js';
 
 const TCP_TIMEOUT = 10000;
 

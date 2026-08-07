@@ -5,8 +5,8 @@ import {ErrorModule} from '@server/modules/error/error.module';
 /* Native Dependencies */
 import {SystemInfoModule} from '@server/modules/system/info/sysinfo.module';
 /* Local Dependencies */
-import {SystemInfoResolver} from './sysinfo.resolver';
-import {ApiSystemInfoService} from './sysinfo.service';
+import {SystemInfoResolver} from './sysinfo.resolver.js';
+import {ApiSystemInfoService} from './sysinfo.service.js';
 
 @Module({
 	imports: [SystemInfoModule, ErrorModule],

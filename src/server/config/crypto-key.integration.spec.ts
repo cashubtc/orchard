@@ -8,7 +8,7 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {ConfigService} from '@nestjs/config';
 import {getRepositoryToken} from '@nestjs/typeorm';
 /* Local Dependencies */
-import {loadOrCreateCryptoKey, generateEphemeralJwtSecret, getCryptoKeyPath} from './crypto-key';
+import {loadOrCreateCryptoKey, generateEphemeralJwtSecret, getCryptoKeyPath} from './crypto-key.js';
 import {SettingService} from '@server/modules/setting/setting.service';
 import {Setting} from '@server/modules/setting/setting.entity';
 import {SettingKey, SettingValue} from '@server/modules/setting/setting.enums';

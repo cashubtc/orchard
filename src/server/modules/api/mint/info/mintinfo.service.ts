@@ -18,7 +18,7 @@ import {
 	OrchardMintMotdUpdate,
 	OrchardMintUrlUpdate,
 	OrchardMintContactUpdate,
-} from './mintinfo.model';
+} from './mintinfo.model.js';
 
 @Injectable()
 export class MintInfoService {

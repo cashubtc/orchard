@@ -3,7 +3,7 @@ import {Injectable} from '@nestjs/common';
 /* Application Dependencies */
 import {ToolService} from '@server/modules/ai/tools/tool.service';
 /* Local Dependencies */
-import {OrchardAgentTool} from './aitools.model';
+import {OrchardAgentTool} from './aitools.model.js';
 
 @Injectable()
 export class AiToolsService {

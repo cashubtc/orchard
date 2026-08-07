@@ -1,8 +1,8 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
 /* Local Dependencies */
-import {MessageService} from './message.service';
-import {TelegramService} from './telegram/telegram.service';
+import {MessageService} from './message.service.js';
+import {TelegramService} from './telegram/telegram.service.js';
 
 describe('MessageService', () => {
 	let service: MessageService;

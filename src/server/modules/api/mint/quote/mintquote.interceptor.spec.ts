@@ -18,7 +18,7 @@ import {
 } from '@server/modules/event/event.enums';
 import {CashuMintRpcService} from '@server/modules/cashu/mintrpc/cashumintrpc.service';
 /* Local Dependencies */
-import {MintQuoteInterceptor} from './mintquote.interceptor';
+import {MintQuoteInterceptor} from './mintquote.interceptor.js';
 
 /**
  * Test suite for MintQuoteInterceptor

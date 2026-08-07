@@ -5,9 +5,9 @@ import {getRepositoryToken} from '@nestjs/typeorm';
 import {expect} from '@jest/globals';
 import * as bcrypt from 'bcrypt';
 /* Local Dependencies */
-import {UserService} from './user.service';
-import {User} from './user.entity';
-import {UserRole} from './user.enums';
+import {UserService} from './user.service.js';
+import {User} from './user.entity.js';
+import {UserRole} from './user.enums.js';
 
 jest.mock('bcrypt');
 

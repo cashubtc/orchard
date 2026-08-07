@@ -9,9 +9,9 @@ import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {round2} from '@server/modules/math/round';
 /* Local Dependencies */
-import {SystemMetrics} from './sysmetrics.entity';
-import {SystemMetric} from './sysmetrics.enums';
-import {METRICS_RETENTION_DAYS, METRICS_DOWNSAMPLE_AFTER_DAYS} from './sysmetrics.constants';
+import {SystemMetrics} from './sysmetrics.entity.js';
+import {SystemMetric} from './sysmetrics.enums.js';
+import {METRICS_RETENTION_DAYS, METRICS_DOWNSAMPLE_AFTER_DAYS} from './sysmetrics.constants.js';
 
 const CPU_SAMPLE_INTERVAL_MS = 100;
 

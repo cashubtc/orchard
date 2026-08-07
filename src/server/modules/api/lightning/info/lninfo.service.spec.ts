@@ -10,8 +10,8 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {LightningInfoService} from './lninfo.service';
-import {OrchardLightningInfo} from './lninfo.model';
+import {LightningInfoService} from './lninfo.service.js';
+import {OrchardLightningInfo} from './lninfo.model.js';
 
 describe('LightningInfoService', () => {
 	let module_ref: TestingModule;

@@ -9,7 +9,7 @@ import {EventLogFilters} from '@server/modules/event/event.interfaces';
 import {OrchardCommonCount} from '@server/modules/api/common/entity-count.model';
 import {OrchardCommonGenesis} from '@server/modules/api/common/entity-genesis.model';
 /* Local Dependencies */
-import {OrchardEventLog} from './event.model';
+import {OrchardEventLog} from './event.model.js';
 
 @Injectable()
 export class ApiEventLogService {

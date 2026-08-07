@@ -1,8 +1,8 @@
 /* Vendor Dependencies */
 import {Entity, Column, PrimaryGeneratedColumn, OneToMany} from 'typeorm';
 /* Local Dependencies */
-import {EventLogActorType, EventLogSection, EventLogEntityType, EventLogType, EventLogStatus} from './event.enums';
-import {EventLogDetail} from './event-detail.entity';
+import {EventLogActorType, EventLogSection, EventLogEntityType, EventLogType, EventLogStatus} from './event.enums.js';
+import {EventLogDetail} from './event-detail.entity.js';
 
 @Entity('events')
 export class EventLog {

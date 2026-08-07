@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query} from '@nestjs/graphql';
 /* Local Dependencies */
-import {AiToolsService} from './aitools.service';
-import {OrchardAgentTool} from './aitools.model';
+import {AiToolsService} from './aitools.service.js';
+import {OrchardAgentTool} from './aitools.model.js';
 
 @Resolver(() => [OrchardAgentTool])
 export class AiToolsResolver {

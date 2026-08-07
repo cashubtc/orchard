@@ -9,8 +9,8 @@ import {OrchardAnalyticsBackfillStatus} from '@server/modules/api/common/analyti
 /* Native Dependencies */
 import {BitcoinAnalyticsMetric} from '@server/modules/bitcoin/analytics/btcanalytics.enums';
 /* Local Dependencies */
-import {OrchardBitcoinAnalytics, OrchardBitcoinAnalyticsMetric} from './btcanalytics.model';
-import {ApiBitcoinAnalyticsService} from './btcanalytics.service';
+import {OrchardBitcoinAnalytics, OrchardBitcoinAnalyticsMetric} from './btcanalytics.model.js';
+import {ApiBitcoinAnalyticsService} from './btcanalytics.service.js';
 
 @Resolver()
 export class BitcoinAnalyticsResolver {

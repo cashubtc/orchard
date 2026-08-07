@@ -5,7 +5,7 @@ import {expect} from '@jest/globals';
 /* Application Dependencies */
 import {UserRole} from '@server/modules/user/user.enums';
 /* Local Dependencies */
-import {AuthStrategy} from './auth.strategy';
+import {AuthStrategy} from './auth.strategy.js';
 
 describe('AuthStrategy', () => {
 	let strategy: AuthStrategy;

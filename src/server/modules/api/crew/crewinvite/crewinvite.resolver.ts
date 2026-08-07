@@ -8,9 +8,9 @@ import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.cla
 import {UserRole} from '@server/modules/user/user.enums';
 import {Roles} from '@server/modules/auth/decorators/auth.decorator';
 /* Local Dependencies */
-import {CrewInviteService} from './crewinvite.service';
-import {OrchardCrewInvite} from './crewinvite.model';
-import {InviteCreateInput, InviteUpdateInput} from './crewinvite.input';
+import {CrewInviteService} from './crewinvite.service.js';
+import {OrchardCrewInvite} from './crewinvite.model.js';
+import {InviteCreateInput, InviteUpdateInput} from './crewinvite.input.js';
 
 @Resolver()
 export class CrewInviteResolver {

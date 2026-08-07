@@ -4,8 +4,8 @@ import {Module} from '@nestjs/common';
 import {ErrorModule} from '@server/modules/error/error.module';
 import {LightningModule} from '@server/modules/lightning/lightning/lightning.module';
 /* Local Dependencies */
-import {LightningChannelService} from './lnchannel.service';
-import {LightningChannelResolver} from './lnchannel.resolver';
+import {LightningChannelService} from './lnchannel.service.js';
+import {LightningChannelResolver} from './lnchannel.resolver.js';
 
 @Module({
 	imports: [LightningModule, ErrorModule],

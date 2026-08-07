@@ -14,8 +14,8 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {MintKeysetService} from './mintkeyset.service';
-import {OrchardMintKeyset, OrchardMintKeysetCount} from './mintkeyset.model';
+import {MintKeysetService} from './mintkeyset.service.js';
+import {OrchardMintKeyset, OrchardMintKeysetCount} from './mintkeyset.model.js';
 
 /** Helper: builds a cache row with sensible defaults */
 function makeCacheRow(overrides: Partial<MintAnalytics> = {}): MintAnalytics {

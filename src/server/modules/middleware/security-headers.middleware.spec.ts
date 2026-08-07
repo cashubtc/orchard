@@ -1,6 +1,6 @@
 import {Request, Response, NextFunction} from 'express';
 
-import {securityHeaders} from './security-headers.middleware';
+import {securityHeaders} from './security-headers.middleware.js';
 
 describe('securityHeaders', () => {
 	let req: Partial<Request>;

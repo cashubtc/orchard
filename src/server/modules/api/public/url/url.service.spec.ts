@@ -4,8 +4,8 @@ import {expect} from '@jest/globals';
 /* Application Dependencies */
 import {FetchService} from '@server/modules/fetch/fetch.service';
 /* Local Dependencies */
-import {PublicUrlService} from './url.service';
-import {OrchardPublicUrl} from './url.model';
+import {PublicUrlService} from './url.service.js';
+import {OrchardPublicUrl} from './url.model.js';
 
 describe('PublicUrlService', () => {
 	let publicUrlService: PublicUrlService;

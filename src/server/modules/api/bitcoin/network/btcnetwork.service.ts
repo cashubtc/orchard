@@ -7,7 +7,7 @@ import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
 /* Local Dependencies */
-import {OrchardBitcoinNetworkInfo} from './btcnetwork.model';
+import {OrchardBitcoinNetworkInfo} from './btcnetwork.model.js';
 
 @Injectable()
 export class BitcoinNetworkService {

@@ -7,8 +7,8 @@ import {ErrorService} from '@server/modules/error/error.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {LightningWalletService} from './lnwallet.service';
-import {OrchardLightningAccount} from './lnwallet.model';
+import {LightningWalletService} from './lnwallet.service.js';
+import {OrchardLightningAccount} from './lnwallet.model.js';
 
 describe('LightningWalletService', () => {
 	let lightningWalletService: LightningWalletService;

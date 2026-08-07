@@ -8,8 +8,8 @@ import {UserService} from '@server/modules/user/user.service';
 import {OrchardErrorCode} from '@server/modules/error/error.types';
 import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
-import {AuthAuthenticationService} from './authentication.service';
-import {OrchardAuthentication} from './authentication.model';
+import {AuthAuthenticationService} from './authentication.service.js';
+import {OrchardAuthentication} from './authentication.model.js';
 
 describe('AuthAuthenticationService', () => {
 	let authenticationService: AuthAuthenticationService;
