@@ -18,7 +18,7 @@ export class Agent {
 	@Column({type: 'text', nullable: true})
 	description: string | null;
 
-	@Column({default: false})
+	@Column({type: 'boolean', default: false})
 	active: boolean;
 
 	@Column({type: 'text', nullable: true})

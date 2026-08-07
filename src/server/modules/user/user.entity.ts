@@ -8,10 +8,10 @@ export class User {
 	@PrimaryGeneratedColumn('uuid')
 	id: string;
 
-	@Column({unique: true, length: 50})
+	@Column({type: 'varchar', unique: true, length: 50})
 	name: string;
 
-	@Column({length: 60})
+	@Column({type: 'varchar', length: 60})
 	password_hash: string;
 
 	@Column({
@@ -20,7 +20,7 @@ export class User {
 	})
 	role: UserRole;
 
-	@Column({default: true})
+	@Column({type: 'boolean', default: true})
 	@Index()
 	active: boolean;
 

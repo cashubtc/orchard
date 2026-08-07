@@ -1,5 +1,5 @@
 /* Vendor Dependencies */
-import {Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, Index} from 'typeorm';
+import {Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, Index, type Relation} from 'typeorm';
 /* Local Dependencies */
 import {AgentRunStatus} from './agent.enums';
 import {Agent} from './agent.entity';
@@ -13,7 +13,7 @@ export class AgentRun {
 
 	@ManyToOne(() => Agent, (agent) => agent.runs, {onDelete: 'CASCADE'})
 	@JoinColumn({name: 'agent_id'})
-	agent: Agent;
+	agent: Relation<Agent>;
 
 	@Column({type: 'text'})
 	status: AgentRunStatus;

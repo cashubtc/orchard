@@ -6,11 +6,11 @@ export class TokenBlacklist {
 	@PrimaryGeneratedColumn('uuid')
 	id: string;
 
-	@Column({unique: true, length: 64})
+	@Column({type: 'varchar', unique: true, length: 64})
 	@Index()
 	token_hash: string; // SHA-256 hash of the token for privacy and efficiency
 
-	@Column()
+	@Column({type: 'varchar'})
 	user_id: string; // user who owned the token
 
 	@Column({type: 'integer'})

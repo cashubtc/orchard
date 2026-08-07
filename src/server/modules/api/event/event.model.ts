@@ -21,19 +21,19 @@ export class OrchardEventLogDetail {
 	@Field({description: 'Field name affected by the event'})
 	field: string;
 
-	@Field({nullable: true, description: 'Previous value of the field'})
+	@Field(() => String, {nullable: true, description: 'Previous value of the field'})
 	old_value: string | null;
 
-	@Field({nullable: true, description: 'New value of the field'})
+	@Field(() => String, {nullable: true, description: 'New value of the field'})
 	new_value: string | null;
 
 	@Field(() => EventLogDetailStatus, {description: 'Status of the detail entry'})
 	status: EventLogDetailStatus;
 
-	@Field({nullable: true, description: 'Error code if the detail failed'})
+	@Field(() => String, {nullable: true, description: 'Error code if the detail failed'})
 	error_code: string | null;
 
-	@Field({nullable: true, description: 'Error message if the detail failed'})
+	@Field(() => String, {nullable: true, description: 'Error message if the detail failed'})
 	error_message: string | null;
 
 	constructor(detail: EventLogDetail) {
@@ -64,13 +64,13 @@ export class OrchardEventLog {
 	@Field(() => EventLogSection, {description: 'Section the event belongs to'})
 	section: EventLogSection;
 
-	@Field({nullable: true, description: 'Identifier of the section instance'})
+	@Field(() => String, {nullable: true, description: 'Identifier of the section instance'})
 	section_id: string | null;
 
 	@Field(() => EventLogEntityType, {description: 'Type of entity affected by the event'})
 	entity_type: EventLogEntityType;
 
-	@Field({nullable: true, description: 'Identifier of the affected entity'})
+	@Field(() => String, {nullable: true, description: 'Identifier of the affected entity'})
 	entity_id: string | null;
 
 	@Field(() => EventLogType, {description: 'Type of event that occurred'})

@@ -28,7 +28,7 @@ esac
 
 # Refuse to clobber the file when another preview's `ng serve` is live.
 # `pgrep` matches against the full command line — every preview shows up as
-# `ng serve --proxy-config proxy.conf.js --port <P>`. Skip this guard for
+# `ng serve --proxy-config proxy.conf.cjs --port <P>`. Skip this guard for
 # non-client tasks (server runs and one-off scripts).
 case " $* " in
   *" start:client "*)

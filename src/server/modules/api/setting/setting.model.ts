@@ -12,7 +12,7 @@ export class OrchardSetting {
 	@Field({description: 'Current value of the setting'})
 	value: string;
 
-	@Field({nullable: true, description: 'Human-readable description of the setting'})
+	@Field(() => String, {nullable: true, description: 'Human-readable description of the setting'})
 	description: string | null;
 
 	@Field(() => SettingValue, {description: 'Data type of the setting value'})
