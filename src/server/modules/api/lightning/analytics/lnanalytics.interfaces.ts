@@ -1,8 +1,8 @@
 /* Application Dependencies */
-import {AnalyticsInterval} from '@server/modules/analytics/analytics.enums';
-import {TimezoneType} from '@server/modules/graphql/scalars/timezone.scalar';
+import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
+import {TimezoneType} from '#server/modules/graphql/scalars/timezone.scalar';
 /* Native Dependencies */
-import {LightningAnalyticsMetric} from '@server/modules/lightning/analytics/lnanalytics.enums';
+import {LightningAnalyticsMetric} from '#server/modules/lightning/analytics/lnanalytics.enums';
 
 export interface LightningAnalyticsApiArgs {
 	date_start?: number;

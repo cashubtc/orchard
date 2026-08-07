@@ -1,5 +1,5 @@
 /* Application Dependencies */
-import {LightningRequestType, LightningChannelCloseType, LightningChannelOpenInitiator} from '@server/modules/lightning/lightning.enums';
+import {LightningRequestType, LightningChannelCloseType, LightningChannelOpenInitiator} from '#server/modules/lightning/lightning.enums';
 import {
 	LightningPayment,
 	LightningInvoice,
@@ -9,7 +9,7 @@ import {
 	LightningTransaction,
 	LightningPaginatedResult,
 	LightningPeer,
-} from '@server/modules/lightning/lightning/lightning.types';
+} from '#server/modules/lightning/lightning/lightning.types';
 /* Local Dependencies */
 import {
 	ClnPay,

@@ -2,10 +2,10 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
-import {Timezone, TimezoneType} from '@server/modules/graphql/scalars/timezone.scalar';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import {Timezone, TimezoneType} from '#server/modules/graphql/scalars/timezone.scalar';
 /* Native Dependencies */
-import {SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
+import {SystemMetricsInterval} from '#server/modules/system/metrics/sysmetrics.enums';
 /* Local Dependencies */
 import {OrchardMintMetrics} from './mintmetrics.model.js';
 import {ApiMintMetricsService} from './mintmetrics.service.js';

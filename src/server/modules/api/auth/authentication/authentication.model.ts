@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {ObjectType, Field} from '@nestjs/graphql';
 /* Application Dependencies */
-import {OrchardAuthToken} from '@server/modules/auth/auth.types';
+import {OrchardAuthToken} from '#server/modules/auth/auth.types';
 
 @ObjectType({description: 'Authentication token pair for API access'})
 export class OrchardAuthentication {

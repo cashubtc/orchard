@@ -5,8 +5,8 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {Repository, MoreThan, IsNull} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {UserRole} from '@server/modules/user/user.enums';
-import {User} from '@server/modules/user/user.entity';
+import {UserRole} from '#server/modules/user/user.enums';
+import {User} from '#server/modules/user/user.entity';
 /* Local Dependencies */
 import {Invite} from './invite.entity.js';
 

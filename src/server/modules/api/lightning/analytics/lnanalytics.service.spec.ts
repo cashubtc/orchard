@@ -2,12 +2,12 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {LightningAnalyticsService} from '@server/modules/lightning/analytics/lnanalytics.service';
-import {LightningAnalyticsMetric} from '@server/modules/lightning/analytics/lnanalytics.enums';
-import {AnalyticsInterval} from '@server/modules/analytics/analytics.enums';
-import {ErrorService} from '@server/modules/error/error.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
+import {LightningAnalyticsService} from '#server/modules/lightning/analytics/lnanalytics.service';
+import {LightningAnalyticsMetric} from '#server/modules/lightning/analytics/lnanalytics.enums';
+import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
+import {ErrorService} from '#server/modules/error/error.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
 import {ApiLightningAnalyticsService} from './lnanalytics.service.js';
 

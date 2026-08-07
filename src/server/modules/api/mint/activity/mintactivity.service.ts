@@ -3,13 +3,13 @@ import {Injectable, Logger} from '@nestjs/common';
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {CashuMintAnalyticsService} from '@server/modules/cashu/mintanalytics/mintanalytics.service';
-import {MintAnalytics} from '@server/modules/cashu/mintanalytics/mintanalytics.entity';
-import {MintAnalyticsMetric} from '@server/modules/cashu/mintanalytics/mintanalytics.enums';
-import {MintActivityPeriod} from '@server/modules/cashu/mintdb/cashumintdb.enums';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {ErrorService} from '@server/modules/error/error.service';
+import {CashuMintAnalyticsService} from '#server/modules/cashu/mintanalytics/mintanalytics.service';
+import {MintAnalytics} from '#server/modules/cashu/mintanalytics/mintanalytics.entity';
+import {MintAnalyticsMetric} from '#server/modules/cashu/mintanalytics/mintanalytics.enums';
+import {MintActivityPeriod} from '#server/modules/cashu/mintdb/cashumintdb.enums';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {ErrorService} from '#server/modules/error/error.service';
 /* Local Dependencies */
 import {OrchardMintActivitySummary, OrchardMintActivityBucket} from './mintactivity.model.js';
 

@@ -1,10 +1,10 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {CashuMintRpcService} from '@server/modules/cashu/mintrpc/cashumintrpc.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {ErrorService} from '@server/modules/error/error.service';
+import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {ErrorService} from '#server/modules/error/error.service';
 /* Local Dependencies */
 import {OrchardMintQuoteTtls} from './mintquote.model.js';
 import {MintQuoteTtlUpdateInput} from './mintquote.input.js';

@@ -2,10 +2,10 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
-import {Timezone, TimezoneType} from '@server/modules/graphql/scalars/timezone.scalar';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import {Timezone, TimezoneType} from '#server/modules/graphql/scalars/timezone.scalar';
 /* Native Dependencies */
-import {SystemMetric, SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
+import {SystemMetric, SystemMetricsInterval} from '#server/modules/system/metrics/sysmetrics.enums';
 /* Local Dependencies */
 import {OrchardSystemMetrics} from './sysmetrics.model.js';
 import {ApiSystemMetricsService} from './sysmetrics.service.js';

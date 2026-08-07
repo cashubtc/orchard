@@ -4,7 +4,7 @@ import * as os from 'os';
 import * as v8 from 'v8';
 import {promises as fs} from 'fs';
 /* Application Dependencies */
-import {round2} from '@server/modules/math/round';
+import {round2} from '#server/modules/math/round';
 /* Local Dependencies */
 import {SystemInfo} from './sysinfo.types.js';
 

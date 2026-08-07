@@ -1,8 +1,8 @@
 /* Core Dependencies */
 import {Field, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
-import {LightningInfo} from '@server/modules/lightning/lightning/lightning.types';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import {LightningInfo} from '#server/modules/lightning/lightning/lightning.types';
 
 @ObjectType({description: 'Lightning node general information'})
 export class OrchardLightningInfo {

@@ -3,11 +3,11 @@ import {Injectable, Logger} from '@nestjs/common';
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {MintService} from '@server/modules/api/mint/mint.service';
-import {ErrorService} from '@server/modules/error/error.service';
+import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {MintService} from '#server/modules/api/mint/mint.service';
+import {ErrorService} from '#server/modules/error/error.service';
 /* Local Dependencies */
 import {OrchardMintWatchdogStatus} from './mintwatchdog.model.js';
 

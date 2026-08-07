@@ -2,13 +2,13 @@
 import {Injectable, Logger} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {ErrorService} from '@server/modules/error/error.service';
-import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
-import {LightningInfo} from '@server/modules/lightning/lightning/lightning.types';
-import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
-import {MintService} from '@server/modules/api/mint/mint.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {ErrorService} from '#server/modules/error/error.service';
+import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
+import {LightningInfo} from '#server/modules/lightning/lightning/lightning.types';
+import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
+import {MintService} from '#server/modules/api/mint/mint.service';
 /* Local Dependencies */
 import {OrchardLightningInfo} from './lninfo.model.js';
 

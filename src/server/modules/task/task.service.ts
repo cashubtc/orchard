@@ -5,19 +5,19 @@ import {ConfigService} from '@nestjs/config';
 import {Cron} from '@nestjs/schedule';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {AuthService} from '@server/modules/auth/auth.service';
-import {SettingService} from '@server/modules/setting/setting.service';
-import {BitcoinRpcService} from '@server/modules/bitcoin/rpc/btcrpc.service';
-import {BitcoinUTXOracleService} from '@server/modules/bitcoin/utxoracle/utxoracle.service';
-import {LightningAnalyticsService} from '@server/modules/lightning/analytics/lnanalytics.service';
-import {BitcoinAnalyticsService} from '@server/modules/bitcoin/analytics/btcanalytics.service';
-import {CashuMintAnalyticsService} from '@server/modules/cashu/mintanalytics/mintanalytics.service';
-import {AgentService} from '@server/modules/ai/agent/agent.service';
-import {ConversationService} from '@server/modules/ai/conversation/conversation.service';
-import {SystemMetricsService} from '@server/modules/system/metrics/sysmetrics.service';
-import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
-import {BitcoinType} from '@server/modules/bitcoin/bitcoin.enums';
-import {SettingKey} from '@server/modules/setting/setting.enums';
+import {AuthService} from '#server/modules/auth/auth.service';
+import {SettingService} from '#server/modules/setting/setting.service';
+import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
+import {BitcoinUTXOracleService} from '#server/modules/bitcoin/utxoracle/utxoracle.service';
+import {LightningAnalyticsService} from '#server/modules/lightning/analytics/lnanalytics.service';
+import {BitcoinAnalyticsService} from '#server/modules/bitcoin/analytics/btcanalytics.service';
+import {CashuMintAnalyticsService} from '#server/modules/cashu/mintanalytics/mintanalytics.service';
+import {AgentService} from '#server/modules/ai/agent/agent.service';
+import {ConversationService} from '#server/modules/ai/conversation/conversation.service';
+import {SystemMetricsService} from '#server/modules/system/metrics/sysmetrics.service';
+import {MintMetricsService} from '#server/modules/cashu/mintmetrics/mintmetrics.service';
+import {BitcoinType} from '#server/modules/bitcoin/bitcoin.enums';
+import {SettingKey} from '#server/modules/setting/setting.enums';
 
 @Injectable()
 export class TaskService {

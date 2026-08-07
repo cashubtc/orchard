@@ -5,8 +5,8 @@ import {getRepositoryToken} from '@nestjs/typeorm';
 import {expect} from '@jest/globals';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {UserRole} from '@server/modules/user/user.enums';
-import {User} from '@server/modules/user/user.entity';
+import {UserRole} from '#server/modules/user/user.enums';
+import {User} from '#server/modules/user/user.entity';
 /* Local Dependencies */
 import {InviteService} from './invite.service.js';
 import {Invite} from './invite.entity.js';

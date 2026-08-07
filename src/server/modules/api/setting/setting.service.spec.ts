@@ -2,12 +2,12 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {SettingService} from '@server/modules/setting/setting.service';
-import {ErrorService} from '@server/modules/error/error.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {SettingKey, SettingValue} from '@server/modules/setting/setting.enums';
-import {MessageService} from '@server/modules/message/message.service';
+import {SettingService} from '#server/modules/setting/setting.service';
+import {ErrorService} from '#server/modules/error/error.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {SettingKey, SettingValue} from '#server/modules/setting/setting.enums';
+import {MessageService} from '#server/modules/message/message.service';
 /* Local Dependencies */
 import {ApiSettingService} from './setting.service.js';
 

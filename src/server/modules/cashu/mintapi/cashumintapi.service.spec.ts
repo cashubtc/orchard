@@ -4,7 +4,7 @@ import {expect} from '@jest/globals';
 /* Local Dependencies */
 import {CashuMintApiService} from './cashumintapi.service.js';
 import {ConfigService} from '@nestjs/config';
-import {FetchService} from '@server/modules/fetch/fetch.service';
+import {FetchService} from '#server/modules/fetch/fetch.service';
 
 describe('CashuMintApiService', () => {
 	let cashuMintApiService: CashuMintApiService;

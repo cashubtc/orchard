@@ -2,10 +2,10 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
-import {ErrorService} from '@server/modules/error/error.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
+import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
+import {ErrorService} from '#server/modules/error/error.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
 import {LightningBalanceService} from './lnbalance.service.js';
 import {OrchardLightningBalance} from './lnbalance.model.js';

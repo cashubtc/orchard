@@ -3,8 +3,8 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {GraphQLSchemaHost} from '@nestjs/graphql';
 import {makeExecutableSchema} from '@graphql-tools/schema';
 /* Application Dependencies */
-import {AgentToolCategory, AgentToolName} from '@server/modules/ai/agent/agent.enums';
-import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
+import {AgentToolCategory, AgentToolName} from '#server/modules/ai/agent/agent.enums';
+import {MintMetricsService} from '#server/modules/cashu/mintmetrics/mintmetrics.service';
 /* Local Dependencies */
 import {ToolService} from './tool.service.js';
 

@@ -2,9 +2,9 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {getRepositoryToken} from '@nestjs/typeorm';
 /* Application Dependencies */
-import {AgentService} from '@server/modules/ai/agent/agent.service';
-import {MessageService} from '@server/modules/message/message.service';
-import {AgentKey} from '@server/modules/ai/agent/agent.enums';
+import {AgentService} from '#server/modules/ai/agent/agent.service';
+import {MessageService} from '#server/modules/message/message.service';
+import {AgentKey} from '#server/modules/ai/agent/agent.enums';
 /* Local Dependencies */
 import {ConversationService} from './conversation.service.js';
 import {Conversation} from './conversation.entity.js';

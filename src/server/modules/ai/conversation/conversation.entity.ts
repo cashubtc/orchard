@@ -1,7 +1,7 @@
 /* Vendor Dependencies */
 import {Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, Index, type Relation} from 'typeorm';
 /* Application Dependencies */
-import {Agent} from '@server/modules/ai/agent/agent.entity';
+import {Agent} from '#server/modules/ai/agent/agent.entity';
 /* Local Dependencies */
 import {ConversationStatus} from './conversation.enums.js';
 

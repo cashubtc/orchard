@@ -8,14 +8,14 @@ import {SchedulerRegistry} from '@nestjs/schedule';
 import {CronJob} from 'cron';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {AiService} from '@server/modules/ai/ai.service';
-import {AiMessage, AiTool, AiToolCall, AiStreamChunk} from '@server/modules/ai/ai.types';
-import {AiMessageRole} from '@server/modules/ai/ai.enums';
-import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
-import {safeParse} from '@server/modules/utilities';
+import {AiService} from '#server/modules/ai/ai.service';
+import {AiMessage, AiTool, AiToolCall, AiStreamChunk} from '#server/modules/ai/ai.types';
+import {AiMessageRole} from '#server/modules/ai/ai.enums';
+import {MintMetricsService} from '#server/modules/cashu/mintmetrics/mintmetrics.service';
+import {safeParse} from '#server/modules/utilities/index';
 /* Native Dependencies */
-import {ToolService} from '@server/modules/ai/tools/tool.service';
-import {AiAgentContext} from '@server/modules/ai/tools/tool.types';
+import {ToolService} from '#server/modules/ai/tools/tool.service';
+import {AiAgentContext} from '#server/modules/ai/tools/tool.types';
 /* Local Dependencies */
 import {Agent} from './agent.entity.js';
 import {AgentRun} from './agent-run.entity.js';

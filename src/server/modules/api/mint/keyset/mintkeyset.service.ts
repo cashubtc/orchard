@@ -1,15 +1,15 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
-import {CashuMintRpcService} from '@server/modules/cashu/mintrpc/cashumintrpc.service';
-import {CashuMintAnalyticsService} from '@server/modules/cashu/mintanalytics/mintanalytics.service';
-import {MintAnalyticsMetric} from '@server/modules/cashu/mintanalytics/mintanalytics.enums';
-import {CashuMintKeyset} from '@server/modules/cashu/mintdb/cashumintdb.types';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {MintService} from '@server/modules/api/mint/mint.service';
-import {ErrorService} from '@server/modules/error/error.service';
+import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
+import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
+import {CashuMintAnalyticsService} from '#server/modules/cashu/mintanalytics/mintanalytics.service';
+import {MintAnalyticsMetric} from '#server/modules/cashu/mintanalytics/mintanalytics.enums';
+import {CashuMintKeyset} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {MintService} from '#server/modules/api/mint/mint.service';
+import {ErrorService} from '#server/modules/error/error.service';
 /* Local Dependencies */
 import {OrchardMintKeyset, OrchardMintKeysetRotation, OrchardMintKeysetCount} from './mintkeyset.model.js';
 

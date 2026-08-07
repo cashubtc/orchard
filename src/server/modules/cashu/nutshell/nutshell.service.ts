@@ -6,8 +6,8 @@ import * as path from 'path';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 /* Application Dependencies */
-import {CredentialService} from '@server/modules/credential/credential.service';
-import {MintUnit, MintProofState} from '@server/modules/cashu/cashu.enums';
+import {CredentialService} from '#server/modules/credential/credential.service';
+import {MintUnit, MintProofState} from '#server/modules/cashu/cashu.enums';
 /* Native Dependencies */
 import {
 	CashuMintDatabase,
@@ -21,7 +21,7 @@ import {
 	CashuMintSwap,
 	CashuMintCount,
 	CashuMintOperationFee,
-} from '@server/modules/cashu/mintdb/cashumintdb.types';
+} from '#server/modules/cashu/mintdb/cashumintdb.types';
 import {
 	CashuMintMintQuotesArgs,
 	CashuMintMeltQuotesArgs,
@@ -29,15 +29,15 @@ import {
 	CashuMintPromiseArgs,
 	CashuMintSwapsArgs,
 	CashuMintFeesArgs,
-} from '@server/modules/cashu/mintdb/cashumintdb.interfaces';
+} from '#server/modules/cashu/mintdb/cashumintdb.interfaces';
 import {
 	buildDynamicQuery,
 	buildCountQuery,
 	convertDateToUnixTimestamp,
 	queryRows,
 	queryRow,
-} from '@server/modules/cashu/mintdb/cashumintdb.helpers';
-import {MintDatabaseType} from '@server/modules/cashu/mintdb/cashumintdb.enums';
+} from '#server/modules/cashu/mintdb/cashumintdb.helpers';
+import {MintDatabaseType} from '#server/modules/cashu/mintdb/cashumintdb.enums';
 /* Local Dependencies */
 import {NutshellMintMintQuote, NutshellMintMeltQuote, NutshellMintEcash} from './nutshell.types.js';
 

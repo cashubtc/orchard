@@ -3,9 +3,9 @@ import {ExecutionContext} from '@nestjs/common';
 import {Reflector} from '@nestjs/core';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {EventLogMetadata} from '@server/modules/event/event.decorator';
-import {EventLogActorType} from '@server/modules/event/event.enums';
-import {UserRole} from '@server/modules/user/user.enums';
+import {EventLogMetadata} from '#server/modules/event/event.decorator';
+import {EventLogActorType} from '#server/modules/event/event.enums';
+import {UserRole} from '#server/modules/user/user.enums';
 /* Local Dependencies */
 import {getActorType, extractEventContext, extractEventError, eventTimestamp} from './event.helpers.js';
 

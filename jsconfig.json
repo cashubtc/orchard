@@ -3,7 +3,6 @@
     "experimentalDecorators": true,
     "baseUrl": "./",
     "paths": {
-      "@server/*": ["src/server/*"],
       "@client/*": ["src/client/*"],
       "@shared/*": ["src/shared/*"],
     }

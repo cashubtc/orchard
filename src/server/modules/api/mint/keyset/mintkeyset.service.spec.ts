@@ -2,17 +2,17 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Native Dependencies */
-import {MintService} from '@server/modules/api/mint/mint.service';
+import {MintService} from '#server/modules/api/mint/mint.service';
 /* Application Dependencies */
-import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
-import {CashuMintAnalyticsService} from '@server/modules/cashu/mintanalytics/mintanalytics.service';
-import {MintAnalyticsMetric} from '@server/modules/cashu/mintanalytics/mintanalytics.enums';
-import {MintAnalytics} from '@server/modules/cashu/mintanalytics/mintanalytics.entity';
-import {CashuMintRpcService} from '@server/modules/cashu/mintrpc/cashumintrpc.service';
-import {BitcoinUTXOracleService} from '@server/modules/bitcoin/utxoracle/utxoracle.service';
-import {ErrorService} from '@server/modules/error/error.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
+import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
+import {CashuMintAnalyticsService} from '#server/modules/cashu/mintanalytics/mintanalytics.service';
+import {MintAnalyticsMetric} from '#server/modules/cashu/mintanalytics/mintanalytics.enums';
+import {MintAnalytics} from '#server/modules/cashu/mintanalytics/mintanalytics.entity';
+import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
+import {BitcoinUTXOracleService} from '#server/modules/bitcoin/utxoracle/utxoracle.service';
+import {ErrorService} from '#server/modules/error/error.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
 import {MintKeysetService} from './mintkeyset.service.js';
 import {OrchardMintKeyset, OrchardMintKeysetCount} from './mintkeyset.model.js';

@@ -4,11 +4,11 @@ import {expect} from '@jest/globals';
 /* Native Dependencies */
 import {Logger} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
-import {CdkService} from '@server/modules/cashu/cdk/cdk.service';
-import {NutshellService} from '@server/modules/cashu/nutshell/nutshell.service';
+import {CdkService} from '#server/modules/cashu/cdk/cdk.service';
+import {NutshellService} from '#server/modules/cashu/nutshell/nutshell.service';
 /* Local Dependencies */
 import {CashuMintRpcService} from './cashumintrpc.service.js';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
 
 describe('CashuMintRpcService', () => {
 	let cashuMintRpcService: CashuMintRpcService;

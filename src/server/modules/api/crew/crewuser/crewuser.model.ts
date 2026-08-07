@@ -1,9 +1,9 @@
 /* Core Dependencies */
 import {ObjectType, Field} from '@nestjs/graphql';
 /* Application Dependencies */
-import {User} from '@server/modules/user/user.entity';
-import {UserRole} from '@server/modules/user/user.enums';
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
+import {User} from '#server/modules/user/user.entity';
+import {UserRole} from '#server/modules/user/user.enums';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 
 @ObjectType({description: 'Crew user account'})
 export class OrchardCrewUser {

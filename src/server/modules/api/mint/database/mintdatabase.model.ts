@@ -1,9 +1,9 @@
 /* Core Dependencies */
 import {Field, Float, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {Base64} from '@server/modules/graphql/scalars/base64.scalar';
+import {Base64} from '#server/modules/graphql/scalars/base64.scalar';
 /* Native Dependencies */
-import {CashuMintDatabaseInfo} from '@server/modules/cashu/mintdb/cashumintdb.types';
+import {CashuMintDatabaseInfo} from '#server/modules/cashu/mintdb/cashumintdb.types';
 
 @ObjectType({description: 'Cashu mint database backup'})
 export class OrchardMintDatabaseBackup {

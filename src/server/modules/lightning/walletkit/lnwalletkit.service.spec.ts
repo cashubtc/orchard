@@ -3,11 +3,11 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 /* Native Dependencies */
-import {LndService} from '@server/modules/lightning/lnd/lnd.service';
-import {ClnService} from '@server/modules/lightning/cln/cln.service';
+import {LndService} from '#server/modules/lightning/lnd/lnd.service';
+import {ClnService} from '#server/modules/lightning/cln/cln.service';
 /* Local Dependencies */
 import {LightningWalletKitService} from './lnwalletkit.service.js';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
 
 describe('LightningWalletKitService', () => {
 	let lightningWalletKitService: LightningWalletKitService;

@@ -1,5 +1,5 @@
 /* Application Dependencies */
-import {UserRole} from '@server/modules/user/user.enums';
+import {UserRole} from '#server/modules/user/user.enums';
 
 export type OrchardAuthToken = {
 	access_token: string;

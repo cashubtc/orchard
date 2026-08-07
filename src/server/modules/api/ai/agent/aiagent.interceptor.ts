@@ -4,8 +4,8 @@ import {Reflector} from '@nestjs/core';
 /* Vendor Dependencies */
 import {Observable, tap, catchError} from 'rxjs';
 /* Application Dependencies */
-import {EventLogService} from '@server/modules/event/event.service';
-import {EventLogMetadata} from '@server/modules/event/event.decorator';
+import {EventLogService} from '#server/modules/event/event.service';
+import {EventLogMetadata} from '#server/modules/event/event.decorator';
 import {
 	EventLogActorType,
 	EventLogSection,
@@ -13,9 +13,9 @@ import {
 	EventLogType,
 	EventLogStatus,
 	EventLogDetailStatus,
-} from '@server/modules/event/event.enums';
-import {extractEventContext, extractEventError, eventTimestamp} from '@server/modules/event/event.helpers';
-import {CreateEventLogDetailInput} from '@server/modules/event/event.interfaces';
+} from '#server/modules/event/event.enums';
+import {extractEventContext, extractEventError, eventTimestamp} from '#server/modules/event/event.helpers';
+import {CreateEventLogDetailInput} from '#server/modules/event/event.interfaces';
 /* Local Dependencies */
 import {AiAgentService} from './aiagent.service.js';
 import {OrchardAgent} from './aiagent.model.js';

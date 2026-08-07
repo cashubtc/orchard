@@ -1,11 +1,11 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {AuthService} from '@server/modules/auth/auth.service';
-import {ErrorService} from '@server/modules/error/error.service';
-import {UserService} from '@server/modules/user/user.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
+import {AuthService} from '#server/modules/auth/auth.service';
+import {ErrorService} from '#server/modules/error/error.service';
+import {UserService} from '#server/modules/user/user.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
 import {OrchardAuthentication} from './authentication.model.js';
 import {AuthenticationInput} from './authentication.input.js';

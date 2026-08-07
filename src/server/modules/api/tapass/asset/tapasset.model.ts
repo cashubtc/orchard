@@ -1,9 +1,9 @@
 /* Core Dependencies */
 import {Field, Int, Float, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {TaprootAssetsUtxos, TaprootAsset, TaprootAssets, TaprootAssetGroup} from '@server/modules/tapass/tapass/tapass.types';
-import {TaprootAssetType, TaprootAssetVersion} from '@server/modules/tapass/tapass.enums';
-import {Base64} from '@server/modules/graphql/scalars/base64.scalar';
+import {TaprootAssetsUtxos, TaprootAsset, TaprootAssets, TaprootAssetGroup} from '#server/modules/tapass/tapass/tapass.types';
+import {TaprootAssetType, TaprootAssetVersion} from '#server/modules/tapass/tapass.enums';
+import {Base64} from '#server/modules/graphql/scalars/base64.scalar';
 
 @ObjectType({description: 'Taproot asset decimal display configuration'})
 export class OrchardTaprootAssetDecimalDisplay {

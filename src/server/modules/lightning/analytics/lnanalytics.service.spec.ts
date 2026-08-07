@@ -5,9 +5,9 @@ import {expect} from '@jest/globals';
 /* Vendor Dependencies */
 import {DataSource} from 'typeorm';
 /* Application Dependencies */
-import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
-import {BitcoinRpcService} from '@server/modules/bitcoin/rpc/btcrpc.service';
-import {AnalyticsCheckpoint} from '@server/modules/analytics/analytics-checkpoint.entity';
+import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
+import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
+import {AnalyticsCheckpoint} from '#server/modules/analytics/analytics-checkpoint.entity';
 /* Local Dependencies */
 import {LightningAnalyticsService} from './lnanalytics.service.js';
 import {LightningAnalytics} from './lnanalytics.entity.js';

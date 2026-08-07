@@ -3,15 +3,15 @@ import {Injectable, Logger} from '@nestjs/common';
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {ErrorService} from '@server/modules/error/error.service';
-import {LightningAnalyticsService} from '@server/modules/lightning/analytics/lnanalytics.service';
-import {LightningAnalytics} from '@server/modules/lightning/analytics/lnanalytics.entity';
-import {LightningAnalyticsMetric} from '@server/modules/lightning/analytics/lnanalytics.enums';
-import {AnalyticsInterval} from '@server/modules/analytics/analytics.enums';
-import {getBucketDate} from '@server/modules/analytics/analytics.helpers';
-import {OrchardAnalyticsBackfillStatus} from '@server/modules/api/common/analytics-backfill-status.model';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {ErrorService} from '#server/modules/error/error.service';
+import {LightningAnalyticsService} from '#server/modules/lightning/analytics/lnanalytics.service';
+import {LightningAnalytics} from '#server/modules/lightning/analytics/lnanalytics.entity';
+import {LightningAnalyticsMetric} from '#server/modules/lightning/analytics/lnanalytics.enums';
+import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
+import {getBucketDate} from '#server/modules/analytics/analytics.helpers';
+import {OrchardAnalyticsBackfillStatus} from '#server/modules/api/common/analytics-backfill-status.model';
 /* Local Dependencies */
 import {OrchardLightningAnalytics, OrchardLightningAnalyticsMetric} from './lnanalytics.model.js';
 import {LightningAnalyticsApiArgs, LightningAnalyticsMetricsArgs} from './lnanalytics.interfaces.js';

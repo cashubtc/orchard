@@ -1,11 +1,11 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {ErrorService} from '@server/modules/error/error.service';
-import {LightningWalletKitService} from '@server/modules/lightning/walletkit/lnwalletkit.service';
-import {LightningAddresses} from '@server/modules/lightning/walletkit/lnwalletkit.types';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {ErrorService} from '#server/modules/error/error.service';
+import {LightningWalletKitService} from '#server/modules/lightning/walletkit/lnwalletkit.service';
+import {LightningAddresses} from '#server/modules/lightning/walletkit/lnwalletkit.types';
 /* Local Dependencies */
 import {OrchardLightningAccount} from './lnwallet.model.js';
 

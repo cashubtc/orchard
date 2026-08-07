@@ -1,9 +1,9 @@
 /* Core Dependencies */
 import {Field, Float, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 /* Native Dependencies */
-import {SystemMetric} from '@server/modules/system/metrics/sysmetrics.enums';
+import {SystemMetric} from '#server/modules/system/metrics/sysmetrics.enums';
 
 @ObjectType({description: 'System performance metric'})
 export class OrchardSystemMetrics {

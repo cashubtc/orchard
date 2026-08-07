@@ -3,8 +3,8 @@ import {Injectable, ExecutionContext} from '@nestjs/common';
 import {AuthGuard} from '@nestjs/passport';
 import {GqlExecutionContext} from '@nestjs/graphql';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 
 @Injectable()
 export class GqlRefreshGuard extends AuthGuard('jwt-refresh') {

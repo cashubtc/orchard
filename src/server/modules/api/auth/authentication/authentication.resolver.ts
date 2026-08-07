@@ -4,10 +4,10 @@ import {Resolver, Args, Mutation, Context} from '@nestjs/graphql';
 import {UseGuards} from '@nestjs/common';
 import {Throttle, seconds} from '@nestjs/throttler';
 /* Application Dependencies */
-import {GqlRefreshGuard} from '@server/modules/security/guards/refresh.guard';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {Public} from '@server/modules/auth/decorators/auth.decorator';
+import {GqlRefreshGuard} from '#server/modules/security/guards/refresh.guard';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {Public} from '#server/modules/auth/decorators/auth.decorator';
 /* Local Dependencies */
 import {AuthAuthenticationService} from './authentication.service.js';
 import {OrchardAuthentication} from './authentication.model.js';

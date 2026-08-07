@@ -2,7 +2,7 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Application Dependencies */
-import {MintUnit} from '@server/modules/cashu/cashu.enums';
+import {MintUnit} from '#server/modules/cashu/cashu.enums';
 /* Local Dependencies */
 import {MintProofService} from './mintproof.service.js';
 import {OrchardMintProofGroupStats} from './mintproof.model.js';

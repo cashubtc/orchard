@@ -1,4 +1,4 @@
-import {MintUnit} from '@server/modules/cashu/cashu.enums';
+import {MintUnit} from '#server/modules/cashu/cashu.enums';
 
 export type CashuMintInfo = {
 	name: string;

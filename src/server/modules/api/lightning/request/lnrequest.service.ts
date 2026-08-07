@@ -1,10 +1,10 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {ErrorService} from '@server/modules/error/error.service';
-import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {ErrorService} from '#server/modules/error/error.service';
+import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
 /* Local Dependencies */
 import {OrchardLightningRequest} from './lnrequest.model.js';
 

@@ -4,9 +4,9 @@ import {ConfigService} from '@nestjs/config';
 import {getRepositoryToken} from '@nestjs/typeorm';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
-import {CashuMintApiService} from '@server/modules/cashu/mintapi/cashumintapi.service';
-import {AnalyticsCheckpoint} from '@server/modules/analytics/analytics-checkpoint.entity';
+import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
+import {CashuMintApiService} from '#server/modules/cashu/mintapi/cashumintapi.service';
+import {AnalyticsCheckpoint} from '#server/modules/analytics/analytics-checkpoint.entity';
 /* Local Dependencies */
 import {CashuMintAnalyticsService} from './mintanalytics.service.js';
 import {MintAnalytics} from './mintanalytics.entity.js';

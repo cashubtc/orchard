@@ -8,6 +8,12 @@
   "engines": {
     "node": ">=22.12 <23"
   },
+  "imports": {
+    "#server/*": {
+      "orchard-src": "./src/server/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
   "scripts": {
     "build": "node -r ./scripts/register.cjs scripts/build.ts",
     "format": "prettier --write \"src/client/**/*.{ts,html}\" \"src/client/modules/**/*.scss\" \"src/server/**/*.ts\"",
@@ -19,7 +25,7 @@
     "start:server": "NODE_ENV=development nest start --watch",
     "start:server:nowatch": "NODE_ENV=development nest start",
     "start:server:debug": "NODE_ENV=development nest start --debug --watch",
-    "generate:types": "node -r ./scripts/register.cjs scripts/generate-schema.ts && npx graphql-codegen",
+    "generate:types": "node --conditions=orchard-src -r ./scripts/register.cjs scripts/generate-schema.ts && npx graphql-codegen",
     "typecheck:spec": "tsc -p tsconfig.server.spec.json --noEmit",
     "ci": "npm run format:check && npm run lint && npm run typecheck:spec && npm run generate:types && npm run test && npm run build",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
@@ -32,10 +38,10 @@
     "test:client": "ng test --watch=false --browsers=ChromeHeadless --progress=false",
     "test:debug": "node --inspect-brk --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
     "watch:client": "NODE_ENV=development ng build --watch --configuration development",
-    "migration:generate": "NODE_ENV=development node -r ./scripts/register.cjs node_modules/typeorm/cli.js migration:generate -d src/server/database/data-source.ts",
-    "migration:run": "NODE_ENV=development node -r ./scripts/register.cjs node_modules/typeorm/cli.js migration:run -d src/server/database/data-source.ts",
-    "migration:revert": "NODE_ENV=development node -r ./scripts/register.cjs node_modules/typeorm/cli.js migration:revert -d src/server/database/data-source.ts",
-    "migration:show": "NODE_ENV=development node -r ./scripts/register.cjs node_modules/typeorm/cli.js migration:show -d src/server/database/data-source.ts",
+    "migration:generate": "NODE_ENV=development node --conditions=orchard-src -r ./scripts/register.cjs node_modules/typeorm/cli.js migration:generate -d src/server/database/data-source.ts",
+    "migration:run": "NODE_ENV=development node --conditions=orchard-src -r ./scripts/register.cjs node_modules/typeorm/cli.js migration:run -d src/server/database/data-source.ts",
+    "migration:revert": "NODE_ENV=development node --conditions=orchard-src -r ./scripts/register.cjs node_modules/typeorm/cli.js migration:revert -d src/server/database/data-source.ts",
+    "migration:show": "NODE_ENV=development node --conditions=orchard-src -r ./scripts/register.cjs node_modules/typeorm/cli.js migration:show -d src/server/database/data-source.ts",
     "e2e:up": "./e2e/docker/scripts/compose.sh up",
     "e2e:down": "./e2e/docker/scripts/compose.sh down",
     "e2e:logs": "./e2e/docker/scripts/compose.sh logs",
@@ -173,7 +179,7 @@
       ]
     },
     "moduleNameMapper": {
-      "^@server/(.*)$": "<rootDir>/$1",
+      "^#server/(.*)$": "<rootDir>/$1",
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
     "collectCoverageFrom": [

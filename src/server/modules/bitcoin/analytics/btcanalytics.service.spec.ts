@@ -3,9 +3,9 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {getRepositoryToken} from '@nestjs/typeorm';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
-import {TaprootAssetsService} from '@server/modules/tapass/tapass/tapass.service';
-import {AnalyticsCheckpoint} from '@server/modules/analytics/analytics-checkpoint.entity';
+import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
+import {TaprootAssetsService} from '#server/modules/tapass/tapass/tapass.service';
+import {AnalyticsCheckpoint} from '#server/modules/analytics/analytics-checkpoint.entity';
 /* Local Dependencies */
 import {BitcoinAnalyticsService} from './btcanalytics.service.js';
 import {BitcoinAnalytics} from './btcanalytics.entity.js';

@@ -6,11 +6,11 @@ import * as path from 'path';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 /* Application Dependencies */
-import {CredentialService} from '@server/modules/credential/credential.service';
+import {CredentialService} from '#server/modules/credential/credential.service';
 /* Native Dependencies */
-import {LightningInfo, LightningChannelBalance, LightningRequest} from '@server/modules/lightning/lightning/lightning.types';
-import {LightningAddresses} from '@server/modules/lightning/walletkit/lnwalletkit.types';
-import {LightningAddressType} from '@server/modules/lightning/lightning.enums';
+import {LightningInfo, LightningChannelBalance, LightningRequest} from '#server/modules/lightning/lightning/lightning.types';
+import {LightningAddresses} from '#server/modules/lightning/walletkit/lnwalletkit.types';
+import {LightningAddressType} from '#server/modules/lightning/lightning.enums';
 /* Local Dependencies */
 import {asBigIntMsat, sumMsat, mapRequestType, mapRequestExpiry, mapRequestDescription} from './cln.helpers.js';
 

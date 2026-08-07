@@ -6,20 +6,20 @@ import {
 	LightningRequestType,
 	LightningChannelCloseType,
 	LightningChannelOpenInitiator,
-} from '@server/modules/lightning/lightning.enums';
-import {TaprootAssetType, TaprootAssetVersion} from '@server/modules/tapass/tapass.enums';
-import {MintActivityPeriod} from '@server/modules/cashu/mintdb/cashumintdb.enums';
-import {AnalyticsInterval} from '@server/modules/analytics/analytics.enums';
-import {MintAnalyticsMetric} from '@server/modules/cashu/mintanalytics/mintanalytics.enums';
-import {LightningAnalyticsMetric} from '@server/modules/lightning/analytics/lnanalytics.enums';
-import {BitcoinAnalyticsMetric} from '@server/modules/bitcoin/analytics/btcanalytics.enums';
-import {MintUnit, MintQuoteState, MeltQuoteState, MintProofState} from '@server/modules/cashu/cashu.enums';
-import {AiMessageRole} from '@server/modules/ai/ai.enums';
-import {AssistantToolName, AiAssistant} from '@server/modules/ai/assistant/ai.assistant.enums';
-import {AgentKey, AgentRunStatus, AgentScheduleKind} from '@server/modules/ai/agent/agent.enums';
-import {UserRole} from '@server/modules/user/user.enums';
-import {SettingKey, SettingValue} from '@server/modules/setting/setting.enums';
-import {UTXOracleProgressStatus} from '@server/modules/bitcoin/utxoracle/utxoracle.enums';
+} from '#server/modules/lightning/lightning.enums';
+import {TaprootAssetType, TaprootAssetVersion} from '#server/modules/tapass/tapass.enums';
+import {MintActivityPeriod} from '#server/modules/cashu/mintdb/cashumintdb.enums';
+import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
+import {MintAnalyticsMetric} from '#server/modules/cashu/mintanalytics/mintanalytics.enums';
+import {LightningAnalyticsMetric} from '#server/modules/lightning/analytics/lnanalytics.enums';
+import {BitcoinAnalyticsMetric} from '#server/modules/bitcoin/analytics/btcanalytics.enums';
+import {MintUnit, MintQuoteState, MeltQuoteState, MintProofState} from '#server/modules/cashu/cashu.enums';
+import {AiMessageRole} from '#server/modules/ai/ai.enums';
+import {AssistantToolName, AiAssistant} from '#server/modules/ai/assistant/ai.assistant.enums';
+import {AgentKey, AgentRunStatus, AgentScheduleKind} from '#server/modules/ai/agent/agent.enums';
+import {UserRole} from '#server/modules/user/user.enums';
+import {SettingKey, SettingValue} from '#server/modules/setting/setting.enums';
+import {UTXOracleProgressStatus} from '#server/modules/bitcoin/utxoracle/utxoracle.enums';
 import {
 	EventLogActorType,
 	EventLogSection,
@@ -27,9 +27,9 @@ import {
 	EventLogType,
 	EventLogStatus,
 	EventLogDetailStatus,
-} from '@server/modules/event/event.enums';
-import {SystemMetric, SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
-import {MintMetricType} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
+} from '#server/modules/event/event.enums';
+import {SystemMetric, SystemMetricsInterval} from '#server/modules/system/metrics/sysmetrics.enums';
+import {MintMetricType} from '#server/modules/cashu/mintmetrics/mintmetrics.enums';
 
 registerEnumType(MintUnit, {
 	name: 'MintUnit',

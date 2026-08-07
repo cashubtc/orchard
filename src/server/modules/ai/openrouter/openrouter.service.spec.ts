@@ -2,9 +2,9 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {Readable} from 'stream';
 /* Application Dependencies */
-import {FetchService} from '@server/modules/fetch/fetch.service';
-import {SettingService} from '@server/modules/setting/setting.service';
-import {SettingKey} from '@server/modules/setting/setting.enums';
+import {FetchService} from '#server/modules/fetch/fetch.service';
+import {SettingService} from '#server/modules/setting/setting.service';
+import {SettingKey} from '#server/modules/setting/setting.enums';
 /* Local Dependencies */
 import {OpenRouterService} from './openrouter.service.js';
 import {AiMessageRole} from '../ai.enums.js';

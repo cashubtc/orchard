@@ -4,10 +4,10 @@ import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {Metadata, ServiceError, status} from '@grpc/grpc-js';
 /* Application Dependencies */
-import {CdkService} from '@server/modules/cashu/cdk/cdk.service';
-import {NutshellService} from '@server/modules/cashu/nutshell/nutshell.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {MintType} from '@server/modules/cashu/cashu.enums';
+import {CdkService} from '#server/modules/cashu/cdk/cdk.service';
+import {NutshellService} from '#server/modules/cashu/nutshell/nutshell.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {MintType} from '#server/modules/cashu/cashu.enums';
 /* Local Dependencies */
 import {CashuMintInfoRpc} from './cashumintrpc.types.js';
 

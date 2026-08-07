@@ -5,12 +5,12 @@ import {GqlExecutionContext} from '@nestjs/graphql';
 import {Reflector} from '@nestjs/core';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {UserRole} from '@server/modules/user/user.enums';
-import {AuthService} from '@server/modules/auth/auth.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {UserRole} from '#server/modules/user/user.enums';
+import {AuthService} from '#server/modules/auth/auth.service';
 /* Native Dependencies */
-import {PUBLIC_KEY} from '@server/modules/auth/decorators/auth.decorator';
+import {PUBLIC_KEY} from '#server/modules/auth/decorators/auth.decorator';
 
 @Injectable()
 export class GqlAuthenticationGuard extends AuthGuard('jwt') {

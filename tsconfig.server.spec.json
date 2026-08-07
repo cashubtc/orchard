@@ -6,6 +6,7 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "outDir": "./out-tsc/spec",
+    "tsBuildInfoFile": "./out-tsc/spec/tsconfig.server.spec.tsbuildinfo",
     "types": [
       "jest",
       "node"

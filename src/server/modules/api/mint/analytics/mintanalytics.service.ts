@@ -3,15 +3,15 @@ import {Injectable, Logger} from '@nestjs/common';
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {CashuMintAnalyticsService} from '@server/modules/cashu/mintanalytics/mintanalytics.service';
-import {MintAnalytics} from '@server/modules/cashu/mintanalytics/mintanalytics.entity';
-import {MintAnalyticsMetric} from '@server/modules/cashu/mintanalytics/mintanalytics.enums';
-import {AnalyticsInterval} from '@server/modules/analytics/analytics.enums';
-import {getBucketDate} from '@server/modules/analytics/analytics.helpers';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {ErrorService} from '@server/modules/error/error.service';
-import {OrchardAnalyticsBackfillStatus} from '@server/modules/api/common/analytics-backfill-status.model';
+import {CashuMintAnalyticsService} from '#server/modules/cashu/mintanalytics/mintanalytics.service';
+import {MintAnalytics} from '#server/modules/cashu/mintanalytics/mintanalytics.entity';
+import {MintAnalyticsMetric} from '#server/modules/cashu/mintanalytics/mintanalytics.enums';
+import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
+import {getBucketDate} from '#server/modules/analytics/analytics.helpers';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {ErrorService} from '#server/modules/error/error.service';
+import {OrchardAnalyticsBackfillStatus} from '#server/modules/api/common/analytics-backfill-status.model';
 /* Local Dependencies */
 import {OrchardMintAnalytics, OrchardMintAnalyticsMetric, OrchardMintKeysetsAnalytics} from './mintanalytics.model.js';
 import {MintAnalyticsApiArgs, MintAnalyticsMetricsArgs} from './mintanalytics.interfaces.js';

@@ -6,8 +6,8 @@ import {expect} from '@jest/globals';
 /* Vendor Dependencies */
 import {of, throwError, lastValueFrom} from 'rxjs';
 /* Application Dependencies */
-import {EventLogService} from '@server/modules/event/event.service';
-import {EventLogMetadata} from '@server/modules/event/event.decorator';
+import {EventLogService} from '#server/modules/event/event.service';
+import {EventLogMetadata} from '#server/modules/event/event.decorator';
 import {
 	EventLogActorType,
 	EventLogSection,
@@ -15,10 +15,10 @@ import {
 	EventLogType,
 	EventLogStatus,
 	EventLogDetailStatus,
-} from '@server/modules/event/event.enums';
-import {CashuMintApiService} from '@server/modules/cashu/mintapi/cashumintapi.service';
-import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
-import {MintService} from '@server/modules/api/mint/mint.service';
+} from '#server/modules/event/event.enums';
+import {CashuMintApiService} from '#server/modules/cashu/mintapi/cashumintapi.service';
+import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
+import {MintService} from '#server/modules/api/mint/mint.service';
 /* Local Dependencies */
 import {MintMintQuoteInterceptor} from './mintmintquote.interceptor.js';
 

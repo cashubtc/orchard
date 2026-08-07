@@ -2,7 +2,7 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Native Dependencies */
-import {AiAssistant} from '@server/modules/ai/assistant/ai.assistant.enums';
+import {AiAssistant} from '#server/modules/ai/assistant/ai.assistant.enums';
 /* Internal Dependencies */
 import {AiAssistantService} from './aiassistant.service.js';
 import {OrchardAiAssistant} from './aiassistant.model.js';

@@ -1,9 +1,9 @@
 /* Core Dependencies */
 import {Field, Float, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
-import {UTXOracle} from '@server/modules/bitcoin/utxoracle/utxoracle.entity';
-import {UTXOracleProgressStatus} from '@server/modules/bitcoin/utxoracle/utxoracle.enums';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import {UTXOracle} from '#server/modules/bitcoin/utxoracle/utxoracle.entity';
+import {UTXOracleProgressStatus} from '#server/modules/bitcoin/utxoracle/utxoracle.enums';
 
 @ObjectType({description: 'Bitcoin oracle price data point'})
 export class OrchardBitcoinOraclePrice {

@@ -2,9 +2,9 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {AiService} from '@server/modules/ai/ai.service';
-import {ErrorService} from '@server/modules/error/error.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
+import {AiService} from '#server/modules/ai/ai.service';
+import {ErrorService} from '#server/modules/error/error.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
 /* Local Dependencies */
 import {AiChatService} from './aichat.service.js';
 

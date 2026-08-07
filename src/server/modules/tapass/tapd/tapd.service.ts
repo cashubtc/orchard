@@ -6,7 +6,7 @@ import * as path from 'path';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 /* Application Dependencies */
-import {CredentialService} from '@server/modules/credential/credential.service';
+import {CredentialService} from '#server/modules/credential/credential.service';
 
 @Injectable()
 export class TapdService {

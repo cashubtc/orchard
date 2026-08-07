@@ -1,4 +1,4 @@
-import {ToolService} from '@server/modules/ai/tools/tool.service';
+import {ToolService} from '#server/modules/ai/tools/tool.service';
 import {AiToolsService} from './aitools.service.js';
 
 describe('AiToolsService', () => {

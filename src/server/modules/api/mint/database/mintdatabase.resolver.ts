@@ -2,9 +2,9 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Mutation, Query, Args} from '@nestjs/graphql';
 /* Application Dependencies */
-import {Roles} from '@server/modules/auth/decorators/auth.decorator';
-import {UserRole} from '@server/modules/user/user.enums';
-import {Base64} from '@server/modules/graphql/scalars/base64.scalar';
+import {Roles} from '#server/modules/auth/decorators/auth.decorator';
+import {UserRole} from '#server/modules/user/user.enums';
+import {Base64} from '#server/modules/graphql/scalars/base64.scalar';
 /* Local Dependencies */
 import {MintDatabaseService} from './mintdatabase.service.js';
 import {OrchardMintDatabaseBackup, OrchardMintDatabaseInfo, OrchardMintDatabaseRestore} from './mintdatabase.model.js';

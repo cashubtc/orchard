@@ -2,10 +2,10 @@
 import {Injectable, Logger, OnModuleInit} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {LightningType} from '@server/modules/lightning/lightning.enums';
-import {LndService} from '@server/modules/lightning/lnd/lnd.service';
-import {ClnService} from '@server/modules/lightning/cln/cln.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {LightningType} from '#server/modules/lightning/lightning.enums';
+import {LndService} from '#server/modules/lightning/lnd/lnd.service';
+import {ClnService} from '#server/modules/lightning/cln/cln.service';
 /* Local Dependencies */
 import {LightningAddresses} from './lnwalletkit.types.js';
 

@@ -5,12 +5,12 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {Repository, Between, In, FindOptionsWhere} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
-import {TaprootAssetsService} from '@server/modules/tapass/tapass/tapass.service';
-import {AnalyticsCheckpoint} from '@server/modules/analytics/analytics-checkpoint.entity';
-import {LightningTransaction} from '@server/modules/lightning/lightning/lightning.types';
-import {AssetTransfer, AddrEvent, TaprootAsset} from '@server/modules/tapass/tapass/tapass.types';
-import {AnalyticsBackfillStatus} from '@server/modules/analytics/analytics.interfaces';
+import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
+import {TaprootAssetsService} from '#server/modules/tapass/tapass/tapass.service';
+import {AnalyticsCheckpoint} from '#server/modules/analytics/analytics-checkpoint.entity';
+import {LightningTransaction} from '#server/modules/lightning/lightning/lightning.types';
+import {AssetTransfer, AddrEvent, TaprootAsset} from '#server/modules/tapass/tapass/tapass.types';
+import {AnalyticsBackfillStatus} from '#server/modules/analytics/analytics.interfaces';
 /* Local Dependencies */
 import {BitcoinAnalytics} from './btcanalytics.entity.js';
 import {BitcoinAnalyticsMetric} from './btcanalytics.enums.js';

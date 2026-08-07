@@ -2,11 +2,11 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {AuthService} from '@server/modules/auth/auth.service';
-import {ErrorService} from '@server/modules/error/error.service';
-import {UserService} from '@server/modules/user/user.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
+import {AuthService} from '#server/modules/auth/auth.service';
+import {ErrorService} from '#server/modules/error/error.service';
+import {UserService} from '#server/modules/user/user.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
 import {AuthAuthenticationService} from './authentication.service.js';
 import {OrchardAuthentication} from './authentication.model.js';

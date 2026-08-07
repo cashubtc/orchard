@@ -8,7 +8,7 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {Repository, LessThan} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {UserService} from '@server/modules/user/user.service';
+import {UserService} from '#server/modules/user/user.service';
 /* Local Dependencies */
 import {OrchardAuthToken, JwtPayload, RefreshTokenPayload} from './auth.types.js';
 import {TokenBlacklist} from './token-blacklist.entity.js';

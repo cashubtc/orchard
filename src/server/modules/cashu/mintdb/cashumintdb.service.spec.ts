@@ -4,10 +4,10 @@ import {expect} from '@jest/globals';
 /* Local Dependencies */
 import type {CashuMintDatabaseService as CashuMintDatabaseServiceType} from './cashumintdb.service.js';
 import {ConfigService} from '@nestjs/config';
-import {CredentialService} from '@server/modules/credential/credential.service';
-import {NutshellService} from '@server/modules/cashu/nutshell/nutshell.service';
-import {CdkService} from '@server/modules/cashu/cdk/cdk.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
+import {CredentialService} from '#server/modules/credential/credential.service';
+import {NutshellService} from '#server/modules/cashu/nutshell/nutshell.service';
+import {CdkService} from '#server/modules/cashu/cdk/cdk.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {MintDatabaseType} from './cashumintdb.enums.js';
 import {promises as fs_promises} from 'fs';
 

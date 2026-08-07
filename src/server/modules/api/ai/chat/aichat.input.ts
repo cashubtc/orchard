@@ -1,8 +1,8 @@
 /* Core Dependencies */
 import {InputType, Field} from '@nestjs/graphql';
 /* Application Dependencies */
-import {AiAssistant} from '@server/modules/ai/assistant/ai.assistant.enums';
-import {AiMessageRole} from '@server/modules/ai/ai.enums';
+import {AiAssistant} from '#server/modules/ai/assistant/ai.assistant.enums';
+import {AiMessageRole} from '#server/modules/ai/ai.enums';
 
 @InputType({description: 'Input for a single chat message'})
 export class AiChatMessageInput {

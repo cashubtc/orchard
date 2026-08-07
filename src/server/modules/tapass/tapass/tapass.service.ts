@@ -2,9 +2,9 @@
 import {Injectable, Logger, OnModuleInit} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {TaprootAssetType} from '@server/modules/tapass/tapass.enums';
-import {TapdService} from '@server/modules/tapass/tapd/tapd.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {TaprootAssetType} from '#server/modules/tapass/tapass.enums';
+import {TapdService} from '#server/modules/tapass/tapd/tapd.service';
 /* Local Dependencies */
 import {TaprootAssetsInfo, TaprootAssetsUtxos, TaprootAssets, AssetTransfers, AddrReceives} from './tapass.types.js';
 

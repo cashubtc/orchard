@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Field, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 
 @ObjectType({description: 'Liveness of the nutshell balance_log watchdog'})
 export class OrchardMintWatchdogStatus {

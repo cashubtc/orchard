@@ -2,10 +2,10 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args, Int} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
-import {EventLogActorType, EventLogSection, EventLogEntityType, EventLogType, EventLogStatus} from '@server/modules/event/event.enums';
-import {OrchardCommonCount} from '@server/modules/api/common/entity-count.model';
-import {OrchardCommonGenesis} from '@server/modules/api/common/entity-genesis.model';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import {EventLogActorType, EventLogSection, EventLogEntityType, EventLogType, EventLogStatus} from '#server/modules/event/event.enums';
+import {OrchardCommonCount} from '#server/modules/api/common/entity-count.model';
+import {OrchardCommonGenesis} from '#server/modules/api/common/entity-genesis.model';
 /* Local Dependencies */
 import {ApiEventLogService} from './event.service.js';
 import {OrchardEventLog} from './event.model.js';

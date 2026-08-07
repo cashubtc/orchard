@@ -4,12 +4,12 @@ import {Injectable, Logger} from '@nestjs/common';
 import {EventEmitter} from 'events';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {AiService} from '@server/modules/ai/ai.service';
-import {ErrorService} from '@server/modules/error/error.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {AiMessageRole} from '@server/modules/ai/ai.enums';
-import {AiStreamChunk} from '@server/modules/ai/ai.types';
+import {AiService} from '#server/modules/ai/ai.service';
+import {ErrorService} from '#server/modules/error/error.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {AiMessageRole} from '#server/modules/ai/ai.enums';
+import {AiStreamChunk} from '#server/modules/ai/ai.types';
 /* Local Dependencies */
 import {OrchardAiChatChunk, OrchardAiChatStream} from './aichat.model.js';
 import {AiChatInput} from './aichat.input.js';

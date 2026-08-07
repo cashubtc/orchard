@@ -5,8 +5,8 @@ import {GqlExecutionContext} from '@nestjs/graphql';
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {UserRole} from '@server/modules/user/user.enums';
-import {EVENT_LOG_KEY, EventLogMetadata} from '@server/modules/event/event.decorator';
+import {UserRole} from '#server/modules/user/user.enums';
+import {EVENT_LOG_KEY, EventLogMetadata} from '#server/modules/event/event.decorator';
 /* Local Dependencies */
 import {EventLogActorType} from './event.enums.js';
 import {EventLogContext, EventLogError} from './event.interfaces.js';

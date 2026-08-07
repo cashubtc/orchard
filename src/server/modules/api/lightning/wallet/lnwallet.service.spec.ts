@@ -2,10 +2,10 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {LightningWalletKitService} from '@server/modules/lightning/walletkit/lnwalletkit.service';
-import {ErrorService} from '@server/modules/error/error.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
+import {LightningWalletKitService} from '#server/modules/lightning/walletkit/lnwalletkit.service';
+import {ErrorService} from '#server/modules/error/error.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
 import {LightningWalletService} from './lnwallet.service.js';
 import {OrchardLightningAccount} from './lnwallet.model.js';

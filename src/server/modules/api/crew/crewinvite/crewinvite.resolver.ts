@@ -3,10 +3,10 @@ import {Logger} from '@nestjs/common';
 import {Resolver, Query, Context, Mutation, Args} from '@nestjs/graphql';
 import {Throttle, minutes} from '@nestjs/throttler';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {UserRole} from '@server/modules/user/user.enums';
-import {Roles} from '@server/modules/auth/decorators/auth.decorator';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {UserRole} from '#server/modules/user/user.enums';
+import {Roles} from '#server/modules/auth/decorators/auth.decorator';
 /* Local Dependencies */
 import {CrewInviteService} from './crewinvite.service.js';
 import {OrchardCrewInvite} from './crewinvite.model.js';

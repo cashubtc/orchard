@@ -1,15 +1,15 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
-import {CashuMintProofGroup} from '@server/modules/cashu/mintdb/cashumintdb.types';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {MintService} from '@server/modules/api/mint/mint.service';
-import {ErrorService} from '@server/modules/error/error.service';
-import {median} from '@server/modules/math/median';
+import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
+import {CashuMintProofGroup} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {MintService} from '#server/modules/api/mint/mint.service';
+import {ErrorService} from '#server/modules/error/error.service';
+import {median} from '#server/modules/math/median';
 /* Native Dependencies */
-import {MintUnit, MintProofState} from '@server/modules/cashu/cashu.enums';
+import {MintUnit, MintProofState} from '#server/modules/cashu/cashu.enums';
 /* Local Dependencies */
 import {OrchardMintProofGroupStats} from './mintproof.model.js';
 

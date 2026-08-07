@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Field, Int, Float, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {BitcoinNetworkInfo} from '@server/modules/bitcoin/rpc/btcrpc.types';
+import {BitcoinNetworkInfo} from '#server/modules/bitcoin/rpc/btcrpc.types';
 
 @ObjectType({description: 'Bitcoin network type configuration'})
 export class OrchardBitcoinNetwork {

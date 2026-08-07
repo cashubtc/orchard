@@ -3,14 +3,14 @@ import {Injectable, Logger} from '@nestjs/common';
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {ErrorService} from '@server/modules/error/error.service';
-import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
-import {MintMetrics} from '@server/modules/cashu/mintmetrics/mintmetrics.entity';
-import {MintMetricType} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
-import {SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
-import {getBucketDate, bucketMinMaxAvg} from '@server/modules/system/metrics/sysmetrics.helpers';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {ErrorService} from '#server/modules/error/error.service';
+import {MintMetricsService} from '#server/modules/cashu/mintmetrics/mintmetrics.service';
+import {MintMetrics} from '#server/modules/cashu/mintmetrics/mintmetrics.entity';
+import {MintMetricType} from '#server/modules/cashu/mintmetrics/mintmetrics.enums';
+import {SystemMetricsInterval} from '#server/modules/system/metrics/sysmetrics.enums';
+import {getBucketDate, bucketMinMaxAvg} from '#server/modules/system/metrics/sysmetrics.helpers';
 /* Local Dependencies */
 import {OrchardMintMetrics} from './mintmetrics.model.js';
 

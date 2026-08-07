@@ -2,12 +2,12 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
-import {Timezone, TimezoneType} from '@server/modules/graphql/scalars/timezone.scalar';
-import {AnalyticsInterval} from '@server/modules/analytics/analytics.enums';
-import {OrchardAnalyticsBackfillStatus} from '@server/modules/api/common/analytics-backfill-status.model';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import {Timezone, TimezoneType} from '#server/modules/graphql/scalars/timezone.scalar';
+import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
+import {OrchardAnalyticsBackfillStatus} from '#server/modules/api/common/analytics-backfill-status.model';
 /* Native Dependencies */
-import {LightningAnalyticsMetric} from '@server/modules/lightning/analytics/lnanalytics.enums';
+import {LightningAnalyticsMetric} from '#server/modules/lightning/analytics/lnanalytics.enums';
 /* Local Dependencies */
 import {OrchardLightningAnalytics, OrchardLightningAnalyticsMetric} from './lnanalytics.model.js';
 import {ApiLightningAnalyticsService} from './lnanalytics.service.js';

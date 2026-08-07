@@ -3,10 +3,10 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
-import {TapdService} from '@server/modules/tapass/tapd/tapd.service';
+import {TapdService} from '#server/modules/tapass/tapd/tapd.service';
 /* Local Dependencies */
 import {TaprootAssetsService} from './tapass.service.js';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
 
 describe('TaprootAssetsService', () => {
 	let taprootAssetsService: TaprootAssetsService;

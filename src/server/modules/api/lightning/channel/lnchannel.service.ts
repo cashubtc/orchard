@@ -1,11 +1,11 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {ErrorService} from '@server/modules/error/error.service';
-import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
-import {LightningChannel, LightningClosedChannel} from '@server/modules/lightning/lightning/lightning.types';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {ErrorService} from '#server/modules/error/error.service';
+import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
+import {LightningChannel, LightningClosedChannel} from '#server/modules/lightning/lightning/lightning.types';
 /* Local Dependencies */
 import {OrchardLightningChannel, OrchardLightningClosedChannel} from './lnchannel.model.js';
 

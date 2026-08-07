@@ -6,9 +6,9 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {Repository, FindOptionsWhere, Between, In} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
-import {CashuMintApiService} from '@server/modules/cashu/mintapi/cashumintapi.service';
-import {AnalyticsCheckpoint} from '@server/modules/analytics/analytics-checkpoint.entity';
+import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
+import {CashuMintApiService} from '#server/modules/cashu/mintapi/cashumintapi.service';
+import {AnalyticsCheckpoint} from '#server/modules/analytics/analytics-checkpoint.entity';
 import {
 	CashuMintDatabase,
 	CashuMintMintQuote,
@@ -17,9 +17,9 @@ import {
 	CashuMintProof,
 	CashuMintPromise,
 	CashuMintOperationFee,
-} from '@server/modules/cashu/mintdb/cashumintdb.types';
-import {MintQuoteState, MeltQuoteState, MintProofState} from '@server/modules/cashu/cashu.enums';
-import {AnalyticsBackfillStatus} from '@server/modules/analytics/analytics.interfaces';
+} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import {MintQuoteState, MeltQuoteState, MintProofState} from '#server/modules/cashu/cashu.enums';
+import {AnalyticsBackfillStatus} from '#server/modules/analytics/analytics.interfaces';
 /* Native Dependencies */
 import {MintAnalytics} from './mintanalytics.entity.js';
 import {MintAnalyticsMetric} from './mintanalytics.enums.js';

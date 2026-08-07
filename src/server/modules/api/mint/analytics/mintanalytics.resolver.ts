@@ -2,12 +2,12 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
-import {Timezone, TimezoneType} from '@server/modules/graphql/scalars/timezone.scalar';
-import {AnalyticsInterval} from '@server/modules/analytics/analytics.enums';
-import {MintUnit} from '@server/modules/cashu/cashu.enums';
-import {MintAnalyticsMetric} from '@server/modules/cashu/mintanalytics/mintanalytics.enums';
-import {OrchardAnalyticsBackfillStatus} from '@server/modules/api/common/analytics-backfill-status.model';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import {Timezone, TimezoneType} from '#server/modules/graphql/scalars/timezone.scalar';
+import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
+import {MintUnit} from '#server/modules/cashu/cashu.enums';
+import {MintAnalyticsMetric} from '#server/modules/cashu/mintanalytics/mintanalytics.enums';
+import {OrchardAnalyticsBackfillStatus} from '#server/modules/api/common/analytics-backfill-status.model';
 /* Local Dependencies */
 import {OrchardMintAnalytics, OrchardMintAnalyticsMetric, OrchardMintKeysetsAnalytics} from './mintanalytics.model.js';
 import {MintAnalyticsService} from './mintanalytics.service.js';

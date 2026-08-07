@@ -1,8 +1,8 @@
 /* Application Dependencies */
-import {AnalyticsInterval} from '@server/modules/analytics/analytics.enums';
-import {TimezoneType} from '@server/modules/graphql/scalars/timezone.scalar';
+import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
+import {TimezoneType} from '#server/modules/graphql/scalars/timezone.scalar';
 /* Native Dependencies */
-import {BitcoinAnalyticsMetric} from '@server/modules/bitcoin/analytics/btcanalytics.enums';
+import {BitcoinAnalyticsMetric} from '#server/modules/bitcoin/analytics/btcanalytics.enums';
 
 export interface BitcoinAnalyticsApiArgs {
 	date_start?: number;

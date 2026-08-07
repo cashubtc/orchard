@@ -4,8 +4,8 @@ import {ExecutionContext} from '@nestjs/common';
 import {Reflector} from '@nestjs/core';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {UserRole} from '@server/modules/user/user.enums';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {UserRole} from '#server/modules/user/user.enums';
 /* Local Dependencies */
 import {GqlAuthorizationGuard} from './authorization.guard.js';
 

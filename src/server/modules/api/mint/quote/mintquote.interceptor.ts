@@ -4,18 +4,18 @@ import {Reflector} from '@nestjs/core';
 /* Vendor Dependencies */
 import {Observable, tap, catchError} from 'rxjs';
 /* Application Dependencies */
-import {EventLogService} from '@server/modules/event/event.service';
-import {EventLogMetadata} from '@server/modules/event/event.decorator';
+import {EventLogService} from '#server/modules/event/event.service';
+import {EventLogMetadata} from '#server/modules/event/event.decorator';
 import {
 	EventLogActorType,
 	EventLogSection,
 	EventLogEntityType,
 	EventLogStatus,
 	EventLogDetailStatus,
-} from '@server/modules/event/event.enums';
-import {extractEventContext, extractEventError, eventTimestamp} from '@server/modules/event/event.helpers';
-import {CreateEventLogDetailInput} from '@server/modules/event/event.interfaces';
-import {CashuMintRpcService} from '@server/modules/cashu/mintrpc/cashumintrpc.service';
+} from '#server/modules/event/event.enums';
+import {extractEventContext, extractEventError, eventTimestamp} from '#server/modules/event/event.helpers';
+import {CreateEventLogDetailInput} from '#server/modules/event/event.interfaces';
+import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
 /* Local Dependencies */
 import {OrchardMintQuoteTtls} from './mintquote.model.js';
 import {MintQuoteTtlUpdateInput} from './mintquote.input.js';

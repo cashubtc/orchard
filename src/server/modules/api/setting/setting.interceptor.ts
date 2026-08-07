@@ -4,20 +4,20 @@ import {Reflector} from '@nestjs/core';
 /* Vendor Dependencies */
 import {Observable, tap, catchError} from 'rxjs';
 /* Application Dependencies */
-import {EventLogService} from '@server/modules/event/event.service';
-import {EventLogMetadata} from '@server/modules/event/event.decorator';
+import {EventLogService} from '#server/modules/event/event.service';
+import {EventLogMetadata} from '#server/modules/event/event.decorator';
 import {
 	EventLogActorType,
 	EventLogSection,
 	EventLogEntityType,
 	EventLogStatus,
 	EventLogDetailStatus,
-} from '@server/modules/event/event.enums';
-import {extractEventContext, extractEventError, eventTimestamp} from '@server/modules/event/event.helpers';
-import {EventLogError} from '@server/modules/event/event.interfaces';
-import {SettingService} from '@server/modules/setting/setting.service';
-import {SettingKey} from '@server/modules/setting/setting.enums';
-import {isSettingSensitive, maskSensitiveValue} from '@server/modules/setting/setting.helpers';
+} from '#server/modules/event/event.enums';
+import {extractEventContext, extractEventError, eventTimestamp} from '#server/modules/event/event.helpers';
+import {EventLogError} from '#server/modules/event/event.interfaces';
+import {SettingService} from '#server/modules/setting/setting.service';
+import {SettingKey} from '#server/modules/setting/setting.enums';
+import {isSettingSensitive, maskSensitiveValue} from '#server/modules/setting/setting.helpers';
 
 @Injectable()
 export class SettingInterceptor implements NestInterceptor {

@@ -5,9 +5,9 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {Repository, DataSource, EntityManager, Between, In} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
-import {BitcoinRpcService} from '@server/modules/bitcoin/rpc/btcrpc.service';
-import {AnalyticsCheckpoint} from '@server/modules/analytics/analytics-checkpoint.entity';
+import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
+import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
+import {AnalyticsCheckpoint} from '#server/modules/analytics/analytics-checkpoint.entity';
 import {
 	LightningPayment,
 	LightningInvoice,
@@ -15,9 +15,9 @@ import {
 	LightningChannel,
 	LightningClosedChannel,
 	LightningTransaction,
-} from '@server/modules/lightning/lightning/lightning.types';
-import {LightningChannelOpenInitiator} from '@server/modules/lightning/lightning.enums';
-import {AnalyticsBackfillStatus} from '@server/modules/analytics/analytics.interfaces';
+} from '#server/modules/lightning/lightning/lightning.types';
+import {LightningChannelOpenInitiator} from '#server/modules/lightning/lightning.enums';
+import {AnalyticsBackfillStatus} from '#server/modules/analytics/analytics.interfaces';
 /* Local Dependencies */
 import {LightningAnalytics} from './lnanalytics.entity.js';
 import {LightningAnalyticsMetric} from './lnanalytics.enums.js';

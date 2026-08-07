@@ -1,8 +1,8 @@
 /* Core Dependencies */
 import {Field, ID, Int, Float, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
-import {BitcoinTransaction} from '@server/modules/bitcoin/rpc/btcrpc.types';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import {BitcoinTransaction} from '#server/modules/bitcoin/rpc/btcrpc.types';
 
 @ObjectType({description: 'Bitcoin mempool transaction fee breakdown'})
 export class OrchardBitcoinMempoolFees {

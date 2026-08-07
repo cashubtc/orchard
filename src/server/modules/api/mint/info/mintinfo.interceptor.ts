@@ -4,7 +4,7 @@ import {Reflector} from '@nestjs/core';
 /* Vendor Dependencies */
 import {Observable, tap, catchError} from 'rxjs';
 /* Application Dependencies */
-import {EventLogService} from '@server/modules/event/event.service';
+import {EventLogService} from '#server/modules/event/event.service';
 import {
 	EventLogActorType,
 	EventLogSection,
@@ -12,11 +12,11 @@ import {
 	EventLogType,
 	EventLogStatus,
 	EventLogDetailStatus,
-} from '@server/modules/event/event.enums';
-import {extractEventContext, extractEventError, eventTimestamp} from '@server/modules/event/event.helpers';
-import {EventLogMetadata} from '@server/modules/event/event.decorator';
-import {EventLogError} from '@server/modules/event/event.interfaces';
-import {CashuMintRpcService} from '@server/modules/cashu/mintrpc/cashumintrpc.service';
+} from '#server/modules/event/event.enums';
+import {extractEventContext, extractEventError, eventTimestamp} from '#server/modules/event/event.helpers';
+import {EventLogMetadata} from '#server/modules/event/event.decorator';
+import {EventLogError} from '#server/modules/event/event.interfaces';
+import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
 
 @Injectable()
 export class MintInfoInterceptor implements NestInterceptor {

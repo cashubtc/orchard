@@ -3,10 +3,10 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 /* Native Dependencies */
-import {CoreService} from '@server/modules/bitcoin/core/core.service';
+import {CoreService} from '#server/modules/bitcoin/core/core.service';
 /* Local Dependencies */
 import {BitcoinRpcService} from './btcrpc.service.js';
-import {BitcoinType} from '@server/modules/bitcoin/bitcoin.enums';
+import {BitcoinType} from '#server/modules/bitcoin/bitcoin.enums';
 
 describe('BitcoinRpcService', () => {
 	let bitcoinRpcService: BitcoinRpcService;

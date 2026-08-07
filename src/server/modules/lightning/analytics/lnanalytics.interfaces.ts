@@ -1,6 +1,6 @@
 /* Application Dependencies */
-import {TimezoneType} from '@server/modules/graphql/scalars/timezone.scalar';
-import {AnalyticsInterval} from '@server/modules/analytics/analytics.enums';
+import {TimezoneType} from '#server/modules/graphql/scalars/timezone.scalar';
+import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
 /* Local Dependencies */
 import {LightningAnalyticsMetric} from './lnanalytics.enums.js';
 

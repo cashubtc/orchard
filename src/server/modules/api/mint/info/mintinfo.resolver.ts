@@ -2,10 +2,10 @@
 import {Logger, UseInterceptors} from '@nestjs/common';
 import {Resolver, Query, Mutation, Args} from '@nestjs/graphql';
 /* Application Dependencies */
-import {Roles} from '@server/modules/auth/decorators/auth.decorator';
-import {UserRole} from '@server/modules/user/user.enums';
-import {LogEvent} from '@server/modules/event/event.decorator';
-import {EventLogType} from '@server/modules/event/event.enums';
+import {Roles} from '#server/modules/auth/decorators/auth.decorator';
+import {UserRole} from '#server/modules/user/user.enums';
+import {LogEvent} from '#server/modules/event/event.decorator';
+import {EventLogType} from '#server/modules/event/event.enums';
 /* Local Dependencies */
 import {MintInfoService} from './mintinfo.service.js';
 import {MintInfoInterceptor} from './mintinfo.interceptor.js';

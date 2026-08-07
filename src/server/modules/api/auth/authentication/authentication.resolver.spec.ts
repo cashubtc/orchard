@@ -2,8 +2,8 @@
 import {GUARDS_METADATA} from '@nestjs/common/constants';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {PUBLIC_KEY} from '@server/modules/auth/decorators/auth.decorator';
-import {GqlRefreshGuard} from '@server/modules/security/guards/refresh.guard';
+import {PUBLIC_KEY} from '#server/modules/auth/decorators/auth.decorator';
+import {GqlRefreshGuard} from '#server/modules/security/guards/refresh.guard';
 /* Local Dependencies */
 import {AuthAuthenticationResolver} from './authentication.resolver.js';
 

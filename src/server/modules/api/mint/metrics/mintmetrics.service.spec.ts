@@ -2,12 +2,12 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {ErrorService} from '@server/modules/error/error.service';
-import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
-import {MintMetrics} from '@server/modules/cashu/mintmetrics/mintmetrics.entity';
-import {SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {ErrorService} from '#server/modules/error/error.service';
+import {MintMetricsService} from '#server/modules/cashu/mintmetrics/mintmetrics.service';
+import {MintMetrics} from '#server/modules/cashu/mintmetrics/mintmetrics.entity';
+import {SystemMetricsInterval} from '#server/modules/system/metrics/sysmetrics.enums';
 /* Local Dependencies */
 import {ApiMintMetricsService} from './mintmetrics.service.js';
 

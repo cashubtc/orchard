@@ -1,8 +1,8 @@
 /* Core Dependencies */
 import {Injectable} from '@nestjs/common';
 /* Application Dependencies */
-import {SettingService} from '@server/modules/setting/setting.service';
-import {SettingKey} from '@server/modules/setting/setting.enums';
+import {SettingService} from '#server/modules/setting/setting.service';
+import {SettingKey} from '#server/modules/setting/setting.enums';
 /* Local Dependencies */
 import {AiModel, AiMessage, AiTool, AiStreamChunk} from './ai.types.js';
 import {AiVendor} from './ai.vendor.js';

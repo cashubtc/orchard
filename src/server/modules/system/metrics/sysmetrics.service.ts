@@ -7,7 +7,7 @@ import {promises as fs} from 'fs';
 import {FindOptionsWhere, Repository, LessThan, Between, In} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {round2} from '@server/modules/math/round';
+import {round2} from '#server/modules/math/round';
 /* Local Dependencies */
 import {SystemMetrics} from './sysmetrics.entity.js';
 import {SystemMetric} from './sysmetrics.enums.js';

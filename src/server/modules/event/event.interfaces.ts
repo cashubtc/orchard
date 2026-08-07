@@ -1,5 +1,5 @@
 /* Application Dependencies */
-import {EventLogMetadata} from '@server/modules/event/event.decorator';
+import {EventLogMetadata} from '#server/modules/event/event.decorator';
 /* Local Dependencies */
 import {EventLogActorType, EventLogSection, EventLogEntityType, EventLogType, EventLogStatus, EventLogDetailStatus} from './event.enums.js';
 
