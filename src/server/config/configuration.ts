@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {Config} from './configuration.type.js';
+import type {Config} from './configuration.type.js';
 import {loadOrCreateCryptoKey, generateEphemeralJwtSecret} from './crypto-key.js';
 
 const replaceLocalhostInDocker = (host: string | undefined): string | undefined => {

@@ -5,7 +5,7 @@ import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {ErrorService} from '#server/modules/error/error.service';
-import {CashuMintDatabase} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import type {CashuMintDatabase} from '#server/modules/cashu/mintdb/cashumintdb.types';
 
 @Injectable()
 export class MintService {

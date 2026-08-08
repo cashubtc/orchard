@@ -9,7 +9,7 @@ import {EventLogService} from './event.service.js';
 import {EventLog} from './event.entity.js';
 import {EventLogDetail} from './event-detail.entity.js';
 import {EventLogActorType, EventLogSection, EventLogEntityType, EventLogType, EventLogStatus, EventLogDetailStatus} from './event.enums.js';
-import {CreateEventLogInput} from './event.interfaces.js';
+import type {CreateEventLogInput} from './event.interfaces.js';
 
 /**
  * Test suite for EventLogService

@@ -14,7 +14,7 @@ import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardAnalyticsBackfillStatus} from '#server/modules/api/common/analytics-backfill-status.model';
 /* Local Dependencies */
 import {OrchardMintAnalytics, OrchardMintAnalyticsMetric, OrchardMintKeysetsAnalytics} from './mintanalytics.model.js';
-import {MintAnalyticsApiArgs, MintAnalyticsMetricsArgs} from './mintanalytics.interfaces.js';
+import type {MintAnalyticsApiArgs, MintAnalyticsMetricsArgs} from './mintanalytics.interfaces.js';
 
 @Injectable()
 export class MintAnalyticsService {

@@ -9,7 +9,7 @@ import * as protoLoader from '@grpc/proto-loader';
 import {CredentialService} from '#server/modules/credential/credential.service';
 import {MintUnit, MintProofState} from '#server/modules/cashu/cashu.enums';
 /* Native Dependencies */
-import {
+import type {
 	CashuMintDatabase,
 	CashuMintBalance,
 	CashuMintKeyset,
@@ -22,7 +22,7 @@ import {
 	CashuMintCount,
 	CashuMintOperationFee,
 } from '#server/modules/cashu/mintdb/cashumintdb.types';
-import {
+import type {
 	CashuMintMintQuotesArgs,
 	CashuMintMeltQuotesArgs,
 	CashuMintProofsArgs,
@@ -39,7 +39,7 @@ import {
 } from '#server/modules/cashu/mintdb/cashumintdb.helpers';
 import {MintDatabaseType} from '#server/modules/cashu/mintdb/cashumintdb.enums';
 /* Local Dependencies */
-import {NutshellMintMintQuote, NutshellMintMeltQuote, NutshellMintEcash} from './nutshell.types.js';
+import type {NutshellMintMintQuote, NutshellMintMeltQuote, NutshellMintEcash} from './nutshell.types.js';
 
 @Injectable()
 export class NutshellService {

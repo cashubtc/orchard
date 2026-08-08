@@ -11,8 +11,8 @@ import {UserService} from '#server/modules/user/user.service';
 import {
 	MESSAGE_INCOMING_EVENT,
 	MESSAGE_RESET_EVENT,
-	IncomingMessagePayload,
-	ResetMessagePayload,
+	type IncomingMessagePayload,
+	type ResetMessagePayload,
 } from '#server/modules/message/message.types';
 
 @Injectable()

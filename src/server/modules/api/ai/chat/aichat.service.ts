@@ -9,7 +9,7 @@ import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {AiMessageRole} from '#server/modules/ai/ai.enums';
-import {AiStreamChunk} from '#server/modules/ai/ai.types';
+import type {AiStreamChunk} from '#server/modules/ai/ai.types';
 /* Local Dependencies */
 import {OrchardAiChatChunk, OrchardAiChatStream} from './aichat.model.js';
 import {AiChatInput} from './aichat.input.js';

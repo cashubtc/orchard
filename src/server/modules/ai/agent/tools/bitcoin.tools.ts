@@ -1,6 +1,6 @@
 /* Local Dependencies */
 import {AgentToolCategory, AgentToolName, AgentToolRole} from '../agent.enums.js';
-import {AiToolEntry, ToolGuardName} from '#server/modules/ai/tools/tool.types';
+import {type AiToolEntry, ToolGuardName} from '#server/modules/ai/tools/tool.types';
 
 /* *******************************************************
 	GraphQL Queries

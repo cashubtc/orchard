@@ -8,7 +8,7 @@ import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {PrometheusService} from '#server/modules/prometheus/prometheus.service';
 import {flattenFamily} from '#server/modules/prometheus/prometheus.helpers';
-import {PromFamily} from '#server/modules/prometheus/prometheus.types';
+import type {PromFamily} from '#server/modules/prometheus/prometheus.types';
 import {METRICS_RETENTION_DAYS, METRICS_DOWNSAMPLE_AFTER_DAYS} from '#server/modules/system/metrics/sysmetrics.constants';
 import {MintType} from '#server/modules/cashu/cashu.enums';
 /* Local Dependencies */

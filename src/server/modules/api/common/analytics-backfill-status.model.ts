@@ -2,7 +2,7 @@
 import {Field, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
-import {AnalyticsBackfillStatus} from '#server/modules/analytics/analytics.interfaces';
+import type {AnalyticsBackfillStatus} from '#server/modules/analytics/analytics.interfaces';
 
 @ObjectType({description: 'Analytics backfill job status'})
 export class OrchardAnalyticsBackfillStatus {

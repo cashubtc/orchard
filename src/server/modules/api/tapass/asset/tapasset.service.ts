@@ -5,7 +5,7 @@ import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {ErrorService} from '#server/modules/error/error.service';
 import {TaprootAssetsService} from '#server/modules/tapass/tapass/tapass.service';
-import {TaprootAssetsUtxos, TaprootAssets} from '#server/modules/tapass/tapass/tapass.types';
+import type {TaprootAssetsUtxos, TaprootAssets} from '#server/modules/tapass/tapass/tapass.types';
 /* Local Dependencies */
 import {OrchardTaprootAssets, OrchardTaprootAssetsUtxo} from './tapasset.model.js';
 

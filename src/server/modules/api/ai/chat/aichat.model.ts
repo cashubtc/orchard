@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Field, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {AiToolCall, AiMessage, AiStreamChunk, AiStreamUsage} from '#server/modules/ai/ai.types';
+import type {AiToolCall, AiMessage, AiStreamChunk, AiStreamUsage} from '#server/modules/ai/ai.types';
 import {AiMessageRole} from '#server/modules/ai/ai.enums';
 import {AssistantToolName} from '#server/modules/ai/assistant/ai.assistant.enums';
 

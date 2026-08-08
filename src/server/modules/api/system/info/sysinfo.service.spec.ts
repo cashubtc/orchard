@@ -3,7 +3,7 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
 import {SystemInfoService} from '#server/modules/system/info/sysinfo.service';
-import {SystemInfo} from '#server/modules/system/info/sysinfo.types';
+import type {SystemInfo} from '#server/modules/system/info/sysinfo.types';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';

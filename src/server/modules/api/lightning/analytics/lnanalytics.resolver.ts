@@ -3,7 +3,7 @@ import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Application Dependencies */
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
-import {Timezone, TimezoneType} from '#server/modules/graphql/scalars/timezone.scalar';
+import {Timezone, type TimezoneType} from '#server/modules/graphql/scalars/timezone.scalar';
 import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
 import {OrchardAnalyticsBackfillStatus} from '#server/modules/api/common/analytics-backfill-status.model';
 /* Native Dependencies */

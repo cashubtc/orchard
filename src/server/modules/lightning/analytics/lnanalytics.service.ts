@@ -8,7 +8,7 @@ import {DateTime} from 'luxon';
 import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
 import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
 import {AnalyticsCheckpoint} from '#server/modules/analytics/analytics-checkpoint.entity';
-import {
+import type {
 	LightningPayment,
 	LightningInvoice,
 	LightningForward,
@@ -17,7 +17,7 @@ import {
 	LightningTransaction,
 } from '#server/modules/lightning/lightning/lightning.types';
 import {LightningChannelOpenInitiator} from '#server/modules/lightning/lightning.enums';
-import {AnalyticsBackfillStatus} from '#server/modules/analytics/analytics.interfaces';
+import type {AnalyticsBackfillStatus} from '#server/modules/analytics/analytics.interfaces';
 /* Local Dependencies */
 import {LightningAnalytics} from './lnanalytics.entity.js';
 import {LightningAnalyticsMetric} from './lnanalytics.enums.js';

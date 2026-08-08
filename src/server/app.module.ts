@@ -15,6 +15,8 @@ import {ApiModule} from './modules/api/api.module.js';
 import {FetchModule} from './modules/fetch/fetch.module.js';
 import {WebserverModule} from './modules/webserver/webserver.module.js';
 import {TaskModule} from './modules/task/task.module.js';
+/* Database Migrations */
+import * as migrations from './database/migrations/index.js';
 /* Custom Graphql Type Definitions */
 import {UnixTimestamp} from './modules/graphql/scalars/unixtimestamp.scalar.js';
 import {Timezone} from './modules/graphql/scalars/timezone.scalar.js';
@@ -70,7 +72,7 @@ function initializeGraphQL(configService: ConfigService): ApolloDriverConfig {
 				entities: [],
 				synchronize: configService.get('mode.schema_only') ? true : configService.get('database.synchronize'),
 				autoLoadEntities: true,
-				migrations: configService.get('mode.schema_only') ? [] : ['dist/database/migrations/*.js'],
+				migrations: configService.get('mode.schema_only') ? [] : Object.values(migrations),
 				migrationsRun: configService.get('mode.schema_only') ? false : configService.get('mode.production'),
 				retryAttempts: configService.get('mode.schema_only') ? 0 : 10,
 			}),

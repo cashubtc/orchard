@@ -10,16 +10,16 @@ import {AgentService} from '#server/modules/ai/agent/agent.service';
 import {AgentRunStatus} from '#server/modules/ai/agent/agent.enums';
 import {Agent} from '#server/modules/ai/agent/agent.entity';
 import {AgentKey} from '#server/modules/ai/agent/agent.enums';
-import {AiMessage} from '#server/modules/ai/ai.types';
+import type {AiMessage} from '#server/modules/ai/ai.types';
 import {AiMessageRole} from '#server/modules/ai/ai.enums';
-import {AiAgentContext} from '#server/modules/ai/tools/tool.types';
+import type {AiAgentContext} from '#server/modules/ai/tools/tool.types';
 import {MessageService} from '#server/modules/message/message.service';
 import {safeParse} from '#server/modules/utilities/index';
 import {
 	MESSAGE_INCOMING_EVENT,
 	MESSAGE_RESET_EVENT,
-	IncomingMessagePayload,
-	ResetMessagePayload,
+	type IncomingMessagePayload,
+	type ResetMessagePayload,
 } from '#server/modules/message/message.types';
 /* Local Dependencies */
 import {Conversation} from './conversation.entity.js';

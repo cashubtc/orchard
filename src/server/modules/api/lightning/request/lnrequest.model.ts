@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Field, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {LightningRequest} from '#server/modules/lightning/lightning/lightning.types';
+import type {LightningRequest} from '#server/modules/lightning/lightning/lightning.types';
 import {LightningRequestType} from '#server/modules/lightning/lightning.enums';
 
 @ObjectType({description: 'Decoded lightning payment request'})

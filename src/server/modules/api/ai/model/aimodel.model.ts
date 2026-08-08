@@ -4,7 +4,7 @@ import {Field, Float, Int, ObjectType} from '@nestjs/graphql';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
-import {AiModel, AiModelOllama, AiModelOpenRouter} from '#server/modules/ai/ai.types';
+import type {AiModel, AiModelOllama, AiModelOpenRouter} from '#server/modules/ai/ai.types';
 
 @ObjectType({description: 'Ollama-specific AI model details'})
 export class OrchardAiModelOllama {

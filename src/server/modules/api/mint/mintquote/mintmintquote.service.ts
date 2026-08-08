@@ -3,8 +3,8 @@ import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
 import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
-import {CashuMintMintQuote} from '#server/modules/cashu/mintdb/cashumintdb.types';
-import {CashuMintMintQuotesArgs} from '#server/modules/cashu/mintdb/cashumintdb.interfaces';
+import type {CashuMintMintQuote} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import type {CashuMintMintQuotesArgs} from '#server/modules/cashu/mintdb/cashumintdb.interfaces';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {MintService} from '#server/modules/api/mint/mint.service';

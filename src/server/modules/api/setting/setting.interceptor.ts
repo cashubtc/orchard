@@ -5,7 +5,7 @@ import {Reflector} from '@nestjs/core';
 import {Observable, tap, catchError} from 'rxjs';
 /* Application Dependencies */
 import {EventLogService} from '#server/modules/event/event.service';
-import {EventLogMetadata} from '#server/modules/event/event.decorator';
+import type {EventLogMetadata} from '#server/modules/event/event.decorator';
 import {
 	EventLogActorType,
 	EventLogSection,
@@ -14,7 +14,7 @@ import {
 	EventLogDetailStatus,
 } from '#server/modules/event/event.enums';
 import {extractEventContext, extractEventError, eventTimestamp} from '#server/modules/event/event.helpers';
-import {EventLogError} from '#server/modules/event/event.interfaces';
+import type {EventLogError} from '#server/modules/event/event.interfaces';
 import {SettingService} from '#server/modules/setting/setting.service';
 import {SettingKey} from '#server/modules/setting/setting.enums';
 import {isSettingSensitive, maskSensitiveValue} from '#server/modules/setting/setting.helpers';

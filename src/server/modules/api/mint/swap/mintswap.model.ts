@@ -2,7 +2,7 @@
 import {Field, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
-import {CashuMintSwap} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import type {CashuMintSwap} from '#server/modules/cashu/mintdb/cashumintdb.types';
 import {MintUnit} from '#server/modules/cashu/cashu.enums';
 
 @ObjectType({description: 'Cashu mint swap record'})

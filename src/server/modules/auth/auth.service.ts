@@ -10,7 +10,7 @@ import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {UserService} from '#server/modules/user/user.service';
 /* Local Dependencies */
-import {OrchardAuthToken, JwtPayload, RefreshTokenPayload} from './auth.types.js';
+import type {OrchardAuthToken, JwtPayload, RefreshTokenPayload} from './auth.types.js';
 import {TokenBlacklist} from './token-blacklist.entity.js';
 
 @Injectable()

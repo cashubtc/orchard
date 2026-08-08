@@ -2,7 +2,7 @@
 import {Field, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {LightningAddressType} from '#server/modules/lightning/lightning.enums';
-import {LightningAddresses} from '#server/modules/lightning/walletkit/lnwalletkit.types';
+import type {LightningAddresses} from '#server/modules/lightning/walletkit/lnwalletkit.types';
 import {Base64} from '#server/modules/graphql/scalars/base64.scalar';
 
 @ObjectType({description: 'Lightning wallet address'})

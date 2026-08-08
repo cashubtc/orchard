@@ -9,7 +9,7 @@ import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {BitcoinUTXOracleService} from '#server/modules/bitcoin/utxoracle/utxoracle.service';
 import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
-import {UTXOracleProgress} from '#server/modules/bitcoin/utxoracle/utxoracle.types';
+import type {UTXOracleProgress} from '#server/modules/bitcoin/utxoracle/utxoracle.types';
 import {UTXOracleProgressStatus} from '#server/modules/bitcoin/utxoracle/utxoracle.enums';
 /* Local Dependencies */
 import {OrchardBitcoinOracleBackfillStream, OrchardBitcoinOracleBackfillProgress, OrchardBitcoinOraclePrice} from './btcoracle.model.js';

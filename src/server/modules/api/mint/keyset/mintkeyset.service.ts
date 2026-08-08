@@ -5,7 +5,7 @@ import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
 import {CashuMintAnalyticsService} from '#server/modules/cashu/mintanalytics/mintanalytics.service';
 import {MintAnalyticsMetric} from '#server/modules/cashu/mintanalytics/mintanalytics.enums';
-import {CashuMintKeyset} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import type {CashuMintKeyset} from '#server/modules/cashu/mintdb/cashumintdb.types';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {MintService} from '#server/modules/api/mint/mint.service';

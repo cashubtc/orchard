@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Field, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {AiToolEntry} from '#server/modules/ai/tools/tool.types';
+import type {AiToolEntry} from '#server/modules/ai/tools/tool.types';
 
 @ObjectType({description: 'AI agent tool metadata'})
 export class OrchardAgentTool {

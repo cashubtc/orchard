@@ -14,7 +14,7 @@ import {getBucketDate} from '#server/modules/analytics/analytics.helpers';
 import {OrchardAnalyticsBackfillStatus} from '#server/modules/api/common/analytics-backfill-status.model';
 /* Local Dependencies */
 import {OrchardBitcoinAnalytics, OrchardBitcoinAnalyticsMetric} from './btcanalytics.model.js';
-import {BitcoinAnalyticsApiArgs, BitcoinAnalyticsMetricsArgs} from './btcanalytics.interfaces.js';
+import type {BitcoinAnalyticsApiArgs, BitcoinAnalyticsMetricsArgs} from './btcanalytics.interfaces.js';
 
 @Injectable()
 export class ApiBitcoinAnalyticsService {

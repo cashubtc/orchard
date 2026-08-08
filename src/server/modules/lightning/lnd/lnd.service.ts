@@ -8,7 +8,7 @@ import * as protoLoader from '@grpc/proto-loader';
 /* Application Dependencies */
 import {CredentialService} from '#server/modules/credential/credential.service';
 /* Native Dependencies */
-import {LightningChannelBalance, LightningRequest} from '#server/modules/lightning/lightning/lightning.types';
+import type {LightningChannelBalance, LightningRequest} from '#server/modules/lightning/lightning/lightning.types';
 /* Local Dependencies */
 import {mapRequestType, mapRequestDescription, mapRequestExpiry} from './lnd.helpers.js';
 

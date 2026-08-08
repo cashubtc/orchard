@@ -6,7 +6,7 @@ import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {TaprootAssetType} from '#server/modules/tapass/tapass.enums';
 import {TapdService} from '#server/modules/tapass/tapd/tapd.service';
 /* Local Dependencies */
-import {TaprootAssetsInfo, TaprootAssetsUtxos, TaprootAssets, AssetTransfers, AddrReceives} from './tapass.types.js';
+import type {TaprootAssetsInfo, TaprootAssetsUtxos, TaprootAssets, AssetTransfers, AddrReceives} from './tapass.types.js';
 
 @Injectable()
 export class TaprootAssetsService implements OnModuleInit {

@@ -2,7 +2,7 @@
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
 import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
-import {CashuMintProofGroup} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import type {CashuMintProofGroup} from '#server/modules/cashu/mintdb/cashumintdb.types';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {MintService} from '#server/modules/api/mint/mint.service';

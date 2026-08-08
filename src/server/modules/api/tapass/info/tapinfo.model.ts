@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Field, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {TaprootAssetsInfo} from '#server/modules/tapass/tapass/tapass.types';
+import type {TaprootAssetsInfo} from '#server/modules/tapass/tapass/tapass.types';
 
 @ObjectType({description: 'Taproot Assets daemon information'})
 export class OrchardTaprootAssetsInfo {

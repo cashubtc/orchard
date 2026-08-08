@@ -5,7 +5,7 @@ import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {ErrorService} from '#server/modules/error/error.service';
 import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
-import {LightningChannel, LightningChannelBalance} from '#server/modules/lightning/lightning/lightning.types';
+import type {LightningChannel, LightningChannelBalance} from '#server/modules/lightning/lightning/lightning.types';
 /* Local Dependencies */
 import {OrchardLightningBalance, OrchardLightningChannelSummary, OrchardLightningAssetBalance} from './lnbalance.model.js';
 

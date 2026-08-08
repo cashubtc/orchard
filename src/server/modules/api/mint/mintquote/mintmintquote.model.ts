@@ -3,7 +3,7 @@ import {Field, Int, ID, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 import {MintUnit, MintQuoteState} from '#server/modules/cashu/cashu.enums';
-import {CashuMintMintQuote} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import type {CashuMintMintQuote} from '#server/modules/cashu/mintdb/cashumintdb.types';
 
 @ObjectType({description: 'Cashu mint quote for minting tokens'})
 export class OrchardMintMintQuote {

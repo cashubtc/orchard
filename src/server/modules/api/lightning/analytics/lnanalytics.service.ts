@@ -14,7 +14,7 @@ import {getBucketDate} from '#server/modules/analytics/analytics.helpers';
 import {OrchardAnalyticsBackfillStatus} from '#server/modules/api/common/analytics-backfill-status.model';
 /* Local Dependencies */
 import {OrchardLightningAnalytics, OrchardLightningAnalyticsMetric} from './lnanalytics.model.js';
-import {LightningAnalyticsApiArgs, LightningAnalyticsMetricsArgs} from './lnanalytics.interfaces.js';
+import type {LightningAnalyticsApiArgs, LightningAnalyticsMetricsArgs} from './lnanalytics.interfaces.js';
 
 @Injectable()
 export class ApiLightningAnalyticsService {

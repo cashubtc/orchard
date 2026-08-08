@@ -6,7 +6,7 @@ import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
 import {PrometheusService} from '#server/modules/prometheus/prometheus.service';
-import {PromFamily} from '#server/modules/prometheus/prometheus.types';
+import type {PromFamily} from '#server/modules/prometheus/prometheus.types';
 /* Local Dependencies */
 import {MintMetrics} from './mintmetrics.entity.js';
 import {MintMetricsService} from './mintmetrics.service.js';

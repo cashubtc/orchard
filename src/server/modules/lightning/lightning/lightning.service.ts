@@ -8,7 +8,7 @@ import {LightningType} from '#server/modules/lightning/lightning.enums';
 import {LndService} from '#server/modules/lightning/lnd/lnd.service';
 import {ClnService} from '#server/modules/lightning/cln/cln.service';
 /* Local Dependencies */
-import {
+import type {
 	LightningInfo,
 	LightningChannelBalance,
 	LightningRequest,

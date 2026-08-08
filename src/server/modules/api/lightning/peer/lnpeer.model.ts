@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Field, ObjectType, Float} from '@nestjs/graphql';
 /* Application Dependencies */
-import {LightningPeer} from '#server/modules/lightning/lightning/lightning.types';
+import type {LightningPeer} from '#server/modules/lightning/lightning/lightning.types';
 
 @ObjectType({description: 'Lightning network peer information'})
 export class OrchardLightningPeer {

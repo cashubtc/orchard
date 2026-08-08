@@ -14,8 +14,8 @@ import {
 	EventLogDetailStatus,
 } from '#server/modules/event/event.enums';
 import {extractEventContext, extractEventError, eventTimestamp} from '#server/modules/event/event.helpers';
-import {EventLogMetadata} from '#server/modules/event/event.decorator';
-import {EventLogError} from '#server/modules/event/event.interfaces';
+import type {EventLogMetadata} from '#server/modules/event/event.decorator';
+import type {EventLogError} from '#server/modules/event/event.interfaces';
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
 
 @Injectable()

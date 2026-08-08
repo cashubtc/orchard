@@ -1,5 +1,5 @@
 /* Application Dependencies */
-import {TimezoneType} from '#server/modules/graphql/scalars/timezone.scalar';
+import type {TimezoneType} from '#server/modules/graphql/scalars/timezone.scalar';
 import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
 /* Local Dependencies */
 import {BitcoinAnalyticsMetric} from './btcanalytics.enums.js';

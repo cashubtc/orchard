@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Field, Int, Float, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {BitcoinBlockchainInfo} from '#server/modules/bitcoin/rpc/btcrpc.types';
+import type {BitcoinBlockchainInfo} from '#server/modules/bitcoin/rpc/btcrpc.types';
 
 @ObjectType({description: 'Bitcoin block count'})
 export class OrchardBitcoinBlockCount {

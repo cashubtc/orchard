@@ -14,7 +14,7 @@ import {NutshellService} from '#server/modules/cashu/nutshell/nutshell.service';
 import {CdkService} from '#server/modules/cashu/cdk/cdk.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 /* Local Dependencies */
-import {
+import type {
 	CashuMintDatabase,
 	CashuMintBalance,
 	CashuMintKeyset,
@@ -27,7 +27,7 @@ import {
 	CashuMintOperationFee,
 	CashuMintDatabaseInfo,
 } from './cashumintdb.types.js';
-import {
+import type {
 	CashuMintMintQuotesArgs,
 	CashuMintProofsArgs,
 	CashuMintPromiseArgs,

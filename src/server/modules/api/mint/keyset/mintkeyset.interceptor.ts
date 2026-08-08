@@ -14,9 +14,9 @@ import {
 	EventLogDetailStatus,
 } from '#server/modules/event/event.enums';
 import {extractEventContext, extractEventError, eventTimestamp} from '#server/modules/event/event.helpers';
-import {CreateEventLogDetailInput} from '#server/modules/event/event.interfaces';
+import type {CreateEventLogDetailInput} from '#server/modules/event/event.interfaces';
 import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
-import {CashuMintKeyset} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import type {CashuMintKeyset} from '#server/modules/cashu/mintdb/cashumintdb.types';
 import {MintService} from '#server/modules/api/mint/mint.service';
 /* Local Dependencies */
 import {OrchardMintKeysetRotation} from './mintkeyset.model.js';

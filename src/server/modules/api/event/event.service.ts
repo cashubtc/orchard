@@ -5,7 +5,7 @@ import {EventLogService} from '#server/modules/event/event.service';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
-import {EventLogFilters} from '#server/modules/event/event.interfaces';
+import type {EventLogFilters} from '#server/modules/event/event.interfaces';
 import {OrchardCommonCount} from '#server/modules/api/common/entity-count.model';
 import {OrchardCommonGenesis} from '#server/modules/api/common/entity-genesis.model';
 /* Local Dependencies */

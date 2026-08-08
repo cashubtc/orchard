@@ -6,7 +6,7 @@ import {promises as fs} from 'fs';
 /* Application Dependencies */
 import {round2} from '#server/modules/math/round';
 /* Local Dependencies */
-import {SystemInfo} from './sysinfo.types.js';
+import type {SystemInfo} from './sysinfo.types.js';
 
 @Injectable()
 export class SystemInfoService {

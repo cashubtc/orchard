@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {AiTool} from '../ai.types.js';
+import type {AiTool} from '../ai.types.js';
 import {AgentToolCategory, AgentToolRole} from '../agent/agent.enums.js';
 
 /* *******************************************************

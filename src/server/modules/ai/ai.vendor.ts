@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {AiModel, AiMessage, AiTool, AiStreamChunk} from './ai.types.js';
+import type {AiModel, AiMessage, AiTool, AiStreamChunk} from './ai.types.js';
 
 /**
  * Common interface for AI vendor implementations.

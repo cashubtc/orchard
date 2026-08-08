@@ -7,7 +7,7 @@ import {expect} from '@jest/globals';
 import {of, throwError, lastValueFrom} from 'rxjs';
 /* Application Dependencies */
 import {EventLogService} from '#server/modules/event/event.service';
-import {EventLogMetadata} from '#server/modules/event/event.decorator';
+import type {EventLogMetadata} from '#server/modules/event/event.decorator';
 import {
 	EventLogActorType,
 	EventLogSection,
