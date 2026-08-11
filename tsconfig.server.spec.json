@@ -14,7 +14,8 @@
   },
   "include": [
     "src/server/**/*.spec.ts",
-    "src/server/**/*.d.ts"
+    "src/server/**/*.d.ts",
+    "src/server/test/**/*.ts"
   ],
   "exclude": []
 }

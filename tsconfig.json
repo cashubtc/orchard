@@ -1,3 +1,13 @@
+/* Solution-style config: owns no files itself, and points editors at the project that owns each one.
+   Without it, src/server files fall into an inferred project that knows nothing of the #server
+   imports map, and every #server specifier shows as unresolved. Builds use the referenced configs
+   directly — nothing compiles through this file. */
 {
-  "extends": "./tsconfig.client.json"
+  "files": [],
+  "references": [
+    {"path": "./tsconfig.client.json"},
+    {"path": "./tsconfig.client.spec.json"},
+    {"path": "./tsconfig.server.json"},
+    {"path": "./tsconfig.server.spec.json"}
+  ]
 }
