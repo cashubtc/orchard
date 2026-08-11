@@ -6,6 +6,8 @@
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    // Type imports must say `type`, so swc strips them instead of emitting a dead runtime binding.
+    "verbatimModuleSyntax": true,
     "allowSyntheticDefaultImports": true,
     "target": "ES2023",
     "lib": ["ES2023"],

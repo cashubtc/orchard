@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Logger, OnModuleInit} from '@nestjs/common';
+import {Logger, type OnModuleInit} from '@nestjs/common';
 import {Resolver, Query, Subscription, Args, Mutation} from '@nestjs/graphql';
 import {Throttle, minutes} from '@nestjs/throttler';
 /* Vendor Dependencies */

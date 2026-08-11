@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ExecutionContext} from '@nestjs/common';
+import type {ExecutionContext} from '@nestjs/common';
 import {Reflector} from '@nestjs/core';
 import {GqlExecutionContext} from '@nestjs/graphql';
 /* Vendor Dependencies */

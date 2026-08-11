@@ -4,7 +4,7 @@ import {InjectRepository} from '@nestjs/typeorm';
 import * as os from 'os';
 import {promises as fs} from 'fs';
 /* Vendor Dependencies */
-import {FindOptionsWhere, Repository, LessThan, Between, In} from 'typeorm';
+import {type FindOptionsWhere, Repository, LessThan, Between, In} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {round2} from '#server/modules/math/round';

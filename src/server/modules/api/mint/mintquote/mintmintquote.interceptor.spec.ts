@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
 import {Reflector} from '@nestjs/core';
-import {CallHandler, ExecutionContext} from '@nestjs/common';
+import type {CallHandler, ExecutionContext} from '@nestjs/common';
 import {expect} from '@jest/globals';
 /* Vendor Dependencies */
 import {of, throwError, lastValueFrom} from 'rxjs';

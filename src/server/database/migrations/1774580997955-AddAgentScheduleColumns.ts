@@ -1,4 +1,4 @@
-import {MigrationInterface, QueryRunner} from 'typeorm';
+import type {MigrationInterface, QueryRunner} from 'typeorm';
 
 export class AddAgentScheduleColumns1774580997955 implements MigrationInterface {
 	name = 'AddAgentScheduleColumns1774580997955';

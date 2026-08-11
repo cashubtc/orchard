@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Injectable, Logger, OnModuleInit} from '@nestjs/common';
+import {Injectable, Logger, type OnModuleInit} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */

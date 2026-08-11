@@ -3,7 +3,7 @@ import {Injectable, Logger} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
-import {FindOptionsWhere, Repository, LessThan, Between, In} from 'typeorm';
+import {type FindOptionsWhere, Repository, LessThan, Between, In} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {PrometheusService} from '#server/modules/prometheus/prometheus.service';

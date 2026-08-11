@@ -1,4 +1,4 @@
-import {MigrationInterface, QueryRunner} from 'typeorm';
+import type {MigrationInterface, QueryRunner} from 'typeorm';
 
 export class AddAnalyticsAndLnAnalyticsTables1771000429984 implements MigrationInterface {
 	name = 'AddAnalyticsAndLnAnalyticsTables1771000429984';

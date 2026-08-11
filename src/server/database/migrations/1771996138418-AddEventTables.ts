@@ -1,4 +1,4 @@
-import {MigrationInterface, QueryRunner} from 'typeorm';
+import type {MigrationInterface, QueryRunner} from 'typeorm';
 
 export class AddEventTables1771996138418 implements MigrationInterface {
 	name = 'AddEventTables1771996138418';

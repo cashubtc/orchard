@@ -1,4 +1,4 @@
-import {MigrationInterface, QueryRunner} from 'typeorm';
+import type {MigrationInterface, QueryRunner} from 'typeorm';
 
 export class AddBitcoinAnalyticsTable1773321368684 implements MigrationInterface {
 	name = 'AddBitcoinAnalyticsTable1773321368684';

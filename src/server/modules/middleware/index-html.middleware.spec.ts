@@ -1,4 +1,4 @@
-import {Request, Response, NextFunction} from 'express';
+import type {Request, Response, NextFunction} from 'express';
 import type {readFileSync as ReadFileSync} from 'fs';
 
 // Core modules bypass the ESM mock registry unless replaced at the module level.

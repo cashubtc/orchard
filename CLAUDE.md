@@ -51,7 +51,10 @@ npm run migration:revert      # Revert last migration
 - Authentication: JWT with Passport
 - Module organization: `src/server/modules/` contains domain modules (ai, api, auth, bitcoin, cashu, lightning, tapass, etc.)
 - API endpoints organized by domain in `src/server/modules/api/`
-- Path alias: `#server/` maps to `src/server/` (a Node subpath import, extensionless; relative imports need explicit `.js`)
+- Native ESM (`"type": "module"`). Three import rules the compiler enforces:
+    - Relative imports need an explicit `.js` extension, even though the file on disk is `.ts`
+    - `#server/` maps to `src/server/` (a Node subpath import — extensionless, and directories need `/index`)
+    - Type-only imports must say `import type` / `{type X}`, or the build fails with TS1484
 
 ### Client (Angular)
 - Entry: `src/client/main.ts`

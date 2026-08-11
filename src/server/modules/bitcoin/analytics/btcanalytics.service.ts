@@ -1,8 +1,8 @@
 /* Core Dependencies */
-import {Injectable, Logger, OnApplicationBootstrap} from '@nestjs/common';
+import {Injectable, Logger, type OnApplicationBootstrap} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 /* Vendor Dependencies */
-import {Repository, Between, In, FindOptionsWhere} from 'typeorm';
+import {Repository, Between, In, type FindOptionsWhere} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {LightningService} from '#server/modules/lightning/lightning/lightning.service';

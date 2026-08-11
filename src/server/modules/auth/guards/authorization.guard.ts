@@ -1,6 +1,6 @@
 /* Core Dependencies */
-import {Injectable, ExecutionContext} from '@nestjs/common';
-import {CanActivate} from '@nestjs/common';
+import {Injectable, type ExecutionContext} from '@nestjs/common';
+import type {CanActivate} from '@nestjs/common';
 import {Reflector} from '@nestjs/core';
 import {GqlExecutionContext} from '@nestjs/graphql';
 /* Application Dependencies */

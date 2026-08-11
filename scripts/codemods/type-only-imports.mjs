@@ -1,24 +1,25 @@
 /**
- * Marks imports of type-only exports with the `type` modifier. Idempotent — safe to re-run.
+ * Marks imports of type-only bindings with the `type` modifier. Idempotent — safe to re-run.
  *
  * swc compiles each file alone, so it cannot tell a type import from a value one. With
  * decorator metadata enabled it keeps the binding to reference in `design:paramtypes`, and
  * under ESM that binding fails to link because the target exports nothing at runtime. The
  * modifier is the signal that lets it strip the import instead.
  *
- * Only names declared as `export type` or `export interface` are touched — they have no
- * runtime value, so nothing can be lost. Exported classes and enums are left alone: those
- * do carry usable metadata, and marking them would break it.
+ * Type-ness comes from the TypeScript checker rather than a file scan, so bindings from
+ * node_modules are covered too — those are the ones a hand-written resolver cannot see, and
+ * the ones `verbatimModuleSyntax` reports as TS1484.
  *
  * Migration-scoped — delete once the server runs as ESM.
  *
  * Usage: node scripts/codemods/type-only-imports.mjs [--dry]
  */
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { join, dirname, resolve } from 'node:path';
+import { join } from 'node:path';
 import ts from 'typescript';
 
-const ROOTS = ['src/server'];
+const ROOT = 'src/server';
+const TSCONFIG = 'tsconfig.server.json';
 
 const dry_run = process.argv.includes('--dry');
 
@@ -26,50 +27,41 @@ const dry_run = process.argv.includes('--dry');
 function collectFiles(root) {
     if (!existsSync(root)) return [];
     return readdirSync(root, { recursive: true, withFileTypes: true })
-        .filter((entry) => entry.isFile() && entry.name.endsWith('.ts') && !entry.name.endsWith('.d.ts'))
+        .filter((entry) => entry.isFile() && entry.name.endsWith('.ts'))
         .map((entry) => join(entry.parentPath, entry.name));
 }
 
-const files = ROOTS.flatMap(collectFiles);
-const parse = (file) => ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest);
+// Specs are excluded from the build config but still need marking, so the program is built
+// from every file rather than the config's own file list.
+const config = ts.readConfigFile(TSCONFIG, ts.sys.readFile).config;
+const { options } = ts.parseJsonConfigFileContent(config, ts.sys, '.');
+const files = collectFiles(ROOT);
+const program = ts.createProgram(files, options);
+const checker = program.getTypeChecker();
 
-/** Names each file exports as a type alias or interface, keyed by absolute path. */
-const type_exports = new Map(
-    files.map((file) => {
-        const names = new Set();
-        parse(file).forEachChild((node) => {
-            if (!ts.isTypeAliasDeclaration(node) && !ts.isInterfaceDeclaration(node)) return;
-            if (node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)) names.add(node.name.text);
-        });
-        return [resolve(file), names];
-    }),
-);
-
-/** Resolves a `#server/*` or relative specifier to the file it names. */
-function targetOf(specifier, file) {
-    let base;
-    if (specifier.startsWith('#server/')) base = resolve('src/server', specifier.slice('#server/'.length));
-    else if (ts.isExternalModuleNameRelative(specifier)) base = resolve(dirname(file), specifier.replace(/\.js$/, ''));
-    else return null;
-    if (existsSync(`${base}.ts`)) return resolve(`${base}.ts`);
-    if (existsSync(join(base, 'index.ts'))) return resolve(join(base, 'index.ts'));
-    return null;
+/** True when a named import resolves to something with no runtime value behind it. */
+function isTypeOnly(specifier) {
+    const symbol = checker.getSymbolAtLocation(specifier.name);
+    if (!symbol) return false;
+    const target = symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
+    if (target.flags & ts.SymbolFlags.Value) return false;
+    return Boolean(target.flags & (ts.SymbolFlags.Type | ts.SymbolFlags.TypeAlias | ts.SymbolFlags.Interface));
 }
 
 /** Collects the offsets where a `type` modifier belongs. */
-function editsFor(source_file, file) {
+function editsFor(source_file) {
     const edits = [];
     source_file.forEachChild((node) => {
         const clause = ts.isImportDeclaration(node) ? node.importClause : null;
         if (!clause || clause.isTypeOnly || !clause.namedBindings || !ts.isNamedImports(clause.namedBindings)) return;
 
-        const names = type_exports.get(targetOf(node.moduleSpecifier.text, file));
-        if (!names) return;
         const specifiers = clause.namedBindings.elements;
-        const type_only = specifiers.filter((specifier) => !specifier.isTypeOnly && names.has((specifier.propertyName ?? specifier.name).text));
+        const type_only = specifiers.filter((specifier) => !specifier.isTypeOnly && isTypeOnly(specifier));
         if (type_only.length === 0) return;
 
-        // A default import cannot be combined with a type-only clause, so fall back to per-specifier.
+        // Prefer the whole-clause form: `import {type A}` alone would leave `import {}`, a
+        // side-effect import that survives compilation. A default import cannot combine with
+        // it, so those fall back to per-specifier.
         if (type_only.length === specifiers.length && !clause.name) {
             edits.push({ at: node.getStart(source_file) + 'import'.length, text: ' type' });
             return;
@@ -83,12 +75,14 @@ let total_sites = 0;
 let total_files = 0;
 
 for (const file of files) {
-    const text = readFileSync(file, 'utf8');
-    const edits = editsFor(parse(file), file);
+    const source_file = program.getSourceFile(file);
+    if (!source_file) continue;
+
+    const edits = editsFor(source_file);
     if (edits.length === 0) continue;
 
     // Apply bottom-up so earlier offsets stay valid.
-    let updated = text;
+    let updated = readFileSync(file, 'utf8');
     for (const edit of edits.sort((a, b) => b.at - a.at)) {
         updated = updated.slice(0, edit.at) + edit.text + updated.slice(edit.at);
     }

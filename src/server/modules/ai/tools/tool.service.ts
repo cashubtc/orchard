@@ -3,7 +3,7 @@ import {Injectable, Logger, Optional} from '@nestjs/common';
 import {ModuleRef} from '@nestjs/core';
 /* Vendor Dependencies */
 import {GraphQLSchemaHost} from '@nestjs/graphql';
-import {DocumentNode, GraphQLSchema, execute, parse} from 'graphql';
+import {type DocumentNode, GraphQLSchema, execute, parse} from 'graphql';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
 import type {AiTool} from '#server/modules/ai/ai.types';

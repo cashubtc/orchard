@@ -1,6 +1,6 @@
 /* Core Dependencies */
 import {randomBytes} from 'crypto';
-import {Request, Response, NextFunction} from 'express';
+import type {Request, Response, NextFunction} from 'express';
 /* Local Dependencies */
 import {CSP_NONCE_KEY} from './middleware.constants.js';
 

@@ -1,9 +1,9 @@
 /* Core Dependencies */
-import {Injectable, Logger, OnApplicationBootstrap} from '@nestjs/common';
+import {Injectable, Logger, type OnApplicationBootstrap} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 import {InjectRepository} from '@nestjs/typeorm';
 /* Vendor Dependencies */
-import {Repository, FindOptionsWhere, Between, In} from 'typeorm';
+import {Repository, type FindOptionsWhere, Between, In} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';

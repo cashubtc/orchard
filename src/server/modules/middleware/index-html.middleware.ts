@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {readFileSync} from 'fs';
 import {join} from 'path';
-import {Request, Response, NextFunction} from 'express';
+import type {Request, Response, NextFunction} from 'express';
 /* Local Dependencies */
 import {CSP_NONCE_KEY, CSP_NONCE_PLACEHOLDER} from './middleware.constants.js';
 

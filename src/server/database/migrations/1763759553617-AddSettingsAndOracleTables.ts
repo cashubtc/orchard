@@ -1,4 +1,4 @@
-import {MigrationInterface, QueryRunner} from 'typeorm';
+import type {MigrationInterface, QueryRunner} from 'typeorm';
 
 export class AddSettingsAndOracleTables1763759553617 implements MigrationInterface {
 	name = 'AddSettingsAndOracleTables1763759553617';

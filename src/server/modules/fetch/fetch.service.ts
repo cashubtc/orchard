@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Injectable, Logger, OnModuleDestroy} from '@nestjs/common';
+import {Injectable, Logger, type OnModuleDestroy} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import fetch, {Response} from 'node-fetch';

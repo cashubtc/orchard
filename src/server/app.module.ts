@@ -2,10 +2,10 @@
 import {Module, Logger} from '@nestjs/common';
 import {ConfigModule, ConfigService} from '@nestjs/config';
 import {GraphQLModule} from '@nestjs/graphql';
-import {ApolloDriver, ApolloDriverConfig} from '@nestjs/apollo';
+import {ApolloDriver, type ApolloDriverConfig} from '@nestjs/apollo';
 /* Vendor Dependencies */
 import {TypeOrmModule} from '@nestjs/typeorm';
-import {DataSource, DataSourceOptions} from 'typeorm';
+import {DataSource, type DataSourceOptions} from 'typeorm';
 import {ScheduleModule} from '@nestjs/schedule';
 import {EventEmitterModule} from '@nestjs/event-emitter';
 /* Application Modules */

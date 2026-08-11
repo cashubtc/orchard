@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Injectable, Logger, CallHandler, ExecutionContext, NestInterceptor} from '@nestjs/common';
+import {Injectable, Logger, type CallHandler, type ExecutionContext, type NestInterceptor} from '@nestjs/common';
 import {Reflector} from '@nestjs/core';
 /* Vendor Dependencies */
 import {Observable, tap, catchError} from 'rxjs';

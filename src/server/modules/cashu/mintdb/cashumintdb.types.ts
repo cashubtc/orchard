@@ -1,5 +1,5 @@
 /* Vendor Dependencies */
-import {Database} from 'better-sqlite3';
+import type {Database} from 'better-sqlite3';
 import {Client} from 'pg';
 /* Native Dependencies */
 import {MintUnit, MintQuoteState, MeltQuoteState, MintProofState} from '#server/modules/cashu/cashu.enums';

@@ -1,4 +1,4 @@
-import {MigrationInterface, QueryRunner} from 'typeorm';
+import type {MigrationInterface, QueryRunner} from 'typeorm';
 
 export class AddMintMetricsTable1783982762826 implements MigrationInterface {
 	name = 'AddMintMetricsTable1783982762826';

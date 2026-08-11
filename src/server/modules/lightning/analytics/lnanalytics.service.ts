@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Injectable, Logger, OnApplicationBootstrap} from '@nestjs/common';
+import {Injectable, Logger, type OnApplicationBootstrap} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 /* Vendor Dependencies */
 import {Repository, DataSource, EntityManager, Between, In} from 'typeorm';

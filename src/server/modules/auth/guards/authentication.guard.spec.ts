@@ -1,6 +1,6 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
-import {ExecutionContext} from '@nestjs/common';
+import type {ExecutionContext} from '@nestjs/common';
 import {Reflector} from '@nestjs/core';
 import {ConfigService} from '@nestjs/config';
 import {GqlExecutionContext} from '@nestjs/graphql';

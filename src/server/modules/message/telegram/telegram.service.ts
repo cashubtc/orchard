@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Injectable, Logger, OnModuleInit, OnModuleDestroy} from '@nestjs/common';
+import {Injectable, Logger, type OnModuleInit, type OnModuleDestroy} from '@nestjs/common';
 /* Vendor Dependencies */
 import {Bot} from 'grammy';
 import {EventEmitter2} from '@nestjs/event-emitter';

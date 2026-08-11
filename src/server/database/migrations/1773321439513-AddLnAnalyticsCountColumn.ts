@@ -1,4 +1,4 @@
-import {MigrationInterface, QueryRunner} from 'typeorm';
+import type {MigrationInterface, QueryRunner} from 'typeorm';
 
 export class AddLnAnalyticsCountColumn1773321439513 implements MigrationInterface {
 	name = 'AddLnAnalyticsCountColumn1773321439513';

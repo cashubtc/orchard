@@ -1,4 +1,4 @@
-import {MigrationInterface, QueryRunner} from 'typeorm';
+import type {MigrationInterface, QueryRunner} from 'typeorm';
 
 export class AddSystemMetricsTable1773321408860 implements MigrationInterface {
 	name = 'AddSystemMetricsTable1773321408860';
