@@ -29,6 +29,7 @@ lerna-debug.log*
 
 # Tests
 /coverage
+/src/coverage
 /.nyc_output
 /e2e/test-results
 /e2e/playwright-report
