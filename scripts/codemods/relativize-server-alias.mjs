@@ -7,7 +7,8 @@
  * extension, so these stay extensionless — except directory targets, which must name
  * their `index` explicitly because the mapping is a literal substitution.
  *
- * Migration-scoped — delete once the server runs as ESM.
+ * Migration-scoped — run in the order listed in the README; delete once every
+ * pre-ESM branch has merged or rebased.
  *
  * Usage: node scripts/codemods/relativize-server-alias.mjs [--dry]
  */

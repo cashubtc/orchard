@@ -10,7 +10,8 @@
  * node_modules are covered too — those are the ones a hand-written resolver cannot see, and
  * the ones `verbatimModuleSyntax` reports as TS1484.
  *
- * Migration-scoped — delete once the server runs as ESM.
+ * Migration-scoped — run in the order listed in the README; delete once every
+ * pre-ESM branch has merged or rebased.
  *
  * Usage: node scripts/codemods/type-only-imports.mjs [--dry]
  */
@@ -23,7 +24,7 @@ const TSCONFIG = 'tsconfig.server.json';
 
 const dry_run = process.argv.includes('--dry');
 
-/** Lists every .ts file under a root directory. */
+/** Lists every .ts file under a root directory. `.d.ts` included — the program needs the ambient declarations. */
 function collectFiles(root) {
     if (!existsSync(root)) return [];
     return readdirSync(root, { recursive: true, withFileTypes: true })
@@ -71,6 +72,19 @@ function editsFor(source_file) {
     return edits;
 }
 
+// An unresolvable specifier yields no symbol, so nothing gets marked and the run still reports
+// success. That is what a stale specifier from an earlier codemod looks like, hence the warning.
+// Only first-party specifiers count — a bare one failing here is unrelated to codemod order.
+const unresolved = [
+    ...new Set(
+        program
+            .getSemanticDiagnostics()
+            .filter((diagnostic) => diagnostic.code === 2307)
+            .map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ').match(/'([^']+)'/)?.[1])
+            .filter((specifier) => specifier?.startsWith('@server/') || specifier?.startsWith('.')),
+    ),
+];
+
 let total_sites = 0;
 let total_files = 0;
 
@@ -94,3 +108,9 @@ for (const file of files) {
 }
 
 console.log(`\n${dry_run ? '[dry run] ' : ''}${total_sites} imports marked across ${total_files} files`);
+
+if (unresolved.length > 0) {
+    console.warn(`\n${unresolved.length} unresolved first-party specifiers — imports through them were skipped:`);
+    unresolved.forEach((specifier) => console.warn(`  ${specifier}`));
+    console.warn('Run the earlier codemods first (see scripts/codemods/README.md), then re-run this one.');
+}

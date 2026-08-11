@@ -57,6 +57,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Links the built graph the way an operator's Node does — through the imports map's dist
+      # branch. Catches undetectable CJS named exports and resolution faults that nothing else sees.
+      - name: Smoke dist module graph
+        run: node --input-type=module -e "await import('./dist/app.module.js')"
+
       - name: Upload dist
         if: success()
         uses: actions/upload-artifact@v4

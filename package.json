@@ -16,7 +16,7 @@
     }
   },
   "scripts": {
-    "build": "node --conditions=orchard-src --import ./scripts/register.mjs scripts/build.ts",
+    "build": "NODE_ENV=production npm run generate:types && NODE_ENV=production nest build && NODE_ENV=production ng build",
     "format": "prettier --write \"src/client/**/*.{ts,html}\" \"src/client/modules/**/*.scss\" \"src/server/**/*.ts\"",
     "format:watch": "nodemon --watch src/client --watch src/server --ext ts,html,scss,json --exec \"npm run format\"",
     "format:check": "prettier --check \"src/client/**/*.{ts,html}\" \"src/client/modules/**/*.scss\" \"src/server/**/*.ts\"",
@@ -26,12 +26,12 @@
     "start:server": "NODE_ENV=development nest start --watch",
     "start:server:nowatch": "NODE_ENV=development nest start",
     "start:server:debug": "NODE_ENV=development nest start --debug --watch",
-    "generate:types": "node --conditions=orchard-src --import ./scripts/register.mjs scripts/generate-schema.ts && npx graphql-codegen",
+    "generate:types": "SCHEMA_ONLY=true node --conditions=orchard-src --import ./scripts/register.mjs scripts/generate-schema.ts && npx graphql-codegen",
     "typecheck:spec": "tsc -p tsconfig.server.spec.json --noEmit",
     "ci": "npm run format:check && npm run lint && npm run typecheck:spec && npm run generate:types && npm run test && npm run build",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js && ng test --watch=false --browsers=ChromeHeadless --progress=false",
+    "test": "npm run test:server && npm run test:client",
     "test:server": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:server:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:server:cov": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
@@ -177,8 +177,16 @@
         }
       ]
     },
+    "testEnvironmentOptions": {
+      "customExportConditions": [
+        "orchard-src",
+        "node",
+        "node-addons",
+        "require",
+        "default"
+      ]
+    },
     "moduleNameMapper": {
-      "^#server/(.*)$": "<rootDir>/$1",
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
     "collectCoverageFrom": [

@@ -1,4 +1,3 @@
-import './schema-only.js';
 import { NestFactory } from '@nestjs/core';
 import { GraphQLSchemaHost } from '@nestjs/graphql';
 import { printSchema } from 'graphql';

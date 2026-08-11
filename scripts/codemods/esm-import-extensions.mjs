@@ -2,11 +2,11 @@
  * Appends explicit `.js` extensions to relative import specifiers, as required by
  * nodenext module resolution. Idempotent — safe to re-run.
  *
- * `@server/*` specifiers are deliberately left alone: nest build rewrites them to
- * relative paths at compile time via tsconfig-paths, whose matcher only resolves
- * extensionless aliases. Suffixing them silently disables that rewrite.
+ * Bare specifiers are left alone, `#server/*` included — the imports map supplies their
+ * extension, so suffixing one stops it resolving.
  *
- * Migration-scoped — delete once the server runs as ESM.
+ * Migration-scoped — run in the order listed in the README; delete once every
+ * pre-ESM branch has merged or rebased.
  *
  * Usage: node scripts/codemods/esm-import-extensions.mjs [--dry]
  */
