@@ -1,11 +1,11 @@
 /* Core Dependencies */
 import {Injectable} from '@nestjs/common';
 /* Application Dependencies */
-import {SettingService} from '@server/modules/setting/setting.service';
-import {SettingKey} from '@server/modules/setting/setting.enums';
+import {SettingService} from '#server/modules/setting/setting.service';
+import {SettingKey} from '#server/modules/setting/setting.enums';
 /* Local Dependencies */
-import {AiModel, AiMessage, AiTool, AiStreamChunk} from './ai.types.js';
-import {AiVendor} from './ai.vendor.js';
+import type {AiModel, AiMessage, AiTool, AiStreamChunk} from './ai.types.js';
+import type {AiVendor} from './ai.vendor.js';
 import {OllamaService} from './ollama/ollama.service.js';
 import {OpenRouterService} from './openrouter/openrouter.service.js';
 import {AI_ASSISTANTS} from './assistant/ai.assistants.js';

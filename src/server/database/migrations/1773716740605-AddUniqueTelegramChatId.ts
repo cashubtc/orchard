@@ -1,4 +1,4 @@
-import {MigrationInterface, QueryRunner} from 'typeorm';
+import type {MigrationInterface, QueryRunner} from 'typeorm';
 
 export class AddUniqueTelegramChatId1773716740605 implements MigrationInterface {
 	name = 'AddUniqueTelegramChatId1773716740605';

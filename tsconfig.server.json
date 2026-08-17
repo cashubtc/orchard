@@ -6,16 +6,17 @@
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
+    // Type imports must say `type`, so swc strips them instead of emitting a dead runtime binding.
+    "verbatimModuleSyntax": true,
     "target": "ES2023",
     "lib": ["ES2023"],
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
-    "paths": {
-      "@server/*": ["src/server/*"],
-    },
+    "rootDir": "./src/server",
+    "customConditions": ["orchard-src"],
     "incremental": true,
+    // Pinned: rootDir sits below the config file, which otherwise pushes this outside the repo.
+    "tsBuildInfoFile": "./dist/tsconfig.server.tsbuildinfo",
     "skipLibCheck": true,
     "strictNullChecks": false,
     "noImplicitAny": false,

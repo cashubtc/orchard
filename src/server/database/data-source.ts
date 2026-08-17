@@ -17,6 +17,8 @@ import {Conversation} from '../modules/ai/conversation/conversation.entity.js';
 import {BitcoinAnalytics} from '../modules/bitcoin/analytics/btcanalytics.entity.js';
 import {SystemMetrics} from '../modules/system/metrics/sysmetrics.entity.js';
 import {MintMetrics} from '../modules/cashu/mintmetrics/mintmetrics.entity.js';
+/* Local Dependencies */
+import * as migrations from './migrations/index.js';
 
 export const AppDataSource = new DataSource({
 	type: 'better-sqlite3',
@@ -39,6 +41,6 @@ export const AppDataSource = new DataSource({
 		SystemMetrics,
 		MintMetrics,
 	],
-	migrations: ['src/server/database/migrations/*.ts'],
+	migrations: Object.values(migrations),
 	synchronize: false,
 });

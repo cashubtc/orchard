@@ -1,13 +1,13 @@
 /* Core Dependencies */
 import {Field, ID, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
-import {safeParse} from '@server/modules/utilities';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import {safeParse} from '#server/modules/utilities/index';
 /* Native Dependencies */
-import {AgentKey, AgentRunStatus, AgentScheduleKind} from '@server/modules/ai/agent/agent.enums';
-import {Agent} from '@server/modules/ai/agent/agent.entity';
-import {AgentRun} from '@server/modules/ai/agent/agent-run.entity';
-import {AGENTS} from '@server/modules/ai/agent/agent.agents';
+import {AgentKey, AgentRunStatus, AgentScheduleKind} from '#server/modules/ai/agent/agent.enums';
+import {Agent} from '#server/modules/ai/agent/agent.entity';
+import {AgentRun} from '#server/modules/ai/agent/agent-run.entity';
+import {AGENTS} from '#server/modules/ai/agent/agent.agents';
 
 @ObjectType({description: 'Default configuration for an AI agent'})
 export class OrchardAgentDefault {

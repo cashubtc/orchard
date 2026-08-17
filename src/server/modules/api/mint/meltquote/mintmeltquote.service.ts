@@ -1,14 +1,14 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
-import {CashuMintRpcService} from '@server/modules/cashu/mintrpc/cashumintrpc.service';
-import {CashuMintMeltQuote} from '@server/modules/cashu/mintdb/cashumintdb.types';
-import {CashuMintMeltQuotesArgs} from '@server/modules/cashu/mintdb/cashumintdb.interfaces';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {MintService} from '@server/modules/api/mint/mint.service';
-import {ErrorService} from '@server/modules/error/error.service';
+import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
+import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
+import type {CashuMintMeltQuote} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import type {CashuMintMeltQuotesArgs} from '#server/modules/cashu/mintdb/cashumintdb.interfaces';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {MintService} from '#server/modules/api/mint/mint.service';
+import {ErrorService} from '#server/modules/error/error.service';
 /* Local Dependencies */
 import {OrchardMintMeltQuote, OrchardMintNut05Update, OrchardMintNut05QuoteUpdate} from './mintmeltquote.model.js';
 

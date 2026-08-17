@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Field, Float, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 
 @ObjectType({description: 'Cashu mint activity time bucket'})
 export class OrchardMintActivityBucket {

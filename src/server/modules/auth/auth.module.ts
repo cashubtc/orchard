@@ -6,7 +6,7 @@ import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {TypeOrmModule} from '@nestjs/typeorm';
 /* Application Dependencies */
-import {UserModule} from '@server/modules/user/user.module';
+import {UserModule} from '#server/modules/user/user.module';
 /* Local Dependencies */
 import {AuthService} from './auth.service.js';
 import {AuthStrategy} from './strategy/auth.strategy.js';

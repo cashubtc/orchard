@@ -3,8 +3,8 @@ import {Test, TestingModule} from '@nestjs/testing';
 /* Vendor Dependencies */
 import {EventEmitter2} from '@nestjs/event-emitter';
 /* Application Dependencies */
-import {SettingService} from '@server/modules/setting/setting.service';
-import {UserService} from '@server/modules/user/user.service';
+import {SettingService} from '#server/modules/setting/setting.service';
+import {UserService} from '#server/modules/user/user.service';
 /* Local Dependencies */
 import {TelegramService} from './telegram.service.js';
 

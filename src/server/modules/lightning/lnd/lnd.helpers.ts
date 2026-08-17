@@ -1,6 +1,6 @@
 /* Application Dependencies */
-import {LightningRequestType, LightningChannelCloseType, LightningChannelOpenInitiator} from '@server/modules/lightning/lightning.enums';
-import {
+import {LightningRequestType, LightningChannelCloseType, LightningChannelOpenInitiator} from '#server/modules/lightning/lightning.enums';
+import type {
 	LightningPayment,
 	LightningInvoice,
 	LightningForward,
@@ -11,27 +11,27 @@ import {
 	LightningAssetBalance,
 	LightningPaginatedResult,
 	LightningPeer,
-} from '@server/modules/lightning/lightning/lightning.types';
+} from '#server/modules/lightning/lightning/lightning.types';
 /* Local Dependencies */
 import {
-	LndPayment,
+	type LndPayment,
 	LndPaymentStatus,
-	LndInvoice,
+	type LndInvoice,
 	LndInvoiceState,
-	LndForwardingEvent,
-	LndChannel,
-	LndChannelCloseSummary,
+	type LndForwardingEvent,
+	type LndChannel,
+	type LndChannelCloseSummary,
 	LndClosureType,
 	LndInitiator,
-	LndTransaction,
-	LndListPaymentsResponse,
-	LndListInvoicesResponse,
-	LndForwardingHistoryResponse,
-	LndListChannelsResponse,
-	LndClosedChannelsResponse,
-	LndGetTransactionsResponse,
-	LndPeer,
-	LndListPeersResponse,
+	type LndTransaction,
+	type LndListPaymentsResponse,
+	type LndListInvoicesResponse,
+	type LndForwardingHistoryResponse,
+	type LndListChannelsResponse,
+	type LndClosedChannelsResponse,
+	type LndGetTransactionsResponse,
+	type LndPeer,
+	type LndListPeersResponse,
 } from './lnd.types.js';
 
 export function mapRequestDescription(description: string | null): string | null {

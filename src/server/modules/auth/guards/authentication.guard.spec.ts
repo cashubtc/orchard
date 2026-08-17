@@ -1,14 +1,14 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
-import {ExecutionContext} from '@nestjs/common';
+import type {ExecutionContext} from '@nestjs/common';
 import {Reflector} from '@nestjs/core';
 import {ConfigService} from '@nestjs/config';
 import {GqlExecutionContext} from '@nestjs/graphql';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {UserRole} from '@server/modules/user/user.enums';
-import {AuthService} from '@server/modules/auth/auth.service';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {UserRole} from '#server/modules/user/user.enums';
+import {AuthService} from '#server/modules/auth/auth.service';
 /* Local Dependencies */
 import {GqlAuthenticationGuard} from './authentication.guard.js';
 

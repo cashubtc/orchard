@@ -5,9 +5,9 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {Repository, Between} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {BitcoinRpcService} from '@server/modules/bitcoin/rpc/btcrpc.service';
+import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
 /* Local Dependencies */
-import {UTXOracleRunOptions, UTXOracleResult} from './utxoracle.types.js';
+import type {UTXOracleRunOptions, UTXOracleResult} from './utxoracle.types.js';
 import {UTXOracle} from './utxoracle.entity.js';
 import {UTXOracleProgressTracker} from './utxoracle.progress.js';
 

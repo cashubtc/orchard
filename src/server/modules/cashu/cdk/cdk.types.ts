@@ -1,5 +1,5 @@
 /* Native Dependencies */
-import {MintUnit, MintProofState} from '@server/modules/cashu/cashu.enums';
+import {MintUnit, MintProofState} from '#server/modules/cashu/cashu.enums';
 
 export type CdkMintProof = {
 	created_time: number;

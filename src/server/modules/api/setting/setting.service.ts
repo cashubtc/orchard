@@ -1,14 +1,14 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {SettingService} from '@server/modules/setting/setting.service';
-import {ErrorService} from '@server/modules/error/error.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {SettingKey} from '@server/modules/setting/setting.enums';
-import {Setting} from '@server/modules/setting/setting.entity';
-import {isSettingSensitive, maskSensitiveValue} from '@server/modules/setting/setting.helpers';
-import {MessageService} from '@server/modules/message/message.service';
+import {SettingService} from '#server/modules/setting/setting.service';
+import {ErrorService} from '#server/modules/error/error.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {SettingKey} from '#server/modules/setting/setting.enums';
+import {Setting} from '#server/modules/setting/setting.entity';
+import {isSettingSensitive, maskSensitiveValue} from '#server/modules/setting/setting.helpers';
+import {MessageService} from '#server/modules/message/message.service';
 /* Local Dependencies */
 import {OrchardSetting} from './setting.model.js';
 

@@ -1,5 +1,3 @@
-process.env.SCHEMA_ONLY = 'true';
-
 import { NestFactory } from '@nestjs/core';
 import { GraphQLSchemaHost } from '@nestjs/graphql';
 import { printSchema } from 'graphql';

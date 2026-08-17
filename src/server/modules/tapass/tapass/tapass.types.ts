@@ -1,4 +1,4 @@
-import {TaprootAssetVersion, TaprootAssetType} from '@server/modules/tapass/tapass.enums';
+import {TaprootAssetVersion, TaprootAssetType} from '#server/modules/tapass/tapass.enums';
 
 export type TaprootAssetsInfo = {
 	version: string;

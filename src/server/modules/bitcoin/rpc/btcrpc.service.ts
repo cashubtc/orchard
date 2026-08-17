@@ -1,11 +1,11 @@
 /* Core Dependencies */
-import {Injectable, Logger, OnModuleInit} from '@nestjs/common';
+import {Injectable, Logger, type OnModuleInit} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
-import {BitcoinType} from '@server/modules/bitcoin/bitcoin.enums';
-import {CoreService} from '@server/modules/bitcoin/core/core.service';
+import {BitcoinType} from '#server/modules/bitcoin/bitcoin.enums';
+import {CoreService} from '#server/modules/bitcoin/core/core.service';
 /* Local Dependencies */
-import {
+import type {
 	BitcoinBlockchainInfo,
 	BitcoinNetworkInfo,
 	BitcoinBlock,

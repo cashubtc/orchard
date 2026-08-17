@@ -2,12 +2,12 @@
 import {Logger, UseInterceptors} from '@nestjs/common';
 import {Resolver, Query, Args, Mutation, Int} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
-import {MintUnit, MintQuoteState} from '@server/modules/cashu/cashu.enums';
-import {Roles} from '@server/modules/auth/decorators/auth.decorator';
-import {UserRole} from '@server/modules/user/user.enums';
-import {LogEvent} from '@server/modules/event/event.decorator';
-import {EventLogType} from '@server/modules/event/event.enums';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import {MintUnit, MintQuoteState} from '#server/modules/cashu/cashu.enums';
+import {Roles} from '#server/modules/auth/decorators/auth.decorator';
+import {UserRole} from '#server/modules/user/user.enums';
+import {LogEvent} from '#server/modules/event/event.decorator';
+import {EventLogType} from '#server/modules/event/event.enums';
 /* Local Dependencies */
 import {MintMintQuoteService} from './mintmintquote.service.js';
 import {MintMintQuoteInterceptor} from './mintmintquote.interceptor.js';

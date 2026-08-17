@@ -2,7 +2,7 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
 import {GqlRefreshGuard} from './refresh.guard.js';
 

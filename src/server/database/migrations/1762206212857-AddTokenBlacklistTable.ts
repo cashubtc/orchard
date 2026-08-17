@@ -1,4 +1,4 @@
-import {MigrationInterface, QueryRunner} from 'typeorm';
+import type {MigrationInterface, QueryRunner} from 'typeorm';
 
 export class AddTokenBlacklistTable1762206212857 implements MigrationInterface {
 	name = 'AddTokenBlacklistTable1762206212857';

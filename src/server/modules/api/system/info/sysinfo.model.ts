@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Field, Float, Int, ObjectType} from '@nestjs/graphql';
 /* Native Dependencies */
-import {SystemInfo} from '@server/modules/system/info/sysinfo.types';
+import type {SystemInfo} from '#server/modules/system/info/sysinfo.types';
 
 @ObjectType({description: 'Live host system information'})
 export class OrchardSystemInfo {

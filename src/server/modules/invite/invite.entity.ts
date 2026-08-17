@@ -1,8 +1,8 @@
 /* Vendor Dependencies */
 import {Entity, Column, PrimaryGeneratedColumn, Index, ManyToOne, OneToOne, JoinColumn, type Relation} from 'typeorm';
 /* Application Dependencies */
-import {UserRole} from '@server/modules/user/user.enums';
-import {User} from '@server/modules/user/user.entity';
+import {UserRole} from '#server/modules/user/user.enums';
+import {User} from '#server/modules/user/user.entity';
 
 @Entity('invites')
 @Index(['used_at', 'expires_at'])

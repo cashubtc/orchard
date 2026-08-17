@@ -1,10 +1,10 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {ErrorService} from '@server/modules/error/error.service';
-import {InviteService} from '@server/modules/invite/invite.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
+import {ErrorService} from '#server/modules/error/error.service';
+import {InviteService} from '#server/modules/invite/invite.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
 import {OrchardCrewInvite} from './crewinvite.model.js';
 import {InviteCreateInput, InviteUpdateInput} from './crewinvite.input.js';

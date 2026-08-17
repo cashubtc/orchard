@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Field, ID, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 import {
 	EventLogActorType,
 	EventLogSection,
@@ -9,9 +9,9 @@ import {
 	EventLogType,
 	EventLogStatus,
 	EventLogDetailStatus,
-} from '@server/modules/event/event.enums';
-import {EventLog} from '@server/modules/event/event.entity';
-import {EventLogDetail} from '@server/modules/event/event-detail.entity';
+} from '#server/modules/event/event.enums';
+import {EventLog} from '#server/modules/event/event.entity';
+import {EventLogDetail} from '#server/modules/event/event-detail.entity';
 
 @ObjectType({description: 'Event log detail entry'})
 export class OrchardEventLogDetail {

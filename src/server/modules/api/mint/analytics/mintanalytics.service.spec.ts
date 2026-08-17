@@ -1,10 +1,10 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
 /* Application Dependencies */
-import {CashuMintAnalyticsService} from '@server/modules/cashu/mintanalytics/mintanalytics.service';
-import {MintAnalyticsMetric} from '@server/modules/cashu/mintanalytics/mintanalytics.enums';
-import {AnalyticsInterval} from '@server/modules/analytics/analytics.enums';
-import {ErrorService} from '@server/modules/error/error.service';
+import {CashuMintAnalyticsService} from '#server/modules/cashu/mintanalytics/mintanalytics.service';
+import {MintAnalyticsMetric} from '#server/modules/cashu/mintanalytics/mintanalytics.enums';
+import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
+import {ErrorService} from '#server/modules/error/error.service';
 /* Local Dependencies */
 import {MintAnalyticsService} from './mintanalytics.service.js';
 

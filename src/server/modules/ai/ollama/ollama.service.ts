@@ -3,14 +3,14 @@ import {Injectable} from '@nestjs/common';
 import {Readable} from 'stream';
 import {randomUUID} from 'crypto';
 /* Application Dependencies */
-import {FetchService} from '@server/modules/fetch/fetch.service';
-import {SettingService} from '@server/modules/setting/setting.service';
-import {SettingKey} from '@server/modules/setting/setting.enums';
+import {FetchService} from '#server/modules/fetch/fetch.service';
+import {SettingService} from '#server/modules/setting/setting.service';
+import {SettingKey} from '#server/modules/setting/setting.enums';
 /* Local Dependencies */
-import {AiVendor} from '../ai.vendor.js';
-import {AiModel, AiMessage, AiTool, AiStreamChunk} from '../ai.types.js';
+import type {AiVendor} from '../ai.vendor.js';
+import type {AiModel, AiMessage, AiTool, AiStreamChunk} from '../ai.types.js';
 import {AiMessageRole} from '../ai.enums.js';
-import {OllamaTagsResponse, OllamaChatChunk, OllamaModel} from './ollama.types.js';
+import type {OllamaTagsResponse, OllamaChatChunk, OllamaModel} from './ollama.types.js';
 
 @Injectable()
 export class OllamaService implements AiVendor {

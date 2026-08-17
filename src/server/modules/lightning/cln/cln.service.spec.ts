@@ -3,8 +3,8 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
-import {mockGrpcModules} from '@server/test/grpc-esm-mocks';
-import {CredentialService} from '@server/modules/credential/credential.service';
+import {mockGrpcModules} from '#server/test/grpc-esm-mocks';
+import {CredentialService} from '#server/modules/credential/credential.service';
 /* Local Dependencies */
 import type {ClnService as ClnServiceType} from './cln.service.js';
 

@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {SetMetadata} from '@nestjs/common';
 /* Application Dependencies */
-import {EventLogType} from '@server/modules/event/event.enums';
+import {EventLogType} from '#server/modules/event/event.enums';
 
 export const EVENT_LOG_KEY = 'event_log';
 

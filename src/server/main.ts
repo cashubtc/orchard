@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {NestFactory} from '@nestjs/core';
 import {ConfigService} from '@nestjs/config';
-import {Logger, ConsoleLogger, LogLevel, INestApplication} from '@nestjs/common';
+import {Logger, ConsoleLogger, type LogLevel, type INestApplication} from '@nestjs/common';
 import {existsSync} from 'node:fs';
 import compression from 'compression';
 /* Vendor Dependencies */

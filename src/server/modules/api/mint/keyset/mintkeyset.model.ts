@@ -1,9 +1,9 @@
 /* Core Dependencies */
 import {Field, Int, Float, ID, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
-import {CashuMintKeyset} from '@server/modules/cashu/mintdb/cashumintdb.types';
-import {MintUnit} from '@server/modules/cashu/cashu.enums';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import type {CashuMintKeyset} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import {MintUnit} from '#server/modules/cashu/cashu.enums';
 
 @ObjectType({description: 'Cashu mint keyset configuration'})
 export class OrchardMintKeyset {

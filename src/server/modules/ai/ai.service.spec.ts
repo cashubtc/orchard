@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
 /* Local Dependencies */
-import {SettingService} from '@server/modules/setting/setting.service';
+import {SettingService} from '#server/modules/setting/setting.service';
 import {AiService} from './ai.service.js';
 import {OllamaService} from './ollama/ollama.service.js';
 import {OpenRouterService} from './openrouter/openrouter.service.js';

@@ -1,9 +1,9 @@
 /* Core Dependencies */
 import {Field, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 /* Native Dependencies */
-import {LightningAnalyticsMetric} from '@server/modules/lightning/analytics/lnanalytics.enums';
+import {LightningAnalyticsMetric} from '#server/modules/lightning/analytics/lnanalytics.enums';
 
 @ObjectType({description: 'Lightning analytics data point'})
 export class OrchardLightningAnalytics {

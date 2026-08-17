@@ -5,26 +5,33 @@
   "author": "shyguy",
   "private": true,
   "license": "MIT",
+  "type": "module",
   "engines": {
     "node": ">=22.12 <23"
   },
+  "imports": {
+    "#server/*": {
+      "orchard-src": "./src/server/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
   "scripts": {
-    "build": "node -r ./scripts/register.cjs scripts/build.ts",
+    "build": "NODE_ENV=production npm run generate:types && NODE_ENV=production nest build && NODE_ENV=production ng build",
     "format": "prettier --write \"src/client/**/*.{ts,html}\" \"src/client/modules/**/*.scss\" \"src/server/**/*.ts\"",
     "format:watch": "nodemon --watch src/client --watch src/server --ext ts,html,scss,json --exec \"npm run format\"",
     "format:check": "prettier --check \"src/client/**/*.{ts,html}\" \"src/client/modules/**/*.scss\" \"src/server/**/*.ts\"",
     "ng": "ng",
-    "start": "NODE_ENV=production node ./scripts/generate-runtime-config.mjs && NODE_ENV=production node dist/main",
+    "start": "NODE_ENV=production node ./scripts/generate-runtime-config.mjs && NODE_ENV=production node dist/main.js",
     "start:client": "NODE_ENV=development node ./scripts/generate-runtime-config.mjs && NODE_ENV=development npx graphql-codegen && NODE_ENV=development ng serve --proxy-config proxy.conf.cjs",
     "start:server": "NODE_ENV=development nest start --watch",
     "start:server:nowatch": "NODE_ENV=development nest start",
     "start:server:debug": "NODE_ENV=development nest start --debug --watch",
-    "generate:types": "node -r ./scripts/register.cjs scripts/generate-schema.ts && npx graphql-codegen",
+    "generate:types": "SCHEMA_ONLY=true node --conditions=orchard-src --import ./scripts/register.mjs scripts/generate-schema.ts && npx graphql-codegen",
     "typecheck:spec": "tsc -p tsconfig.server.spec.json --noEmit",
     "ci": "npm run format:check && npm run lint && npm run typecheck:spec && npm run generate:types && npm run test && npm run build",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js && ng test --watch=false --browsers=ChromeHeadless --progress=false",
+    "test": "npm run test:server && npm run test:client",
     "test:server": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:server:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:server:cov": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
@@ -32,10 +39,10 @@
     "test:client": "ng test --watch=false --browsers=ChromeHeadless --progress=false",
     "test:debug": "node --inspect-brk --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
     "watch:client": "NODE_ENV=development ng build --watch --configuration development",
-    "migration:generate": "NODE_ENV=development node -r ./scripts/register.cjs node_modules/typeorm/cli.js migration:generate -d src/server/database/data-source.ts",
-    "migration:run": "NODE_ENV=development node -r ./scripts/register.cjs node_modules/typeorm/cli.js migration:run -d src/server/database/data-source.ts",
-    "migration:revert": "NODE_ENV=development node -r ./scripts/register.cjs node_modules/typeorm/cli.js migration:revert -d src/server/database/data-source.ts",
-    "migration:show": "NODE_ENV=development node -r ./scripts/register.cjs node_modules/typeorm/cli.js migration:show -d src/server/database/data-source.ts",
+    "migration:generate": "NODE_ENV=development node --conditions=orchard-src --import ./scripts/register.mjs node_modules/typeorm/cli.js migration:generate -d src/server/database/data-source.ts",
+    "migration:run": "NODE_ENV=development node --conditions=orchard-src --import ./scripts/register.mjs node_modules/typeorm/cli.js migration:run -d src/server/database/data-source.ts",
+    "migration:revert": "NODE_ENV=development node --conditions=orchard-src --import ./scripts/register.mjs node_modules/typeorm/cli.js migration:revert -d src/server/database/data-source.ts",
+    "migration:show": "NODE_ENV=development node --conditions=orchard-src --import ./scripts/register.mjs node_modules/typeorm/cli.js migration:show -d src/server/database/data-source.ts",
     "e2e:up": "./e2e/docker/scripts/compose.sh up",
     "e2e:down": "./e2e/docker/scripts/compose.sh down",
     "e2e:logs": "./e2e/docker/scripts/compose.sh logs",
@@ -86,7 +93,6 @@
     "grammy": "^1.41.1",
     "graphql": "^16.13.2",
     "graphql-subscriptions": "^3.0.0",
-    "graphql-tools": "^9.0.29",
     "graphql-ws": "^6.0.8",
     "luxon": "^3.7.2",
     "marked": "^17.0.5",
@@ -110,6 +116,7 @@
     "@angular/compiler-cli": "^21.2.17",
     "@graphql-codegen/cli": "^6.2.1",
     "@graphql-codegen/typescript": "^5.0.9",
+    "@graphql-tools/schema": "^10.0.38",
     "@nestjs/cli": "^11.0.23",
     "@nestjs/schematics": "^11.0.10",
     "@nestjs/testing": "^11.1.27",
@@ -140,12 +147,8 @@
     "karma-jasmine-html-reporter": "~2.2.0",
     "nodemon": "^3.1.14",
     "prettier": "^3.8.1",
-    "source-map-support": "^0.5.21",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.11",
-    "ts-loader": "^9.5.4",
-    "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.58.0"
   },
@@ -172,8 +175,16 @@
         }
       ]
     },
+    "testEnvironmentOptions": {
+      "customExportConditions": [
+        "orchard-src",
+        "node",
+        "node-addons",
+        "require",
+        "default"
+      ]
+    },
     "moduleNameMapper": {
-      "^@server/(.*)$": "<rootDir>/$1",
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
     "collectCoverageFrom": [

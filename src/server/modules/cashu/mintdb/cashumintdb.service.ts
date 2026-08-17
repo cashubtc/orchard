@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Injectable, Logger, OnModuleInit} from '@nestjs/common';
+import {Injectable, Logger, type OnModuleInit} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 import * as path from 'path';
 import {promises as fs} from 'fs';
@@ -8,13 +8,13 @@ import {Client} from 'pg';
 import DatabaseConstructor from 'better-sqlite3';
 import {spawn} from 'child_process';
 /* Application Dependencies */
-import {MintType} from '@server/modules/cashu/cashu.enums';
-import {CredentialService} from '@server/modules/credential/credential.service';
-import {NutshellService} from '@server/modules/cashu/nutshell/nutshell.service';
-import {CdkService} from '@server/modules/cashu/cdk/cdk.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
+import {MintType} from '#server/modules/cashu/cashu.enums';
+import {CredentialService} from '#server/modules/credential/credential.service';
+import {NutshellService} from '#server/modules/cashu/nutshell/nutshell.service';
+import {CdkService} from '#server/modules/cashu/cdk/cdk.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
 /* Local Dependencies */
-import {
+import type {
 	CashuMintDatabase,
 	CashuMintBalance,
 	CashuMintKeyset,
@@ -27,7 +27,7 @@ import {
 	CashuMintOperationFee,
 	CashuMintDatabaseInfo,
 } from './cashumintdb.types.js';
-import {
+import type {
 	CashuMintMintQuotesArgs,
 	CashuMintProofsArgs,
 	CashuMintPromiseArgs,

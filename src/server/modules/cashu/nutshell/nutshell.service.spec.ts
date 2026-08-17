@@ -6,20 +6,20 @@ import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 import {Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {mockGrpcModules} from '@server/test/grpc-esm-mocks';
-import {CredentialService} from '@server/modules/credential/credential.service';
-import {MintDatabaseType} from '@server/modules/cashu/mintdb/cashumintdb.enums';
+import {mockGrpcModules} from '#server/test/grpc-esm-mocks';
+import {CredentialService} from '#server/modules/credential/credential.service';
+import {MintDatabaseType} from '#server/modules/cashu/mintdb/cashumintdb.enums';
 /* Local Dependencies */
 import type {NutshellService as NutshellServiceType} from './nutshell.service.js';
 
-jest.unstable_mockModule('@server/modules/cashu/mintdb/cashumintdb.helpers', () => ({
+jest.unstable_mockModule('#server/modules/cashu/mintdb/cashumintdb.helpers', () => ({
 	buildDynamicQuery: jest.fn().mockReturnValue({sql: 'SQL', params: []}),
 	buildCountQuery: jest.fn().mockReturnValue({sql: 'COUNTSQL', params: []}),
 	convertDateToUnixTimestamp: jest.fn().mockImplementation((d: any) => (typeof d === 'number' ? d : 1)),
 	queryRows: jest.fn(),
 	queryRow: jest.fn().mockResolvedValue({count: 1}),
 }));
-const helpers = (await import('@server/modules/cashu/mintdb/cashumintdb.helpers')) as any;
+const helpers = (await import('#server/modules/cashu/mintdb/cashumintdb.helpers')) as any;
 const {proto_loader, grpc} = await mockGrpcModules();
 const {NutshellService} = await import('./nutshell.service.js');
 

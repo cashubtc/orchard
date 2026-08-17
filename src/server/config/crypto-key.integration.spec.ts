@@ -9,17 +9,17 @@ import {ConfigService} from '@nestjs/config';
 import {getRepositoryToken} from '@nestjs/typeorm';
 /* Local Dependencies */
 import {loadOrCreateCryptoKey, generateEphemeralJwtSecret, getCryptoKeyPath} from './crypto-key.js';
-import {SettingService} from '@server/modules/setting/setting.service';
-import {Setting} from '@server/modules/setting/setting.entity';
-import {SettingKey, SettingValue} from '@server/modules/setting/setting.enums';
-import {DEFAULT_SETTINGS} from '@server/modules/setting/setting.config';
+import {SettingService} from '#server/modules/setting/setting.service';
+import {Setting} from '#server/modules/setting/setting.entity';
+import {SettingKey, SettingValue} from '#server/modules/setting/setting.enums';
+import {DEFAULT_SETTINGS} from '#server/modules/setting/setting.config';
 import {
 	deriveEncryptionKey,
 	deriveEncryptionKeyFromHex,
 	encryptValue,
 	decryptValue,
 	isEncrypted,
-} from '@server/modules/setting/setting.helpers';
+} from '#server/modules/setting/setting.helpers';
 
 /**
  * Integration tests for the crypto-keys feature.

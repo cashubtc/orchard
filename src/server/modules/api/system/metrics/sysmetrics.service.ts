@@ -3,15 +3,15 @@ import {Injectable, Logger} from '@nestjs/common';
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {ErrorService} from '@server/modules/error/error.service';
-import {round2} from '@server/modules/math/round';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {ErrorService} from '#server/modules/error/error.service';
+import {round2} from '#server/modules/math/round';
 /* Native Dependencies */
-import {SystemMetricsService} from '@server/modules/system/metrics/sysmetrics.service';
-import {SystemMetrics} from '@server/modules/system/metrics/sysmetrics.entity';
-import {SystemMetric, SystemMetricsInterval} from '@server/modules/system/metrics/sysmetrics.enums';
-import {bucketMinMaxAvg} from '@server/modules/system/metrics/sysmetrics.helpers';
+import {SystemMetricsService} from '#server/modules/system/metrics/sysmetrics.service';
+import {SystemMetrics} from '#server/modules/system/metrics/sysmetrics.entity';
+import {SystemMetric, SystemMetricsInterval} from '#server/modules/system/metrics/sysmetrics.enums';
+import {bucketMinMaxAvg} from '#server/modules/system/metrics/sysmetrics.helpers';
 /* Local Dependencies */
 import {OrchardSystemMetrics} from './sysmetrics.model.js';
 

@@ -1,8 +1,8 @@
 /* Core Dependencies */
 import {Field, Int, Float, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
-import {BitcoinBlock, BitcoinBlockTemplate} from '@server/modules/bitcoin/rpc/btcrpc.types';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import type {BitcoinBlock, BitcoinBlockTemplate} from '#server/modules/bitcoin/rpc/btcrpc.types';
 
 @ObjectType({description: 'Bitcoin block data'})
 export class OrchardBitcoinBlock {

@@ -5,7 +5,7 @@ import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {ExtractJwt, Strategy} from 'passport-jwt';
 /* Native Dependencies */
-import {RefreshTokenPayload} from '@server/modules/auth/auth.types';
+import type {RefreshTokenPayload} from '#server/modules/auth/auth.types';
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {

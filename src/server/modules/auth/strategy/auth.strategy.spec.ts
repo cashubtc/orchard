@@ -3,7 +3,7 @@ import {UnauthorizedException} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {UserRole} from '@server/modules/user/user.enums';
+import {UserRole} from '#server/modules/user/user.enums';
 /* Local Dependencies */
 import {AuthStrategy} from './auth.strategy.js';
 

@@ -1,14 +1,14 @@
 /* Core Dependencies */
-import {Injectable, Logger, OnModuleInit} from '@nestjs/common';
+import {Injectable, Logger, type OnModuleInit} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {BitcoinRpcService} from '@server/modules/bitcoin/rpc/btcrpc.service';
-import {LightningType} from '@server/modules/lightning/lightning.enums';
-import {LndService} from '@server/modules/lightning/lnd/lnd.service';
-import {ClnService} from '@server/modules/lightning/cln/cln.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
+import {LightningType} from '#server/modules/lightning/lightning.enums';
+import {LndService} from '#server/modules/lightning/lnd/lnd.service';
+import {ClnService} from '#server/modules/lightning/cln/cln.service';
 /* Local Dependencies */
-import {
+import type {
 	LightningInfo,
 	LightningChannelBalance,
 	LightningRequest,
@@ -30,7 +30,7 @@ import {
 	mapLndClosedChannels,
 	mapLndTransactions,
 	mapLndPeers,
-} from '@server/modules/lightning/lnd/lnd.helpers';
+} from '#server/modules/lightning/lnd/lnd.helpers';
 import {
 	mapClnPayments,
 	mapClnInvoices,
@@ -39,7 +39,7 @@ import {
 	mapClnClosedChannels,
 	mapClnTransactions,
 	mapClnPeers,
-} from '@server/modules/lightning/cln/cln.helpers';
+} from '#server/modules/lightning/cln/cln.helpers';
 
 @Injectable()
 export class LightningService implements OnModuleInit {

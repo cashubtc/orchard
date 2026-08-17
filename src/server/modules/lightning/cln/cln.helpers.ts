@@ -1,6 +1,6 @@
 /* Application Dependencies */
-import {LightningRequestType, LightningChannelCloseType, LightningChannelOpenInitiator} from '@server/modules/lightning/lightning.enums';
-import {
+import {LightningRequestType, LightningChannelCloseType, LightningChannelOpenInitiator} from '#server/modules/lightning/lightning.enums';
+import type {
 	LightningPayment,
 	LightningInvoice,
 	LightningForward,
@@ -9,28 +9,28 @@ import {
 	LightningTransaction,
 	LightningPaginatedResult,
 	LightningPeer,
-} from '@server/modules/lightning/lightning/lightning.types';
+} from '#server/modules/lightning/lightning/lightning.types';
 /* Local Dependencies */
 import {
-	ClnPay,
+	type ClnPay,
 	ClnPayStatus,
-	ClnInvoice,
+	type ClnInvoice,
 	ClnInvoiceStatus,
-	ClnForward,
+	type ClnForward,
 	ClnForwardStatus,
-	ClnChannel,
+	type ClnChannel,
 	ClnChannelSide,
-	ClnClosedChannel,
+	type ClnClosedChannel,
 	ClnCloseCause,
-	ClnTransaction,
-	ClnListPaysResponse,
-	ClnListInvoicesResponse,
-	ClnListForwardsResponse,
-	ClnListPeerChannelsResponse,
-	ClnListClosedChannelsResponse,
-	ClnListTransactionsResponse,
-	ClnPeer,
-	ClnListPeersResponse,
+	type ClnTransaction,
+	type ClnListPaysResponse,
+	type ClnListInvoicesResponse,
+	type ClnListForwardsResponse,
+	type ClnListPeerChannelsResponse,
+	type ClnListClosedChannelsResponse,
+	type ClnListTransactionsResponse,
+	type ClnPeer,
+	type ClnListPeersResponse,
 } from './cln.types.js';
 
 export function asBigIntMsat(v: any): bigint {

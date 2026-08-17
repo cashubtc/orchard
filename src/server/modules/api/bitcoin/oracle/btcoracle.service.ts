@@ -4,13 +4,13 @@ import {Injectable, Logger} from '@nestjs/common';
 import {EventEmitter} from 'events';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {ErrorService} from '@server/modules/error/error.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {BitcoinUTXOracleService} from '@server/modules/bitcoin/utxoracle/utxoracle.service';
-import {BitcoinRpcService} from '@server/modules/bitcoin/rpc/btcrpc.service';
-import {UTXOracleProgress} from '@server/modules/bitcoin/utxoracle/utxoracle.types';
-import {UTXOracleProgressStatus} from '@server/modules/bitcoin/utxoracle/utxoracle.enums';
+import {ErrorService} from '#server/modules/error/error.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {BitcoinUTXOracleService} from '#server/modules/bitcoin/utxoracle/utxoracle.service';
+import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
+import type {UTXOracleProgress} from '#server/modules/bitcoin/utxoracle/utxoracle.types';
+import {UTXOracleProgressStatus} from '#server/modules/bitcoin/utxoracle/utxoracle.enums';
 /* Local Dependencies */
 import {OrchardBitcoinOracleBackfillStream, OrchardBitcoinOracleBackfillProgress, OrchardBitcoinOraclePrice} from './btcoracle.model.js';
 

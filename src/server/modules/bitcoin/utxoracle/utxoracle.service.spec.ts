@@ -4,7 +4,7 @@ import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 import {getRepositoryToken} from '@nestjs/typeorm';
 /* Application Dependencies */
-import {BitcoinRpcService} from '@server/modules/bitcoin/rpc/btcrpc.service';
+import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
 /* Local Dependencies */
 import {BitcoinUTXOracleService} from './utxoracle.service.js';
 import {UTXOracle} from './utxoracle.entity.js';

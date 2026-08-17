@@ -1,5 +1,5 @@
 /* Native Dependencies */
-import {MintUnit, MintQuoteState, MeltQuoteState, MintProofState} from '@server/modules/cashu/cashu.enums';
+import {MintUnit, MintQuoteState, MeltQuoteState, MintProofState} from '#server/modules/cashu/cashu.enums';
 
 export interface CashuMintMintQuotesArgs {
 	date_start?: number;

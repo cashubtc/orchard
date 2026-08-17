@@ -1,8 +1,8 @@
 /* Core Dependencies */
 import {Field, ObjectType, Float, Int} from '@nestjs/graphql';
 /* Application Dependencies */
-import {LightningChannel, LightningClosedChannel, LightningChannelAsset} from '@server/modules/lightning/lightning/lightning.types';
-import {LightningChannelCloseType, LightningChannelOpenInitiator} from '@server/modules/lightning/lightning.enums';
+import type {LightningChannel, LightningClosedChannel, LightningChannelAsset} from '#server/modules/lightning/lightning/lightning.types';
+import {LightningChannelCloseType, LightningChannelOpenInitiator} from '#server/modules/lightning/lightning.enums';
 
 @ObjectType({description: 'Taproot asset associated with a lightning channel'})
 export class OrchardLightningChannelAsset {

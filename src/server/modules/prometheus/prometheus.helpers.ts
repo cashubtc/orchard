@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {PromFamily, PromFlatSeries, PromMetricType, PromSample} from './prometheus.types.js';
+import type {PromFamily, PromFlatSeries, PromMetricType, PromSample} from './prometheus.types.js';
 
 const TYPE_LINE_REGEX = /^# TYPE (\S+) (\S+)$/;
 const SAMPLE_LINE_REGEX = /^(\S+?)(?:\{(.*)\})?\s+(\S+)(?:\s+\S+)?$/;

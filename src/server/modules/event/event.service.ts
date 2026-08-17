@@ -6,7 +6,7 @@ import {Repository, SelectQueryBuilder} from 'typeorm';
 /* Local Dependencies */
 import {EventLog} from './event.entity.js';
 import {EventLogDetail} from './event-detail.entity.js';
-import {CreateEventLogInput, EventLogFilters} from './event.interfaces.js';
+import type {CreateEventLogInput, EventLogFilters} from './event.interfaces.js';
 
 @Injectable()
 export class EventLogService {

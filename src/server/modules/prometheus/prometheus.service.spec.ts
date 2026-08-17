@@ -2,7 +2,7 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {FetchService} from '@server/modules/fetch/fetch.service';
+import {FetchService} from '#server/modules/fetch/fetch.service';
 /* Local Dependencies */
 import {PrometheusService} from './prometheus.service.js';
 

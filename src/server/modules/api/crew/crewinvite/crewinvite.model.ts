@@ -1,9 +1,9 @@
 /* Core Dependencies */
 import {ObjectType, Field} from '@nestjs/graphql';
 /* Application Dependencies */
-import {Invite} from '@server/modules/invite/invite.entity';
-import {UserRole} from '@server/modules/user/user.enums';
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
+import {Invite} from '#server/modules/invite/invite.entity';
+import {UserRole} from '#server/modules/user/user.enums';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 
 @ObjectType({description: 'Crew invite for onboarding new users'})
 export class OrchardCrewInvite {

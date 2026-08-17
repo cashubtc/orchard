@@ -1,10 +1,10 @@
 /* Core Dependencies */
 import {Field, Float, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
-import {parseCanonicalLabels} from '@server/modules/prometheus/prometheus.helpers';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import {parseCanonicalLabels} from '#server/modules/prometheus/prometheus.helpers';
 /* Native Dependencies */
-import {MintMetricType} from '@server/modules/cashu/mintmetrics/mintmetrics.enums';
+import {MintMetricType} from '#server/modules/cashu/mintmetrics/mintmetrics.enums';
 
 @ObjectType({description: 'Mint server metric label'})
 export class OrchardMintMetricLabel {

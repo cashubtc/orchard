@@ -3,18 +3,18 @@ import {Injectable, Logger} from '@nestjs/common';
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {ErrorService} from '@server/modules/error/error.service';
-import {BitcoinAnalyticsService} from '@server/modules/bitcoin/analytics/btcanalytics.service';
-import {BitcoinAnalytics} from '@server/modules/bitcoin/analytics/btcanalytics.entity';
-import {BitcoinAnalyticsMetric} from '@server/modules/bitcoin/analytics/btcanalytics.enums';
-import {AnalyticsInterval} from '@server/modules/analytics/analytics.enums';
-import {getBucketDate} from '@server/modules/analytics/analytics.helpers';
-import {OrchardAnalyticsBackfillStatus} from '@server/modules/api/common/analytics-backfill-status.model';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {ErrorService} from '#server/modules/error/error.service';
+import {BitcoinAnalyticsService} from '#server/modules/bitcoin/analytics/btcanalytics.service';
+import {BitcoinAnalytics} from '#server/modules/bitcoin/analytics/btcanalytics.entity';
+import {BitcoinAnalyticsMetric} from '#server/modules/bitcoin/analytics/btcanalytics.enums';
+import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
+import {getBucketDate} from '#server/modules/analytics/analytics.helpers';
+import {OrchardAnalyticsBackfillStatus} from '#server/modules/api/common/analytics-backfill-status.model';
 /* Local Dependencies */
 import {OrchardBitcoinAnalytics, OrchardBitcoinAnalyticsMetric} from './btcanalytics.model.js';
-import {BitcoinAnalyticsApiArgs, BitcoinAnalyticsMetricsArgs} from './btcanalytics.interfaces.js';
+import type {BitcoinAnalyticsApiArgs, BitcoinAnalyticsMetricsArgs} from './btcanalytics.interfaces.js';
 
 @Injectable()
 export class ApiBitcoinAnalyticsService {

@@ -2,8 +2,8 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {ErrorService} from '@server/modules/error/error.service';
-import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
+import {ErrorService} from '#server/modules/error/error.service';
+import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
 /* Local Dependencies */
 import {LightningChannelService} from './lnchannel.service.js';
 

@@ -1,13 +1,13 @@
 /* Core Dependencies */
-import {Logger, OnModuleInit} from '@nestjs/common';
+import {Logger, type OnModuleInit} from '@nestjs/common';
 import {Resolver, Query, Subscription, Args, Mutation} from '@nestjs/graphql';
 import {Throttle, minutes} from '@nestjs/throttler';
 /* Vendor Dependencies */
 import {PubSub} from 'graphql-subscriptions';
 /* Application Dependencies */
-import {Roles} from '@server/modules/auth/decorators/auth.decorator';
-import {UserRole} from '@server/modules/user/user.enums';
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
+import {Roles} from '#server/modules/auth/decorators/auth.decorator';
+import {UserRole} from '#server/modules/user/user.enums';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 /* Local Dependencies */
 import {OrchardBitcoinOraclePrice, OrchardBitcoinOracleBackfillProgress, OrchardBitcoinOracleBackfillStream} from './btcoracle.model.js';
 import {BitcoinOracleService} from './btcoracle.service.js';

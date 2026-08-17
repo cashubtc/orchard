@@ -1,13 +1,13 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
-import {CashuMintSwap} from '@server/modules/cashu/mintdb/cashumintdb.types';
-import {CashuMintSwapsArgs} from '@server/modules/cashu/mintdb/cashumintdb.interfaces';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {MintService} from '@server/modules/api/mint/mint.service';
-import {ErrorService} from '@server/modules/error/error.service';
+import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
+import type {CashuMintSwap} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import type {CashuMintSwapsArgs} from '#server/modules/cashu/mintdb/cashumintdb.interfaces';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {MintService} from '#server/modules/api/mint/mint.service';
+import {ErrorService} from '#server/modules/error/error.service';
 /* Local Dependencies */
 import {OrchardMintSwap} from './mintswap.model.js';
 

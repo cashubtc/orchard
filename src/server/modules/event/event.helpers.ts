@@ -1,15 +1,15 @@
 /* Core Dependencies */
-import {ExecutionContext} from '@nestjs/common';
+import type {ExecutionContext} from '@nestjs/common';
 import {Reflector} from '@nestjs/core';
 import {GqlExecutionContext} from '@nestjs/graphql';
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {UserRole} from '@server/modules/user/user.enums';
-import {EVENT_LOG_KEY, EventLogMetadata} from '@server/modules/event/event.decorator';
+import {UserRole} from '#server/modules/user/user.enums';
+import {EVENT_LOG_KEY, type EventLogMetadata} from '#server/modules/event/event.decorator';
 /* Local Dependencies */
 import {EventLogActorType} from './event.enums.js';
-import {EventLogContext, EventLogError} from './event.interfaces.js';
+import type {EventLogContext, EventLogError} from './event.interfaces.js';
 
 /**
  * Derive the event log actor type from the request user context.

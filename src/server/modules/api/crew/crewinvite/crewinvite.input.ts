@@ -1,8 +1,8 @@
 /* Core Dependencies */
 import {InputType, Field} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UserRole} from '@server/modules/user/user.enums';
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
+import {UserRole} from '#server/modules/user/user.enums';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 
 @InputType({description: 'Input for creating a crew invite'})
 export class InviteCreateInput {

@@ -2,15 +2,15 @@
 import {Injectable} from '@nestjs/common';
 import {Readable} from 'stream';
 /* Application Dependencies */
-import {FetchService} from '@server/modules/fetch/fetch.service';
-import {SettingService} from '@server/modules/setting/setting.service';
-import {SettingKey} from '@server/modules/setting/setting.enums';
-import {safeParse} from '@server/modules/utilities';
+import {FetchService} from '#server/modules/fetch/fetch.service';
+import {SettingService} from '#server/modules/setting/setting.service';
+import {SettingKey} from '#server/modules/setting/setting.enums';
+import {safeParse} from '#server/modules/utilities/index';
 /* Local Dependencies */
-import {AiVendor} from '../ai.vendor.js';
-import {AiModel, AiMessage, AiTool, AiStreamChunk, AiToolCall} from '../ai.types.js';
+import type {AiVendor} from '../ai.vendor.js';
+import type {AiModel, AiMessage, AiTool, AiStreamChunk, AiToolCall} from '../ai.types.js';
 import {AiMessageRole} from '../ai.enums.js';
-import {OpenRouterModelsResponse, OpenRouterModel, OpenRouterChatChunk, OpenRouterToolCallDelta} from './openrouter.types.js';
+import type {OpenRouterModelsResponse, OpenRouterModel, OpenRouterChatChunk, OpenRouterToolCallDelta} from './openrouter.types.js';
 
 @Injectable()
 export class OpenRouterService implements AiVendor {

@@ -4,12 +4,12 @@ import {expect} from '@jest/globals';
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
 /* Native Dependencies */
-import {MintService} from '@server/modules/api/mint/mint.service';
+import {MintService} from '#server/modules/api/mint/mint.service';
 /* Application Dependencies */
-import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
-import {ErrorService} from '@server/modules/error/error.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
+import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
+import {ErrorService} from '#server/modules/error/error.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
 import {MintWatchdogService} from './mintwatchdog.service.js';
 import {OrchardMintWatchdogStatus} from './mintwatchdog.model.js';

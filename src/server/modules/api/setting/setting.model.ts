@@ -1,8 +1,8 @@
 /* Core Dependencies */
 import {Field, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {Setting} from '@server/modules/setting/setting.entity';
-import {SettingValue, SettingKey} from '@server/modules/setting/setting.enums';
+import {Setting} from '#server/modules/setting/setting.entity';
+import {SettingValue, SettingKey} from '#server/modules/setting/setting.enums';
 
 @ObjectType({description: 'Application configuration setting'})
 export class OrchardSetting {

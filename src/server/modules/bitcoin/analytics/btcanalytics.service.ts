@@ -1,20 +1,20 @@
 /* Core Dependencies */
-import {Injectable, Logger, OnApplicationBootstrap} from '@nestjs/common';
+import {Injectable, Logger, type OnApplicationBootstrap} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 /* Vendor Dependencies */
-import {Repository, Between, In, FindOptionsWhere} from 'typeorm';
+import {Repository, Between, In, type FindOptionsWhere} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
-import {TaprootAssetsService} from '@server/modules/tapass/tapass/tapass.service';
-import {AnalyticsCheckpoint} from '@server/modules/analytics/analytics-checkpoint.entity';
-import {LightningTransaction} from '@server/modules/lightning/lightning/lightning.types';
-import {AssetTransfer, AddrEvent, TaprootAsset} from '@server/modules/tapass/tapass/tapass.types';
-import {AnalyticsBackfillStatus} from '@server/modules/analytics/analytics.interfaces';
+import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
+import {TaprootAssetsService} from '#server/modules/tapass/tapass/tapass.service';
+import {AnalyticsCheckpoint} from '#server/modules/analytics/analytics-checkpoint.entity';
+import type {LightningTransaction} from '#server/modules/lightning/lightning/lightning.types';
+import type {AssetTransfer, AddrEvent, TaprootAsset} from '#server/modules/tapass/tapass/tapass.types';
+import type {AnalyticsBackfillStatus} from '#server/modules/analytics/analytics.interfaces';
 /* Local Dependencies */
 import {BitcoinAnalytics} from './btcanalytics.entity.js';
 import {BitcoinAnalyticsMetric} from './btcanalytics.enums.js';
-import {AssetInfoMap} from './btcanalytics.interfaces.js';
+import type {AssetInfoMap} from './btcanalytics.interfaces.js';
 
 const RESCAN_SECONDS = 86400 * 7; // Re-scan last 7 days on daily rescan
 

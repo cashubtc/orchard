@@ -1,13 +1,13 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
 import {Reflector} from '@nestjs/core';
-import {CallHandler, ExecutionContext} from '@nestjs/common';
+import type {CallHandler, ExecutionContext} from '@nestjs/common';
 import {expect} from '@jest/globals';
 /* Vendor Dependencies */
 import {of, throwError, lastValueFrom} from 'rxjs';
 /* Application Dependencies */
-import {EventLogService} from '@server/modules/event/event.service';
-import {EventLogMetadata} from '@server/modules/event/event.decorator';
+import {EventLogService} from '#server/modules/event/event.service';
+import type {EventLogMetadata} from '#server/modules/event/event.decorator';
 import {
 	EventLogActorType,
 	EventLogSection,
@@ -15,8 +15,8 @@ import {
 	EventLogType,
 	EventLogStatus,
 	EventLogDetailStatus,
-} from '@server/modules/event/event.enums';
-import {CashuMintRpcService} from '@server/modules/cashu/mintrpc/cashumintrpc.service';
+} from '#server/modules/event/event.enums';
+import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
 /* Local Dependencies */
 import {MintInfoInterceptor} from './mintinfo.interceptor.js';
 

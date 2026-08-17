@@ -1,4 +1,4 @@
-import {Kind, ValueNode} from 'graphql';
+import {Kind, type ValueNode} from 'graphql';
 import {GraphQLScalarType} from 'graphql';
 
 export const Timezone = new GraphQLScalarType({

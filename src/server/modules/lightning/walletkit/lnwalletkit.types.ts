@@ -1,4 +1,4 @@
-import {LightningAddressType} from '@server/modules/lightning/lightning.enums';
+import {LightningAddressType} from '#server/modules/lightning/lightning.enums';
 
 export type LightningAddresses = {
 	account_with_addresses: {

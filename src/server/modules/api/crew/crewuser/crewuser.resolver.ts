@@ -2,10 +2,10 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Mutation, Args, Context} from '@nestjs/graphql';
 /* Application Dependencies */
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {UserRole} from '@server/modules/user/user.enums';
-import {Roles} from '@server/modules/auth/decorators/auth.decorator';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {UserRole} from '#server/modules/user/user.enums';
+import {Roles} from '#server/modules/auth/decorators/auth.decorator';
 /* Local Dependencies */
 import {CrewUserService} from './crewuser.service.js';
 import {OrchardCrewUser} from './crewuser.model.js';

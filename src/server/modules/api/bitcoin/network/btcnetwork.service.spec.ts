@@ -2,11 +2,11 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {BitcoinRpcService} from '@server/modules/bitcoin/rpc/btcrpc.service';
-import {ErrorService} from '@server/modules/error/error.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {LightningService} from '@server/modules/lightning/lightning/lightning.service';
+import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
+import {ErrorService} from '#server/modules/error/error.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
 /* Local Dependencies */
 import {BitcoinNetworkService} from './btcnetwork.service.js';
 

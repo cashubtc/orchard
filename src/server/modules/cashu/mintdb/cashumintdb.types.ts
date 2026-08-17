@@ -1,10 +1,10 @@
 /* Vendor Dependencies */
-import {Database} from 'better-sqlite3';
+import type {Database} from 'better-sqlite3';
 import {Client} from 'pg';
 /* Native Dependencies */
-import {MintUnit, MintQuoteState, MeltQuoteState, MintProofState} from '@server/modules/cashu/cashu.enums';
+import {MintUnit, MintQuoteState, MeltQuoteState, MintProofState} from '#server/modules/cashu/cashu.enums';
 /* Local Dependencies */
-import {MintDatabaseType} from '@server/modules/cashu/mintdb/cashumintdb.enums';
+import {MintDatabaseType} from '#server/modules/cashu/mintdb/cashumintdb.enums';
 
 export type CashuMintDatabase = CashuMintSqliteDatabase | CashuMintPostgresDatabase;
 type CashuMintSqliteDatabase = {

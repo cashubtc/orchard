@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Kind, ValueNode} from 'graphql';
+import {Kind, type ValueNode} from 'graphql';
 import {GraphQLScalarType} from 'graphql';
 
 function isValidBase64(str: string): boolean {

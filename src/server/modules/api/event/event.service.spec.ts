@@ -2,14 +2,14 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {EventLogService} from '@server/modules/event/event.service';
-import {ErrorService} from '@server/modules/error/error.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
+import {EventLogService} from '#server/modules/event/event.service';
+import {ErrorService} from '#server/modules/error/error.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
 import {ApiEventLogService} from './event.service.js';
 import {OrchardEventLog} from './event.model.js';
-import {OrchardCommonCount} from '@server/modules/api/common/entity-count.model';
+import {OrchardCommonCount} from '#server/modules/api/common/entity-count.model';
 
 describe('ApiEventLogService', () => {
 	let service: ApiEventLogService;

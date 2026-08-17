@@ -3,7 +3,7 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
-import {FetchService} from '@server/modules/fetch/fetch.service';
+import {FetchService} from '#server/modules/fetch/fetch.service';
 /* Local Dependencies */
 import {CoreService} from './core.service.js';
 

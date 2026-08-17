@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {InputType, Field} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UserRole} from '@server/modules/user/user.enums';
+import {UserRole} from '#server/modules/user/user.enums';
 
 @InputType({description: "Input for updating a user's name"})
 export class UserNameUpdateInput {

@@ -1,5 +1,5 @@
 /* Native Dependencies */
-import {MintUnit, MintQuoteState, MeltQuoteState} from '@server/modules/cashu/cashu.enums';
+import {MintUnit, MintQuoteState, MeltQuoteState} from '#server/modules/cashu/cashu.enums';
 
 export type NutshellMintMintQuote = {
 	quote: string;

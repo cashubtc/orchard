@@ -6,9 +6,9 @@ import * as path from 'path';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 /* Application Dependencies */
-import {CredentialService} from '@server/modules/credential/credential.service';
+import {CredentialService} from '#server/modules/credential/credential.service';
 /* Native Dependencies */
-import {
+import type {
 	CashuMintDatabase,
 	CashuMintBalance,
 	CashuMintKeyset,
@@ -20,15 +20,15 @@ import {
 	CashuMintSwap,
 	CashuMintCount,
 	CashuMintOperationFee,
-} from '@server/modules/cashu/mintdb/cashumintdb.types';
-import {
+} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import type {
 	CashuMintMintQuotesArgs,
 	CashuMintMeltQuotesArgs,
 	CashuMintProofsArgs,
 	CashuMintPromiseArgs,
 	CashuMintSwapsArgs,
 	CashuMintFeesArgs,
-} from '@server/modules/cashu/mintdb/cashumintdb.interfaces';
+} from '#server/modules/cashu/mintdb/cashumintdb.interfaces';
 import {
 	buildDynamicQuery,
 	buildCountQuery,
@@ -36,10 +36,10 @@ import {
 	queryRow,
 	extractRequestString,
 	convertDateToUnixTimestamp,
-} from '@server/modules/cashu/mintdb/cashumintdb.helpers';
-import {MintDatabaseType} from '@server/modules/cashu/mintdb/cashumintdb.enums';
+} from '#server/modules/cashu/mintdb/cashumintdb.helpers';
+import {MintDatabaseType} from '#server/modules/cashu/mintdb/cashumintdb.enums';
 /* Local Dependencies */
-import {CdkMintProof} from './cdk.types.js';
+import type {CdkMintProof} from './cdk.types.js';
 
 @Injectable()
 export class CdkService {

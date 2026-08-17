@@ -1,13 +1,13 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {ErrorService} from '@server/modules/error/error.service';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
+import {ErrorService} from '#server/modules/error/error.service';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 /* Native Dependencies */
-import {AgentService} from '@server/modules/ai/agent/agent.service';
-import {AgentKey} from '@server/modules/ai/agent/agent.enums';
-import {AGENTS} from '@server/modules/ai/agent/agent.agents';
+import {AgentService} from '#server/modules/ai/agent/agent.service';
+import {AgentKey} from '#server/modules/ai/agent/agent.enums';
+import {AGENTS} from '#server/modules/ai/agent/agent.agents';
 /* Local Dependencies */
 import {OrchardAgent, OrchardAgentDefault, OrchardAgentRun} from './aiagent.model.js';
 

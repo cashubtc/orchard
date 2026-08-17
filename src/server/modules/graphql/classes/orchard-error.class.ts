@@ -1,5 +1,5 @@
 import {GraphQLError} from 'graphql';
-import {OrchardErrorCode, OrchardErrorMessages} from '@server/modules/error/error.types';
+import {OrchardErrorCode, OrchardErrorMessages} from '#server/modules/error/error.types';
 
 export class OrchardApiError extends GraphQLError {
 	constructor(error: OrchardErrorCode | {code: OrchardErrorCode; details?: string}) {

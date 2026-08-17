@@ -1,8 +1,8 @@
 /* Core Dependencies */
 import {Field, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {UnixTimestamp} from '@server/modules/graphql/scalars/unixtimestamp.scalar';
-import {
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import type {
 	CashuCachedEndpoint,
 	CashuContact,
 	CashuMintInfo,
@@ -11,9 +11,9 @@ import {
 	CashuNut15Method,
 	CashuNutSupported,
 	CashuProtectedEndpoint,
-} from '@server/modules/cashu/mintapi/cashumintapi.types';
-import {CashuMintInfoRpc} from '@server/modules/cashu/mintrpc/cashumintrpc.types';
-import {MintUnit} from '@server/modules/cashu/cashu.enums';
+} from '#server/modules/cashu/mintapi/cashumintapi.types';
+import type {CashuMintInfoRpc} from '#server/modules/cashu/mintrpc/cashumintrpc.types';
+import {MintUnit} from '#server/modules/cashu/cashu.enums';
 
 @ObjectType({description: 'NUT support status'})
 export class OrchardNutSupported {

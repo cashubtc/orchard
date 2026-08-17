@@ -2,8 +2,8 @@
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Args} from '@nestjs/graphql';
 /* Application Dependencies */
-import {MintActivityPeriod} from '@server/modules/cashu/mintdb/cashumintdb.enums';
-import {Timezone, TimezoneType} from '@server/modules/graphql/scalars/timezone.scalar';
+import {MintActivityPeriod} from '#server/modules/cashu/mintdb/cashumintdb.enums';
+import {Timezone, type TimezoneType} from '#server/modules/graphql/scalars/timezone.scalar';
 /* Local Dependencies */
 import {OrchardMintActivitySummary} from './mintactivity.model.js';
 import {MintActivityService} from './mintactivity.service.js';

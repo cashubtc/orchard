@@ -1,15 +1,15 @@
 /* Core Dependencies */
-import {Injectable, Logger, OnApplicationBootstrap} from '@nestjs/common';
+import {Injectable, Logger, type OnApplicationBootstrap} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 import {InjectRepository} from '@nestjs/typeorm';
 /* Vendor Dependencies */
-import {Repository, FindOptionsWhere, Between, In} from 'typeorm';
+import {Repository, type FindOptionsWhere, Between, In} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {CashuMintDatabaseService} from '@server/modules/cashu/mintdb/cashumintdb.service';
-import {CashuMintApiService} from '@server/modules/cashu/mintapi/cashumintapi.service';
-import {AnalyticsCheckpoint} from '@server/modules/analytics/analytics-checkpoint.entity';
-import {
+import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
+import {CashuMintApiService} from '#server/modules/cashu/mintapi/cashumintapi.service';
+import {AnalyticsCheckpoint} from '#server/modules/analytics/analytics-checkpoint.entity';
+import type {
 	CashuMintDatabase,
 	CashuMintMintQuote,
 	CashuMintMeltQuote,
@@ -17,13 +17,13 @@ import {
 	CashuMintProof,
 	CashuMintPromise,
 	CashuMintOperationFee,
-} from '@server/modules/cashu/mintdb/cashumintdb.types';
-import {MintQuoteState, MeltQuoteState, MintProofState} from '@server/modules/cashu/cashu.enums';
-import {AnalyticsBackfillStatus} from '@server/modules/analytics/analytics.interfaces';
+} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import {MintQuoteState, MeltQuoteState, MintProofState} from '#server/modules/cashu/cashu.enums';
+import type {AnalyticsBackfillStatus} from '#server/modules/analytics/analytics.interfaces';
 /* Native Dependencies */
 import {MintAnalytics} from './mintanalytics.entity.js';
 import {MintAnalyticsMetric} from './mintanalytics.enums.js';
-import {MintAnalyticsCachedArgs} from './mintanalytics.interfaces.js';
+import type {MintAnalyticsCachedArgs} from './mintanalytics.interfaces.js';
 
 const BATCH_SIZE = 500;
 const BATCH_DELAY_MS = 5000;

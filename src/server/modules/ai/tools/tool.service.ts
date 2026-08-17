@@ -3,12 +3,12 @@ import {Injectable, Logger, Optional} from '@nestjs/common';
 import {ModuleRef} from '@nestjs/core';
 /* Vendor Dependencies */
 import {GraphQLSchemaHost} from '@nestjs/graphql';
-import {DocumentNode, GraphQLSchema, execute, parse} from 'graphql';
+import {type DocumentNode, GraphQLSchema, execute, parse} from 'graphql';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
-import {AiTool} from '@server/modules/ai/ai.types';
-import {AgentToolCategory, AgentToolName} from '@server/modules/ai/agent/agent.enums';
-import {MintMetricsService} from '@server/modules/cashu/mintmetrics/mintmetrics.service';
+import type {AiTool} from '#server/modules/ai/ai.types';
+import {AgentToolCategory, AgentToolName} from '#server/modules/ai/agent/agent.enums';
+import {MintMetricsService} from '#server/modules/cashu/mintmetrics/mintmetrics.service';
 import {
 	GetBitcoinAnalyticsMetricsTool,
 	GetBitcoinBlockchainInfoTool,
@@ -29,11 +29,18 @@ import {
 	GetSystemMetricsTool,
 	createSendMessageTool,
 	SkipMessageTool,
-} from '@server/modules/ai/agent/tools';
-import {MessageService} from '@server/modules/message/message.service';
-import {UserRole} from '@server/modules/user/user.enums';
+} from '#server/modules/ai/agent/tools/index';
+import {MessageService} from '#server/modules/message/message.service';
+import {UserRole} from '#server/modules/user/user.enums';
 /* Local Dependencies */
-import {AiAgentContext, AiToolResult, AiToolEntry, ToolGuard, ToolGuardContext, ToolGuardName} from './tool.types.js';
+import {
+	type AiAgentContext,
+	type AiToolResult,
+	type AiToolEntry,
+	type ToolGuard,
+	type ToolGuardContext,
+	ToolGuardName,
+} from './tool.types.js';
 
 @Injectable()
 export class ToolService {

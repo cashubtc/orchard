@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Field, Int, Float, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
-import {BitcoinFeeEstimate} from '@server/modules/bitcoin/rpc/btcrpc.types';
+import type {BitcoinFeeEstimate} from '#server/modules/bitcoin/rpc/btcrpc.types';
 
 @ObjectType({description: 'Bitcoin transaction fee estimate for a confirmation target'})
 export class OrchardBitcoinTxFeeEstimate {

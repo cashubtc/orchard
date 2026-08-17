@@ -4,12 +4,12 @@ import {Resolver, Query, Mutation, Args, Int} from '@nestjs/graphql';
 /* Vendor Dependencies */
 import {Throttle, minutes} from '@nestjs/throttler';
 /* Application Dependencies */
-import {Roles} from '@server/modules/auth/decorators/auth.decorator';
-import {UserRole} from '@server/modules/user/user.enums';
-import {LogEvent} from '@server/modules/event/event.decorator';
-import {EventLogType} from '@server/modules/event/event.enums';
-import {AgentKey} from '@server/modules/ai/agent/agent.enums';
-import {Timezone} from '@server/modules/graphql/scalars/timezone.scalar';
+import {Roles} from '#server/modules/auth/decorators/auth.decorator';
+import {UserRole} from '#server/modules/user/user.enums';
+import {LogEvent} from '#server/modules/event/event.decorator';
+import {EventLogType} from '#server/modules/event/event.enums';
+import {AgentKey} from '#server/modules/ai/agent/agent.enums';
+import {Timezone} from '#server/modules/graphql/scalars/timezone.scalar';
 /* Local Dependencies */
 import {AiAgentService} from './aiagent.service.js';
 import {AiAgentInterceptor} from './aiagent.interceptor.js';

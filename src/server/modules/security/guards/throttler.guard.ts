@@ -1,10 +1,10 @@
 /* Core Dependencies */
 import {Injectable} from '@nestjs/common';
 import {GqlExecutionContext} from '@nestjs/graphql';
-import {ThrottlerGuard, ThrottlerRequest} from '@nestjs/throttler';
+import {ThrottlerGuard, type ThrottlerRequest} from '@nestjs/throttler';
 /* Application Dependencies */
-import {OrchardApiError} from '@server/modules/graphql/classes/orchard-error.class';
-import {OrchardErrorCode} from '@server/modules/error/error.types';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {OrchardErrorCode} from '#server/modules/error/error.types';
 
 @Injectable()
 export class GqlThrottlerGuard extends ThrottlerGuard {
