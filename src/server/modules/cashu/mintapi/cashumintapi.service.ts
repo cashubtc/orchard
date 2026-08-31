@@ -18,6 +18,6 @@ export class CashuMintApiService {
 			method: 'GET',
 			headers: {'Content-Type': 'application/json'},
 		});
-		return response.json();
+		return (await response.json()) as CashuMintInfo;
 	}
 }

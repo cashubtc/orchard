@@ -43,7 +43,7 @@ export class OllamaService implements AiVendor {
 			const error_text = await response.text();
 			throw new Error(`Ollama returned status ${response.status}: ${error_text}`);
 		}
-		const data: OllamaTagsResponse = await response.json();
+		const data = (await response.json()) as OllamaTagsResponse;
 		return data.models.map((m) => this.mapModel(m));
 	}
 
