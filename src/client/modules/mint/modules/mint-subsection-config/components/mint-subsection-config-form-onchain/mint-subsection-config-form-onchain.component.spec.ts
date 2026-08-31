@@ -87,7 +87,10 @@ describe('MintSubsectionConfigFormOnchainComponent', () => {
 		});
 
 		it('should reject mint quotes without a created time', () => {
-			fixture.componentRef.setInput('quotes', [makeMintQuote({id: 'timed'}), makeMintQuote({id: 'untimed', created_time: null})]);
+			fixture.componentRef.setInput('quotes', [
+				makeMintQuote({id: 'timed'}),
+				makeMintQuote({id: 'untimed', created_time: null as any}),
+			]);
 			expect(component.valid_quotes().map((quote) => quote.id)).toEqual(['timed']);
 		});
 

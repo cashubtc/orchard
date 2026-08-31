@@ -10,7 +10,7 @@ export class MintMintQuote implements OrchardMintMintQuote {
 	public request_lookup_id: string | null;
 	public pubkey: string | null;
 	public issued_time: number | null;
-	public created_time: number | null;
+	public created_time: number;
 	public paid_time: number | null;
 	public amount_paid: number;
 	public amount_issued: number;
@@ -25,7 +25,7 @@ export class MintMintQuote implements OrchardMintMintQuote {
 		this.request_lookup_id = mint_mint_quote.request_lookup_id ?? null;
 		this.pubkey = mint_mint_quote.pubkey ?? null;
 		this.issued_time = mint_mint_quote.issued_time ?? null;
-		this.created_time = mint_mint_quote.created_time ?? null;
+		this.created_time = mint_mint_quote.created_time;
 		this.paid_time = mint_mint_quote.paid_time ?? null;
 		this.amount_paid = mint_mint_quote.amount_paid;
 		this.amount_issued = mint_mint_quote.amount_issued;
