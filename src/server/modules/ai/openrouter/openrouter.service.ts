@@ -58,7 +58,7 @@ export class OpenRouterService implements AiVendor {
 			throw new Error(`OpenRouter returned status ${response.status}`);
 		}
 
-		const data: OpenRouterModelsResponse = await response.json();
+		const data = (await response.json()) as OpenRouterModelsResponse;
 		return data.data.map((m) => this.mapModel(m));
 	}
 

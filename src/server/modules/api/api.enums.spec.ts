@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {expect} from '@jest/globals';
-import {LazyMetadataStorage} from '@nestjs/graphql/dist/schema-builder/storages/lazy-metadata.storage';
-import {TypeMetadataStorage} from '@nestjs/graphql/dist/schema-builder/storages';
+import {LazyMetadataStorage} from '@nestjs/graphql/dist/schema-builder/storages/lazy-metadata.storage.js';
+import {TypeMetadataStorage} from '@nestjs/graphql/dist/schema-builder/storages/index.js';
 
 /**
  * Import the file to trigger all registerEnumType() calls.

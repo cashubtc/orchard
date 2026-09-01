@@ -49,7 +49,7 @@ export class CoreService {
 			headers: this.options.headers,
 			body: data_string,
 		});
-		const result = await response.json();
+		const result = (await response.json()) as {result: any};
 		return result.result;
 	}
 }

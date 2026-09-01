@@ -3,3 +3,8 @@ generates:
   ./src/shared/generated.types.ts:
     plugins:
       - typescript
+    config:
+      scalars:
+        Base64: string
+        Timezone: string
+        UnixTimestamp: number
