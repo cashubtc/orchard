@@ -12,7 +12,6 @@ import {
 	OrchardAgentRun,
 	OrchardAgentTool,
 	AssistantToolName,
-	MintUnit,
 	AnalyticsInterval,
 	SystemMetricsInterval,
 	OrchardAiChatStream,
@@ -190,7 +189,7 @@ export type AiFunctionUpdateDateRange = {
 export type AiFunctionUpdateMintAnalyticsUnits = {
 	name: AssistantToolName.MintAnalyticsUnitsUpdate;
 	arguments: {
-		units: MintUnit[];
+		units: string[];
 	};
 };
 
@@ -320,7 +319,7 @@ export type AiFunctionUpdateMintMethodMin = {
 		min_amount: number;
 		operation: 'minting' | 'melting';
 		method: string;
-		unit: MintUnit;
+		unit: string;
 	};
 };
 
@@ -330,7 +329,7 @@ export type AiFunctionUpdateMintMethodMax = {
 		max_amount: number;
 		operation: 'minting' | 'melting';
 		method: string;
-		unit: MintUnit;
+		unit: string;
 	};
 };
 
@@ -339,7 +338,7 @@ export type AiFunctionUpdateMintMethodDescription = {
 	arguments: {
 		description: boolean;
 		method: string;
-		unit: MintUnit;
+		unit: string;
 	};
 };
 
@@ -353,7 +352,7 @@ export type AiFunctionUpdateMintKeysetStatus = {
 export type AiFunctionUpdateMintKeysetRotationUnit = {
 	name: AssistantToolName.MintKeysetRotationUnitUpdate;
 	arguments: {
-		unit: MintUnit;
+		unit: string;
 	};
 };
 

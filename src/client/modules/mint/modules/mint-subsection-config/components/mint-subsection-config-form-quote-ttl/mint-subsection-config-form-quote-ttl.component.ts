@@ -29,6 +29,7 @@ export class MintSubsectionConfigFormQuoteTtlComponent {
 	public locale = input.required<string>(); // locale for number formatting
 	public loading = input.required<boolean>(); // whether data is loading
 	public quotes = input.required<MintMintQuote[] | MintMeltQuote[]>(); // quotes to display in chart
+	public methods = input<string[]>([]); // payment methods this mint advertises for this nut
 	public device_desktop = input<boolean>(false); // whether the desktop view is active
 
 	public update = output<{form_group: FormGroup; control_name: keyof MintQuoteTtls}>(); // emitted when form is submitted
@@ -52,9 +53,17 @@ export class MintSubsectionConfigFormQuoteTtlComponent {
 		return this.control_dirty() ?? false;
 	});
 
+	/** The bolt11 caveat only carries information when bolt11 sits alongside another advertised method */
+	private readonly bolt11_caveat = computed(() => {
+		const methods = this.methods();
+		if (!methods.includes('bolt11')) return '';
+		if (methods.every((method) => method === 'bolt11')) return '';
+		return '<br><br><span class="orc-status-warning-color">Note: This setting only applies to the <b>bolt11</b> payment method.</span>';
+	});
+
 	public help_text = computed(() => {
 		if (this.nut() === 'nut4')
-			return 'How long a deposit invoice stays valid.<br> After this time, the invoice expires and the user must request a new quote.<br><br><span class="orc-status-warning-color">Note: This setting only applies to the <b>bolt11</b> payment method.</span>';
+			return `How long a deposit invoice stays valid.<br> After this time, the invoice expires and the user must request a new quote.${this.bolt11_caveat()}`;
 		if (this.nut() === 'nut5')
 			return 'How long a withdrawal fee quote is locked in.<br> After this time, the quote expires and the user must request a new one.';
 		return '';

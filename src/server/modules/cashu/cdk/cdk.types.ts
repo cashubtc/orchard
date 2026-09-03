@@ -1,10 +1,10 @@
 /* Native Dependencies */
-import {MintUnit, MintProofState} from '#server/modules/cashu/cashu.enums';
+import {MintProofState} from '#server/modules/cashu/cashu.enums';
 
 export type CdkMintProof = {
 	created_time: number;
 	keyset_id: string;
-	unit: MintUnit;
+	unit: string;
 	state: MintProofState;
 	amounts: string;
 };
@@ -12,6 +12,6 @@ export type CdkMintProof = {
 export type CdkMintPromise = {
 	created_time: number;
 	keyset_id: string;
-	unit: MintUnit;
+	unit: string;
 	amounts: string;
 };

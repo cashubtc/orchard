@@ -1,11 +1,11 @@
 /* Native Dependencies */
-import {MintUnit, MintQuoteState, MeltQuoteState} from '#server/modules/cashu/cashu.enums';
+import {MintQuoteState, MeltQuoteState} from '#server/modules/cashu/cashu.enums';
 
 export type NutshellMintMintQuote = {
 	quote: string;
 	request: string;
 	checking_id: string;
-	unit: MintUnit;
+	unit: string;
 	amount: number;
 	created_time: number;
 	paid_time: number;
@@ -18,7 +18,7 @@ export type NutshellMintMeltQuote = {
 	method: string;
 	request: string;
 	checking_id: string;
-	unit: MintUnit;
+	unit: string;
 	amount: number;
 	fee_reserve: number;
 	paid: number;
@@ -35,6 +35,6 @@ export type NutshellMintMeltQuote = {
 export type NutshellMintEcash = {
 	created: number;
 	id: string;
-	unit: MintUnit;
+	unit: string;
 	amounts: string;
 };

@@ -14,11 +14,11 @@ import {DeviceType} from '@client/modules/layout/types/device.types';
 /* Native Dependencies */
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 /* Shared Dependencies */
-import {AnalyticsInterval, MintUnit} from '@shared/generated.types';
+import {AnalyticsInterval} from '@shared/generated.types';
 
 type UnitOption = {
 	label: string;
-	value: MintUnit;
+	value: string;
 };
 type IntervalOption = {
 	label: string;
@@ -37,7 +37,7 @@ export class MintSubsectionDashboardControlComponent {
 	public date_start = input<number>();
 	public date_end = input<number>();
 	public date_preset = input<DateRangePreset | null>(null);
-	public units = input<MintUnit[]>();
+	public units = input<string[]>();
 	public interval = input<AnalyticsInterval>();
 	public keysets = input.required<MintKeyset[]>();
 	public loading = input.required<boolean>();
@@ -47,7 +47,7 @@ export class MintSubsectionDashboardControlComponent {
 
 	public dateChange = output<number[]>();
 	public presetChange = output<DateRangePreset>();
-	public unitsChange = output<MintUnit[]>();
+	public unitsChange = output<string[]>();
 	public intervalChange = output<AnalyticsInterval>();
 	public oracleUsedChange = output<boolean>();
 
@@ -160,7 +160,7 @@ export class MintSubsectionDashboardControlComponent {
 	}
 
 	/** Sets the FormArray values based on selected units */
-	private setUnitFilters(selected_units: MintUnit[]): void {
+	private setUnitFilters(selected_units: string[]): void {
 		this.unit_options.forEach((option, index) => {
 			const is_selected = selected_units.includes(option.value);
 			this.panel.controls.units.at(index).setValue(is_selected);
@@ -168,13 +168,13 @@ export class MintSubsectionDashboardControlComponent {
 	}
 
 	/** Gets the selected units from the FormArray */
-	public getSelectedUnits(): MintUnit[] {
+	public getSelectedUnits(): string[] {
 		if (!this.unit_options) return [];
 		return this.unit_options.filter((_, index) => this.panel.controls.units.at(index).value).map((option) => option.value);
 	}
 
 	/** Compares two unit arrays for equality */
-	private areUnitsEqual(a: MintUnit[], b: MintUnit[]): boolean {
+	private areUnitsEqual(a: string[], b: string[]): boolean {
 		if (a.length !== b.length) return false;
 		const sorted_a = [...a].sort();
 		const sorted_b = [...b].sort();

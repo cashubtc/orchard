@@ -34,6 +34,7 @@ export enum OrchardErrorCode {
 	MintDatabaseRestoreInvalidError = 40011,
 	MintAnalyticsError = 40012,
 	MintMetricsError = 40013,
+	MintUnitInvalidError = 40014,
 	// Ecash Level Errors
 
 	// AI Level Errors
@@ -95,6 +96,7 @@ export const OrchardErrorMessages: Record<string, string> = {
 	[OrchardErrorCode.MintDatabaseRestoreInvalidError]: 'MintDatabaseRestoreInvalidError',
 	[OrchardErrorCode.MintAnalyticsError]: 'MintAnalyticsError',
 	[OrchardErrorCode.MintMetricsError]: 'MintMetricsError',
+	[OrchardErrorCode.MintUnitInvalidError]: 'MintUnitInvalidError',
 	[OrchardErrorCode.AiError]: 'AiError',
 	[OrchardErrorCode.AiStreamError]: 'AiStreamError',
 	[OrchardErrorCode.AiStreamParseError]: 'AiStreamParseError',

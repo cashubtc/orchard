@@ -48,7 +48,7 @@ import {MintDataType} from '@client/modules/mint/enums/data-type.enum';
 import {MintSubsectionDatabaseData} from '@client/modules/mint/modules/mint-subsection-database/classes/mint-subsection-database-data.class';
 import {MintSubsectionDatabaseDialogQuoteComponent} from '@client/modules/mint/modules/mint-subsection-database/components/mint-subsection-database-dialog-quote/mint-subsection-database-dialog-quote.component';
 /* Shared Dependencies */
-import {MintUnit, MintQuoteState, MeltQuoteState, AiAssistant, AssistantToolName} from '@shared/generated.types';
+import {MintQuoteState, MeltQuoteState, AiAssistant, AssistantToolName} from '@shared/generated.types';
 
 enum FormMode {
 	CREATE = 'CREATE',
@@ -391,7 +391,7 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 		this.reloadDynamicData();
 	}
 
-	public onUnitsChange(event: MintUnit[]): void {
+	public onUnitsChange(event: string[]): void {
 		this.page_settings.units = event;
 		this.settingDeviceService.setMintDatabaseSettings(this.page_settings);
 		this.reloadDynamicData();

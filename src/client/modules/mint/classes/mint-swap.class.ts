@@ -1,13 +1,13 @@
 /* Vendor Dependencies */
 import {v4 as uuidv4} from 'uuid';
 /* Shared Dependencies */
-import {OrchardMintSwap, MintUnit} from '@shared/generated.types';
+import {OrchardMintSwap} from '@shared/generated.types';
 
 export class MintSwap implements OrchardMintSwap {
 	public id: string;
 	public operation_id: string | null;
 	public keyset_ids: string[];
-	public unit: MintUnit;
+	public unit: string;
 	public amount: number;
 	public created_time: number;
 	public fee: number | null;

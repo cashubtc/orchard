@@ -1,17 +1,25 @@
 /* Vendor Dependencies */
 import {TimeUnit} from 'chart.js';
 import {DateTime} from 'luxon';
+/* Application Dependencies */
+import {getUnitMeta, type UnitFamily} from '@client/modules/local/helpers/unit.helpers';
 /* Shared Dependencies */
 import {AnalyticsInterval} from '@shared/generated.types';
 
+/** Collects the distinct display codes of the units belonging to one family */
+function getFamilyCodes(units: (string | undefined)[], family: UnitFamily): string[] {
+	const codes = units.filter((unit): unit is string => !!unit).map((unit) => getUnitMeta(unit));
+	return [...new Set(codes.filter((meta) => meta.family === family).map((meta) => meta.code))];
+}
+
 function getFiatAxisLabel(units: (string | undefined)[]): string {
-	const lower_units = units.map((u) => u?.toLowerCase());
-	const has_usd = lower_units.includes('usd');
-	const has_eur = lower_units.includes('eur');
-	if (has_usd && has_eur) return 'USD / EUR';
-	if (has_usd) return 'USD';
-	if (has_eur) return 'EUR';
-	return 'FIAT';
+	const codes = getFamilyCodes(units, 'fiat');
+	return codes.length ? codes.join(' / ') : 'FIAT';
+}
+
+function getCustomAxisLabel(units: (string | undefined)[]): string {
+	const codes = getFamilyCodes(units, 'custom');
+	return codes.length ? codes.join(' / ') : 'UNITS';
 }
 
 function convertIntervalToTimeUnit(interval: AnalyticsInterval): TimeUnit {
@@ -53,14 +61,10 @@ export function formatAxisValue(value: number, locale?: string): string {
 }
 
 export function getYAxis(units: (string | undefined)[]): string[] {
-	const lower_units = units.map((unit) => unit?.toLowerCase());
 	const y_axis: string[] = [];
-	if (lower_units.includes('sat') || lower_units.includes('btc') || lower_units.includes('msat')) {
-		y_axis.push('ybtc');
-	}
-	if (lower_units.includes('usd') || lower_units.includes('eur')) {
-		y_axis.push('yfiat');
-	}
+	if (getFamilyCodes(units, 'btc').length) y_axis.push('ybtc');
+	if (getFamilyCodes(units, 'fiat').length) y_axis.push('yfiat');
+	if (getFamilyCodes(units, 'custom').length) y_axis.push('ycustom');
 	return y_axis;
 }
 
@@ -187,6 +191,38 @@ export function getFiatYAxisConfig({
 				const display_value = is_cents ? Number(value) / 100 : Number(value);
 				return formatAxisValue(display_value, locale);
 			},
+		},
+		grid: {
+			display: show_grid,
+			color: grid_color,
+		},
+	};
+}
+
+export function getCustomYAxisConfig({
+	units,
+	show_grid,
+	grid_color,
+	begin_at_zero,
+	locale,
+	position,
+}: {
+	units: (string | undefined)[];
+	show_grid: boolean;
+	grid_color: string;
+	begin_at_zero?: boolean;
+	locale?: string;
+	position?: 'left' | 'right';
+}): any {
+	return {
+		position: position ?? 'right',
+		title: {
+			display: true,
+			text: getCustomAxisLabel(units),
+		},
+		beginAtZero: begin_at_zero ?? false,
+		ticks: {
+			callback: (value: string | number) => formatAxisValue(Number(value), locale),
 		},
 		grid: {
 			display: show_grid,

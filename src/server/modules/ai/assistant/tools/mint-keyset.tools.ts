@@ -30,8 +30,7 @@ export const UpdateMintKeysetRotationUnitTool = {
 			properties: {
 				unit: {
 					type: 'string',
-					enum: ['sat', 'usd', 'eur'],
-					description: 'The unit of the method',
+					description: 'A unit advertised by this mint, as listed in mint_keysets',
 				},
 			},
 			required: ['unit'],

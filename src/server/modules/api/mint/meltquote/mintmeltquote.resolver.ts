@@ -3,11 +3,12 @@ import {Logger, UseInterceptors} from '@nestjs/common';
 import {Resolver, Query, Mutation, Args, Int} from '@nestjs/graphql';
 /* Application Dependencies */
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
-import {MintUnit, MeltQuoteState} from '#server/modules/cashu/cashu.enums';
+import {MeltQuoteState} from '#server/modules/cashu/cashu.enums';
 import {Roles} from '#server/modules/auth/decorators/auth.decorator';
 import {UserRole} from '#server/modules/user/user.enums';
 import {LogEvent} from '#server/modules/event/event.decorator';
 import {EventLogType} from '#server/modules/event/event.enums';
+import {normalizeMintUnits} from '#server/modules/cashu/cashu.helpers';
 /* Local Dependencies */
 import {MintMeltQuoteService} from './mintmeltquote.service.js';
 import {MintMeltQuoteInterceptor} from './mintmeltquote.interceptor.js';
@@ -22,7 +23,7 @@ export class MintMeltQuoteResolver {
 
 	@Query(() => [OrchardMintMeltQuote], {description: 'List melt quotes with optional filters'})
 	async mint_melt_quotes(
-		@Args('units', {type: () => [MintUnit], nullable: true, description: 'Filter by unit types'}) units?: MintUnit[],
+		@Args('units', {type: () => [String], nullable: true, description: 'Filter by unit types'}) units?: string[],
 		@Args('states', {type: () => [MeltQuoteState], nullable: true, description: 'Filter by quote states'}) states?: MeltQuoteState[],
 		@Args('date_start', {type: () => UnixTimestamp, nullable: true, description: 'Start of date range filter'}) date_start?: number,
 		@Args('date_end', {type: () => UnixTimestamp, nullable: true, description: 'End of date range filter'}) date_end?: number,
@@ -31,7 +32,14 @@ export class MintMeltQuoteResolver {
 	): Promise<OrchardMintMeltQuote[]> {
 		const tag = 'GET { mint_melt_quotes }';
 		this.logger.debug(tag);
-		return await this.mintMeltQuoteService.getMintMeltQuotes(tag, {units, states, date_start, date_end, page, page_size});
+		return await this.mintMeltQuoteService.getMintMeltQuotes(tag, {
+			units: normalizeMintUnits(units),
+			states,
+			date_start,
+			date_end,
+			page,
+			page_size,
+		});
 	}
 
 	@Roles(UserRole.ADMIN, UserRole.MANAGER)

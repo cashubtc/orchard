@@ -5,9 +5,9 @@ import {Resolver, Query, Args} from '@nestjs/graphql';
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 import {Timezone, type TimezoneType} from '#server/modules/graphql/scalars/timezone.scalar';
 import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
-import {MintUnit} from '#server/modules/cashu/cashu.enums';
 import {MintAnalyticsMetric} from '#server/modules/cashu/mintanalytics/mintanalytics.enums';
 import {OrchardAnalyticsBackfillStatus} from '#server/modules/api/common/analytics-backfill-status.model';
+import {normalizeMintUnits} from '#server/modules/cashu/cashu.helpers';
 /* Local Dependencies */
 import {OrchardMintAnalytics, OrchardMintAnalyticsMetric, OrchardMintKeysetsAnalytics} from './mintanalytics.model.js';
 import {MintAnalyticsService} from './mintanalytics.service.js';
@@ -20,7 +20,7 @@ export class MintAnalyticsResolver {
 
 	@Query(() => [OrchardMintAnalytics], {description: 'Get mint balance analytics over time'})
 	async mint_analytics_balances(
-		@Args('units', {type: () => [MintUnit], nullable: true, description: 'Currency units to filter by'}) units?: MintUnit[],
+		@Args('units', {type: () => [String], nullable: true, description: 'Currency units to filter by'}) units?: string[],
 		@Args('date_start', {type: () => UnixTimestamp, nullable: true, description: 'Start of date range filter'})
 		date_start?: number,
 		@Args('date_end', {type: () => UnixTimestamp, nullable: true, description: 'End of date range filter'}) date_end?: number,
@@ -30,12 +30,18 @@ export class MintAnalyticsResolver {
 	): Promise<OrchardMintAnalytics[]> {
 		const tag = 'GET { mint_analytics_balances }';
 		this.logger.debug(tag);
-		return await this.mintAnalyticsService.getMintAnalyticsBalances(tag, {units, date_start, date_end, interval, timezone});
+		return await this.mintAnalyticsService.getMintAnalyticsBalances(tag, {
+			units: normalizeMintUnits(units),
+			date_start,
+			date_end,
+			interval,
+			timezone,
+		});
 	}
 
 	@Query(() => [OrchardMintAnalytics], {description: 'Get mint operation analytics over time'})
 	async mint_analytics_mints(
-		@Args('units', {type: () => [MintUnit], nullable: true, description: 'Currency units to filter by'}) units?: MintUnit[],
+		@Args('units', {type: () => [String], nullable: true, description: 'Currency units to filter by'}) units?: string[],
 		@Args('date_start', {type: () => UnixTimestamp, nullable: true, description: 'Start of date range filter'})
 		date_start?: number,
 		@Args('date_end', {type: () => UnixTimestamp, nullable: true, description: 'End of date range filter'}) date_end?: number,
@@ -45,12 +51,18 @@ export class MintAnalyticsResolver {
 	): Promise<OrchardMintAnalytics[]> {
 		const tag = 'GET { mint_analytics_mints }';
 		this.logger.debug(tag);
-		return await this.mintAnalyticsService.getMintAnalyticsMints(tag, {units, date_start, date_end, interval, timezone});
+		return await this.mintAnalyticsService.getMintAnalyticsMints(tag, {
+			units: normalizeMintUnits(units),
+			date_start,
+			date_end,
+			interval,
+			timezone,
+		});
 	}
 
 	@Query(() => [OrchardMintAnalytics], {description: 'Get melt operation analytics over time'})
 	async mint_analytics_melts(
-		@Args('units', {type: () => [MintUnit], nullable: true, description: 'Currency units to filter by'}) units?: MintUnit[],
+		@Args('units', {type: () => [String], nullable: true, description: 'Currency units to filter by'}) units?: string[],
 		@Args('date_start', {type: () => UnixTimestamp, nullable: true, description: 'Start of date range filter'})
 		date_start?: number,
 		@Args('date_end', {type: () => UnixTimestamp, nullable: true, description: 'End of date range filter'}) date_end?: number,
@@ -60,12 +72,18 @@ export class MintAnalyticsResolver {
 	): Promise<OrchardMintAnalytics[]> {
 		const tag = 'GET { mint_analytics_melts }';
 		this.logger.debug(tag);
-		return await this.mintAnalyticsService.getMintAnalyticsMelts(tag, {units, date_start, date_end, interval, timezone});
+		return await this.mintAnalyticsService.getMintAnalyticsMelts(tag, {
+			units: normalizeMintUnits(units),
+			date_start,
+			date_end,
+			interval,
+			timezone,
+		});
 	}
 
 	@Query(() => [OrchardMintAnalytics], {description: 'Get swap operation analytics over time'})
 	async mint_analytics_swaps(
-		@Args('units', {type: () => [MintUnit], nullable: true, description: 'Currency units to filter by'}) units?: MintUnit[],
+		@Args('units', {type: () => [String], nullable: true, description: 'Currency units to filter by'}) units?: string[],
 		@Args('date_start', {type: () => UnixTimestamp, nullable: true, description: 'Start of date range filter'})
 		date_start?: number,
 		@Args('date_end', {type: () => UnixTimestamp, nullable: true, description: 'End of date range filter'}) date_end?: number,
@@ -75,12 +93,18 @@ export class MintAnalyticsResolver {
 	): Promise<OrchardMintAnalytics[]> {
 		const tag = 'GET { mint_analytics_swaps }';
 		this.logger.debug(tag);
-		return await this.mintAnalyticsService.getMintAnalyticsSwaps(tag, {units, date_start, date_end, interval, timezone});
+		return await this.mintAnalyticsService.getMintAnalyticsSwaps(tag, {
+			units: normalizeMintUnits(units),
+			date_start,
+			date_end,
+			interval,
+			timezone,
+		});
 	}
 
 	@Query(() => [OrchardMintAnalytics], {description: 'Get fee analytics over time'})
 	async mint_analytics_fees(
-		@Args('units', {type: () => [MintUnit], nullable: true, description: 'Currency units to filter by'}) units?: MintUnit[],
+		@Args('units', {type: () => [String], nullable: true, description: 'Currency units to filter by'}) units?: string[],
 		@Args('date_start', {type: () => UnixTimestamp, nullable: true, description: 'Start of date range filter'})
 		date_start?: number,
 		@Args('date_end', {type: () => UnixTimestamp, nullable: true, description: 'End of date range filter'}) date_end?: number,
@@ -90,12 +114,18 @@ export class MintAnalyticsResolver {
 	): Promise<OrchardMintAnalytics[]> {
 		const tag = 'GET { mint_analytics_fees }';
 		this.logger.debug(tag);
-		return await this.mintAnalyticsService.getMintAnalyticsFees(tag, {units, date_start, date_end, interval, timezone});
+		return await this.mintAnalyticsService.getMintAnalyticsFees(tag, {
+			units: normalizeMintUnits(units),
+			date_start,
+			date_end,
+			interval,
+			timezone,
+		});
 	}
 
 	@Query(() => [OrchardMintAnalytics], {description: 'Get proof analytics over time'})
 	async mint_analytics_proofs(
-		@Args('units', {type: () => [MintUnit], nullable: true, description: 'Currency units to filter by'}) units?: MintUnit[],
+		@Args('units', {type: () => [String], nullable: true, description: 'Currency units to filter by'}) units?: string[],
 		@Args('date_start', {type: () => UnixTimestamp, nullable: true, description: 'Start of date range filter'})
 		date_start?: number,
 		@Args('date_end', {type: () => UnixTimestamp, nullable: true, description: 'End of date range filter'}) date_end?: number,
@@ -105,12 +135,18 @@ export class MintAnalyticsResolver {
 	): Promise<OrchardMintAnalytics[]> {
 		const tag = 'GET { mint_analytics_proofs }';
 		this.logger.debug(tag);
-		return await this.mintAnalyticsService.getMintAnalyticsProofs(tag, {units, date_start, date_end, interval, timezone});
+		return await this.mintAnalyticsService.getMintAnalyticsProofs(tag, {
+			units: normalizeMintUnits(units),
+			date_start,
+			date_end,
+			interval,
+			timezone,
+		});
 	}
 
 	@Query(() => [OrchardMintAnalytics], {description: 'Get promise analytics over time'})
 	async mint_analytics_promises(
-		@Args('units', {type: () => [MintUnit], nullable: true, description: 'Currency units to filter by'}) units?: MintUnit[],
+		@Args('units', {type: () => [String], nullable: true, description: 'Currency units to filter by'}) units?: string[],
 		@Args('date_start', {type: () => UnixTimestamp, nullable: true, description: 'Start of date range filter'})
 		date_start?: number,
 		@Args('date_end', {type: () => UnixTimestamp, nullable: true, description: 'End of date range filter'}) date_end?: number,
@@ -120,12 +156,18 @@ export class MintAnalyticsResolver {
 	): Promise<OrchardMintAnalytics[]> {
 		const tag = 'GET { mint_analytics_promises }';
 		this.logger.debug(tag);
-		return await this.mintAnalyticsService.getMintAnalyticsPromises(tag, {units, date_start, date_end, interval, timezone});
+		return await this.mintAnalyticsService.getMintAnalyticsPromises(tag, {
+			units: normalizeMintUnits(units),
+			date_start,
+			date_end,
+			interval,
+			timezone,
+		});
 	}
 
 	@Query(() => [OrchardMintAnalyticsMetric], {description: 'Get mint analytics for specified metrics'})
 	async mint_analytics_metrics(
-		@Args('units', {type: () => [MintUnit], nullable: true, description: 'Currency units to filter by'}) units?: MintUnit[],
+		@Args('units', {type: () => [String], nullable: true, description: 'Currency units to filter by'}) units?: string[],
 		@Args('date_start', {type: () => UnixTimestamp, nullable: true, description: 'Start of date range filter'})
 		date_start?: number,
 		@Args('date_end', {type: () => UnixTimestamp, nullable: true, description: 'End of date range filter'}) date_end?: number,
@@ -137,7 +179,14 @@ export class MintAnalyticsResolver {
 	): Promise<OrchardMintAnalyticsMetric[]> {
 		const tag = 'GET { mint_analytics_metrics }';
 		this.logger.debug(tag);
-		return await this.mintAnalyticsService.getAnalyticsMetrics(tag, {units, date_start, date_end, interval, timezone, metrics});
+		return await this.mintAnalyticsService.getAnalyticsMetrics(tag, {
+			units: normalizeMintUnits(units),
+			date_start,
+			date_end,
+			interval,
+			timezone,
+			metrics,
+		});
 	}
 
 	@Query(() => [OrchardMintKeysetsAnalytics], {description: 'Get analytics grouped by keyset'})

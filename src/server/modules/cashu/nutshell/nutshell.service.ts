@@ -7,7 +7,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 /* Application Dependencies */
 import {CredentialService} from '#server/modules/credential/credential.service';
-import {MintUnit, MintProofState} from '#server/modules/cashu/cashu.enums';
+import {MintProofState} from '#server/modules/cashu/cashu.enums';
 /* Native Dependencies */
 import type {
 	CashuMintDatabase,
@@ -389,11 +389,7 @@ export class NutshellService {
 			field_mappings,
 			select_statement,
 		});
-		const rows = await queryRows<{amount: number; keyset_id: string; unit: MintUnit; created_time: number | string}>(
-			client,
-			sql,
-			params,
-		);
+		const rows = await queryRows<{amount: number; keyset_id: string; unit: string; created_time: number | string}>(client, sql, params);
 		return rows.map((row) => ({
 			...row,
 			created_time: convertDateToUnixTimestamp(row.created_time),
@@ -425,11 +421,7 @@ export class NutshellService {
 			field_mappings,
 			select_statement,
 		});
-		const rows = await queryRows<{amount: number; keyset_id: string; unit: MintUnit; created_time: number | string}>(
-			client,
-			sql,
-			params,
-		);
+		const rows = await queryRows<{amount: number; keyset_id: string; unit: string; created_time: number | string}>(client, sql, params);
 		return rows.map((row) => ({
 			...row,
 			created_time: convertDateToUnixTimestamp(row.created_time),

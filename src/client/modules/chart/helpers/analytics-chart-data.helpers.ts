@@ -1,5 +1,5 @@
 /* Application Dependencies */
-import {LocalAmountPipe} from '@client/modules/local/pipes/local-amount/local-amount.pipe';
+import {toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
 /* Vendor Dependencies */
 import {DateTime, DateTimeUnit} from 'luxon';
 /* Shared Dependencies */
@@ -103,10 +103,10 @@ export function getAmountData(
 	let running_sum = 0;
 	return unique_timestamps.map((timestamp) => {
 		const val = data_keyed_by_timestamp[timestamp] || 0;
-		running_sum += LocalAmountPipe.getConvertedAmount(unit, val);
+		running_sum += toDisplayAmount(unit, val);
 		return {
 			x: timestamp * 1000,
-			y: cumulative ? running_sum : LocalAmountPipe.getConvertedAmount(unit, val),
+			y: cumulative ? running_sum : toDisplayAmount(unit, val),
 		};
 	});
 }

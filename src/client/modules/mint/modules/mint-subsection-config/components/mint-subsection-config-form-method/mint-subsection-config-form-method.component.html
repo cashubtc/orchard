@@ -2,11 +2,11 @@
 	<div class="flex flex-column flex-gap-2 flex-1">
 		<div class="flex flex-column flex-gap-1 p-l-1">
 			<orc-mint-subsection-config-form-max
-				[form_group]="form_bolt12()"
+				[form_group]="form_method()"
 				[control_name]="'max_amount'"
-				[control_dirty]="form_bolt12().get('max_amount')?.dirty"
-				[control_invalid]="form_bolt12().get('max_amount')?.invalid"
-				[control_errors]="form_bolt12().get('max_amount')?.errors"
+				[control_dirty]="form_method().get('max_amount')?.dirty"
+				[control_invalid]="form_method().get('max_amount')?.invalid"
+				[control_errors]="form_method().get('max_amount')?.errors"
 				[unit]="unit()"
 				[nut]="nut()"
 				[stat_amounts]="stat_amounts()"
@@ -15,11 +15,11 @@
 				(hot)="onMaxHot($event)"
 			></orc-mint-subsection-config-form-max>
 			<orc-mint-subsection-config-form-min
-				[form_group]="form_bolt12()"
+				[form_group]="form_method()"
 				[control_name]="'min_amount'"
-				[control_dirty]="form_bolt12().get('min_amount')?.dirty"
-				[control_invalid]="form_bolt12().get('min_amount')?.invalid"
-				[control_errors]="form_bolt12().get('min_amount')?.errors"
+				[control_dirty]="form_method().get('min_amount')?.dirty"
+				[control_invalid]="form_method().get('min_amount')?.invalid"
+				[control_errors]="form_method().get('min_amount')?.errors"
 				[unit]="unit()"
 				[nut]="nut()"
 				[stat_amounts]="stat_amounts()"
@@ -37,8 +37,8 @@
 			[locale]="locale()"
 			[unit]="unit()"
 			[method]="method()"
-			[min_amount]="form_bolt12().get('min_amount')?.value"
-			[max_amount]="form_bolt12().get('max_amount')?.value"
+			[min_amount]="form_method().get('min_amount')?.value"
+			[max_amount]="form_method().get('max_amount')?.value"
 			[min_hot]="min_hot()"
 			[max_hot]="max_hot()"
 			[amounts]="stat_amounts()"

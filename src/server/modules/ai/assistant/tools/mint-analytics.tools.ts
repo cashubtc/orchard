@@ -8,10 +8,9 @@ export const UpdateMintAnalyticsUnitsTool = {
 			properties: {
 				units: {
 					type: 'array',
-					description: 'The units of the mint analytics',
+					description: 'Units advertised by this mint, as listed in mint_keysets',
 					items: {
 						type: 'string',
-						enum: ['sat', 'usd', 'eur'],
 					},
 				},
 			},

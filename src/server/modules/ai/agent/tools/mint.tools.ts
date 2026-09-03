@@ -8,7 +8,7 @@ import {type AiToolEntry, ToolGuardName} from '#server/modules/ai/tools/tool.typ
 
 const GET_MINT_ANALYTICS_QUERY = `
 	query GetMintAnalytics(
-		$units: [MintUnit!],
+		$units: [String!],
 		$date_start: UnixTimestamp,
 		$date_end: UnixTimestamp,
 		$interval: AnalyticsInterval
@@ -42,7 +42,7 @@ const GET_MINT_ANALYTICS_QUERY = `
 
 const GET_MINT_ANALYTICS_METRICS_QUERY = `
 	query GetMintAnalyticsMetrics(
-		$units: [MintUnit!],
+		$units: [String!],
 		$date_start: UnixTimestamp,
 		$date_end: UnixTimestamp,
 		$interval: AnalyticsInterval,
@@ -179,10 +179,10 @@ export const GetMintAnalyticsMetricsTool: AiToolEntry = {
 				properties: {
 					units: {
 						type: 'array',
-						description: 'Filter by currency units. Defaults to all units if omitted.',
+						description:
+							'Filter by currency units advertised by this mint, as listed in mint_keysets. Defaults to all units if omitted.',
 						items: {
 							type: 'string',
-							enum: ['sat', 'msat', 'usd', 'eur', 'btc'],
 						},
 					},
 					date_start: {
@@ -323,10 +323,10 @@ export const GetMintAnalyticsTool: AiToolEntry = {
 				properties: {
 					units: {
 						type: 'array',
-						description: 'Filter by currency units. Defaults to all units if omitted.',
+						description:
+							'Filter by currency units advertised by this mint, as listed in mint_keysets. Defaults to all units if omitted.',
 						items: {
 							type: 'string',
-							enum: ['sat', 'msat', 'usd', 'eur', 'btc'],
 						},
 					},
 					date_start: {

@@ -11,8 +11,6 @@ import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 import {MintAnalyticKeyset} from '@client/modules/mint/classes/mint-analytic.class';
 import {MintKeysetCount} from '@client/modules/mint/classes/mint-keyset-count.class';
 import {MintSubsectionKeysetsTableRow} from '@client/modules/mint/modules/mint-subsection-keysets/classes/mint-subsection-keysets-table-row.class';
-/* Shared Dependencies */
-import {MintUnit} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-mint-subsection-keysets-table',
@@ -33,7 +31,7 @@ export class MintSubsectionKeysetsTableComponent {
 	readonly device_type = input.required<DeviceType>();
 	readonly bitcoin_oracle_data = input.required<{balance_cents: number; fees_cents: number; date: number} | null>();
 
-	readonly rotateKeyset = output<MintUnit>();
+	readonly rotateKeyset = output<string>();
 	readonly highlightChange = output<string | null>();
 	readonly moreRequest = output<MintSubsectionKeysetsTableRow>();
 

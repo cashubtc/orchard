@@ -31,6 +31,11 @@ $coin-height: 3px;
 		@extend %orc-asset-eur-bg;
 	}
 }
+.coin-custom {
+	.coin {
+		@extend %orc-asset-custom-bg;
+	}
+}
 
 .stack-container {
 	@extend %flex;

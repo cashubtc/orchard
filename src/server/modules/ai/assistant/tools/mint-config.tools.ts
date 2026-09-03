@@ -63,13 +63,11 @@ export const UpdateMintMethodMinTool = {
 				},
 				method: {
 					type: 'string',
-					enum: ['bolt11'],
-					description: 'The method to update the minimum amount of',
+					description: 'A payment method advertised by this mint, as listed in mint_info',
 				},
 				unit: {
 					type: 'string',
-					enum: ['sat', 'usd', 'eur'],
-					description: 'The unit of the method',
+					description: 'A unit advertised by this mint, as listed in mint_keysets',
 				},
 			},
 			required: ['min_amount', 'operation', 'method', 'unit'],
@@ -96,13 +94,11 @@ export const UpdateMintMethodMaxTool = {
 				},
 				method: {
 					type: 'string',
-					enum: ['bolt11'],
-					description: 'The method to update the maximum amount of',
+					description: 'A payment method advertised by this mint, as listed in mint_info',
 				},
 				unit: {
 					type: 'string',
-					enum: ['sat', 'usd', 'eur'],
-					description: 'The unit of the method',
+					description: 'A unit advertised by this mint, as listed in mint_keysets',
 				},
 			},
 			required: ['max_amount', 'operation', 'method', 'unit'],
@@ -126,12 +122,11 @@ export const UpdateMintMethodDescriptionTool = {
 				method: {
 					type: 'string',
 					enum: ['bolt11'],
-					description: 'The method to update the description status of',
+					description: 'The method to update the description status of. Descriptions are a bolt11-only mint method option.',
 				},
 				unit: {
 					type: 'string',
-					enum: ['sat', 'usd', 'eur'],
-					description: 'The unit of the method',
+					description: 'A unit advertised by this mint, as listed in mint_keysets',
 				},
 			},
 			required: ['description', 'method', 'unit'],

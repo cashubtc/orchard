@@ -9,7 +9,8 @@ export type ConfigName = 'lnd-nutshell-sqlite' | 'lnd-cdk-sqlite' | 'cln-cdk-pos
 export type LnType = 'lnd' | 'cln';
 export type MintType = 'nutshell' | 'cdk';
 export type DbType = 'sqlite' | 'postgres';
-export type MintUnit = 'sat' | 'usd' | 'eur';
+/** Cashu units are free-form strings; a mint may advertise any slug */
+export type MintUnit = string;
 
 /** App-level (server-persisted) settings driven via `/settings/app`. Each
  *  field is optional — `undefined` means the settings setup helper skips

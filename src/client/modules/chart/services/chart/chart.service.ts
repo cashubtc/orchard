@@ -9,6 +9,7 @@ import {ThemeService} from '@client/modules/settings/services/theme/theme.servic
 import {SettingDeviceService} from '@client/modules/settings/services/setting-device/setting-device.service';
 import {CurrencyType} from '@client/modules/cache/services/local-storage/local-storage.types';
 import {eligibleForOracleConversion} from '@client/modules/bitcoin/helpers/oracle.helpers';
+import {getUnitMeta, toDisplayAmount, type UnitMeta} from '@client/modules/local/helpers/unit.helpers';
 import {OracleChartDataPoint} from '@client/modules/chart/types/chart.types';
 /* Shared Dependencies */
 import {MintQuoteState, MeltQuoteState} from '@shared/generated.types';
@@ -320,21 +321,14 @@ export class ChartService {
 	public formatTooltipAmount(amount: number, unit: string): string {
 		const locale = this.settingDeviceService.getLocale();
 		const currency = this.settingDeviceService.getCurrency();
-		const unit_lower = unit.toLowerCase();
+		const meta = getUnitMeta(unit);
 
-		switch (unit_lower) {
-			case 'msat':
-				return this.formatBtcAmount(Math.ceil(amount / 1000), locale, currency.type_btc);
-			case 'sat':
-				return this.formatBtcAmount(amount, locale, currency.type_btc);
-			case 'btc':
-				return this.formatBtcFull(amount, locale);
-			case 'usd':
-			case 'eur':
-				return this.formatFiatAmount(amount, unit, locale, currency.type_fiat);
-			default:
-				return amount.toLocaleString(locale);
+		if (meta.family === 'btc') {
+			if (meta.decimals > 0) return this.formatBtcFull(amount, locale, meta);
+			return this.formatBtcAmount(toDisplayAmount(unit, amount), locale, currency.type_btc);
 		}
+		if (meta.family === 'fiat') return this.formatFiatAmount(amount, meta, locale, currency.type_fiat);
+		return `${amount.toLocaleString(locale)} ${meta.code}`;
 	}
 
 	/**
@@ -354,7 +348,7 @@ export class ChartService {
 			if (oracle_used && converted !== null && eligibleForOracleConversion(unit)) {
 				const formatted_converted = this.formatFiatAmount(
 					converted / 100,
-					'usd',
+					getUnitMeta('usd'),
 					this.settingDeviceService.getLocale(),
 					this.settingDeviceService.getCurrency().type_fiat,
 				);
@@ -372,16 +366,14 @@ export class ChartService {
 		return currency_type === CurrencyType.GLYPH ? `₿${formatted}` : `${formatted} sat`;
 	}
 
-	private formatBtcFull(amount: number, locale: string): string {
-		return `${amount.toLocaleString(locale, {minimumFractionDigits: 8, maximumFractionDigits: 8})} BTC`;
+	private formatBtcFull(amount: number, locale: string, meta: UnitMeta): string {
+		const formatted = amount.toLocaleString(locale, {minimumFractionDigits: meta.decimals, maximumFractionDigits: meta.decimals});
+		return `${formatted} ${meta.code}`;
 	}
 
-	private formatFiatAmount(amount: number, unit: string, locale: string, currency_type: CurrencyType): string {
-		const formatted = amount.toLocaleString(locale, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-		if (currency_type === CurrencyType.GLYPH) {
-			const symbol = unit.toLowerCase() === 'eur' ? '€' : '$';
-			return `${symbol}${formatted}`;
-		}
-		return `${formatted} ${unit.toUpperCase()}`;
+	private formatFiatAmount(amount: number, meta: UnitMeta, locale: string, currency_type: CurrencyType): string {
+		const formatted = amount.toLocaleString(locale, {minimumFractionDigits: meta.decimals, maximumFractionDigits: meta.decimals});
+		if (currency_type === CurrencyType.GLYPH) return `${meta.glyph ?? meta.code}${formatted}`;
+		return `${formatted} ${meta.code}`;
 	}
 }

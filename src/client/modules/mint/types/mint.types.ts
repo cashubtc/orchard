@@ -9,7 +9,6 @@ import {
 	OrchardMintSwap,
 	OrchardMintKeysetsAnalytics,
 	OrchardMintActivitySummary,
-	MintUnit,
 	AnalyticsInterval,
 	OrchardAnalyticsBackfillStatus,
 	MintQuoteState,
@@ -116,7 +115,7 @@ export type MintKeysetCountsResponse = {
 };
 
 export type MintAnalyticsArgs = {
-	units?: MintUnit[];
+	units?: string[];
 	date_start?: number;
 	date_end?: number;
 	interval?: AnalyticsInterval;
@@ -132,7 +131,7 @@ export type MintMetricsArgs = {
 };
 
 export type MintMintQuotesArgs = {
-	units?: MintUnit[];
+	units?: string[];
 	date_start?: number;
 	date_end?: number;
 	states?: MintQuoteState[];
@@ -141,7 +140,7 @@ export type MintMintQuotesArgs = {
 };
 
 export type MintMeltQuotesArgs = {
-	units?: MintUnit[];
+	units?: string[];
 	date_start?: number;
 	date_end?: number;
 	states?: MeltQuoteState[];
@@ -150,7 +149,7 @@ export type MintMeltQuotesArgs = {
 };
 
 export type MintSwapsArgs = {
-	units?: MintUnit[];
+	units?: string[];
 	id_keysets?: string[];
 	date_start?: number;
 	date_end?: number;

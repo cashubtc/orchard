@@ -16,15 +16,6 @@ export enum MeltQuoteState {
 	PAID = 'PAID',
 }
 
-export enum MintUnit {
-	sat = 'sat',
-	msat = 'msat',
-	usd = 'usd',
-	eur = 'eur',
-	btc = 'btc',
-	auth = 'auth',
-}
-
 export enum MintProofState {
 	SPENT = 'SPENT',
 }

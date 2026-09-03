@@ -4,8 +4,6 @@ import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 import {MintKeysetCount} from '@client/modules/mint/classes/mint-keyset-count.class';
 import {MintDatabaseInfo} from '@client/modules/mint/classes/mint-database-info.class';
-/* Shared Dependencies */
-import {MintUnit} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-mint-general-keysets',
@@ -37,7 +35,7 @@ export class MintGeneralKeysetsComponent {
 	});
 
 	/** Deduplicated list of units from keysets. */
-	public unique_units = computed<MintUnit[]>(() => {
+	public unique_units = computed<string[]>(() => {
 		const units = this.keysets().map((k) => k.unit);
 		return [...new Set(units)];
 	});

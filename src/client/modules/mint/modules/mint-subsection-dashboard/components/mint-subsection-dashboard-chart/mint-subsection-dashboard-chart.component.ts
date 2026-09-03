@@ -23,6 +23,7 @@ import {
 	getYAxis,
 	getBtcYAxisConfig,
 	getFiatYAxisConfig,
+	getCustomYAxisConfig,
 	getTooltipTitle,
 } from '@client/modules/chart/helpers/mint-chart-options.helpers';
 import {ChartService} from '@client/modules/chart/services/chart/chart.service';
@@ -213,15 +214,26 @@ export class MintSubsectionDashboardChartComponent implements OnDestroy, OnChang
 			});
 		}
 		if (y_axis.includes('yfiat')) {
-			const is_only_axis = !y_axis.includes('ybtc');
+			const is_primary_axis = y_axis[0] === 'yfiat';
 			scales['yfiat'] = getFiatYAxisConfig({
 				units: effective_units,
-				show_grid: is_only_axis,
+				show_grid: is_primary_axis,
 				grid_color: this.chartService.getGridColor(),
 				begin_at_zero: true,
 				locale: this.locale(),
-				position: is_only_axis ? 'left' : 'right',
+				position: is_primary_axis ? 'left' : 'right',
 				is_cents: can_use_oracle,
+			});
+		}
+		if (y_axis.includes('ycustom')) {
+			const is_primary_axis = y_axis[0] === 'ycustom';
+			scales['ycustom'] = getCustomYAxisConfig({
+				units: effective_units,
+				show_grid: is_primary_axis,
+				grid_color: this.chartService.getGridColor(),
+				begin_at_zero: true,
+				locale: this.locale(),
+				position: is_primary_axis ? 'left' : 'right',
 			});
 		}
 

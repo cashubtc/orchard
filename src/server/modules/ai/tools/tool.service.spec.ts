@@ -38,7 +38,6 @@ const mock_schema = makeExecutableSchema({
 			channel_opens channel_closes
 			channel_opens_remote channel_closes_remote
 		}
-		enum MintUnit { sat msat usd eur btc }
 		enum MintAnalyticsMetric {
 			mints_amount mints_created mints_completion_time
 			melts_amount melts_created melts_completion_time
@@ -68,31 +67,31 @@ const mock_schema = makeExecutableSchema({
 				metrics: [LightningAnalyticsMetric!]
 			): [LightningAnalyticsMetric_Type!]!
 			mint_analytics_balances(
-				units: [MintUnit!],
+				units: [String!],
 				date_start: UnixTimestamp,
 				date_end: UnixTimestamp,
 				interval: AnalyticsInterval
 			): [MintAnalytics!]!
 			mint_analytics_mints(
-				units: [MintUnit!],
+				units: [String!],
 				date_start: UnixTimestamp,
 				date_end: UnixTimestamp,
 				interval: AnalyticsInterval
 			): [MintAnalytics!]!
 			mint_analytics_melts(
-				units: [MintUnit!],
+				units: [String!],
 				date_start: UnixTimestamp,
 				date_end: UnixTimestamp,
 				interval: AnalyticsInterval
 			): [MintAnalytics!]!
 			mint_analytics_fees(
-				units: [MintUnit!],
+				units: [String!],
 				date_start: UnixTimestamp,
 				date_end: UnixTimestamp,
 				interval: AnalyticsInterval
 			): [MintAnalytics!]!
 			mint_analytics_metrics(
-				units: [MintUnit!],
+				units: [String!],
 				date_start: UnixTimestamp,
 				date_end: UnixTimestamp,
 				interval: AnalyticsInterval,

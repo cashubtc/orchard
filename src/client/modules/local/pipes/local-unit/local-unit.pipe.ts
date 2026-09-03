@@ -1,5 +1,7 @@
 /* Core Dependencies */
 import {Pipe, PipeTransform} from '@angular/core';
+/* Native Dependencies */
+import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
 
 @Pipe({
 	name: 'localUnit',
@@ -9,37 +11,8 @@ import {Pipe, PipeTransform} from '@angular/core';
 export class LocalUnitPipe implements PipeTransform {
 	transform(unit: string, title: boolean = false): string {
 		if (unit === null || unit === undefined) return '';
-		const unit_lower = unit.toLowerCase();
-		return title ? this.titleUnit(unit_lower) : this.trailingUnit(unit_lower);
-	}
-
-	private trailingUnit(unit_lower: string): string {
-		switch (unit_lower) {
-			case 'sat':
-				return 'sat';
-			case 'btc':
-				return 'BTC';
-			case 'usd':
-				return 'USD';
-			case 'eur':
-				return 'EUR';
-			default:
-				return unit_lower;
-		}
-	}
-
-	private titleUnit(unit_lower: string): string {
-		switch (unit_lower) {
-			case 'sat':
-				return 'SAT';
-			case 'btc':
-				return 'BTC';
-			case 'usd':
-				return 'USD';
-			case 'eur':
-				return 'EUR';
-			default:
-				return unit_lower;
-		}
+		const meta = getUnitMeta(unit);
+		/* Custom units keep the mint's own casing; known units title-case to their currency code */
+		return title && meta.family !== 'custom' ? meta.code.toUpperCase() : meta.code;
 	}
 }

@@ -12,12 +12,10 @@ import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 /* Native Dependencies */
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
-/* Shared Dependencies */
-import {MintUnit} from '@shared/generated.types';
 
 type UnitOption = {
 	label: string;
-	value: MintUnit;
+	value: string;
 };
 type StatusOption = {
 	label: string;
@@ -37,7 +35,7 @@ export class MintSubsectionKeysetsControlComponent {
 	public readonly date_start = input<number>();
 	public readonly date_end = input<number>();
 	public readonly date_preset = input<DateRangePreset | null>(null);
-	public readonly units = input<MintUnit[]>();
+	public readonly units = input<string[]>();
 	public readonly status = input<boolean[]>();
 	public readonly keysets = input.required<MintKeyset[]>();
 	public readonly loading = input.required<boolean>();
@@ -47,7 +45,7 @@ export class MintSubsectionKeysetsControlComponent {
 	/* Outputs */
 	public readonly dateChange = output<number[]>();
 	public readonly presetChange = output<DateRangePreset>();
-	public readonly unitsChange = output<MintUnit[]>();
+	public readonly unitsChange = output<string[]>();
 	public readonly statusChange = output<boolean[]>();
 
 	private readonly filter_menu_trigger = viewChild(MatMenuTrigger);
@@ -147,7 +145,7 @@ export class MintSubsectionKeysetsControlComponent {
 	}
 
 	/** Sets the FormArray values based on selected units */
-	private setUnitFilters(selected_units: MintUnit[]): void {
+	private setUnitFilters(selected_units: string[]): void {
 		this.unit_options().forEach((option, index) => {
 			const is_selected = selected_units.includes(option.value);
 			this.panel.controls.units.at(index).setValue(is_selected);
@@ -155,14 +153,14 @@ export class MintSubsectionKeysetsControlComponent {
 	}
 
 	/** Gets the selected units from the FormArray */
-	public getSelectedUnits(): MintUnit[] {
+	public getSelectedUnits(): string[] {
 		const options = this.unit_options();
 		if (!options.length) return [];
 		return options.filter((_, index) => this.panel.controls.units.at(index).value).map((option) => option.value);
 	}
 
 	/** Compares two unit arrays for equality */
-	private areUnitsEqual(a: MintUnit[], b: MintUnit[]): boolean {
+	private areUnitsEqual(a: string[], b: string[]): boolean {
 		if (a.length !== b.length) return false;
 		const sorted_a = [...a].sort();
 		const sorted_b = [...b].sort();

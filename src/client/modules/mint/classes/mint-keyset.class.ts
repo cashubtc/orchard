@@ -1,4 +1,4 @@
-import {MintUnit, OrchardMintKeyset} from '@shared/generated.types';
+import {OrchardMintKeyset} from '@shared/generated.types';
 
 export class MintKeyset implements OrchardMintKeyset {
 	id: string;
@@ -7,7 +7,7 @@ export class MintKeyset implements OrchardMintKeyset {
 	derivation_path_index: number;
 	input_fee_ppk: number;
 	seed_encryption_method?: string | null;
-	unit: MintUnit;
+	unit: string;
 	valid_from: number | null;
 	valid_to: number | null;
 	final_expiry: number | null;
@@ -20,7 +20,7 @@ export class MintKeyset implements OrchardMintKeyset {
 		this.derivation_path = omk.derivation_path;
 		this.derivation_path_index = omk.derivation_path_index;
 		this.input_fee_ppk = omk.input_fee_ppk ? omk.input_fee_ppk : 0;
-		this.unit = omk.unit as MintUnit;
+		this.unit = omk.unit;
 		this.valid_from = omk.valid_from ?? null;
 		this.valid_to = omk.valid_to ?? null;
 		this.final_expiry = omk.final_expiry ?? null;

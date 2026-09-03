@@ -2,7 +2,7 @@
 import type {Database} from 'better-sqlite3';
 import {Client} from 'pg';
 /* Native Dependencies */
-import {MintUnit, MintQuoteState, MeltQuoteState, MintProofState} from '#server/modules/cashu/cashu.enums';
+import {MintQuoteState, MeltQuoteState, MintProofState} from '#server/modules/cashu/cashu.enums';
 /* Local Dependencies */
 import {MintDatabaseType} from '#server/modules/cashu/mintdb/cashumintdb.enums';
 
@@ -19,7 +19,7 @@ type CashuMintPostgresDatabase = {
 export type CashuMintBalance = {
 	keyset: string;
 	balance: number;
-	unit: MintUnit;
+	unit: string;
 };
 
 export type CashuMintKeyset = {
@@ -30,7 +30,7 @@ export type CashuMintKeyset = {
 	valid_to: number | null;
 	final_expiry: number | null;
 	active: number;
-	unit: MintUnit;
+	unit: string;
 	input_fee_ppk: number | null;
 	fees_paid: number | null;
 	amounts: number[];
@@ -39,7 +39,7 @@ export type CashuMintKeyset = {
 export type CashuMintMintQuote = {
 	id: string;
 	amount: number | null;
-	unit: MintUnit;
+	unit: string;
 	request: string;
 	state: MintQuoteState;
 	request_lookup_id: string | null;
@@ -54,7 +54,7 @@ export type CashuMintMintQuote = {
 
 export type CashuMintMeltQuote = {
 	id: string;
-	unit: MintUnit;
+	unit: string;
 	amount: number;
 	request: string;
 	fee_reserve: number;
@@ -70,14 +70,14 @@ export type CashuMintMeltQuote = {
 export type CashuMintSwap = {
 	operation_id: string | null;
 	keyset_ids: string[];
-	unit: MintUnit;
+	unit: string;
 	amount: number;
 	created_time: number;
 	fee: number | null;
 };
 
 export type CashuMintOperationFee = {
-	unit: MintUnit;
+	unit: string;
 	created_time: number;
 	fee: number;
 };
@@ -86,7 +86,7 @@ export type CashuMintProofGroup = {
 	amount: number;
 	created_time: number;
 	keyset_ids: string[];
-	unit: MintUnit;
+	unit: string;
 	state: MintProofState;
 	amounts: number[][];
 };
@@ -98,7 +98,7 @@ export type CashuMintCount = {
 export type CashuMintProof = {
 	amount: number;
 	keyset_id: string;
-	unit: MintUnit;
+	unit: string;
 	state: MintProofState;
 	created_time: number;
 };
@@ -106,7 +106,7 @@ export type CashuMintProof = {
 export type CashuMintPromise = {
 	amount: number;
 	keyset_id: string;
-	unit: MintUnit;
+	unit: string;
 	created_time: number;
 };
 

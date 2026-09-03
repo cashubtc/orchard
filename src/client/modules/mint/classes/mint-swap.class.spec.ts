@@ -1,7 +1,7 @@
 /* Local Dependencies */
 import {MintSwap} from './mint-swap.class';
 /* Shared Dependencies */
-import {OrchardMintSwap, MintUnit} from '@shared/generated.types';
+import {OrchardMintSwap} from '@shared/generated.types';
 
 const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -9,7 +9,7 @@ const seed = (): OrchardMintSwap =>
 	({
 		operation_id: 'op-1',
 		keyset_ids: ['ks-1'],
-		unit: MintUnit.Sat,
+		unit: 'sat',
 		amount: 100,
 		created_time: 1777503600,
 		fee: 0,

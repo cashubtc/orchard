@@ -37,7 +37,7 @@ export class MintAnalyticsService {
 				date_start,
 				date_end: cached_end,
 				metrics: [MintAnalyticsMetric.issued_amount, MintAnalyticsMetric.redeemed_amount],
-				units: args.units?.map((u) => String(u)),
+				units: args.units,
 			});
 			const non_zero = cached.filter((d) => d.amount !== '0');
 			const issued = non_zero.filter((d) => d.metric === MintAnalyticsMetric.issued_amount);
@@ -114,7 +114,7 @@ export class MintAnalyticsService {
 				date_start,
 				date_end: cached_end,
 				metrics,
-				units: args.units?.map((u) => String(u)),
+				units: args.units,
 			});
 			const filtered = cached.filter((d) => d.amount !== '0');
 			return this.aggregateByIntervalWithMetric(filtered, interval, args.timezone, date_start);
@@ -184,7 +184,7 @@ export class MintAnalyticsService {
 				date_start,
 				date_end: cached_end,
 				metrics,
-				units: args.units?.map((u) => String(u)),
+				units: args.units,
 			});
 			const filtered = cached.filter((d) => d.amount !== '0');
 			return this.aggregateByInterval(filtered, interval, args.timezone, date_start, include_count);

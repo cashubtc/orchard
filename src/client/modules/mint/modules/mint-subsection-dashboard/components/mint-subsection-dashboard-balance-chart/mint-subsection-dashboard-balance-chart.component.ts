@@ -24,9 +24,10 @@ import {
 	getYAxis,
 	getBtcYAxisConfig,
 	getFiatYAxisConfig,
+	getCustomYAxisConfig,
 	getTooltipTitle,
 } from '@client/modules/chart/helpers/mint-chart-options.helpers';
-import {LocalAmountPipe} from '@client/modules/local/pipes/local-amount/local-amount.pipe';
+import {toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
 import {ChartService} from '@client/modules/chart/services/chart/chart.service';
 import {LightningBalance} from '@client/modules/lightning/classes/lightning-balance.class';
 /* Native Dependencies */
@@ -235,7 +236,7 @@ export class MintSubsectionDashboardBalanceChartComponent implements OnDestroy, 
 			const ln_data = ln_prepended['msat'] || [];
 			const ln_keyed = getDataKeyedByTimestamp(ln_data, 'amount');
 			const raw_asset_data = getAmountData(timestamp_range, ln_keyed, 'msat', true);
-			const live_balance_sat = LocalAmountPipe.getConvertedAmount('sat', this.lightning_balance()?.open.local_balance ?? 0);
+			const live_balance_sat = toDisplayAmount('sat', this.lightning_balance()?.open.local_balance ?? 0);
 			const corrected_asset_data = correctLastPointWithLiveBalance(raw_asset_data, live_balance_sat, this.page_settings().interval);
 			const asset_data = convertChartDataWithOracle(corrected_asset_data, 'sat', oracle_map, can_use_oracle);
 			const asset_color = this.chartService.getAssetColor('sat', 0);
@@ -357,15 +358,26 @@ export class MintSubsectionDashboardBalanceChartComponent implements OnDestroy, 
 			});
 		}
 		if (y_axis.includes('yfiat')) {
-			const is_only_axis = !y_axis.includes('ybtc');
+			const is_primary_axis = y_axis[0] === 'yfiat';
 			scales['yfiat'] = getFiatYAxisConfig({
 				units: effective_units,
-				show_grid: is_only_axis,
+				show_grid: is_primary_axis,
 				grid_color: this.chartService.getGridColor(),
 				begin_at_zero: true,
 				locale: this.locale(),
-				position: is_only_axis ? 'left' : 'right',
+				position: is_primary_axis ? 'left' : 'right',
 				is_cents: can_use_oracle,
+			});
+		}
+		if (y_axis.includes('ycustom')) {
+			const is_primary_axis = y_axis[0] === 'ycustom';
+			scales['ycustom'] = getCustomYAxisConfig({
+				units: effective_units,
+				show_grid: is_primary_axis,
+				grid_color: this.chartService.getGridColor(),
+				begin_at_zero: true,
+				locale: this.locale(),
+				position: is_primary_axis ? 'left' : 'right',
 			});
 		}
 

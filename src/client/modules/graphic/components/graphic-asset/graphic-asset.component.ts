@@ -27,7 +27,7 @@ export class GraphicAssetComponent {
 		if (unit === 'btc') return 'currency_bitcoin';
 		if (unit === 'usd') return 'attach_money';
 		if (unit === 'eur') return 'euro';
-		return 'question_mark';
+		return 'money_bag';
 	});
 
 	public unit_icon_size = computed(() => {

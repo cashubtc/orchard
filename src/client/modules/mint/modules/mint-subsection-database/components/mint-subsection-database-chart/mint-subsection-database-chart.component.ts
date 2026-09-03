@@ -16,7 +16,7 @@ import {ChartConfiguration, ChartType as ChartJsType} from 'chart.js';
 import {DateTime} from 'luxon';
 import {Subscription} from 'rxjs';
 /* Application Dependencies */
-import {LocalAmountPipe} from '@client/modules/local/pipes/local-amount/local-amount.pipe';
+import {toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
 import {DataType} from '@client/modules/orchard/enums/data.enum';
 import {NonNullableMintDatabaseSettings} from '@client/modules/settings/types/setting.types';
 import {getYAxisId} from '@client/modules/chart/helpers/mint-chart-data.helpers';
@@ -24,6 +24,7 @@ import {
 	getYAxis,
 	getBtcYAxisConfig,
 	getFiatYAxisConfig,
+	getCustomYAxisConfig,
 	getTooltipTitleExact,
 	getTooltipLabel,
 	formatAxisValue,
@@ -174,7 +175,7 @@ export class MintSubsectionDatabaseChartComponent implements OnChanges, OnDestro
 			const dimmed_color = this.chartService.hexToRgba(color.border, 0.15);
 			const data_prepped = data.map((entity) => ({
 				x: (entity.created_time ?? 0) * 1000,
-				y: LocalAmountPipe.getConvertedAmount(unit, this.getEffectiveAmount(entity)),
+				y: toDisplayAmount(unit, this.getEffectiveAmount(entity)),
 				state: 'state' in entity ? entity.state : undefined,
 				entity_id: entity.id,
 			}));
@@ -277,9 +278,29 @@ export class MintSubsectionDatabaseChartComponent implements OnChanges, OnDestro
 			scales['yfiat'] = {
 				...getFiatYAxisConfig({
 					units,
-					show_grid: !y_axis.includes('ybtc'),
+					show_grid: y_axis[0] === 'yfiat',
 					grid_color: this.chartService.getGridColor(),
 					locale: this.locale,
+				}),
+				type: use_log_scale ? 'logarithmic' : 'linear',
+				beginAtZero: !use_log_scale,
+				ticks: use_log_scale
+					? {
+							callback: (value: string | number): string | null => {
+								const num = Number(value);
+								return num === 1 || Math.log10(num) % 1 === 0 ? formatAxisValue(num, this.locale) : null;
+							},
+						}
+					: {callback: (value: string | number) => formatAxisValue(Number(value), this.locale)},
+			};
+		if (y_axis.includes('ycustom'))
+			scales['ycustom'] = {
+				...getCustomYAxisConfig({
+					units,
+					show_grid: y_axis[0] === 'ycustom',
+					grid_color: this.chartService.getGridColor(),
+					locale: this.locale,
+					position: y_axis[0] === 'ycustom' ? 'left' : 'right',
 				}),
 				type: use_log_scale ? 'logarithmic' : 'linear',
 				beginAtZero: !use_log_scale,

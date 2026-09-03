@@ -4,8 +4,6 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {OrcMintGeneralModule} from '@client/modules/mint/modules/mint-general/mint-general.module';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 import {MintKeysetCount} from '@client/modules/mint/classes/mint-keyset-count.class';
-/* Shared Dependencies */
-import {MintUnit} from '@shared/generated.types';
 /* Local Dependencies */
 import {MintGeneralKeysetsComponent} from './mint-general-keysets.component';
 
@@ -17,7 +15,7 @@ function buildKeyset(overrides: Partial<MintKeyset> = {}): MintKeyset {
 		derivation_path: "m/0'/0'/0'",
 		derivation_path_index: 0,
 		input_fee_ppk: 0,
-		unit: MintUnit.Sat,
+		unit: 'sat',
 		valid_from: null,
 		valid_to: null,
 		fees_paid: 0,
@@ -107,16 +105,16 @@ describe('MintGeneralKeysetsComponent', () => {
 
 		it('should deduplicate units across keysets', () => {
 			fixture.componentRef.setInput('keysets', [
-				buildKeyset({id: 'ks_001', unit: MintUnit.Sat}),
-				buildKeyset({id: 'ks_002', unit: MintUnit.Sat}),
-				buildKeyset({id: 'ks_003', unit: MintUnit.Usd}),
+				buildKeyset({id: 'ks_001', unit: 'sat'}),
+				buildKeyset({id: 'ks_002', unit: 'sat'}),
+				buildKeyset({id: 'ks_003', unit: 'usd'}),
 			]);
 			fixture.detectChanges();
 
 			const units = component.unique_units();
 			expect(units.length).toBe(2);
-			expect(units).toContain(MintUnit.Sat);
-			expect(units).toContain(MintUnit.Usd);
+			expect(units).toContain('sat');
+			expect(units).toContain('usd');
 		});
 	});
 
