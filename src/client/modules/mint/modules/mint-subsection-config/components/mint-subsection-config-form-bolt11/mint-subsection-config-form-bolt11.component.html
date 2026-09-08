@@ -1,74 +1,33 @@
-<div class="flex flex-wrap-reverse flex-gap-column-2">
-	<div class="flex flex-column flex-gap-2 flex-1">
-		<div class="flex flex-row flex-gap-1 flex-wrap">
-			<div class="flex flex-column flex-gap-1 p-l-1">
-				<orc-mint-subsection-config-form-max
-					[form_group]="form_bolt11()"
-					[control_name]="'max_amount'"
-					[control_dirty]="form_bolt11().get('max_amount')?.dirty"
-					[control_invalid]="form_bolt11().get('max_amount')?.invalid"
-					[control_errors]="form_bolt11().get('max_amount')?.errors"
-					[unit]="unit()"
-					[nut]="nut()"
-					[stat_amounts]="stat_amounts()"
-					(update)="onUpdate($event)"
-					(cancel)="onCancel($event)"
-					(hot)="onMaxHot($event)"
-				></orc-mint-subsection-config-form-max>
-				<orc-mint-subsection-config-form-min
-					[form_group]="form_bolt11()"
-					[control_name]="'min_amount'"
-					[control_dirty]="form_bolt11().get('min_amount')?.dirty"
-					[control_invalid]="form_bolt11().get('min_amount')?.invalid"
-					[control_errors]="form_bolt11().get('min_amount')?.errors"
-					[unit]="unit()"
-					[nut]="nut()"
-					[stat_amounts]="stat_amounts()"
-					(update)="onUpdate($event)"
-					(cancel)="onCancel($event)"
-					(hot)="onMinHot($event)"
-				></orc-mint-subsection-config-form-min>
+<orc-mint-subsection-config-form-method
+	[nut]="nut()"
+	[unit]="unit()"
+	[method]="method()"
+	[form_group]="form_group()"
+	[locale]="locale()"
+	[loading]="loading()"
+	[quotes]="quotes()"
+	(update)="update.emit($event)"
+	(cancel)="cancel.emit($event)"
+>
+	<div class="flex flex-column p-l-1">
+		<form [formGroup]="form_bolt11()" class="flex flex-items-center flex-gap-1">
+			<mat-slide-toggle [formControlName]="toggle_control()" (change)="onToggle($event)" [name]="toggle_control()">
+			</mat-slide-toggle>
+			<div class="font-size-s">
+				{{ toggle_control_name() }}
 			</div>
-
-			<div class="flex flex-column p-l-1">
-				<form [formGroup]="form_bolt11()" class="flex flex-items-center flex-gap-1">
-					<mat-slide-toggle [formControlName]="toggle_control()" (change)="onToggle($event)" [name]="toggle_control()">
-					</mat-slide-toggle>
-					<div class="font-size-s">
-						{{ toggle_control_name() }}
-					</div>
-					<button type="button" tabindex="-1" mat-icon-button class="orc-icon-button" (click)="help_status.set(!help_status())">
-						<mat-icon class="orc-outline-color">info</mat-icon>
-					</button>
-				</form>
-				<div class="orc-animation-expand-collapse" [class.animation-expanded]="help_status()">
-					<div class="orc-animation-expand-collapse-inner">
-						<div class="flex p-t-2 p-b-1">
-							<orc-form-help-text class="orc-surface-container-high-bg">
-								<div [innerHTML]="toggle_help_text()"></div>
-							</orc-form-help-text>
-						</div>
-					</div>
+			<button type="button" tabindex="-1" mat-icon-button class="orc-icon-button" (click)="help_status.set(!help_status())">
+				<mat-icon class="orc-outline-color">info</mat-icon>
+			</button>
+		</form>
+		<div class="orc-animation-expand-collapse" [class.animation-expanded]="help_status()">
+			<div class="orc-animation-expand-collapse-inner">
+				<div class="flex p-t-2 p-b-1">
+					<orc-form-help-text class="orc-surface-container-high-bg">
+						<div [innerHTML]="toggle_help_text()"></div>
+					</orc-form-help-text>
 				</div>
 			</div>
 		</div>
 	</div>
-	<div class="flex-1">
-		<orc-mint-subsection-config-chart-method
-			[nut]="nut()"
-			[loading]="loading()"
-			[quotes]="valid_quotes()"
-			[locale]="locale()"
-			[unit]="unit()"
-			[method]="method()"
-			[min_amount]="form_bolt11().get('min_amount')?.value"
-			[max_amount]="form_bolt11().get('max_amount')?.value"
-			[min_hot]="min_hot()"
-			[max_hot]="max_hot()"
-			[amounts]="stat_amounts()"
-			[stats]="stats()"
-		>
-			<orc-mint-subsection-config-stats [loading]="loading()" [stats]="stats()" [unit]="unit()"></orc-mint-subsection-config-stats>
-		</orc-mint-subsection-config-chart-method>
-	</div>
-</div>
+</orc-mint-subsection-config-form-method>

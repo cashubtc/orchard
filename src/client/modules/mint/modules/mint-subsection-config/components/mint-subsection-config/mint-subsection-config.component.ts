@@ -69,6 +69,8 @@ type MethodDisplay = {label: string; icon: string; svg_icon: boolean};
 type MethodSection = MethodDisplay & {
 	unit: string;
 	method: string;
+	/** Stable identity for the template repeater */
+	key: string;
 	quotes: MintMintQuote[] | MintMeltQuote[];
 };
 
@@ -109,9 +111,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 	public melt_quotes_by_method: Record<string, MintMeltQuote[]> = {};
 	public nut15_methods: Nut15Method[] = [];
 	public nut17_commands: Nut17Commands[] = [];
-	public method_index: string[] = [];
 	public nut4_methods: string[] = [];
-	public nut5_methods: string[] = [];
 	public minting_sections: MethodSection[] = [];
 	public melting_sections: MethodSection[] = [];
 	public form_config: FormGroup = new FormGroup({
@@ -233,7 +233,6 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 		this.quote_ttls = this.route.snapshot.data['mint_quote_ttl'];
 		this.patchStaticFormElements();
 		this.initTertiaryNavStatus();
-		this.method_index = this.getMethodIndex();
 		this.minting_units = this.getUniqueUnits('nut4');
 		this.melting_units = this.getUniqueUnits('nut5');
 		this.nut15_methods = this.getNut15Methods();
@@ -388,33 +387,9 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 		return decimals === 0 ? display_amount : display_amount.toFixed(decimals);
 	}
 
-	private getMethodIndex(): string[] {
-		const method_index: string[] = [];
-		this.mint_info?.nuts.nut4.methods.forEach((method) => {
-			method_index.push(`nut4:${method.unit}:${method.method}`);
-		});
-		this.mint_info?.nuts.nut5.methods.forEach((method) => {
-			method_index.push(`nut5:${method.unit}:${method.method}`);
-		});
-		return method_index;
-	}
-
 	/* *******************************************************
 		Methods
 	******************************************************** */
-
-	/** Lists the payment methods this mint advertises for a nut and unit, in advertised order */
-	public getMethods(nut: 'nut4' | 'nut5', unit: string): string[] {
-		const prefix = `${nut}:${unit}:`;
-		return this.method_index.filter((entry) => entry.startsWith(prefix)).map((entry) => entry.slice(prefix.length));
-	}
-
-	/** Lists the distinct payment methods this mint advertises for a nut across every unit */
-	public getNutMethods(nut: 'nut4' | 'nut5'): string[] {
-		const prefix = `${nut}:`;
-		const methods = this.method_index.filter((entry) => entry.startsWith(prefix)).map((entry) => entry.split(':')[2]);
-		return [...new Set(methods)];
-	}
 
 	/** Label and icon for a payment method; unrecognized methods show the mint's own name for it */
 	public getMethodDisplay(method: string): MethodDisplay {
@@ -423,23 +398,28 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 
 	/** Builds the flat unit/method sections the template renders, so nothing is computed during change detection */
 	private buildMethodSections(): void {
-		this.nut4_methods = this.getNutMethods('nut4');
-		this.nut5_methods = this.getNutMethods('nut5');
-		this.minting_sections = this.minting_units.flatMap((unit) =>
-			this.getMethods('nut4', unit).map((method) => ({
-				unit,
-				method,
-				...this.getMethodDisplay(method),
-				quotes: this.mint_quotes_by_method[method] ?? [],
-			})),
-		);
-		this.melting_sections = this.melting_units.flatMap((unit) =>
-			this.getMethods('nut5', unit).map((method) => ({
-				unit,
-				method,
-				...this.getMethodDisplay(method),
-				quotes: this.melt_quotes_by_method[method] ?? [],
-			})),
+		this.minting_sections = this.getMethodSections('nut4', this.minting_units, this.mint_quotes_by_method);
+		this.melting_sections = this.getMethodSections('nut5', this.melting_units, this.melt_quotes_by_method);
+		this.nut4_methods = [...new Set(this.minting_sections.map((section) => section.method))];
+	}
+
+	/** Pairs each advertised method with its unit, display and quotes, grouped by unit */
+	private getMethodSections(
+		nut: 'nut4' | 'nut5',
+		units: string[],
+		quotes_by_method: Record<string, MintMintQuote[] | MintMeltQuote[]>,
+	): MethodSection[] {
+		const methods = this.mint_info?.nuts[nut].methods ?? [];
+		return units.flatMap((unit) =>
+			methods
+				.filter((method) => method.unit === unit)
+				.map((method) => ({
+					unit,
+					method: method.method,
+					key: `${unit}:${method.method}`,
+					...this.getMethodDisplay(method.method),
+					quotes: quotes_by_method[method.method] ?? [],
+				})),
 		);
 	}
 

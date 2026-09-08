@@ -61,7 +61,6 @@ const ICONS = [
   'person',
   'person_add',
   'qr_code_2_add',
-  'question_mark',
   'restore',
   'save',
   'save_clock',

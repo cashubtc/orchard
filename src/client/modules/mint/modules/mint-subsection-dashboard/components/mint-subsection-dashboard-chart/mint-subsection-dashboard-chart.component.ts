@@ -22,8 +22,7 @@ import {
 	getXAxisConfig,
 	getYAxis,
 	getBtcYAxisConfig,
-	getFiatYAxisConfig,
-	getCustomYAxisConfig,
+	getUnitYAxisConfig,
 	getTooltipTitle,
 } from '@client/modules/chart/helpers/mint-chart-options.helpers';
 import {ChartService} from '@client/modules/chart/services/chart/chart.service';
@@ -215,7 +214,8 @@ export class MintSubsectionDashboardChartComponent implements OnDestroy, OnChang
 		}
 		if (y_axis.includes('yfiat')) {
 			const is_primary_axis = y_axis[0] === 'yfiat';
-			scales['yfiat'] = getFiatYAxisConfig({
+			scales['yfiat'] = getUnitYAxisConfig({
+				family: 'fiat',
 				units: effective_units,
 				show_grid: is_primary_axis,
 				grid_color: this.chartService.getGridColor(),
@@ -227,7 +227,8 @@ export class MintSubsectionDashboardChartComponent implements OnDestroy, OnChang
 		}
 		if (y_axis.includes('ycustom')) {
 			const is_primary_axis = y_axis[0] === 'ycustom';
-			scales['ycustom'] = getCustomYAxisConfig({
+			scales['ycustom'] = getUnitYAxisConfig({
+				family: 'custom',
 				units: effective_units,
 				show_grid: is_primary_axis,
 				grid_color: this.chartService.getGridColor(),

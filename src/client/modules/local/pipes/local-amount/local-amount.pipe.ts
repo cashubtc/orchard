@@ -4,7 +4,8 @@ import {Pipe, PipeTransform} from '@angular/core';
 import {SettingDeviceService} from '@client/modules/settings/services/setting-device/setting-device.service';
 import {CurrencyType} from '@client/modules/cache/services/local-storage/local-storage.types';
 /* Native Dependencies */
-import {getUnitMeta, toDisplayAmount, type UnitMeta} from '@client/modules/local/helpers/unit.helpers';
+import {getUnitMeta, getUnitSymbol, toDisplayAmountFor} from '@client/modules/local/helpers/unit.helpers';
+import type {UnitMeta} from '@client/modules/local/types/unit.types';
 
 @Pipe({
 	name: 'localAmount',
@@ -22,10 +23,9 @@ export class LocalAmountPipe implements PipeTransform {
 
 		if (meta.family === 'btc') {
 			if (meta.decimals > 0) return this.transformBtc(amount, locale, meta);
-			return this.transformSat(toDisplayAmount(unit, amount), locale, currency.type_btc, abbreviate, unitless);
+			return this.transformSat(toDisplayAmountFor(meta, amount), locale, currency.type_btc, abbreviate, unitless);
 		}
-		if (meta.family === 'fiat')
-			return this.transformFiat(amount, unit, meta, locale, currency.type_fiat, section, abbreviate, unitless);
+		if (meta.family === 'fiat') return this.transformFiat(amount, meta, locale, currency.type_fiat, section, abbreviate, unitless);
 		return this.transformStandard(amount, locale, meta.code, abbreviate, unitless);
 	}
 
@@ -66,7 +66,6 @@ export class LocalAmountPipe implements PipeTransform {
 
 	private transformFiat(
 		amount: number,
-		unit: string,
 		meta: UnitMeta,
 		locale: string,
 		currency: CurrencyType,
@@ -76,14 +75,14 @@ export class LocalAmountPipe implements PipeTransform {
 	): string {
 		let fiat_amount = amount;
 		/* Mint amounts arrive in minor units (215 -> 2.15); other sections pass values already converted */
-		if (section === 'mint' || section === undefined) fiat_amount = toDisplayAmount(unit, amount);
+		if (section === 'mint' || section === undefined) fiat_amount = toDisplayAmountFor(meta, amount);
 		const fiat_amount_string = abbreviate
 			? this.abbreviateAmount(fiat_amount, locale)
 			: fiat_amount.toLocaleString(locale, {minimumFractionDigits: meta.decimals, maximumFractionDigits: meta.decimals});
 		if (unitless) return fiat_amount_string;
 		switch (currency) {
 			case CurrencyType.GLYPH:
-				return this.formatPreceding(fiat_amount_string, meta.glyph ?? meta.code);
+				return this.formatPreceding(fiat_amount_string, getUnitSymbol(meta));
 			case CurrencyType.CODE:
 				return this.formatStandard(fiat_amount_string, meta.code);
 			default:

@@ -1,32 +1,36 @@
 <div class="flex flex-wrap-reverse flex-gap-column-2">
 	<div class="flex flex-column flex-gap-2 flex-1">
-		<div class="flex flex-column flex-gap-1 p-l-1">
-			<orc-mint-subsection-config-form-max
-				[form_group]="form_method()"
-				[control_name]="'max_amount'"
-				[control_dirty]="form_method().get('max_amount')?.dirty"
-				[control_invalid]="form_method().get('max_amount')?.invalid"
-				[control_errors]="form_method().get('max_amount')?.errors"
-				[unit]="unit()"
-				[nut]="nut()"
-				[stat_amounts]="stat_amounts()"
-				(update)="onUpdate($event)"
-				(cancel)="onCancel($event)"
-				(hot)="onMaxHot($event)"
-			></orc-mint-subsection-config-form-max>
-			<orc-mint-subsection-config-form-min
-				[form_group]="form_method()"
-				[control_name]="'min_amount'"
-				[control_dirty]="form_method().get('min_amount')?.dirty"
-				[control_invalid]="form_method().get('min_amount')?.invalid"
-				[control_errors]="form_method().get('min_amount')?.errors"
-				[unit]="unit()"
-				[nut]="nut()"
-				[stat_amounts]="stat_amounts()"
-				(update)="onUpdate($event)"
-				(cancel)="onCancel($event)"
-				(hot)="onMinHot($event)"
-			></orc-mint-subsection-config-form-min>
+		<div class="flex flex-row flex-gap-1 flex-wrap">
+			<div class="flex flex-column flex-gap-1 p-l-1">
+				<orc-mint-subsection-config-form-max
+					[form_group]="form_method()"
+					[control_name]="'max_amount'"
+					[control_dirty]="form_method().get('max_amount')?.dirty"
+					[control_invalid]="form_method().get('max_amount')?.invalid"
+					[control_errors]="form_method().get('max_amount')?.errors"
+					[unit]="unit()"
+					[nut]="nut()"
+					[stat_amounts]="stat_amounts()"
+					(update)="onUpdate($event)"
+					(cancel)="onCancel($event)"
+					(hot)="onMaxHot($event)"
+				></orc-mint-subsection-config-form-max>
+				<orc-mint-subsection-config-form-min
+					[form_group]="form_method()"
+					[control_name]="'min_amount'"
+					[control_dirty]="form_method().get('min_amount')?.dirty"
+					[control_invalid]="form_method().get('min_amount')?.invalid"
+					[control_errors]="form_method().get('min_amount')?.errors"
+					[unit]="unit()"
+					[nut]="nut()"
+					[stat_amounts]="stat_amounts()"
+					(update)="onUpdate($event)"
+					(cancel)="onCancel($event)"
+					(hot)="onMinHot($event)"
+				></orc-mint-subsection-config-form-min>
+			</div>
+			<!-- Bespoke controls projected by the method-specific forms -->
+			<ng-content></ng-content>
 		</div>
 	</div>
 	<div class="flex-1">

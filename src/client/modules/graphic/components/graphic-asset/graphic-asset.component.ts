@@ -2,6 +2,7 @@
 import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core';
 /* Application Dependencies */
 import {ConfigService} from '@client/modules/config/services/config.service';
+import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
 
 @Component({
 	selector: 'orc-graphic-asset',
@@ -16,18 +17,12 @@ export class GraphicAssetComponent {
 	public custody = input<'ecash' | 'lightning' | 'hot' | 'cold' | null>(null);
 	public group_key = input<string | undefined>(undefined);
 
-	public lower_unit = computed(() => {
-		return this.unit().toLowerCase();
+	public unit_meta = computed(() => {
+		return getUnitMeta(this.unit());
 	});
 
 	public unit_icon = computed(() => {
-		const unit = this.lower_unit();
-		if (unit === 'sat') return 'currency_bitcoin';
-		if (unit === 'msat') return 'currency_bitcoin';
-		if (unit === 'btc') return 'currency_bitcoin';
-		if (unit === 'usd') return 'attach_money';
-		if (unit === 'eur') return 'euro';
-		return 'money_bag';
+		return this.unit_meta().icon;
 	});
 
 	public unit_icon_size = computed(() => {
@@ -36,13 +31,7 @@ export class GraphicAssetComponent {
 	});
 
 	public unit_class = computed(() => {
-		const unit = this.lower_unit();
-		if (unit === 'sat') return 'graphic-asset-btc';
-		if (unit === 'msat') return 'graphic-asset-btc';
-		if (unit === 'btc') return 'graphic-asset-btc';
-		if (unit === 'usd') return 'graphic-asset-usd';
-		if (unit === 'eur') return 'graphic-asset-eur';
-		return 'graphic-asset-unknown';
+		return `graphic-asset-${this.unit_meta().asset}`;
 	});
 
 	public custody_icon = computed(() => {

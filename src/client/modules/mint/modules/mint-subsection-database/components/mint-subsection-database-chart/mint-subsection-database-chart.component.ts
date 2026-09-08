@@ -16,15 +16,14 @@ import {ChartConfiguration, ChartType as ChartJsType} from 'chart.js';
 import {DateTime} from 'luxon';
 import {Subscription} from 'rxjs';
 /* Application Dependencies */
-import {toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
+import {getUnitMeta, toDisplayAmountFor} from '@client/modules/local/helpers/unit.helpers';
 import {DataType} from '@client/modules/orchard/enums/data.enum';
 import {NonNullableMintDatabaseSettings} from '@client/modules/settings/types/setting.types';
 import {getYAxisId} from '@client/modules/chart/helpers/mint-chart-data.helpers';
 import {
 	getYAxis,
 	getBtcYAxisConfig,
-	getFiatYAxisConfig,
-	getCustomYAxisConfig,
+	getUnitYAxisConfig,
 	getTooltipTitleExact,
 	getTooltipLabel,
 	formatAxisValue,
@@ -173,9 +172,10 @@ export class MintSubsectionDatabaseChartComponent implements OnChanges, OnDestro
 			const color = this.chartService.getAssetColor(unit, index);
 			const active_color = this.chartService.hexToRgba(color.border, 0.75);
 			const dimmed_color = this.chartService.hexToRgba(color.border, 0.15);
+			const meta = getUnitMeta(unit);
 			const data_prepped = data.map((entity) => ({
 				x: (entity.created_time ?? 0) * 1000,
-				y: toDisplayAmount(unit, this.getEffectiveAmount(entity)),
+				y: toDisplayAmountFor(meta, this.getEffectiveAmount(entity)),
 				state: 'state' in entity ? entity.state : undefined,
 				entity_id: entity.id,
 			}));
@@ -276,7 +276,8 @@ export class MintSubsectionDatabaseChartComponent implements OnChanges, OnDestro
 			};
 		if (y_axis.includes('yfiat'))
 			scales['yfiat'] = {
-				...getFiatYAxisConfig({
+				...getUnitYAxisConfig({
+					family: 'fiat',
 					units,
 					show_grid: y_axis[0] === 'yfiat',
 					grid_color: this.chartService.getGridColor(),
@@ -295,7 +296,8 @@ export class MintSubsectionDatabaseChartComponent implements OnChanges, OnDestro
 			};
 		if (y_axis.includes('ycustom'))
 			scales['ycustom'] = {
-				...getCustomYAxisConfig({
+				...getUnitYAxisConfig({
+					family: 'custom',
 					units,
 					show_grid: y_axis[0] === 'ycustom',
 					grid_color: this.chartService.getGridColor(),

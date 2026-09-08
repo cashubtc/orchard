@@ -48,7 +48,7 @@
 						(update)="onTtlUpdate($event)"
 						(cancel)="onTtlCancel($event)"
 					></orc-mint-subsection-config-form-quote-ttl>
-					@for (section of minting_sections; track section.unit + ':' + section.method) {
+					@for (section of minting_sections; track section.key) {
 						<div class="sticky-config z-index-1">
 							<div class="flex flex-items-center flex-gap-0-5 p-b-0-5">
 								<div class="font-size-xs orc-outline-color">{{ section.unit | localUnit: true }} Configuration</div>
@@ -157,7 +157,7 @@
 						(update)="onTtlUpdate($event)"
 						(cancel)="onTtlCancel($event)"
 					></orc-mint-subsection-config-form-quote-ttl>
-					@for (section of melting_sections; track section.unit + ':' + section.method) {
+					@for (section of melting_sections; track section.key) {
 						<div class="sticky-config z-index-1">
 							<div class="flex flex-items-center flex-gap-0-5 p-b-0-5">
 								<div class="font-size-xs orc-outline-color">{{ section.unit | localUnit: true }} Configuration</div>

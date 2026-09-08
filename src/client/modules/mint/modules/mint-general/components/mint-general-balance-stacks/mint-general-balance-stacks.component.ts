@@ -17,11 +17,7 @@ export class MintGeneralBalanceStacksComponent {
 	public reserve = input.required<number | null>();
 
 	public unit_class = computed(() => {
-		const meta = getUnitMeta(this.unit());
-		if (meta.family === 'btc') return 'coin-bitcoin';
-		if (meta.code === 'USD') return 'coin-usd';
-		if (meta.code === 'EUR') return 'coin-eur';
-		return 'coin-custom';
+		return `coin-${getUnitMeta(this.unit()).asset}`;
 	});
 	public asset_rows = computed(() => this.buildRows(this.calcStackSize(this.assets(), this.liabilities())));
 	public liability_rows = computed(() => this.buildRows(this.calcStackSize(this.liabilities(), this.assets())));

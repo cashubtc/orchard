@@ -8,7 +8,7 @@ import {Roles} from '#server/modules/auth/decorators/auth.decorator';
 import {UserRole} from '#server/modules/user/user.enums';
 import {LogEvent} from '#server/modules/event/event.decorator';
 import {EventLogType} from '#server/modules/event/event.enums';
-import {normalizeMintUnits} from '#server/modules/cashu/cashu.helpers';
+import {normalizeMintUnit, normalizeMintUnits} from '#server/modules/cashu/cashu.helpers';
 /* Local Dependencies */
 import {MintMintQuoteService} from './mintmintquote.service.js';
 import {MintMintQuoteInterceptor} from './mintmintquote.interceptor.js';
@@ -59,7 +59,15 @@ export class MintMintQuoteResolver {
 	): Promise<OrchardMintNut04Update> {
 		const tag = 'MUTATION { mint_nut04_update }';
 		this.logger.debug(tag);
-		return await this.mintMintQuoteService.updateMintNut04(tag, unit, method, disabled, min_amount, max_amount, description);
+		return await this.mintMintQuoteService.updateMintNut04(
+			tag,
+			normalizeMintUnit(unit),
+			method,
+			disabled,
+			min_amount,
+			max_amount,
+			description,
+		);
 	}
 
 	@Roles(UserRole.ADMIN, UserRole.MANAGER)

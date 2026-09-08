@@ -138,29 +138,46 @@ describe('MintSubsectionConfigComponent', () => {
 		});
 	});
 
-	describe('advertised methods', () => {
+	describe('method sections', () => {
 		beforeEach(() => {
-			component.method_index = ['nut4:ora:branch', 'nut4:sat:bolt11', 'nut4:sat:bolt12', 'nut5:ora:branch'];
+			component.mint_info = {
+				nuts: {
+					nut4: {
+						disabled: false,
+						methods: [
+							{method: 'bolt11', unit: 'sat'},
+							{method: 'bolt12', unit: 'sat'},
+							{method: 'branch', unit: 'ora'},
+						],
+					},
+					nut5: {disabled: false, methods: [{method: 'branch', unit: 'ora'}]},
+				},
+			} as any;
+			component.minting_units = ['sat', 'ora'];
+			component.melting_units = ['ora'];
+			component.mint_quotes_by_method = {bolt11: [{id: 'q1'}] as any};
+			component.melt_quotes_by_method = {};
+			(component as any).buildMethodSections();
 		});
 
-		it('should list the methods advertised for a nut and unit', () => {
-			expect(component.getMethods('nut4', 'sat')).toEqual(['bolt11', 'bolt12']);
-			expect(component.getMethods('nut4', 'ora')).toEqual(['branch']);
-			expect(component.getMethods('nut5', 'sat')).toEqual([]);
+		it('should pair every advertised method with its unit, grouped by unit', () => {
+			expect(component.minting_sections.map((section) => section.key)).toEqual(['sat:bolt11', 'sat:bolt12', 'ora:branch']);
+			expect(component.melting_sections.map((section) => section.key)).toEqual(['ora:branch']);
 		});
 
-		it('should list the distinct methods advertised for a nut across units', () => {
-			expect(component.getNutMethods('nut4')).toEqual(['branch', 'bolt11', 'bolt12']);
-			expect(component.getNutMethods('nut5')).toEqual(['branch']);
+		it('should attach the quotes recorded against each method', () => {
+			expect(component.minting_sections[0].quotes.length).toBe(1);
+			expect(component.minting_sections[2].quotes).toEqual([]);
 		});
 
-		it('should label and icon known methods', () => {
+		it('should list the distinct minting methods for the quote ttl caveat', () => {
+			expect(component.nut4_methods).toEqual(['bolt11', 'bolt12', 'branch']);
+		});
+
+		it('should label and icon known methods, falling back to the mint own name', () => {
 			expect(component.getMethodDisplay('bolt11')).toEqual({label: 'Bolt 11', icon: 'bolt', svg_icon: false});
 			expect(component.getMethodDisplay('bolt12')).toEqual({label: 'Bolt 12', icon: 'double_bolt', svg_icon: true});
 			expect(component.getMethodDisplay('onchain')).toEqual({label: 'Onchain', icon: 'deployed_code', svg_icon: false});
-		});
-
-		it('should fall back to the mint own name for an unknown method', () => {
 			expect(component.getMethodDisplay('branch')).toEqual({label: 'branch', icon: 'payments', svg_icon: false});
 		});
 	});

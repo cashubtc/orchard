@@ -7,6 +7,7 @@ import {Roles} from '#server/modules/auth/decorators/auth.decorator';
 import {UserRole} from '#server/modules/user/user.enums';
 import {LogEvent} from '#server/modules/event/event.decorator';
 import {EventLogType} from '#server/modules/event/event.enums';
+import {normalizeMintUnit} from '#server/modules/cashu/cashu.helpers';
 /* Local Dependencies */
 import {MintKeysetService} from './mintkeyset.service.js';
 import {OrchardMintKeyset, OrchardMintKeysetCount, OrchardMintKeysetRotation} from './mintkeyset.model.js';
@@ -55,6 +56,12 @@ export class MintKeysetResolver {
 	): Promise<OrchardMintKeysetRotation> {
 		const tag = 'MUTATION { mint_rotate_keyset }';
 		this.logger.debug(tag);
-		return await this.mintKeysetService.mintRotateKeyset(tag, {unit, amounts, input_fee_ppk, keyset_v2, final_expiry});
+		return await this.mintKeysetService.mintRotateKeyset(tag, {
+			unit: normalizeMintUnit(unit),
+			amounts,
+			input_fee_ppk,
+			keyset_v2,
+			final_expiry,
+		});
 	}
 }

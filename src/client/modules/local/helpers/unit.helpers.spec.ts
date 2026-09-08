@@ -4,11 +4,27 @@ import {getUnitMeta, toDisplayAmount} from './unit.helpers';
 describe('UnitHelpers', () => {
 	describe('getUnitMeta', () => {
 		it('should describe sat as a whole-number bitcoin unit', () => {
-			expect(getUnitMeta('sat')).toEqual({code: 'sat', decimals: 0, divisor: 1, family: 'btc', glyph: '₿'});
+			expect(getUnitMeta('sat')).toEqual({
+				code: 'sat',
+				decimals: 0,
+				divisor: 1,
+				family: 'btc',
+				asset: 'btc',
+				icon: 'currency_bitcoin',
+				glyph: '₿',
+			});
 		});
 
 		it('should describe usd as a two-decimal fiat unit stored in cents', () => {
-			expect(getUnitMeta('usd')).toEqual({code: 'USD', decimals: 2, divisor: 100, family: 'fiat', glyph: '$'});
+			expect(getUnitMeta('usd')).toEqual({
+				code: 'USD',
+				decimals: 2,
+				divisor: 100,
+				family: 'fiat',
+				asset: 'usd',
+				icon: 'attach_money',
+				glyph: '$',
+			});
 		});
 
 		it('should be case insensitive', () => {
@@ -16,7 +32,14 @@ describe('UnitHelpers', () => {
 		});
 
 		it('should treat an unknown unit as a whole-number custom unit named by its slug', () => {
-			expect(getUnitMeta('ora')).toEqual({code: 'ora', decimals: 0, divisor: 1, family: 'custom'});
+			expect(getUnitMeta('ora')).toEqual({
+				code: 'ora',
+				decimals: 0,
+				divisor: 1,
+				family: 'custom',
+				asset: 'custom',
+				icon: 'money_bag',
+			});
 		});
 
 		it('should give an unknown unit no glyph', () => {

@@ -1,5 +1,5 @@
 /* Application Dependencies */
-import {toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
+import {getUnitMeta, toDisplayAmountFor} from '@client/modules/local/helpers/unit.helpers';
 /* Vendor Dependencies */
 import {DateTime, DateTimeUnit} from 'luxon';
 /* Shared Dependencies */
@@ -100,14 +100,13 @@ export function getAmountData(
 	unit: string,
 	cumulative: boolean,
 ): {x: number; y: number}[] {
+	const meta = getUnitMeta(unit);
 	let running_sum = 0;
 	return unique_timestamps.map((timestamp) => {
-		const val = data_keyed_by_timestamp[timestamp] || 0;
-		running_sum += toDisplayAmount(unit, val);
-		return {
-			x: timestamp * 1000,
-			y: cumulative ? running_sum : toDisplayAmount(unit, val),
-		};
+		const val = toDisplayAmountFor(meta, data_keyed_by_timestamp[timestamp] || 0);
+		if (!cumulative) return {x: timestamp * 1000, y: val};
+		running_sum += val;
+		return {x: timestamp * 1000, y: running_sum};
 	});
 }
 

@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {getYAxis, getFiatYAxisConfig, getCustomYAxisConfig} from './mint-chart-options.helpers';
+import {getYAxis, getUnitYAxisConfig} from './mint-chart-options.helpers';
 
 describe('MintChartOptionsHelpers', () => {
 	describe('getYAxis', () => {
@@ -27,17 +27,23 @@ describe('MintChartOptionsHelpers', () => {
 
 	describe('axis labels', () => {
 		it('should label the fiat axis with the codes present', () => {
-			expect(getFiatYAxisConfig({units: ['usd'], show_grid: true, grid_color: '#000'}).title.text).toBe('USD');
-			expect(getFiatYAxisConfig({units: ['usd', 'eur'], show_grid: true, grid_color: '#000'}).title.text).toBe('USD / EUR');
+			expect(getUnitYAxisConfig({family: 'fiat', units: ['usd'], show_grid: true, grid_color: '#000'}).title.text).toBe('USD');
+			expect(getUnitYAxisConfig({family: 'fiat', units: ['usd', 'eur'], show_grid: true, grid_color: '#000'}).title.text).toBe(
+				'USD / EUR',
+			);
 		});
 
 		it('should label the custom axis with the mint own unit codes', () => {
-			expect(getCustomYAxisConfig({units: ['ora'], show_grid: true, grid_color: '#000'}).title.text).toBe('ora');
-			expect(getCustomYAxisConfig({units: ['ora', 'branch'], show_grid: true, grid_color: '#000'}).title.text).toBe('ora / branch');
+			expect(getUnitYAxisConfig({family: 'custom', units: ['ora'], show_grid: true, grid_color: '#000'}).title.text).toBe('ora');
+			expect(getUnitYAxisConfig({family: 'custom', units: ['ora', 'branch'], show_grid: true, grid_color: '#000'}).title.text).toBe(
+				'ora / branch',
+			);
 		});
 
 		it('should not repeat a code that appears twice', () => {
-			expect(getCustomYAxisConfig({units: ['ora', 'ora'], show_grid: true, grid_color: '#000'}).title.text).toBe('ora');
+			expect(getUnitYAxisConfig({family: 'custom', units: ['ora', 'ora'], show_grid: true, grid_color: '#000'}).title.text).toBe(
+				'ora',
+			);
 		});
 	});
 });

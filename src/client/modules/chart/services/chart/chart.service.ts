@@ -9,7 +9,8 @@ import {ThemeService} from '@client/modules/settings/services/theme/theme.servic
 import {SettingDeviceService} from '@client/modules/settings/services/setting-device/setting-device.service';
 import {CurrencyType} from '@client/modules/cache/services/local-storage/local-storage.types';
 import {eligibleForOracleConversion} from '@client/modules/bitcoin/helpers/oracle.helpers';
-import {getUnitMeta, toDisplayAmount, type UnitMeta} from '@client/modules/local/helpers/unit.helpers';
+import {getUnitMeta, getUnitSymbol, toDisplayAmountFor} from '@client/modules/local/helpers/unit.helpers';
+import type {UnitMeta} from '@client/modules/local/types/unit.types';
 import {OracleChartDataPoint} from '@client/modules/chart/types/chart.types';
 /* Shared Dependencies */
 import {MintQuoteState, MeltQuoteState} from '@shared/generated.types';
@@ -325,7 +326,7 @@ export class ChartService {
 
 		if (meta.family === 'btc') {
 			if (meta.decimals > 0) return this.formatBtcFull(amount, locale, meta);
-			return this.formatBtcAmount(toDisplayAmount(unit, amount), locale, currency.type_btc);
+			return this.formatBtcAmount(toDisplayAmountFor(meta, amount), locale, currency.type_btc);
 		}
 		if (meta.family === 'fiat') return this.formatFiatAmount(amount, meta, locale, currency.type_fiat);
 		return `${amount.toLocaleString(locale)} ${meta.code}`;
@@ -373,7 +374,7 @@ export class ChartService {
 
 	private formatFiatAmount(amount: number, meta: UnitMeta, locale: string, currency_type: CurrencyType): string {
 		const formatted = amount.toLocaleString(locale, {minimumFractionDigits: meta.decimals, maximumFractionDigits: meta.decimals});
-		if (currency_type === CurrencyType.GLYPH) return `${meta.glyph ?? meta.code}${formatted}`;
+		if (currency_type === CurrencyType.GLYPH) return `${getUnitSymbol(meta)}${formatted}`;
 		return `${formatted} ${meta.code}`;
 	}
 }
