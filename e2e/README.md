@@ -9,9 +9,9 @@ See [tasks/todo.md](../tasks/todo.md) for the full rollout plan.
 
 Five configs. The first four form a diagonal across (LN × Mint × DB) that
 exercises every axis exactly twice. The fifth is an LN-less multi-unit
-(sat + usd) mint — cdk-mintd + fake_wallet — which exists to prove
+(sat + usd + ora) mint — cdk-mintd + fake_wallet — which exists to prove
 Orchard's mint integration tolerates an absent LN backend and handles
-multiple units.
+multiple units, including a unit outside the Cashu norm.
 
 | Config | Bitcoin | LN | Mint | DB | Tapd | Multi-unit |
 |---|---|---|---|---|---|---|
@@ -19,7 +19,7 @@ multiple units.
 | `cln-nutshell-postgres` | core | cln | nutshell | postgres | — | ✓ (sat + usd + eur) |
 | `lnd-cdk-sqlite` | core | lnd | cdk | sqlite | ✓ | — |
 | `cln-cdk-postgres` | core | cln | cdk | postgres | — | — |
-| `fake-cdk-postgres` | — | — (fake) | cdk | postgres | — | ✓ (sat + usd) |
+| `fake-cdk-postgres` | — | — (fake) | cdk | postgres | — | ✓ (sat + usd + ora) |
 
 ## Directory structure
 
@@ -85,10 +85,12 @@ have something to read.
 
 **fake config** (`fake-cdk-postgres`):
 
-No LN nodes, no bitcoind. cdk-mintd runs `fake_wallet` with
-`supported_units = ["sat", "usd"]`; Orchard boots without `LIGHTNING_TYPE`
-and without `BITCOIN_TYPE`. Its job is to exercise Orchard's UI when both
-optional services are absent.
+No LN nodes, no bitcoind. cdk-mintd runs `fake_wallet` over one `[[ln]]`
+entry per unit — `sat`, `usd` and `ora`; Orchard boots without
+`LIGHTNING_TYPE` and without `BITCOIN_TYPE`. Its job is to exercise
+Orchard's UI when both optional services are absent, and — via `ora` — when
+a unit carries no symbol, no decimals and no fiat or bitcoin backing.
+Custom units settle over the onchain method only; see `activity-fake.sh`.
 
 ## Running
 

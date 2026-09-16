@@ -3,10 +3,16 @@
 #
 # Multi-unit fake_wallet: cdk-mintd 0.17 reworked [ln] into a single-or-many
 # enum and dropped [fake_wallet].supported_units — supported units are now
-# expressed as one [[ln]] array entry per unit (sat + usd here). Each entry
-# also requires min/max mint+melt bounds, else config parse fails with "data
-# did not match any variant of untagged enum LnOneOrMany". Delay values are
-# zeroed so quotes auto-confirm immediately — there is no real LN node here.
+# expressed as one [[ln]] array entry per unit (sat + usd + ora here). Each
+# entry also requires min/max mint+melt bounds, else config parse fails with
+# "data did not match any variant of untagged enum LnOneOrMany". Delay values
+# are zeroed so quotes auto-confirm immediately — there is no real LN node.
+#
+# `ora` is the custom-unit fixture: cdk treats any unrecognised unit string as
+# CurrencyUnit::Custom and mints it a keyset like any other. It only settles
+# over the onchain method — cdk can't price a custom unit into a bolt11/bolt12
+# invoice, so those quotes fail with "Unknown invoice amount". See the ORA
+# knobs in activity-fake.sh.
 
 [info]
 url = "http://cdk-mintd:3341"
@@ -34,6 +40,14 @@ max_melt = 500000
 [[ln]]
 ln_backend = "fakewallet"
 unit = "usd"
+min_mint = 1
+max_mint = 500000
+min_melt = 1
+max_melt = 500000
+
+[[ln]]
+ln_backend = "fakewallet"
+unit = "ora"
 min_mint = 1
 max_mint = 500000
 min_melt = 1
