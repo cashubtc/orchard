@@ -5,13 +5,12 @@ import {LightningBalance} from '@client/modules/lightning/classes/lightning-bala
 import {OrchardError} from '@client/modules/error/types/error.types';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 import {BitcoinOraclePrice} from '@client/modules/bitcoin/classes/bitcoin-oracle-price.class';
+import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
 /* Native Module Dependencies */
 import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 /* Local Dependencies */
 import {MintGeneralBalanceRow} from './mint-general-balance-row.class';
-/* Shared Dependencies */
-import {MintUnit} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-mint-general-balance-sheet',
@@ -41,11 +40,10 @@ export class MintGeneralBalanceSheetComponent {
 		return this.computeRows();
 	});
 
-	private getAssetBalances(unit: MintUnit): number | null {
-		const lightning_balance = this.lightning_balance();
-		if (unit === MintUnit.Eur || unit === MintUnit.Usd) return null;
-		if (lightning_balance) return lightning_balance.open.local_balance;
-		return null;
+	/** Lightning is the only asset Orchard can see, so it backs bitcoin-denominated liabilities only */
+	private getAssetBalances(unit: string): number | null {
+		if (getUnitMeta(unit).family !== 'btc') return null;
+		return this.lightning_balance()?.open.local_balance ?? null;
 	}
 
 	private computeRows(): MintGeneralBalanceRow[] {

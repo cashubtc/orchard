@@ -1,5 +1,6 @@
 /* Application Dependencies */
 import {eligibleForOracleConversion, oracleConvertToUSDCents, findNearestOraclePrice} from '@client/modules/bitcoin/helpers/oracle.helpers';
+import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
 /* Native Dependencies */
 import {OracleChartDataPoint} from '@client/modules/chart/types/chart.types';
 
@@ -20,9 +21,14 @@ export {
 
 /** Gets Y-axis ID for a given unit */
 export function getYAxisId(unit: string): string {
-	if (unit === 'usd') return 'yfiat';
-	if (unit === 'eur') return 'yfiat';
-	return 'ybtc';
+	switch (getUnitMeta(unit).family) {
+		case 'fiat':
+			return 'yfiat';
+		case 'custom':
+			return 'ycustom';
+		default:
+			return 'ybtc';
+	}
 }
 
 /** Converts chart data with oracle prices, storing both original and converted values */
@@ -52,7 +58,6 @@ export function convertChartDataWithOracle(
 
 /** Gets Y-axis ID considering oracle conversion state */
 export function getYAxisIdWithOracle(unit: string, oracle_used: boolean): string {
-	if (unit === 'usd' || unit === 'eur') return 'yfiat';
 	if (oracle_used && eligibleForOracleConversion(unit)) return 'yfiat';
-	return 'ybtc';
+	return getYAxisId(unit);
 }

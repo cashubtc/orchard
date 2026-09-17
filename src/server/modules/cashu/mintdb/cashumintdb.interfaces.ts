@@ -1,10 +1,10 @@
 /* Native Dependencies */
-import {MintUnit, MintQuoteState, MeltQuoteState, MintProofState} from '#server/modules/cashu/cashu.enums';
+import {MintQuoteState, MeltQuoteState, MintProofState} from '#server/modules/cashu/cashu.enums';
 
 export interface CashuMintMintQuotesArgs {
 	date_start?: number;
 	date_end?: number;
-	units?: MintUnit[];
+	units?: string[];
 	states?: MintQuoteState[];
 	page?: number;
 	page_size?: number;
@@ -14,7 +14,7 @@ export interface CashuMintMintQuotesArgs {
 export interface CashuMintMeltQuotesArgs {
 	date_start?: number;
 	date_end?: number;
-	units?: MintUnit[];
+	units?: string[];
 	states?: MeltQuoteState[];
 	page?: number;
 	page_size?: number;
@@ -24,7 +24,7 @@ export interface CashuMintMeltQuotesArgs {
 export interface CashuMintSwapsArgs {
 	date_start?: number;
 	date_end?: number;
-	units?: MintUnit[];
+	units?: string[];
 	id_keysets?: string[];
 	page?: number;
 	page_size?: number;
@@ -34,7 +34,7 @@ export interface CashuMintSwapsArgs {
 export interface CashuMintPromiseArgs {
 	date_start?: number;
 	date_end?: number;
-	units?: MintUnit[];
+	units?: string[];
 	id_keysets?: string[];
 	page?: number;
 	page_size?: number;
@@ -44,7 +44,7 @@ export interface CashuMintPromiseArgs {
 export interface CashuMintProofsArgs {
 	date_start?: number;
 	date_end?: number;
-	units?: MintUnit[];
+	units?: string[];
 	states?: MintProofState[];
 	id_keysets?: string[];
 	page?: number;
@@ -55,7 +55,7 @@ export interface CashuMintProofsArgs {
 export interface CashuMintFeesArgs {
 	date_start?: number;
 	date_end?: number;
-	units?: MintUnit[];
+	units?: string[];
 	page?: number;
 	page_size?: number;
 	sort_order?: 'ASC' | 'DESC';

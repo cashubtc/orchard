@@ -13,8 +13,6 @@ import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 import {MintDataType} from '@client/modules/mint/enums/data-type.enum';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
-/* Shared Dependencies */
-import {MintUnit} from '@shared/generated.types';
 
 type TypeOption = {
 	label: string;
@@ -41,7 +39,7 @@ export class MintSubsectionDatabaseControlComponent {
 	public readonly date_preset = input<DateRangePreset | null>(null);
 	public readonly type = input<MintDataType>();
 	public readonly states = input<string[]>();
-	public readonly units = input<MintUnit[]>();
+	public readonly units = input<string[]>();
 	public readonly loading = input.required<boolean>();
 	public readonly mint_genesis_time = input.required<number>();
 	public readonly keysets = input.required<MintKeyset[]>();
@@ -51,7 +49,7 @@ export class MintSubsectionDatabaseControlComponent {
 	public readonly dateChange = output<number[]>();
 	public readonly presetChange = output<DateRangePreset>();
 	public readonly typeChange = output<MintDataType>();
-	public readonly unitsChange = output<MintUnit[]>();
+	public readonly unitsChange = output<string[]>();
 	public readonly statesChange = output<string[]>();
 	public readonly filterChange = output<Event>();
 
@@ -167,22 +165,22 @@ export class MintSubsectionDatabaseControlComponent {
 	}
 
 	/** Sets the FormArray values based on selected units */
-	private setUnitFilters(selected_units: MintUnit[]): void {
+	private setUnitFilters(selected_units: string[]): void {
 		this.unit_options().forEach((option, index) => {
-			const is_selected = selected_units.includes(option.value as MintUnit);
+			const is_selected = selected_units.includes(option.value);
 			this.panel.controls.units.at(index).setValue(is_selected);
 		});
 	}
 
 	/** Gets the selected units from the FormArray */
-	public getSelectedUnits(): MintUnit[] {
+	public getSelectedUnits(): string[] {
 		const options = this.unit_options();
 		if (!options.length) return [];
-		return options.filter((_, index) => this.panel.controls.units.at(index).value).map((option) => option.value as MintUnit);
+		return options.filter((_, index) => this.panel.controls.units.at(index).value).map((option) => option.value);
 	}
 
 	/** Compares two unit arrays for equality */
-	private areUnitsEqual(a: MintUnit[], b: MintUnit[]): boolean {
+	private areUnitsEqual(a: string[], b: string[]): boolean {
 		if (a.length !== b.length) return false;
 		const sorted_a = [...a].sort();
 		const sorted_b = [...b].sort();

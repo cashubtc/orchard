@@ -2,7 +2,7 @@
 import {Field, Int, ID, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
-import {MintUnit, MeltQuoteState} from '#server/modules/cashu/cashu.enums';
+import {MeltQuoteState} from '#server/modules/cashu/cashu.enums';
 import type {CashuMintMeltQuote} from '#server/modules/cashu/mintdb/cashumintdb.types';
 
 @ObjectType({description: 'Cashu mint quote for melting tokens'})
@@ -10,7 +10,7 @@ export class OrchardMintMeltQuote {
 	@Field(() => ID, {description: 'Unique identifier of the melt quote'})
 	id: string;
 
-	@Field(() => MintUnit, {description: 'Unit of the melt quote'})
+	@Field(() => String, {description: 'Unit of the melt quote'})
 	unit: string;
 
 	@Field(() => Int, {description: 'Amount to melt in the specified unit'})

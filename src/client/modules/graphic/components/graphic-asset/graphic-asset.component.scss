@@ -41,8 +41,8 @@
 	@extend %orc-asset-eur-bg;
 }
 
-.graphic-asset-unknown {
-	@extend %orc-surface-tint-bg;
+.graphic-asset-custom {
+	@extend %orc-asset-custom-bg;
 }
 
 .graphic-asset-custody {

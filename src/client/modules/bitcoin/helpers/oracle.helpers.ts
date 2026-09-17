@@ -2,9 +2,10 @@
 import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {BitcoinOraclePrice} from '@client/modules/bitcoin/classes/bitcoin-oracle-price.class';
+import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
 
 export function eligibleForOracleConversion(unit: string): boolean {
-	return unit === 'sat' || unit === 'msat' || unit === 'btc';
+	return getUnitMeta(unit).family === 'btc';
 }
 
 export function oracleConvertToUSDCents(amount_btc: number | null, price_usd: number | null, unit: string): number | null {

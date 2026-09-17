@@ -11,7 +11,17 @@
 				>
 					<!-- Assets Cell -->
 					<div class="assets-cell flex flex-items-center flex-gap-2">
-						@if (lightning_enabled()) {
+						@if (!row.is_bitcoin) {
+							<orc-graphic-asset class="low-bg" [unit]="row.unit_mint" [height]="'2.5rem'"></orc-graphic-asset>
+							<div class="flex flex-column">
+								<span class="font-size-xl font-weight-semi-bold text-nowrap orc-outline-color">
+									<mat-icon>check_indeterminate_small</mat-icon>
+								</span>
+								<div class="font-size-xs orc-outline-color text-nowrap">
+									Assets &nbsp;&nbsp;●&nbsp;&nbsp; Backing collateral
+								</div>
+							</div>
+						} @else if (lightning_enabled()) {
 							@if (!lightning_loading()) {
 								@if (lightning_errors() && lightning_errors().length > 0) {
 									<div animate.enter="orc-animation-fadein-fast">

@@ -1,5 +1,5 @@
 /* Application Dependencies */
-import {LocalAmountPipe} from '@client/modules/local/pipes/local-amount/local-amount.pipe';
+import {toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
 import {oracleConvertToUSDCents, eligibleForOracleConversion} from '@client/modules/bitcoin/helpers/oracle.helpers';
 /* Native Dependencies */
 import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
@@ -22,7 +22,7 @@ export class MintGeneralBalanceRow {
 
 	public get reserve(): number | null {
 		if (this.assets === null) return null;
-		const liabilities = LocalAmountPipe.getConvertedAmount(this.unit_mint, this.liabilities);
+		const liabilities = toDisplayAmount(this.unit_mint, this.liabilities);
 		if (liabilities === 0) return null;
 		const multiple = Math.ceil(this.assets) / liabilities;
 		if (multiple < 5) return Math.round(multiple * 10) / 10;

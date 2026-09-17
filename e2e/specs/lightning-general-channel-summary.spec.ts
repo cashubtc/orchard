@@ -320,7 +320,7 @@ test.describe('lightning-general-channel-summary card', {tag: '@lightning'}, () 
 
 		Presentational — no interactions. Renders one instance per row.
 		The sat row applies `channel-btc` (orange/red split); the TESTASSET
-		row applies `channel-unknown` (no registered group_key → neutral).
+		row applies `channel-custom` (no registered group_key → custom asset).
 	******************************************************** */
 
 	test('sat row flow graphic carries the channel-btc class (unit === sat)', async ({page}) => {
@@ -450,12 +450,12 @@ test.describe('lightning-general-channel-summary card — taproot asset row', {t
 		await expect(card.getByText(`Total ${TEST_ASSET} capacity`, {exact: true})).toBeVisible();
 	});
 
-	test('tapass row glyph uses the asset-unknown class (no registered svg for TESTASSET)', async ({page}) => {
+	test('tapass row glyph uses the asset-custom class (no registered svg for TESTASSET)', async ({page}) => {
 		const card = await openSummary(page);
 		// TESTASSET isn't in `constants.taproot_group_keys`, so `orc-graphic-asset`
-		// falls through to the `.graphic-asset-unknown` class (same behaviour
+		// falls through to the `.graphic-asset-custom` class (same behaviour
 		// documented in bitcoin-general-wallet-summary.spec.ts).
-		await expect(tapassRow(card).locator('.graphic-asset-unknown').first()).toBeVisible();
+		await expect(tapassRow(card).locator('.graphic-asset-custom').first()).toBeVisible();
 	});
 
 	test('tapass row capacity renders a non-zero amount', async ({page}) => {

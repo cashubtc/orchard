@@ -3,7 +3,6 @@ import {Field, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 import type {CashuMintSwap} from '#server/modules/cashu/mintdb/cashumintdb.types';
-import {MintUnit} from '#server/modules/cashu/cashu.enums';
 
 @ObjectType({description: 'Cashu mint swap record'})
 export class OrchardMintSwap {
@@ -13,8 +12,8 @@ export class OrchardMintSwap {
 	@Field(() => [String], {description: 'Associated keyset IDs'})
 	keyset_ids: string[];
 
-	@Field(() => MintUnit, {description: 'Currency unit of the swap'})
-	unit: MintUnit;
+	@Field(() => String, {description: 'Currency unit of the swap'})
+	unit: string;
 
 	@Field(() => Int, {description: 'Swap amount in base unit'})
 	amount: number;

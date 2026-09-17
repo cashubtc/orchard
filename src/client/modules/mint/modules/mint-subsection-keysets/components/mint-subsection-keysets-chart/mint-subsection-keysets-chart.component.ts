@@ -12,7 +12,7 @@ import {
 	getXAxisConfig,
 	getYAxis,
 	getBtcYAxisConfig,
-	getFiatYAxisConfig,
+	getUnitYAxisConfig,
 	getTooltipTitle,
 	getTooltipLabel,
 } from '@client/modules/chart/helpers/mint-chart-options.helpers';
@@ -289,12 +289,25 @@ export class MintSubsectionKeysetsChartComponent implements OnDestroy {
 			});
 		}
 		if (y_axis.includes('yfiat')) {
-			scales['yfiat'] = getFiatYAxisConfig({
+			scales['yfiat'] = getUnitYAxisConfig({
+				family: 'fiat',
 				units,
-				show_grid: !y_axis.includes('ybtc'),
+				show_grid: y_axis[0] === 'yfiat',
 				grid_color: this.chartService.getGridColor(),
 				begin_at_zero: true,
 				locale,
+			});
+		}
+		if (y_axis.includes('ycustom')) {
+			const is_primary_axis = y_axis[0] === 'ycustom';
+			scales['ycustom'] = getUnitYAxisConfig({
+				family: 'custom',
+				units,
+				show_grid: is_primary_axis,
+				grid_color: this.chartService.getGridColor(),
+				begin_at_zero: true,
+				locale,
+				position: is_primary_axis ? 'left' : 'right',
 			});
 		}
 

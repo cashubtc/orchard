@@ -77,8 +77,9 @@ describe('ChartService', () => {
 			expect(service.formatTooltipAmount(0, 'eur')).toBe('€0.00');
 		});
 
-		it('falls back to bare locale-formatted number for unknown units', () => {
-			expect(service.formatTooltipAmount(42, 'unknown')).toBe('42');
+		it('labels a custom unit with its own code and no decimals', () => {
+			expect(service.formatTooltipAmount(42, 'unknown')).toBe('42 unknown');
+			expect(service.formatTooltipAmount(3776, 'ora')).toBe('3,776 ora');
 		});
 
 		it('formats sat as code suffix when type_btc is CODE instead of GLYPH', () => {

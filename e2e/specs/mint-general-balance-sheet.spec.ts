@@ -95,6 +95,10 @@ async function waitForBitcoinAssetsSettled(row: Locator): Promise<void> {
 /** Bitcoin row sorts first via `currency_order` (sat=2, msat=3, usd=4, eur=5).
  *  Both nutshell and cdk default to `sat`, so this is deterministic on every
  *  current stack. */
+/** Units the balance sheet treats as bitcoin-denominated — the only ones whose
+ *  assets side is backed by the Lightning balance. */
+const BITCOIN_UNITS = ['sat', 'msat', 'btc'];
+
 function bitcoinRow(sheet: Locator): Locator {
 	return sheet.locator('.balance-sheet-card').first();
 }
@@ -379,7 +383,7 @@ test.describe('mint-general-balance-sheet — fiat rows', {tag: '@mint'}, () => 
 		await page.goto('/');
 	});
 
-	test('USD row asset cell renders the placeholder dash (LN) or the Lightning Configuration button (no-LN)', async ({page}, testInfo) => {
+	test('USD row asset cell renders the placeholder dash whether or not the stack has LN', async ({page}, testInfo) => {
 		const config = getConfig(testInfo.project.name);
 		const units = mintUnitsFor(config);
 		test.skip(!units.includes('usd'), 'this stack does not provision a USD keyset');
@@ -391,22 +395,18 @@ test.describe('mint-general-balance-sheet — fiat rows', {tag: '@mint'}, () => 
 		const usd_index = units.indexOf('usd');
 		const card_index = sat_index < usd_index ? usd_index - sat_index : usd_index;
 		const row = sheet.locator('.balance-sheet-card').nth(card_index);
-		if (config.ln === false) {
-			// On no-LN stacks the assets cell collapses to the Lightning Configuration
-			// button for every row regardless of unit (template's @else branch on
-			// `lightning_enabled()`).
-			await expect(row.locator('.assets-cell button[mat-stroked-button]')).toHaveText('Lightning Configuration');
-		} else {
-			// `<mat-icon>check_indeterminate_small</mat-icon>` keeps the ligature
-			// name in textContent. Filter mat-icons by that text — `orc-graphic-asset`
-			// inside the same cell renders other mat-icons (currency_bitcoin, bolt)
-			// that we want to ignore.
-			await expect(row.locator('.assets-cell mat-icon').filter({hasText: 'check_indeterminate_small'})).toBeVisible();
-			await expect(row.locator('.assets-cell .orc-amount')).toHaveCount(0);
-		}
+		// A non-bitcoin row has no Lightning balance behind it, so its assets
+		// cell short-circuits to the dash before the template ever consults
+		// `lightning_enabled()` — the no-LN stacks render it the same way.
+		// `<mat-icon>check_indeterminate_small</mat-icon>` keeps the ligature
+		// name in textContent. Filter mat-icons by that text — `orc-graphic-asset`
+		// inside the same cell renders other mat-icons (currency_bitcoin, bolt)
+		// that we want to ignore.
+		await expect(row.locator('.assets-cell mat-icon').filter({hasText: 'check_indeterminate_small'})).toBeVisible();
+		await expect(row.locator('.assets-cell .orc-amount')).toHaveCount(0);
 	});
 
-	test('EUR row asset cell renders the placeholder dash (LN) or the Lightning Configuration button (no-LN)', async ({page}, testInfo) => {
+	test('EUR row asset cell renders the placeholder dash whether or not the stack has LN', async ({page}, testInfo) => {
 		const config = getConfig(testInfo.project.name);
 		const units = mintUnitsFor(config);
 		test.skip(!units.includes('eur'), 'this stack does not provision a EUR keyset');
@@ -416,11 +416,7 @@ test.describe('mint-general-balance-sheet — fiat rows', {tag: '@mint'}, () => 
 		const sat_index = units.indexOf('sat');
 		const card_index = sat_index < eur_index ? eur_index - sat_index : eur_index;
 		const row = sheet.locator('.balance-sheet-card').nth(card_index);
-		if (config.ln === false) {
-			await expect(row.locator('.assets-cell button[mat-stroked-button]')).toHaveText('Lightning Configuration');
-		} else {
-			await expect(row.locator('.assets-cell mat-icon').filter({hasText: 'check_indeterminate_small'})).toBeVisible();
-		}
+		await expect(row.locator('.assets-cell mat-icon').filter({hasText: 'check_indeterminate_small'})).toBeVisible();
 	});
 
 	test('expanded fiat row omits the "Liability coverage" card', async ({page}, testInfo) => {
@@ -449,9 +445,12 @@ test.describe('mint-general-balance-sheet — lightning disabled', {tag: '@no-li
 		await page.goto('/');
 	});
 
-	test('renders the "Lightning Configuration" button per row in place of the assets value', async ({page}, testInfo) => {
+	test('renders the "Lightning Configuration" button per bitcoin row in place of the assets value', async ({page}, testInfo) => {
+		// Only a bitcoin-denominated row is backed by the Lightning balance, so
+		// only those rows offer the configuration shortcut when LN is absent —
+		// a usd or `ora` row shows the dash instead and never mentions LN.
 		const config = getConfig(testInfo.project.name);
-		const expected_units = mintUnitsFor(config).length;
+		const expected_units = mintUnitsFor(config).filter((unit) => BITCOIN_UNITS.includes(unit)).length;
 		const sheet = await openSheet(page);
 		await waitForRows(sheet);
 		const buttons = sheet.locator('.assets-cell button[mat-stroked-button]');

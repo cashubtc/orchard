@@ -71,7 +71,7 @@ import {MintActivitySummary} from '@client/modules/mint/classes/mint-activity-su
 import {MintWatchdogStatus} from '@client/modules/mint/classes/mint-watchdog-status.class';
 import {MintMetric} from '@client/modules/mint/classes/mint-metric.class';
 /* Shared Dependencies */
-import {AnalyticsInterval, MintActivityPeriod, OrchardContact, OrchardMintAnalytics, MintUnit} from '@shared/generated.types';
+import {AnalyticsInterval, MintActivityPeriod, OrchardContact, OrchardMintAnalytics} from '@shared/generated.types';
 /* Local Dependencies */
 import {
 	MINT_INFO_QUERY,
@@ -805,7 +805,7 @@ export class MintService {
 		);
 	}
 
-	public getMintProofGroupStats(unit: MintUnit) {
+	public getMintProofGroupStats(unit: string) {
 		const query = getApiQuery(MINT_PROOF_GROUP_STATS_QUERY, {unit});
 
 		return this.http.post<OrchardRes<MintProofGroupStatsResponse>>(this.apiService.api, query).pipe(

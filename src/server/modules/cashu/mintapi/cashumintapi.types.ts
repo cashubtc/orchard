@@ -1,5 +1,3 @@
-import {MintUnit} from '#server/modules/cashu/cashu.enums';
-
 export type CashuMintInfo = {
 	name: string;
 	pubkey: string;
@@ -78,7 +76,7 @@ export type CashuContact = {
 
 export type CashuNut4Method = {
 	method: string;
-	unit: MintUnit;
+	unit: string;
 	description: boolean;
 	min_amount?: number;
 	max_amount?: number;
@@ -91,7 +89,7 @@ export type CashuNut4MethodOptions = {
 
 export type CashuNut5Method = {
 	method: string;
-	unit: MintUnit;
+	unit: string;
 	amountless?: boolean;
 	min_amount?: number;
 	max_amount?: number;
@@ -99,12 +97,12 @@ export type CashuNut5Method = {
 
 export type CashuNut15Method = {
 	method: string;
-	unit: MintUnit;
+	unit: string;
 };
 
 export type CashuNutSupported = {
 	method: string;
-	unit: MintUnit;
+	unit: string;
 	commands?: string[];
 };
 

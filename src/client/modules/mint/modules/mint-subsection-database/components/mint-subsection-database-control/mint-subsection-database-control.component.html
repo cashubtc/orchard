@@ -8,7 +8,7 @@
 						<mat-select-trigger>
 							{{ panel.get('type')?.value ? getSelectedTypeLabel(panel.get('type')?.value) : '' }}
 						</mat-select-trigger>
-						@for (type of type_options(); track type) {
+						@for (type of type_options(); track type.value) {
 							<mat-option [value]="type.value">
 								<div class="option-main">{{ type.label }}</div>
 								<div class="option-helper">{{ type.helper }}</div>

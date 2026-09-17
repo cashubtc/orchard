@@ -22,7 +22,7 @@ export class BitcoinGeneralUtxoStackComponent {
 		const group_key = this.group_key();
 		if (group_key === this.taproot_group_keys['usdt']) return 'utxo-asset-tether';
 		if (lower_unit === 'sat' || lower_unit === 'msat' || lower_unit === 'btc') return 'utxo-asset-btc';
-		return 'utxo-asset-unknown';
+		return 'utxo-asset-custom';
 	});
 
 	public overflow_class = computed(() => {
@@ -30,7 +30,7 @@ export class BitcoinGeneralUtxoStackComponent {
 		const group_key = this.group_key();
 		if (group_key === this.taproot_group_keys['usdt']) return 'utxo-overflow-tether';
 		if (lower_unit === 'sat' || lower_unit === 'msat' || lower_unit === 'btc') return 'utxo-overflow-btc';
-		return 'utxo-overflow-unknown';
+		return 'utxo-overflow-custom';
 	});
 
 	public coin_array = computed(() => {

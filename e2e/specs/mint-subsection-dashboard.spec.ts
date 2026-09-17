@@ -156,7 +156,7 @@ async function fetchAnalyticsRows(
 	const raw = await page.evaluate(() => localStorage.getItem('v0.auth.token'));
 	const token = raw ? (JSON.parse(raw) as string) : null;
 	const headers: Record<string, string> = token ? {Authorization: `Bearer ${token}`} : {};
-	const gql = `query Window($units: [MintUnit!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval) {
+	const gql = `query Window($units: [String!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval) {
 		${query}(units: $units, date_start: $date_start, date_end: $date_end, interval: $interval) {
 			date unit ${field}
 		}
@@ -416,7 +416,7 @@ test.describe('mint-subsection-dashboard — analytics pipeline', {tag: '@analyt
 		const token = raw ? (JSON.parse(raw) as string) : null;
 		const headers: Record<string, string> = token ? {Authorization: `Bearer ${token}`} : {};
 		const query = `query Balances($date_start: UnixTimestamp, $date_end: UnixTimestamp) {
-			mint_analytics_balances(units: [sat], date_start: $date_start, date_end: $date_end, interval: hour) {
+			mint_analytics_balances(units: ["sat"], date_start: $date_start, date_end: $date_end, interval: hour) {
 				date unit amount
 			}
 		}`;

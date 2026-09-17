@@ -25,7 +25,7 @@
 				</div>
 				<div class="flex flex-column flex-gap-0-5">
 					<div class="orc-outline-color font-weight-extra-light">
-						{{ quote().payment_method == 'bolt11' ? 'Bolt 11 Invoice' : 'Bolt 12 Offer' }}
+						{{ request_label() }}
 					</div>
 					<div class="w-max-36">
 						<orc-button-copy [text]="quote().request" size="sm">

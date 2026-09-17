@@ -1,17 +1,30 @@
 /* Vendor Dependencies */
 import {TimeUnit} from 'chart.js';
 import {DateTime} from 'luxon';
+/* Application Dependencies */
+import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
+import type {UnitFamily} from '@client/modules/local/types/unit.types';
 /* Shared Dependencies */
 import {AnalyticsInterval} from '@shared/generated.types';
 
-function getFiatAxisLabel(units: (string | undefined)[]): string {
-	const lower_units = units.map((u) => u?.toLowerCase());
-	const has_usd = lower_units.includes('usd');
-	const has_eur = lower_units.includes('eur');
-	if (has_usd && has_eur) return 'USD / EUR';
-	if (has_usd) return 'USD';
-	if (has_eur) return 'EUR';
-	return 'FIAT';
+/** Fallback axis title used when no unit of that family is present */
+const FAMILY_FALLBACK_LABEL: Record<UnitFamily, string> = {btc: 'SAT', fiat: 'FIAT', custom: 'UNITS'};
+
+/** Groups the distinct display codes of the supplied units by family, in encounter order */
+function getCodesByFamily(units: (string | undefined)[]): Record<UnitFamily, string[]> {
+	const codes_by_family: Record<UnitFamily, string[]> = {btc: [], fiat: [], custom: []};
+	for (const unit of units) {
+		if (!unit) continue;
+		const meta = getUnitMeta(unit);
+		if (!codes_by_family[meta.family].includes(meta.code)) codes_by_family[meta.family].push(meta.code);
+	}
+	return codes_by_family;
+}
+
+/** Axis title listing the units it carries, e.g. `USD / EUR` */
+function getAxisLabel(units: (string | undefined)[], family: UnitFamily): string {
+	const codes = getCodesByFamily(units)[family];
+	return codes.length ? codes.join(' / ') : FAMILY_FALLBACK_LABEL[family];
 }
 
 function convertIntervalToTimeUnit(interval: AnalyticsInterval): TimeUnit {
@@ -53,15 +66,9 @@ export function formatAxisValue(value: number, locale?: string): string {
 }
 
 export function getYAxis(units: (string | undefined)[]): string[] {
-	const lower_units = units.map((unit) => unit?.toLowerCase());
-	const y_axis: string[] = [];
-	if (lower_units.includes('sat') || lower_units.includes('btc') || lower_units.includes('msat')) {
-		y_axis.push('ybtc');
-	}
-	if (lower_units.includes('usd') || lower_units.includes('eur')) {
-		y_axis.push('yfiat');
-	}
-	return y_axis;
+	const codes_by_family = getCodesByFamily(units);
+	const families: UnitFamily[] = ['btc', 'fiat', 'custom'];
+	return families.filter((family) => codes_by_family[family].length).map((family) => `y${family}`);
 }
 
 export function getTooltipTitle(tooltipItems: any): string {
@@ -158,8 +165,9 @@ export function getBtcYAxisConfig({
 	};
 }
 
-export function getFiatYAxisConfig({
+export function getUnitYAxisConfig({
 	units,
+	family,
 	show_grid,
 	grid_color,
 	begin_at_zero,
@@ -168,6 +176,7 @@ export function getFiatYAxisConfig({
 	is_cents,
 }: {
 	units: (string | undefined)[];
+	family: UnitFamily;
 	show_grid: boolean;
 	grid_color: string;
 	begin_at_zero?: boolean;
@@ -179,7 +188,7 @@ export function getFiatYAxisConfig({
 		position: position ?? 'right',
 		title: {
 			display: true,
-			text: getFiatAxisLabel(units),
+			text: getAxisLabel(units, family),
 		},
 		beginAtZero: begin_at_zero ?? false,
 		ticks: {

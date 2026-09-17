@@ -1,9 +1,9 @@
 /* Shared Dependencies */
-import {OrchardMintMeltQuote, MeltQuoteState, MintUnit} from '@shared/generated.types';
+import {OrchardMintMeltQuote, MeltQuoteState} from '@shared/generated.types';
 
 export class MintMeltQuote implements OrchardMintMeltQuote {
 	public id: string;
-	public unit: MintUnit;
+	public unit: string;
 	public amount: number;
 	public request: string;
 	public fee_reserve: number;

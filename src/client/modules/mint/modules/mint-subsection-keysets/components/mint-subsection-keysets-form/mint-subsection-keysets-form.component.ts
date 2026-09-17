@@ -9,8 +9,6 @@ import {DateTime} from 'luxon';
 /* Native Dependencies */
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
-/* Shared Dependencies */
-import {MintUnit} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-mint-subsection-keysets-form',
@@ -28,7 +26,7 @@ export class MintSubsectionKeysetsFormComponent {
 	public readonly median_notes = input.required<number>();
 
 	public readonly close = output<void>();
-	public readonly updateUnit = output<MintUnit>();
+	public readonly updateUnit = output<string>();
 
 	public help_unit = signal<boolean>(false);
 	public help_fee = signal<boolean>(true);

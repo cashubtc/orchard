@@ -44,8 +44,8 @@
 .utxo-asset-tether {
 	@extend %orc-asset-tether-bg;
 }
-.utxo-asset-unknown {
-	@extend %orc-surface-tint-bg;
+.utxo-asset-custom {
+	@extend %orc-asset-custom-bg;
 }
 
 .utxo-overflow-btc {
@@ -54,8 +54,8 @@
 .utxo-overflow-tether {
 	@extend %orc-asset-tether-color;
 }
-.utxo-overflow-unknown {
-	@extend %orc-surface-tint-color;
+.utxo-overflow-custom {
+	@extend %orc-asset-custom-color;
 }
 
 @keyframes utxo-fan-out {

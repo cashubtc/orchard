@@ -25,7 +25,7 @@
  *   - AI assistant (`stack-only` — cln-cdk-postgres via e2e:test:ai)
  */
 
-import {test, expect, type Page} from '@playwright/test';
+import {test, expect, type Locator, type Page} from '@playwright/test';
 
 import {getConfig} from '@e2e/helpers/config';
 import {mint} from '@e2e/helpers/backend';
@@ -53,6 +53,18 @@ function mintAdvertisesMethod(config: ConfigInfo, method: string): boolean {
 		return Array.isArray(block?.methods) ? block!.methods! : [];
 	};
 	return [...methodsOf(4), ...methodsOf(5)].some((m) => m.method === method);
+}
+
+/** The sticky section headers for a payment method, matched on the label the
+ *  page renders for it (`Bolt 11`, `Bolt 12`, `Onchain`, else the raw method
+ *  name). One header per unit advertising the method, per NUT. */
+function methodSections(page: Page, label: string): Locator {
+	return page.locator('.sticky-config').filter({hasText: label});
+}
+
+/** The form belonging to a section header — its next `.nut-wrapper` sibling. */
+function sectionForm(section: Locator): Locator {
+	return section.locator('xpath=following-sibling::div[contains(@class,"nut-wrapper")][1]');
 }
 
 test.describe('mint subsection config — /mint/config', {tag: '@mint'}, () => {
@@ -89,12 +101,15 @@ test.describe('mint subsection config — /mint/config', {tag: '@mint'}, () => {
 		// method. Oracle on the mint's own /v1/info, not the LN-capability
 		// flag: cln-cdk-postgres advertises it via a real bolt12 mint+LN,
 		// fake-cdk-postgres via its fake_wallet, and the nutshell/lnd stacks
-		// don't publish it at all.
+		// don't publish it at all. Only bolt11 and onchain keep a dedicated
+		// wrapper component — bolt12 renders through the generic method form,
+		// so its section header is what identifies it.
 		const config = getConfig(testInfo.project.name);
 		await openPage(page);
-		const bolt12 = page.locator('orc-mint-subsection-config-form-bolt12');
+		const bolt12 = methodSections(page, 'Bolt 12');
 		if (mintAdvertisesMethod(config, 'bolt12')) {
 			await expect(bolt12.first()).toBeVisible();
+			await expect(sectionForm(bolt12.first()).locator('orc-mint-subsection-config-form-method')).toBeVisible();
 		} else {
 			await expect(bolt12).toHaveCount(0);
 		}

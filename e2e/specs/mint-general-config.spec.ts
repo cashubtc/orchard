@@ -195,7 +195,7 @@ function expectedAssetClass(unit: string): string {
 	if (u === 'sat' || u === 'msat' || u === 'btc') return 'graphic-asset-btc';
 	if (u === 'usd') return 'graphic-asset-usd';
 	if (u === 'eur') return 'graphic-asset-eur';
-	return 'graphic-asset-unknown';
+	return 'graphic-asset-custom';
 }
 
 test.describe('mint-general-config card', {tag: '@mint'}, () => {
@@ -409,9 +409,9 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 	});
 
 	test('limit row asset disc class matches the daemon method unit', async ({page}, testInfo) => {
-		// Bitcoin units (sat/msat/btc) all map to `graphic-asset-btc`. Live
-		// fixtures only emit `sat`, but the assertion is shape-correct for
-		// any future unit additions on the same daemon.
+		// Bitcoin units (sat/msat/btc) all map to `graphic-asset-btc`, fiat to
+		// their own disc, and anything else — fake-cdk-postgres's `ora` — to
+		// `graphic-asset-custom`.
 		const config = getConfig(testInfo.project.name);
 		const info = mint.getInfo(config);
 		const nut4 = nutBlock(info.nuts, 4);

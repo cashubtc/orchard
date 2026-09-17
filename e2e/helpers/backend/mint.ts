@@ -100,7 +100,7 @@ export const mint = {
 	},
 
 	/** Count of mint/melt quote rows in the mint database within a
-	 *  `created_time` window, optionally narrowed to one payment method — the
+	 *  `created_time` window, optionally narrowed to one payment method and unit — the
 	 *  differential oracle for the `/mint/database` quote tables (paginator
 	 *  length and per-row `orc-mint-general-payment-method` chips). Mirrors the
 	 *  resolvers' count semantics (`countMintQuotes` / `countMeltQuotes`):
@@ -112,7 +112,7 @@ export const mint = {
 	 *  quotes mid-run. */
 	quoteCount(
 		config: ConfigInfo,
-		options: {kind: 'mint' | 'melt'; date_start: number; date_end: number; payment_method?: string},
+		options: {kind: 'mint' | 'melt'; date_start: number; date_end: number; payment_method?: string; unit?: string},
 	): number {
 		const is_cdk = config.mint === 'cdk';
 		if (!is_cdk && options.payment_method !== undefined && options.payment_method !== 'bolt11') return 0;
@@ -120,6 +120,7 @@ export const mint = {
 		const time_col = !is_cdk && config.db === 'postgres' ? 'EXTRACT(EPOCH FROM created_time)' : 'created_time';
 		const where: string[] = [`${time_col} >= ${Math.floor(options.date_start)}`, `${time_col} <= ${Math.floor(options.date_end)}`];
 		if (is_cdk && options.payment_method !== undefined) where.push(`lower(payment_method) = '${options.payment_method.toLowerCase()}'`);
+		if (options.unit !== undefined) where.push(`unit = '${options.unit.replace(/'/g, "''")}'`);
 		const out = mintDbQuery(config, `SELECT COUNT(*) FROM ${table} WHERE ${where.join(' AND ')}`);
 		return parseInt(out, 10);
 	},
@@ -128,16 +129,16 @@ export const mint = {
 	 *  (`Mint Quote ID` mega-string ↔ DB bijection). Null when no such row.
 	 *  nutshell keys mint quotes on `quote` and has no payment_method column
 	 *  (constant 'bolt11', matching Orchard's nutshell service). NOT cached. */
-	quoteById(config: ConfigInfo, kind: 'mint' | 'melt', id: string): {unit: string; payment_method: string} | null {
+	quoteById(config: ConfigInfo, kind: 'mint' | 'melt', id: string): {unit: string; payment_method: string; request: string} | null {
 		const safe_id = id.replace(/'/g, "''");
 		const sql =
 			config.mint === 'cdk'
-				? `SELECT unit, lower(payment_method) FROM ${kind}_quote WHERE id = '${safe_id}'`
-				: `SELECT unit, 'bolt11' FROM ${kind}_quotes WHERE quote = '${safe_id}'`;
+				? `SELECT unit, lower(payment_method), request FROM ${kind}_quote WHERE id = '${safe_id}'`
+				: `SELECT unit, 'bolt11', request FROM ${kind}_quotes WHERE quote = '${safe_id}'`;
 		const out = mintDbQuery(config, sql);
 		if (out === '') return null;
-		const [unit, payment_method] = out.split('|');
-		return {unit, payment_method};
+		const [unit, payment_method, ...request_parts] = out.split('|');
+		return {unit, payment_method, request: request_parts.join('|')};
 	},
 
 	/** Earliest mint-quote `created_time` (unix seconds) in the mint DB, or

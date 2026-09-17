@@ -33,4 +33,31 @@ describe('MintSubsectionConfigFormQuoteTtlComponent', () => {
 	it('should create', () => {
 		expect(component).toBeTruthy();
 	});
+
+	describe('bolt11 caveat', () => {
+		it('should show the caveat when bolt11 sits alongside another method', () => {
+			fixture.componentRef.setInput('methods', ['bolt11', 'branch']);
+			expect(component.help_text()).toContain('only applies to the <b>bolt11</b> payment method');
+		});
+
+		it('should hide the caveat when bolt11 is the only advertised method', () => {
+			fixture.componentRef.setInput('methods', ['bolt11']);
+			expect(component.help_text()).not.toContain('bolt11');
+		});
+
+		it('should hide the caveat when the mint advertises no bolt11 method', () => {
+			fixture.componentRef.setInput('methods', ['branch']);
+			expect(component.help_text()).not.toContain('bolt11');
+		});
+
+		it('should hide the caveat when no methods are supplied', () => {
+			expect(component.help_text()).not.toContain('bolt11');
+		});
+
+		it('should never show the caveat for melt quotes', () => {
+			fixture.componentRef.setInput('nut', 'nut5');
+			fixture.componentRef.setInput('methods', ['bolt11', 'branch']);
+			expect(component.help_text()).not.toContain('bolt11');
+		});
+	});
 });

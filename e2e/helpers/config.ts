@@ -315,8 +315,8 @@ export function mintUnitsFor(config: ConfigInfo): MintUnit[] {
 			const header = line.match(/^\s*\[\[?([^\]]+)\]\]?/);
 			if (header) in_ln = header[1] === 'ln';
 			if (!in_ln) continue;
-			const unit = line.match(/^\s*unit\s*=\s*"(sat|usd|eur)"/);
-			if (unit && !units.includes(unit[1] as MintUnit)) units.push(unit[1] as MintUnit);
+			const unit = line.match(/^\s*unit\s*=\s*"([a-z0-9_-]+)"/);
+			if (unit && !units.includes(unit[1])) units.push(unit[1]);
 		}
 	} else {
 		const compose = stripComments(fs.readFileSync(path.join(dir, 'compose.yml'), 'utf8'));

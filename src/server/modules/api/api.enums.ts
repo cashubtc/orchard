@@ -13,7 +13,7 @@ import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
 import {MintAnalyticsMetric} from '#server/modules/cashu/mintanalytics/mintanalytics.enums';
 import {LightningAnalyticsMetric} from '#server/modules/lightning/analytics/lnanalytics.enums';
 import {BitcoinAnalyticsMetric} from '#server/modules/bitcoin/analytics/btcanalytics.enums';
-import {MintUnit, MintQuoteState, MeltQuoteState, MintProofState} from '#server/modules/cashu/cashu.enums';
+import {MintQuoteState, MeltQuoteState, MintProofState} from '#server/modules/cashu/cashu.enums';
 import {AiMessageRole} from '#server/modules/ai/ai.enums';
 import {AssistantToolName, AiAssistant} from '#server/modules/ai/assistant/ai.assistant.enums';
 import {AgentKey, AgentRunStatus, AgentScheduleKind} from '#server/modules/ai/agent/agent.enums';
@@ -31,18 +31,6 @@ import {
 import {SystemMetric, SystemMetricsInterval} from '#server/modules/system/metrics/sysmetrics.enums';
 import {MintMetricType} from '#server/modules/cashu/mintmetrics/mintmetrics.enums';
 
-registerEnumType(MintUnit, {
-	name: 'MintUnit',
-	description: 'Supported currency units for Cashu mints',
-	valuesMap: {
-		sat: {description: 'Bitcoin satoshis'},
-		msat: {description: 'Bitcoin millisatoshis'},
-		usd: {description: 'US dollars'},
-		eur: {description: 'Euros'},
-		btc: {description: 'Bitcoin'},
-		auth: {description: 'Authentication token'},
-	},
-});
 registerEnumType(MintQuoteState, {
 	name: 'MintQuoteState',
 	description: 'State of a Cashu mint quote',

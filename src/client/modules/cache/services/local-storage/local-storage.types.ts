@@ -3,7 +3,7 @@ import {ChartType} from '@client/modules/mint/enums/chart-type.enum';
 import {MintDataType} from '@client/modules/mint/enums/data-type.enum';
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 /* Shared Dependencies */
-import {MintUnit, AnalyticsInterval, SystemMetricsInterval} from '@shared/generated.types';
+import {AnalyticsInterval, SystemMetricsInterval} from '@shared/generated.types';
 
 export type Timezone = {
 	tz: string | null;
@@ -44,7 +44,7 @@ export type BitcoinOracleSettings = {
 export type MintDashboardSettings = {
 	date_start: number | null;
 	date_preset: DateRangePreset | null;
-	units: MintUnit[] | null;
+	units: string[] | null;
 	interval: AnalyticsInterval | null;
 	summary_nav: string[] | null;
 	chart_nav: string[] | null;
@@ -68,7 +68,7 @@ export type MintSystemSettings = SystemMetricsSettings;
 export type MintKeysetsSettings = {
 	date_start: number | null;
 	date_preset: DateRangePreset | null;
-	units: MintUnit[] | null;
+	units: string[] | null;
 	status: boolean[] | null;
 };
 
@@ -76,7 +76,7 @@ export type MintDatabaseSettings = {
 	date_start: number | null;
 	date_preset: DateRangePreset | null;
 	type: MintDataType | null;
-	units: MintUnit[] | null;
+	units: string[] | null;
 	states: string[] | null;
 };
 

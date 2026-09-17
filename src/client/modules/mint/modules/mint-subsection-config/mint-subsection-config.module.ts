@@ -30,7 +30,7 @@ import {MintSubsectionConfigFormEnabledComponent} from './components/mint-subsec
 import {MintSubsectionConfigFormEnabledDialogComponent} from './components/mint-subsection-config-form-enabled-dialog/mint-subsection-config-form-enabled-dialog.component';
 import {MintSubsectionConfigFormQuoteTtlComponent} from './components/mint-subsection-config-form-quote-ttl/mint-subsection-config-form-quote-ttl.component';
 import {MintSubsectionConfigFormBolt11Component} from './components/mint-subsection-config-form-bolt11/mint-subsection-config-form-bolt11.component';
-import {MintSubsectionConfigFormBolt12Component} from './components/mint-subsection-config-form-bolt12/mint-subsection-config-form-bolt12.component';
+import {MintSubsectionConfigFormMethodComponent} from './components/mint-subsection-config-form-method/mint-subsection-config-form-method.component';
 import {MintSubsectionConfigFormOnchainComponent} from './components/mint-subsection-config-form-onchain/mint-subsection-config-form-onchain.component';
 import {MintSubsectionConfigFormMinComponent} from './components/mint-subsection-config-form-min/mint-subsection-config-form-min.component';
 import {MintSubsectionConfigFormMaxComponent} from './components/mint-subsection-config-form-max/mint-subsection-config-form-max.component';
@@ -57,7 +57,7 @@ import {MintSubsectionConfigNut29Component} from './components/mint-subsection-c
 		MintSubsectionConfigFormQuoteTtlComponent,
 		MintSubsectionConfigChartQuoteTtlComponent,
 		MintSubsectionConfigFormBolt11Component,
-		MintSubsectionConfigFormBolt12Component,
+		MintSubsectionConfigFormMethodComponent,
 		MintSubsectionConfigFormOnchainComponent,
 		MintSubsectionConfigFormMinComponent,
 		MintSubsectionConfigFormMaxComponent,

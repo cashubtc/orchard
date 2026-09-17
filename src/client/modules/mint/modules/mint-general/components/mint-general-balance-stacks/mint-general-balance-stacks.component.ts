@@ -1,4 +1,7 @@
+/* Core Dependencies */
 import {ChangeDetectionStrategy, Component, input, computed} from '@angular/core';
+/* Application Dependencies */
+import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
 
 @Component({
 	selector: 'orc-mint-general-balance-stacks',
@@ -14,11 +17,7 @@ export class MintGeneralBalanceStacksComponent {
 	public reserve = input.required<number | null>();
 
 	public unit_class = computed(() => {
-		const lower_unit = this.unit().toLowerCase();
-		if (lower_unit === 'sat') return 'coin-bitcoin';
-		if (lower_unit === 'usd') return 'coin-usd';
-		if (lower_unit === 'eur') return 'coin-eur';
-		return 'coin-unknown';
+		return `coin-${getUnitMeta(this.unit()).asset}`;
 	});
 	public asset_rows = computed(() => this.buildRows(this.calcStackSize(this.assets(), this.liabilities())));
 	public liability_rows = computed(() => this.buildRows(this.calcStackSize(this.liabilities(), this.assets())));

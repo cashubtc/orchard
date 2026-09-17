@@ -1,15 +1,11 @@
 /* Vendor Dependencies */
 import {DateTime} from 'luxon';
+/* Native Dependencies */
+import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
 
 export function getCurrencySymbol(unit: string): string {
-	switch (unit) {
-		case 'usd':
-			return '$';
-		case 'eur':
-			return '€';
-		default:
-			return unit.toUpperCase();
-	}
+	const meta = getUnitMeta(unit);
+	return meta.glyph ?? meta.code;
 }
 
 /* *******************************************************

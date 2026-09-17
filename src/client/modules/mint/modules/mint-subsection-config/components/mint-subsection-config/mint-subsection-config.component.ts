@@ -32,7 +32,7 @@ import {ComponentCanDeactivate} from '@client/modules/routing/interfaces/routing
 import {NonNullableMintConfigSettings} from '@client/modules/settings/types/setting.types';
 import {NavTertiaryItem} from '@client/modules/nav/types/nav-tertiary-item.type';
 import {NavTertiaryItemStatus} from '@client/modules/nav/enums/nav-tertiary-item-status.enum';
-import {LocalAmountPipe} from '@client/modules/local/pipes/local-amount/local-amount.pipe';
+import {getUnitMeta, toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 /* Native Dependencies */
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
@@ -63,6 +63,24 @@ enum TertiaryNav {
 	Nut29 = 'nav29',
 }
 
+type MethodDisplay = {label: string; icon: string; svg_icon: boolean};
+
+/** One advertised unit/method pairing, precomputed for the template */
+type MethodSection = MethodDisplay & {
+	unit: string;
+	method: string;
+	/** Stable identity for the template repeater */
+	key: string;
+	quotes: MintMintQuote[] | MintMeltQuote[];
+};
+
+/** Presentation for the payment methods Orchard recognizes; anything else falls back to its own name */
+const METHOD_DISPLAY: Record<string, MethodDisplay> = {
+	bolt11: {label: 'Bolt 11', icon: 'bolt', svg_icon: false},
+	bolt12: {label: 'Bolt 12', icon: 'double_bolt', svg_icon: true},
+	onchain: {label: 'Onchain', icon: 'deployed_code', svg_icon: false},
+};
+
 @Component({
 	selector: 'orc-mint-subsection-config',
 	standalone: false,
@@ -88,16 +106,14 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 	public locale!: string;
 	public data_loading: boolean = true;
 	public mint_quotes: MintMintQuote[] = [];
-	public mint_quotes_bolt11: MintMintQuote[] = [];
-	public mint_quotes_bolt12: MintMintQuote[] = [];
-	public mint_quotes_onchain: MintMintQuote[] = [];
+	public mint_quotes_by_method: Record<string, MintMintQuote[]> = {};
 	public melt_quotes: MintMeltQuote[] = [];
-	public melt_quotes_bolt11: MintMeltQuote[] = [];
-	public melt_quotes_bolt12: MintMeltQuote[] = [];
-	public melt_quotes_onchain: MintMeltQuote[] = [];
+	public melt_quotes_by_method: Record<string, MintMeltQuote[]> = {};
 	public nut15_methods: Nut15Method[] = [];
 	public nut17_commands: Nut17Commands[] = [];
-	public method_index: string[] = [];
+	public nut4_methods: string[] = [];
+	public minting_sections: MethodSection[] = [];
+	public melting_sections: MethodSection[] = [];
 	public form_config: FormGroup = new FormGroup({
 		minting: new FormGroup({
 			enabled: new FormControl(),
@@ -217,11 +233,11 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 		this.quote_ttls = this.route.snapshot.data['mint_quote_ttl'];
 		this.patchStaticFormElements();
 		this.initTertiaryNavStatus();
-		this.method_index = this.getMethodIndex();
 		this.minting_units = this.getUniqueUnits('nut4');
 		this.melting_units = this.getUniqueUnits('nut5');
 		this.nut15_methods = this.getNut15Methods();
 		this.nut17_commands = this.getNut17Commands();
+		this.buildMethodSections();
 		this.buildDynamicFormElements();
 		this.initChartData();
 		Object.keys(this.form_config.controls).forEach((form_group_key) => {
@@ -319,21 +335,13 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 			this.mint_info?.nuts.nut4.methods
 				.filter((method) => method.unit === unit)
 				.forEach((method) => {
-					const min_validators = [Validators.required, Validators.min(0)];
-					method.unit === 'sat' ? min_validators.push(OrchardValidators.integer) : min_validators.push(OrchardValidators.cents);
-					const max_validators = [Validators.required, OrchardValidators.minGreaterThan('min_amount')];
-					method.unit === 'sat' ? max_validators.push(OrchardValidators.integer) : max_validators.push(OrchardValidators.cents);
+					const {decimals} = getUnitMeta(method.unit);
+					const precision_validator = decimals === 0 ? OrchardValidators.integer : OrchardValidators.decimals(decimals);
+					const min_validators = [Validators.required, Validators.min(0), precision_validator];
+					const max_validators = [Validators.required, OrchardValidators.minGreaterThan('min_amount'), precision_validator];
 
-					const min_value =
-						method.min_amount !== null && method.min_amount !== undefined
-							? LocalAmountPipe.getConvertedAmount(unit, method.min_amount)
-							: method.min_amount;
-					const max_value =
-						method.max_amount !== null && method.max_amount !== undefined
-							? LocalAmountPipe.getConvertedAmount(unit, method.max_amount)
-							: method.max_amount;
-					const formatted_min = method.unit === 'sat' ? min_value : Number(min_value ?? 0).toFixed(2);
-					const formatted_max = method.unit === 'sat' ? max_value : Number(max_value ?? 0).toFixed(2);
+					const formatted_min = this.getFormattedAmount(method.unit, method.min_amount);
+					const formatted_max = this.getFormattedAmount(method.unit, method.max_amount);
 
 					(this.form_minting.get(unit) as FormGroup).addControl(
 						method.method,
@@ -351,21 +359,13 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 			this.mint_info?.nuts.nut5.methods
 				.filter((method) => method.unit === unit)
 				.forEach((method) => {
-					const min_validators = [Validators.required, Validators.min(0)];
-					method.unit === 'sat' ? min_validators.push(OrchardValidators.integer) : min_validators.push(OrchardValidators.cents);
-					const max_validators = [Validators.required, OrchardValidators.minGreaterThan('min_amount')];
-					method.unit === 'sat' ? max_validators.push(OrchardValidators.integer) : max_validators.push(OrchardValidators.cents);
+					const {decimals} = getUnitMeta(method.unit);
+					const precision_validator = decimals === 0 ? OrchardValidators.integer : OrchardValidators.decimals(decimals);
+					const min_validators = [Validators.required, Validators.min(0), precision_validator];
+					const max_validators = [Validators.required, OrchardValidators.minGreaterThan('min_amount'), precision_validator];
 
-					const min_value =
-						method.min_amount !== null && method.min_amount !== undefined
-							? LocalAmountPipe.getConvertedAmount(unit, method.min_amount)
-							: method.min_amount;
-					const max_value =
-						method.max_amount !== null && method.max_amount !== undefined
-							? LocalAmountPipe.getConvertedAmount(unit, method.max_amount)
-							: method.max_amount;
-					const formatted_min = method.unit === 'sat' ? min_value : Number(min_value ?? 0).toFixed(2);
-					const formatted_max = method.unit === 'sat' ? max_value : Number(max_value ?? 0).toFixed(2);
+					const formatted_min = this.getFormattedAmount(method.unit, method.min_amount);
+					const formatted_max = this.getFormattedAmount(method.unit, method.max_amount);
 
 					(this.form_melting.get(unit) as FormGroup).addControl(
 						method.method,
@@ -379,15 +379,48 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 		});
 	}
 
-	private getMethodIndex(): string[] {
-		const method_index: string[] = [];
-		this.mint_info?.nuts.nut4.methods.forEach((method) => {
-			method_index.push(`nut4:${method.unit}:${method.method}`);
-		});
-		this.mint_info?.nuts.nut5.methods.forEach((method) => {
-			method_index.push(`nut5:${method.unit}:${method.method}`);
-		});
-		return method_index;
+	/** Converts a stored method limit to the display precision of its unit */
+	private getFormattedAmount(unit: string, amount: number | null | undefined): number | string | null | undefined {
+		if (amount === null || amount === undefined) return amount;
+		const {decimals} = getUnitMeta(unit);
+		const display_amount = toDisplayAmount(unit, amount);
+		return decimals === 0 ? display_amount : display_amount.toFixed(decimals);
+	}
+
+	/* *******************************************************
+		Methods
+	******************************************************** */
+
+	/** Label and icon for a payment method; unrecognized methods show the mint's own name for it */
+	public getMethodDisplay(method: string): MethodDisplay {
+		return METHOD_DISPLAY[method] ?? {label: method, icon: 'payments', svg_icon: false};
+	}
+
+	/** Builds the flat unit/method sections the template renders, so nothing is computed during change detection */
+	private buildMethodSections(): void {
+		this.minting_sections = this.getMethodSections('nut4', this.minting_units, this.mint_quotes_by_method);
+		this.melting_sections = this.getMethodSections('nut5', this.melting_units, this.melt_quotes_by_method);
+		this.nut4_methods = [...new Set(this.minting_sections.map((section) => section.method))];
+	}
+
+	/** Pairs each advertised method with its unit, display and quotes, grouped by unit */
+	private getMethodSections(
+		nut: 'nut4' | 'nut5',
+		units: string[],
+		quotes_by_method: Record<string, MintMintQuote[] | MintMeltQuote[]>,
+	): MethodSection[] {
+		const methods = this.mint_info?.nuts[nut].methods ?? [];
+		return units.flatMap((unit) =>
+			methods
+				.filter((method) => method.unit === unit)
+				.map((method) => ({
+					unit,
+					method: method.method,
+					key: `${unit}:${method.method}`,
+					...this.getMethodDisplay(method.method),
+					quotes: quotes_by_method[method.method] ?? [],
+				})),
+		);
 	}
 
 	/* *******************************************************
@@ -466,6 +499,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 	private async initChartData(): Promise<void> {
 		this.locale = this.settingDeviceService.getLocale();
 		await this.loadChartData();
+		this.buildMethodSections();
 		this.data_loading = false;
 		this.cdr.detectChanges();
 	}
@@ -476,13 +510,18 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 
 		const [mint_quotes, melt_quotes] = await lastValueFrom(forkJoin([mint_quotes_obs, melt_quotes_obs]));
 		this.mint_quotes = mint_quotes;
-		this.mint_quotes_bolt11 = mint_quotes.filter((quote) => quote.payment_method === 'bolt11');
-		this.mint_quotes_bolt12 = mint_quotes.filter((quote) => quote.payment_method === 'bolt12');
-		this.mint_quotes_onchain = mint_quotes.filter((quote) => quote.payment_method === 'onchain');
+		this.mint_quotes_by_method = this.groupQuotesByMethod(mint_quotes);
 		this.melt_quotes = melt_quotes;
-		this.melt_quotes_bolt11 = melt_quotes.filter((quote) => quote.payment_method === 'bolt11');
-		this.melt_quotes_bolt12 = melt_quotes.filter((quote) => quote.payment_method === 'bolt12');
-		this.melt_quotes_onchain = melt_quotes.filter((quote) => quote.payment_method === 'onchain');
+		this.melt_quotes_by_method = this.groupQuotesByMethod(melt_quotes);
+	}
+
+	/** Buckets quotes by their payment method so any advertised method gets its own stats */
+	private groupQuotesByMethod<T extends {payment_method: string}>(quotes: T[]): Record<string, T[]> {
+		const quotes_by_method: Record<string, T[]> = {};
+		quotes.forEach((quote) => {
+			(quotes_by_method[quote.payment_method] ??= []).push(quote);
+		});
+		return quotes_by_method;
 	}
 
 	/* *******************************************************
@@ -600,11 +639,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 			nut === 'nut4'
 				? (nut_method as OrchardNut4Method)?.[control_name as keyof OrchardNut4Method]
 				: (nut_method as OrchardNut5Method)?.[control_name as keyof OrchardNut5Method];
-		const converted_val =
-			raw_val !== null && raw_val !== undefined && typeof raw_val === 'number'
-				? LocalAmountPipe.getConvertedAmount(unit, raw_val)
-				: raw_val;
-		const formatted_val = unit === 'sat' || typeof converted_val !== 'number' ? converted_val : Number(converted_val).toFixed(2);
+		const formatted_val = typeof raw_val === 'number' ? this.getFormattedAmount(unit, raw_val) : raw_val;
 		form_group.get(unit)?.get(method)?.get(control_name)?.setValue(formatted_val);
 	}
 

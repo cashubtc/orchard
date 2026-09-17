@@ -53,7 +53,7 @@ import {MintAnalytic} from '@client/modules/mint/classes/mint-analytic.class';
 import {MintActivitySummary} from '@client/modules/mint/classes/mint-activity-summary.class';
 import {ChartType} from '@client/modules/mint/enums/chart-type.enum';
 /* Shared Dependencies */
-import {AssistantToolName, AnalyticsInterval, MintActivityPeriod, MintUnit} from '@shared/generated.types';
+import {AssistantToolName, AnalyticsInterval, MintActivityPeriod} from '@shared/generated.types';
 
 enum NavSummary {
 	Mint = 'summary1',
@@ -595,7 +595,7 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 		this.reloadDynamicData();
 	}
 
-	public onUnitsChange(event: MintUnit[]): void {
+	public onUnitsChange(event: string[]): void {
 		const current = this.page_settings();
 		const updated = {...current, units: event};
 		this.page_settings.set(updated);

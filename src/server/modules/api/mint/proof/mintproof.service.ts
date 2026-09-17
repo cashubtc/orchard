@@ -9,7 +9,7 @@ import {MintService} from '#server/modules/api/mint/mint.service';
 import {ErrorService} from '#server/modules/error/error.service';
 import {median} from '#server/modules/math/median';
 /* Native Dependencies */
-import {MintUnit, MintProofState} from '#server/modules/cashu/cashu.enums';
+import {MintProofState} from '#server/modules/cashu/cashu.enums';
 /* Local Dependencies */
 import {OrchardMintProofGroupStats} from './mintproof.model.js';
 
@@ -23,7 +23,7 @@ export class MintProofService {
 		private errorService: ErrorService,
 	) {}
 
-	async getMintProofGroupStats(tag: string, unit: MintUnit): Promise<OrchardMintProofGroupStats> {
+	async getMintProofGroupStats(tag: string, unit: string): Promise<OrchardMintProofGroupStats> {
 		return this.mintService.withDbClient(async (client) => {
 			try {
 				const cashu_mint_pgs: CashuMintProofGroup[] = await this.cashuMintDatabaseService.listProofGroups(client, {

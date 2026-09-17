@@ -55,6 +55,14 @@ function eventToast(page: Page): Locator {
 	return page.locator('orc-event-general-stack orc-event-general-stack-message .event-message-content');
 }
 
+/** The sat minting (NUT-04) sub-form for a payment method, found through its
+ *  sticky section header — the page pairs one section per unit+method and only
+ *  bolt11/onchain still have a dedicated wrapper component to select on. */
+function satMethodForm(page: Page, label: string): Locator {
+	const section = page.locator('.sticky-config').filter({hasText: 'SAT Configuration'}).filter({hasText: label}).first();
+	return section.locator('xpath=following-sibling::div[contains(@class,"nut-wrapper")][1]');
+}
+
 /** Clean drive of a Material input so ReactiveForms sees `input` in the right
  *  focus/blur order. Click → select-all → delete → type. */
 async function typeInto(field: Locator, value: string): Promise<void> {
@@ -104,9 +112,9 @@ test.describe('mint config mutation — /mint/config', {tag: '@mint'}, () => {
 	//   onchain — cln-cdk + lnd-cdk (BDK backend) + fake-cdk (fake_wallet)
 	// The runtime skip reads the daemon itself, so the matrix self-adjusts.
 	for (const scenario of [
-		{method: 'bolt11', form: 'orc-mint-subsection-config-form-bolt11'},
-		{method: 'bolt12', form: 'orc-mint-subsection-config-form-bolt12'},
-		{method: 'onchain', form: 'orc-mint-subsection-config-form-onchain'},
+		{method: 'bolt11', label: 'Bolt 11'},
+		{method: 'bolt12', label: 'Bolt 12'},
+		{method: 'onchain', label: 'Onchain'},
 	] as const) {
 		test(`editing the sat/${scenario.method} min amount round-trips to the daemon and reverts`, async ({page}, testInfo) => {
 			const config = getConfig(testInfo.project.name);
@@ -121,12 +129,11 @@ test.describe('mint config mutation — /mint/config', {tag: '@mint'}, () => {
 			const probe = before!.min_amount + 1;
 			expect(probe, 'probe min must stay below the daemon max').toBeLessThan(before!.max_amount);
 
-			// The method's minting (NUT-04) block is the first such form on the
-			// page (NUT-05 melting renders its own later).
-			const minInput = page
-				.locator(scenario.form)
-				.first()
-				.locator('orc-mint-subsection-config-form-min input[matInput]');
+			// Scope to the sat section for this method: the page renders one
+			// section per unit+method pair, and stacks advertise the same
+			// methods under more than one unit. Within that, the minting
+			// (NUT-04) block comes first — NUT-05 melting renders its own later.
+			const minInput = satMethodForm(page, scenario.label).locator('orc-mint-subsection-config-form-min input[matInput]');
 			await expect(minInput).toBeVisible();
 
 			try {

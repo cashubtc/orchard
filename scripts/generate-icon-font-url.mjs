@@ -61,7 +61,6 @@ const ICONS = [
   'person',
   'person_add',
   'qr_code_2_add',
-  'question_mark',
   'restore',
   'save',
   'save_clock',
@@ -110,7 +109,8 @@ const ICONS = [
   'open_with',
   'play_circle',
   'merge',
-  'home'
+  'home',
+  'money_bag'
 ];
 
 // Sort alphabetically and remove duplicates

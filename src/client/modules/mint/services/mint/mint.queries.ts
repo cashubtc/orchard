@@ -153,7 +153,7 @@ export const MINT_KEYSETS_QUERY = `{
 }`;
 
 export const MINT_ANALYTICS_BALANCES_QUERY = `
-query MintAnalyticsBalances($units: [MintUnit!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval, $timezone: Timezone) {
+query MintAnalyticsBalances($units: [String!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval, $timezone: Timezone) {
 	mint_analytics_balances(units: $units, date_start: $date_start, date_end: $date_end, interval: $interval, timezone: $timezone) {
 		unit
 		amount
@@ -162,7 +162,7 @@ query MintAnalyticsBalances($units: [MintUnit!], $date_start: UnixTimestamp, $da
 }`;
 
 export const MINT_ANALYTICS_MINTS_QUERY = `
-query MintAnalyticsMints($units: [MintUnit!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval, $timezone: Timezone) {
+query MintAnalyticsMints($units: [String!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval, $timezone: Timezone) {
 	mint_analytics_mints(units: $units, date_start: $date_start, date_end: $date_end, interval: $interval, timezone: $timezone) {
 		unit
 		amount
@@ -171,7 +171,7 @@ query MintAnalyticsMints($units: [MintUnit!], $date_start: UnixTimestamp, $date_
 }`;
 
 export const MINT_ANALYTICS_MELTS_QUERY = `
-query MintAnalyticsMelts($units: [MintUnit!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval, $timezone: Timezone) {
+query MintAnalyticsMelts($units: [String!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval, $timezone: Timezone) {
 	mint_analytics_melts(units: $units, date_start: $date_start, date_end: $date_end, interval: $interval, timezone: $timezone) {
 		unit
 		amount
@@ -180,7 +180,7 @@ query MintAnalyticsMelts($units: [MintUnit!], $date_start: UnixTimestamp, $date_
 }`;
 
 export const MINT_ANALYTICS_SWAPS_QUERY = `
-query MintAnalyticsSwaps($units: [MintUnit!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval, $timezone: Timezone) {
+query MintAnalyticsSwaps($units: [String!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval, $timezone: Timezone) {
 	mint_analytics_swaps(units: $units, date_start: $date_start, date_end: $date_end, interval: $interval, timezone: $timezone) {
 		unit
 		amount
@@ -189,7 +189,7 @@ query MintAnalyticsSwaps($units: [MintUnit!], $date_start: UnixTimestamp, $date_
 }`;
 
 export const MINT_ANALYTICS_FEES_QUERY = `
-query MintAnalyticsFees($units: [MintUnit!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval, $timezone: Timezone) {
+query MintAnalyticsFees($units: [String!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval, $timezone: Timezone) {
 	mint_analytics_fees(units: $units, date_start: $date_start, date_end: $date_end, interval: $interval, timezone: $timezone) {
 		unit
 		amount
@@ -198,7 +198,7 @@ query MintAnalyticsFees($units: [MintUnit!], $date_start: UnixTimestamp, $date_e
 }`;
 
 export const MINT_ANALYTICS_PROOFS_QUERY = `
-query MintAnalyticsProofs($units: [MintUnit!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval, $timezone: Timezone) {
+query MintAnalyticsProofs($units: [String!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval, $timezone: Timezone) {
 	mint_analytics_proofs(units: $units, date_start: $date_start, date_end: $date_end, interval: $interval, timezone: $timezone) {
 		unit
 		amount
@@ -208,7 +208,7 @@ query MintAnalyticsProofs($units: [MintUnit!], $date_start: UnixTimestamp, $date
 }`;
 
 export const MINT_ANALYTICS_PROMISES_QUERY = `
-query MintAnalyticsPromises($units: [MintUnit!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval, $timezone: Timezone) {
+query MintAnalyticsPromises($units: [String!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $interval: AnalyticsInterval, $timezone: Timezone) {
 	mint_analytics_promises(units: $units, date_start: $date_start, date_end: $date_end, interval: $interval, timezone: $timezone) {
 		unit
 		amount
@@ -229,7 +229,7 @@ export const MINT_ANALYTICS_BACKFILL_STATUS_QUERY = `{
 }`;
 
 export const MINT_MINT_QUOTES_QUERY = `
-query MintMintQuotes($units: [MintUnit!], $states: [MintQuoteState!], $date_start: UnixTimestamp, $date_end: UnixTimestamp) {
+query MintMintQuotes($units: [String!], $states: [MintQuoteState!], $date_start: UnixTimestamp, $date_end: UnixTimestamp) {
 	mint_mint_quotes(units: $units, states: $states, date_start: $date_start, date_end: $date_end) {
 		id
 		amount
@@ -244,7 +244,7 @@ query MintMintQuotes($units: [MintUnit!], $states: [MintQuoteState!], $date_star
 }`;
 
 export const MINT_MELT_QUOTES_QUERY = `
-query MintMeltQuotes($units: [MintUnit!], $states: [MeltQuoteState!], $date_start: UnixTimestamp, $date_end: UnixTimestamp) {
+query MintMeltQuotes($units: [String!], $states: [MeltQuoteState!], $date_start: UnixTimestamp, $date_end: UnixTimestamp) {
 	mint_melt_quotes(units: $units, states: $states, date_start: $date_start, date_end: $date_end) {
 		id
 		amount
@@ -390,7 +390,7 @@ mutation MintRotateKeyset($unit: String!, $amounts: [Float!], $input_fee_ppk: In
 }`;
 
 export const MINT_MINT_QUOTES_DATA_QUERY = `
-query MintMintQuotes($units: [MintUnit!], $states: [MintQuoteState!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $page: Int, $page_size: Int) {
+query MintMintQuotes($units: [String!], $states: [MintQuoteState!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $page: Int, $page_size: Int) {
 	mint_mint_quotes(units: $units, states: $states, date_start: $date_start, date_end: $date_end, page: $page, page_size: $page_size) {
 		id
 		amount
@@ -412,7 +412,7 @@ query MintMintQuotes($units: [MintUnit!], $states: [MintQuoteState!], $date_star
 }`;
 
 export const MINT_MELT_QUOTES_DATA_QUERY = `
-query MintMeltQuotes($units: [MintUnit!], $states: [MeltQuoteState!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $page: Int, $page_size: Int) {
+query MintMeltQuotes($units: [String!], $states: [MeltQuoteState!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $page: Int, $page_size: Int) {
 	mint_melt_quotes(units: $units, states: $states, date_start: $date_start, date_end: $date_end, page: $page, page_size: $page_size) {
 		id
 		amount
@@ -454,7 +454,7 @@ mutation MintDatabaseRestore($filebase64: Base64!) {
 }`;
 
 export const MINT_PROOF_GROUP_STATS_QUERY = `
-query MintProofGroupStats($unit: MintUnit!) {
+query MintProofGroupStats($unit: String!) {
 	mint_proof_group_stats(unit: $unit) {
 		median
 	}
@@ -513,7 +513,7 @@ query MintActivitySummary($period: MintActivityPeriod!, $timezone: Timezone) {
 }`;
 
 export const MINT_SWAPS_DATA_QUERY = `
-query MintSwaps($units: [MintUnit!], $id_keysets: [String!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $page: Int, $page_size: Int) {
+query MintSwaps($units: [String!], $id_keysets: [String!], $date_start: UnixTimestamp, $date_end: UnixTimestamp, $page: Int, $page_size: Int) {
 	mint_swaps(units: $units, id_keysets: $id_keysets, date_start: $date_start, date_end: $date_end, page: $page, page_size: $page_size) {
 		operation_id
 		keyset_ids

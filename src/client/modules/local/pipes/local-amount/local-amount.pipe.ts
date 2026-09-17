@@ -4,7 +4,8 @@ import {Pipe, PipeTransform} from '@angular/core';
 import {SettingDeviceService} from '@client/modules/settings/services/setting-device/setting-device.service';
 import {CurrencyType} from '@client/modules/cache/services/local-storage/local-storage.types';
 /* Native Dependencies */
-import {getCurrencySymbol} from '@client/modules/local/helpers/local.helpers';
+import {getUnitMeta, getUnitSymbol, toDisplayAmountFor} from '@client/modules/local/helpers/unit.helpers';
+import type {UnitMeta} from '@client/modules/local/types/unit.types';
 
 @Pipe({
 	name: 'localAmount',
@@ -18,22 +19,14 @@ export class LocalAmountPipe implements PipeTransform {
 		if (amount === null || amount === undefined) return '';
 		const locale = this.settingDeviceService.getLocale();
 		const currency = this.settingDeviceService.getCurrency();
-		const unit_lower = unit.toLowerCase();
+		const meta = getUnitMeta(unit);
 
-		switch (unit_lower) {
-			case 'msat':
-				return this.transformSat(Math.ceil(amount / 1000), locale, currency.type_btc, abbreviate, unitless);
-			case 'sat':
-				return this.transformSat(amount, locale, currency.type_btc, abbreviate, unitless);
-			case 'btc':
-				return this.transformBtc(amount, locale);
-			case 'usd':
-				return this.transformFiat(amount, unit, locale, currency.type_fiat, section, abbreviate, unitless);
-			case 'eur':
-				return this.transformFiat(amount, unit, locale, currency.type_fiat, section, abbreviate, unitless);
-			default:
-				return this.transformStandard(amount, locale, unit, abbreviate, unitless);
+		if (meta.family === 'btc') {
+			if (meta.decimals > 0) return this.transformBtc(amount, locale, meta);
+			return this.transformSat(toDisplayAmountFor(meta, amount), locale, currency.type_btc, abbreviate, unitless);
 		}
+		if (meta.family === 'fiat') return this.transformFiat(amount, meta, locale, currency.type_fiat, section, abbreviate, unitless);
+		return this.transformStandard(amount, locale, meta.code, abbreviate, unitless);
 	}
 
 	/**
@@ -66,15 +59,14 @@ export class LocalAmountPipe implements PipeTransform {
 		}
 	}
 
-	private transformBtc(amount: number, locale: string): string {
-		const suffix = 'BTC';
-		const btc_string = amount.toLocaleString(locale, {minimumFractionDigits: 8, maximumFractionDigits: 8});
-		return this.formatStandard(btc_string, suffix);
+	private transformBtc(amount: number, locale: string, meta: UnitMeta): string {
+		const btc_string = amount.toLocaleString(locale, {minimumFractionDigits: meta.decimals, maximumFractionDigits: meta.decimals});
+		return this.formatStandard(btc_string, meta.code);
 	}
 
 	private transformFiat(
 		amount: number,
-		unit: string,
+		meta: UnitMeta,
 		locale: string,
 		currency: CurrencyType,
 		section?: string,
@@ -82,18 +74,19 @@ export class LocalAmountPipe implements PipeTransform {
 		unitless: boolean = false,
 	): string {
 		let fiat_amount = amount;
-		if (section === 'mint' || section === undefined) fiat_amount = LocalAmountPipe.getConvertedAmount(unit, amount);
+		/* Mint amounts arrive in minor units (215 -> 2.15); other sections pass values already converted */
+		if (section === 'mint' || section === undefined) fiat_amount = toDisplayAmountFor(meta, amount);
 		const fiat_amount_string = abbreviate
 			? this.abbreviateAmount(fiat_amount, locale)
-			: fiat_amount.toLocaleString(locale, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+			: fiat_amount.toLocaleString(locale, {minimumFractionDigits: meta.decimals, maximumFractionDigits: meta.decimals});
 		if (unitless) return fiat_amount_string;
 		switch (currency) {
 			case CurrencyType.GLYPH:
-				return this.formatPreceding(fiat_amount_string, getCurrencySymbol(unit.toLowerCase()));
+				return this.formatPreceding(fiat_amount_string, getUnitSymbol(meta));
 			case CurrencyType.CODE:
-				return this.formatStandard(fiat_amount_string, unit.toUpperCase());
+				return this.formatStandard(fiat_amount_string, meta.code);
 			default:
-				return this.formatStandard(fiat_amount_string, unit.toUpperCase());
+				return this.formatStandard(fiat_amount_string, meta.code);
 		}
 	}
 
@@ -126,22 +119,5 @@ export class LocalAmountPipe implements PipeTransform {
             </span>
         </span>
         `;
-	}
-
-	public static getConvertedAmount(unit: string, amount: number): number {
-		switch (unit.toLowerCase()) {
-			case 'sat':
-				return amount;
-			case 'msat':
-				return Math.ceil(amount / 1000);
-			case 'btc':
-				return amount;
-			case 'usd':
-				return amount / 100;
-			case 'eur':
-				return amount / 100;
-			default:
-				return amount;
-		}
 	}
 }

@@ -13,7 +13,6 @@ import type {
 	CashuProtectedEndpoint,
 } from '#server/modules/cashu/mintapi/cashumintapi.types';
 import type {CashuMintInfoRpc} from '#server/modules/cashu/mintrpc/cashumintrpc.types';
-import {MintUnit} from '#server/modules/cashu/cashu.enums';
 
 @ObjectType({description: 'NUT support status'})
 export class OrchardNutSupported {
@@ -347,8 +346,8 @@ export class OrchardNut15Method {
 	@Field(() => String, {description: 'Payment method identifier'})
 	method: string;
 
-	@Field(() => MintUnit, {description: 'Currency unit'})
-	unit: MintUnit;
+	@Field(() => String, {description: 'Currency unit'})
+	unit: string;
 
 	constructor(method: CashuNut15Method) {
 		this.method = method.method;

@@ -1,10 +1,10 @@
 /* Shared Dependencies */
-import {OrchardMintMintQuote, MintQuoteState, MintUnit} from '@shared/generated.types';
+import {OrchardMintMintQuote, MintQuoteState} from '@shared/generated.types';
 
 export class MintMintQuote implements OrchardMintMintQuote {
 	public id: string;
 	public amount: number | null;
-	public unit: MintUnit;
+	public unit: string;
 	public request: string;
 	public state: MintQuoteState;
 	public request_lookup_id: string | null;

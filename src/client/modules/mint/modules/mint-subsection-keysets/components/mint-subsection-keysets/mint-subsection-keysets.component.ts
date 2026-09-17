@@ -41,7 +41,7 @@ import {MintAnalyticKeyset} from '@client/modules/mint/classes/mint-analytic.cla
 import {MintKeysetCount} from '@client/modules/mint/classes/mint-keyset-count.class';
 import {MintSubsectionKeysetsTableRow} from '@client/modules/mint/modules/mint-subsection-keysets/classes/mint-subsection-keysets-table-row.class';
 /* Shared Dependencies */
-import {MintUnit, AnalyticsInterval, AssistantToolName, AiAssistant} from '@shared/generated.types';
+import {AnalyticsInterval, AssistantToolName, AiAssistant} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-mint-subsection-keysets',
@@ -284,7 +284,7 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 		Form                      
 	******************************************************** */
 
-	private resetForm(unit?: MintUnit): void {
+	private resetForm(unit?: string): void {
 		this.form_keyset.markAsPristine();
 		const form_unit = unit ?? this.getDefaultUnit();
 		const form_input_fee_ppk = this.getKeysetInputFeePpk(form_unit);
@@ -304,9 +304,9 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 		}
 	}
 
-	private getDefaultUnit(): MintUnit {
+	private getDefaultUnit(): string {
 		const possible_units = Array.from(new Set(this.mint_keysets.map((keyset) => keyset.unit)));
-		if (possible_units.includes(MintUnit.Sat)) return MintUnit.Sat;
+		if (possible_units.includes('sat')) return 'sat';
 		return this.mint_keysets.reduce(
 			(most_common_unit, keyset) => {
 				const count = this.mint_keysets.filter((k) => k.unit === keyset.unit).length;
@@ -316,12 +316,12 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 		).unit;
 	}
 
-	private getKeysetInputFeePpk(unit: MintUnit): number {
+	private getKeysetInputFeePpk(unit: string): number {
 		const active_keyset = this.mint_keysets.find((keyset) => keyset.unit === unit && keyset.active);
 		return active_keyset?.input_fee_ppk ?? 1000;
 	}
 
-	private getKeysetOut(unit: MintUnit): MintKeyset {
+	private getKeysetOut(unit: string): MintKeyset {
 		return (
 			this.mint_keysets
 				.filter((keyset) => keyset.unit === unit && keyset.active)
@@ -501,7 +501,7 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 		this.reloadDynamicData();
 	}
 
-	public onUnitsChange(event: MintUnit[]): void {
+	public onUnitsChange(event: string[]): void {
 		this.page_settings.units = event;
 		this.settingDeviceService.setMintKeysetsSettings(this.page_settings);
 		this.reloadDynamicData();
@@ -525,7 +525,7 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 		!this.keysets_rotation ? this.initKeysetsRotation() : this.onCloseRotation();
 	}
 
-	public onRotationUnit(unit: MintUnit): void {
+	public onRotationUnit(unit: string): void {
 		this.resetForm(unit);
 		this.initKeysetsRotation();
 	}
@@ -542,7 +542,7 @@ export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, O
 		}
 	}
 
-	public onUpdateUnit(unit: MintUnit): void {
+	public onUpdateUnit(unit: string): void {
 		this.keyset_out = this.getKeysetOut(unit);
 		this.getMintKeysetBalance();
 		this.cdr.detectChanges();
