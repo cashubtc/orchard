@@ -296,13 +296,27 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 			page,
 			context,
 		}, testInfo) => {
-			test.setTimeout(60_000);
+			test.setTimeout(180_000);
 			const config = getConfig(testInfo.project.name);
 			test.skip(config.mint !== 'cdk' || !mintUnitsFor(config).includes(unit), `no onchain ${unit} fixture on this stack`);
 
 			await switchType(page, 'Melts');
 			await expect(page.locator('orc-mint-subsection-database-control mat-select')).toContainText('Melts');
 			await page.keyboard.press('Escape');
+			// Orchard can be healthy while the activity container is still waiting
+			// for onchain deposits to confirm, before it creates the melt fixtures.
+			await expect
+				.poll(
+					() => mint.quoteCount(config, {kind: 'melt', ...defaultWindow(config), payment_method: 'onchain', unit}),
+					{
+						timeout: 120_000,
+						intervals: [1_000, 2_000, 5_000],
+						message: `Expected a seeded onchain ${unit} melt in the current date window; check ${config.name}-activity logs`,
+					},
+				)
+				.toBeGreaterThan(0);
+			// The previously fetched table will not pick up newly seeded quotes itself.
+			await page.reload();
 			await settle(page);
 			const onchain_row = page
 				.locator('orc-mint-subsection-database-table tr.entity-row')
