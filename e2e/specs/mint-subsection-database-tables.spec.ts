@@ -51,7 +51,7 @@
 import {test, expect, type Page} from '@playwright/test';
 import {DateTime} from 'luxon';
 
-import {getConfig} from '@e2e/helpers/config';
+import {getConfig, mintUnitsFor} from '@e2e/helpers/config';
 import {mint} from '@e2e/helpers/backend';
 import type {ConfigInfo} from '@e2e/types/config';
 
@@ -290,6 +290,57 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 		const chip = ((await first_row.locator('orc-mint-general-payment-method .text-nowrap').textContent()) ?? '').trim();
 		expect(chip.replace(/\s+/g, '').toLowerCase(), 'row chip should match the DB payment_method').toBe(db_row!.payment_method);
 	});
+
+	for (const unit of ['sat', 'ora']) {
+		test(`onchain ${unit} melt details display and copy the destination address from the mint DB`, async ({
+			page,
+			context,
+		}, testInfo) => {
+			test.setTimeout(60_000);
+			const config = getConfig(testInfo.project.name);
+			test.skip(config.mint !== 'cdk' || !mintUnitsFor(config).includes(unit), `no onchain ${unit} fixture on this stack`);
+
+			await switchType(page, 'Melts');
+			await expect(page.locator('orc-mint-subsection-database-control mat-select')).toContainText('Melts');
+			await page.keyboard.press('Escape');
+			await settle(page);
+			const onchain_row = page
+				.locator('orc-mint-subsection-database-table tr.entity-row')
+				.filter({has: page.locator('orc-mint-general-payment-method .text-nowrap', {hasText: /^ONCHAIN$/})})
+				.filter({has: page.locator('.mat-column-unit .text-sm', {hasText: new RegExp(`^\\s*${unit}\\s*$`, 'i')})})
+				.first();
+			const next_page = page.getByRole('button', {name: 'Next page'});
+			const range_label = page.locator('.mat-mdc-paginator-range-label');
+			while ((await onchain_row.count()) === 0 && (await next_page.isEnabled())) {
+				const previous_range = (await range_label.textContent()) ?? '';
+				await next_page.click();
+				await expect(range_label).not.toHaveText(previous_range);
+				await settle(page);
+			}
+			await expect(onchain_row).toBeVisible();
+			await onchain_row.click();
+
+			const detail = page.locator('orc-mint-subsection-database-table-melt');
+			await expect(detail).toBeVisible();
+			const quote_id = ((await detail.locator('.mega-string').first().textContent()) ?? '').trim();
+			const db_row = mint.quoteById(config, 'melt', quote_id);
+			expect(db_row).toMatchObject({unit, payment_method: 'onchain'});
+			// Read CDK's stored envelope independently of Orchard's normalizer.
+			const stored_request = JSON.parse(db_row!.request) as {Onchain: {address: string}};
+			const address = stored_request.Onchain.address;
+			expect(address).toMatch(/^bcrt1/);
+
+			await expect(detail.getByText('Onchain Address', {exact: true})).toBeVisible();
+			await expect(detail.getByText('Bolt 12 Offer', {exact: true})).toHaveCount(0);
+			await expect(detail.locator('.w-max-36 .mega-string')).toHaveText(address);
+			await expect(onchain_row.locator('.mat-column-request')).toContainText(address);
+			await expect(detail.locator('.qrcode-static svg')).toBeVisible();
+
+			await context.grantPermissions(['clipboard-read', 'clipboard-write'], {origin: config.orchardUrl});
+			await detail.locator('.w-max-36 .button-copy-action').click();
+			await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(address);
+		});
+	}
 
 	test('bolt12/onchain rows render the reusable amounts sub-card in their detail; bolt11 rows do not', async ({page}, testInfo) => {
 		const config = getConfig(testInfo.project.name);

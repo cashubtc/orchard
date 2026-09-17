@@ -128,16 +128,16 @@ export const mint = {
 	 *  (`Mint Quote ID` mega-string ↔ DB bijection). Null when no such row.
 	 *  nutshell keys mint quotes on `quote` and has no payment_method column
 	 *  (constant 'bolt11', matching Orchard's nutshell service). NOT cached. */
-	quoteById(config: ConfigInfo, kind: 'mint' | 'melt', id: string): {unit: string; payment_method: string} | null {
+	quoteById(config: ConfigInfo, kind: 'mint' | 'melt', id: string): {unit: string; payment_method: string; request: string} | null {
 		const safe_id = id.replace(/'/g, "''");
 		const sql =
 			config.mint === 'cdk'
-				? `SELECT unit, lower(payment_method) FROM ${kind}_quote WHERE id = '${safe_id}'`
-				: `SELECT unit, 'bolt11' FROM ${kind}_quotes WHERE quote = '${safe_id}'`;
+				? `SELECT unit, lower(payment_method), request FROM ${kind}_quote WHERE id = '${safe_id}'`
+				: `SELECT unit, 'bolt11', request FROM ${kind}_quotes WHERE quote = '${safe_id}'`;
 		const out = mintDbQuery(config, sql);
 		if (out === '') return null;
-		const [unit, payment_method] = out.split('|');
-		return {unit, payment_method};
+		const [unit, payment_method, ...request_parts] = out.split('|');
+		return {unit, payment_method, request: request_parts.join('|')};
 	},
 
 	/** Earliest mint-quote `created_time` (unix seconds) in the mint DB, or
