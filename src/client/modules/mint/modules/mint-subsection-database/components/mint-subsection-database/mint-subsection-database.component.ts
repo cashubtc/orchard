@@ -278,6 +278,13 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 		if (this.page_settings.type === MintDataType.MintSwaps) return this.getSwapsData();
 	}
 
+	/** Applies the current search to each new page of table data. */
+	private createDataSource<T>(rows: T[]): MatTableDataSource<T> {
+		const data_source = new MatTableDataSource(rows);
+		data_source.filter = this.filter.trim().toLowerCase();
+		return data_source;
+	}
+
 	private async getMintsData(): Promise<void> {
 		const mint_mint_quotes_data = await lastValueFrom(
 			this.mintService.getMintMintQuotesData({
@@ -291,7 +298,7 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 		);
 		this.data = {
 			type: DataType.MintMints,
-			source: new MatTableDataSource(mint_mint_quotes_data.mint_mint_quotes),
+			source: this.createDataSource(mint_mint_quotes_data.mint_mint_quotes),
 		};
 		this.count = mint_mint_quotes_data.count;
 	}
@@ -309,7 +316,7 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 		);
 		this.data = {
 			type: DataType.MintMelts,
-			source: new MatTableDataSource(mint_melt_quotes_data.mint_melt_quotes),
+			source: this.createDataSource(mint_melt_quotes_data.mint_melt_quotes),
 		};
 		this.count = mint_melt_quotes_data.count;
 	}
@@ -327,7 +334,7 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 
 		this.data = {
 			type: DataType.MintSwaps,
-			source: new MatTableDataSource(mint_swaps_data.mint_swaps),
+			source: this.createDataSource(mint_swaps_data.mint_swaps),
 		};
 		this.count = mint_swaps_data.count;
 	}
