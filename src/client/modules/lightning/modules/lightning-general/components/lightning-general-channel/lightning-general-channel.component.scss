@@ -24,13 +24,13 @@
 	}
 }
 
-.channel-unknown {
+.channel-custom {
 	.channel-balance-point,
 	.channel-tie {
-		@extend %orc-surface-tint-bg;
+		@extend %orc-asset-custom-bg;
 	}
 	.balance-indicator {
-		fill: var(--mat-sys-surface-tint);
+		fill: var(--orc-asset-custom);
 	}
 }
 

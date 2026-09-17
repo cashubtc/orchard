@@ -22,7 +22,7 @@
  *     confirmation blocks, and blocks Orchard from booting until the
  *     asset is live. The spec reads the asset off tapd via `tapcli`
  *     (differential source of truth) and asserts that the card shows a
- *     second row, the asset glyph uses `graphic-asset-unknown`, the row's
+ *     second row, the asset glyph uses `graphic-asset-custom`, the row's
  *     amount equals `parseInt(tapd.amount) / 10^decimal_display`, the
  *     UTXO count matches the number of tapd asset entries for that group,
  *     and the expanded metadata card shows the truncated group_key
@@ -32,7 +32,7 @@
  *   - Angular's `[unit]="row.unit"` is a *property* binding — it never
  *     becomes a DOM attribute, so `orc-graphic-asset[unit="sat"]` matches
  *     nothing. Use the stable class names set by `GraphicAssetComponent`:
- *     `.graphic-asset-btc` (sat/msat/btc), `.graphic-asset-unknown`
+ *     `.graphic-asset-btc` (sat/msat/btc), `.graphic-asset-custom`
  *     (unrecognized asset), or `<img src="taproot-assets/*.svg">` for
  *     assets registered in `taproot_group_keys` (USDT today).
  *   - The amount text lives in `<span class="orc-amount">` emitted by
@@ -184,7 +184,7 @@ test.describe('bitcoin-general-wallet-summary — bitcoin row', {tag: '@lightnin
 
 		The collapsed-row UTXO glyph. `asset_class` computed emits
 		`utxo-asset-btc` for sat/msat/btc units, `utxo-asset-tether` for the
-		USDT group_key, else `utxo-asset-unknown`. Coin-array length caps at
+		USDT group_key, else `utxo-asset-custom`. Coin-array length caps at
 		`limiter - 1` (9) with an overflow chip when `coins > limiter`.
 
 		Regtest stacks fund a single address on the LN wallet → `coins === 1`,
@@ -214,10 +214,10 @@ test.describe('bitcoin-general-wallet-summary — taproot asset row', {tag: '@ta
 		await expect(card.locator('.wallet-summary-card')).toHaveCount(2);
 	});
 
-	test('taproot asset row renders with the unknown-asset glyph', async ({page}) => {
-		// TESTASSET isn't in `taproot_group_keys`, so `unit_class()` falls to `.graphic-asset-unknown`.
+	test('taproot asset row renders with the custom-asset glyph', async ({page}) => {
+		// TESTASSET isn't in `taproot_group_keys`, so `unit_class()` falls to `.graphic-asset-custom`.
 		const card = await openWalletSummary(page);
-		await expect(card.locator('.graphic-asset-unknown')).toBeVisible();
+		await expect(card.locator('.graphic-asset-custom')).toBeVisible();
 	});
 
 	test('taproot asset row amount equals tapd amount descaled by decimal_display', async ({page}, testInfo) => {
@@ -232,10 +232,10 @@ test.describe('bitcoin-general-wallet-summary — taproot asset row', {tag: '@ta
 		expect(digitsFrom(amount_text)).toBe(expected);
 	});
 
-	test('taproot asset row utxo-stack carries the utxo-asset-unknown class', async ({page}) => {
+	test('taproot asset row utxo-stack carries the utxo-asset-custom class', async ({page}) => {
 		const card = await openWalletSummary(page);
 		const tapd_row = card.locator('.wallet-summary-card').nth(1).locator('mat-card-content');
-		await expect(tapd_row.locator('orc-bitcoin-general-utxo-stack .utxo-asset-unknown').first()).toBeVisible();
+		await expect(tapd_row.locator('orc-bitcoin-general-utxo-stack .utxo-asset-custom').first()).toBeVisible();
 	});
 
 	test('expanded taproot asset row UTXO count equals tapd asset entry count for the group', async ({page}, testInfo) => {

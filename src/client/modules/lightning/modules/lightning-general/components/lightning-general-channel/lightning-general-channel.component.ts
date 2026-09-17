@@ -31,7 +31,7 @@ export class LightningGeneralChannelComponent {
 		if (this.lower_unit() === 'msat') return 'channel-btc';
 		if (this.lower_unit() === 'btc') return 'channel-btc';
 		if (this.group_key() === this.taproot_group_keys['usdt']) return 'channel-tether';
-		return 'channel-unknown';
+		return 'channel-custom';
 	});
 
 	public percentage_remote = computed(() => {
