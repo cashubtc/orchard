@@ -416,7 +416,7 @@ test.describe('mint-subsection-dashboard — analytics pipeline', {tag: '@analyt
 		const token = raw ? (JSON.parse(raw) as string) : null;
 		const headers: Record<string, string> = token ? {Authorization: `Bearer ${token}`} : {};
 		const query = `query Balances($date_start: UnixTimestamp, $date_end: UnixTimestamp) {
-			mint_analytics_balances(units: [sat], date_start: $date_start, date_end: $date_end, interval: hour) {
+			mint_analytics_balances(units: ["sat"], date_start: $date_start, date_end: $date_end, interval: hour) {
 				date unit amount
 			}
 		}`;
