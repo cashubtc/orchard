@@ -20,8 +20,6 @@
 #   - ACTIVITY_MINTS_SAT / ACTIVITY_MINTS_USD / ACTIVITY_MINTS_EUR
 #   - ACTIVITY_SWAPS_SAT / ACTIVITY_SWAPS_USD / ACTIVITY_SWAPS_EUR
 #   - ACTIVITY_MELTS_SAT / ACTIVITY_MELTS_USD / ACTIVITY_MELTS_EUR
-#   - ACTIVITY_MINTS_ORA / ACTIVITY_SWAPS_ORA / ACTIVITY_MELTS_ORA — the
-#     custom-unit fixture; runs over the onchain method (default 0)
 #   - ACTIVITY_BOLT12_MINTS / ACTIVITY_BOLT12_MELTS — sat-unit bolt12 quotes
 #     (fake_wallet auto-settles them; no LN node needed; default 0)
 #   - ACTIVITY_ONCHAIN_MINTS / ACTIVITY_ONCHAIN_MELTS — sat-unit onchain quotes
@@ -51,9 +49,6 @@ ACTIVITY_SWAPS_EUR=${ACTIVITY_SWAPS_EUR:-0}
 ACTIVITY_MELTS_SAT=${ACTIVITY_MELTS_SAT:-3}
 ACTIVITY_MELTS_USD=${ACTIVITY_MELTS_USD:-2}
 ACTIVITY_MELTS_EUR=${ACTIVITY_MELTS_EUR:-0}
-ACTIVITY_MINTS_ORA=${ACTIVITY_MINTS_ORA:-0}
-ACTIVITY_SWAPS_ORA=${ACTIVITY_SWAPS_ORA:-0}
-ACTIVITY_MELTS_ORA=${ACTIVITY_MELTS_ORA:-0}
 ACTIVITY_BOLT12_MINTS=${ACTIVITY_BOLT12_MINTS:-0}
 ACTIVITY_BOLT12_MELTS=${ACTIVITY_BOLT12_MELTS:-0}
 ACTIVITY_ONCHAIN_MINTS=${ACTIVITY_ONCHAIN_MINTS:-0}
@@ -252,79 +247,6 @@ if [ "$ACTIVITY_ONCHAIN_MELTS" -gt 0 ]; then
     done
 fi
 
-# ── Custom-unit mint/swap/melt (onchain) ─────────────────────────
-# A custom unit can't ride bolt11/bolt12: cdk has no way to price it into an
-# invoice, so those quotes fail with "Unknown invoice amount". The onchain
-# method carries no such conversion and fake_wallet auto-settles it, so the
-# custom unit runs its whole lifecycle there. Swaps are method-agnostic and
-# reuse the same send → receive pair as the standard units. Runs BEFORE the
-# SAT cap mint below so the newest mint_quote row stays SAT.
-wallet_unit_bounded() {
-    unit="$1"; secs="$2"; shift 2
-    docker exec -i "${CONFIG_NAME}-wallet" timeout -k 1 "$secs" cdk-cli --unit "$unit" "$@"
-}
-
-# Onchain mints leave a lingering NUT-17 subscription that outlives the issued
-# proofs, so cdk-cli exits non-zero on a mint that actually succeeded — match
-# on 'Minted' rather than the exit status, as the sat onchain phase does.
-run_custom_unit() {
-    unit="$1"; n_mints="$2"; n_swaps="$3"; n_melts="$4"
-
-    if [ "$n_mints" -gt 0 ]; then
-        log "[$unit] mints: $n_mints"
-        i=0
-        while [ "$i" -lt "$n_mints" ]; do
-            amt=$(rand_amount)
-            if wallet_unit_bounded "$unit" 20 mint "$MINT_URL" "$amt" --method onchain 2>&1 | grep -q 'Minted'; then
-                log "  [$unit] mint ${amt}"
-            else
-                log "  [$unit] mint ${amt} FAILED"
-            fi
-            i=$((i + 1))
-        done
-    fi
-
-    if [ "$n_swaps" -gt 0 ]; then
-        log "[$unit] swaps: $n_swaps"
-        i=0
-        while [ "$i" -lt "$n_swaps" ]; do
-            amt=$(rand_amount)
-            token=$(wallet_unit "$unit" send --mint-url "$MINT_URL" -a "$amt" 2>&1 | grep -oE 'cashu[AB][A-Za-z0-9+/_=-]+' | head -1 || true)
-            if [ -z "$token" ]; then
-                log "  [$unit] swap ${amt} FAILED (no token)"
-            elif wallet_unit "$unit" receive "$token" >/dev/null 2>&1; then
-                log "  [$unit] swap ${amt}"
-            else
-                log "  [$unit] swap ${amt} FAILED (receive)"
-            fi
-            i=$((i + 1))
-        done
-    fi
-
-    if [ "$n_melts" -gt 0 ]; then
-        log "[$unit] melts: $n_melts"
-        i=0
-        while [ "$i" -lt "$n_melts" ]; do
-            amt=$(rand_amount)
-            # Harvest a payable address from a throwaway mint quote's own
-            # output, as the sat onchain melt phase does.
-            addr=$(wallet_unit_bounded "$unit" 20 mint "$MINT_URL" "$amt" --method onchain 2>&1 | grep -oE 'bcrt1[0-9a-z]+' | head -1 || true)
-            if [ -z "$addr" ]; then
-                log "  [$unit] melt ${amt} FAILED (no address)"
-                i=$((i + 1)); continue
-            fi
-            if wallet_unit_bounded "$unit" 20 melt --mint-url "$MINT_URL" --method onchain --address "$addr" --amount "$amt" >/dev/null 2>&1; then
-                log "  [$unit] melt ${amt}"
-            else
-                log "  [$unit] melt ${amt} FAILED"
-            fi
-            i=$((i + 1))
-        done
-    fi
-}
-
-run_custom_unit ora "$ACTIVITY_MINTS_ORA" "$ACTIVITY_SWAPS_ORA" "$ACTIVITY_MELTS_ORA"
-
 # ── SAT cap mint ─────────────────────────────────────────────────
 # Ensures the most-recent mint_quotes row is SAT — LightningInfoService
 # inspects the last row to decide whether to render the "Mint backend"
@@ -387,4 +309,4 @@ if [ "$ACTIVITY_MEMPOOL_PER_RATE" -gt 0 ]; then
     done
 fi
 
-log "DONE — sat(mints=$ACTIVITY_MINTS_SAT swaps=$ACTIVITY_SWAPS_SAT melts=$ACTIVITY_MELTS_SAT) usd(mints=$ACTIVITY_MINTS_USD swaps=$ACTIVITY_SWAPS_USD melts=$ACTIVITY_MELTS_USD) eur(mints=$ACTIVITY_MINTS_EUR swaps=$ACTIVITY_SWAPS_EUR melts=$ACTIVITY_MELTS_EUR) ora(mints=$ACTIVITY_MINTS_ORA swaps=$ACTIVITY_SWAPS_ORA melts=$ACTIVITY_MELTS_ORA) bolt12(mints=$ACTIVITY_BOLT12_MINTS melts=$ACTIVITY_BOLT12_MELTS) onchain(mints=$ACTIVITY_ONCHAIN_MINTS melts=$ACTIVITY_ONCHAIN_MELTS) mempool=$((ACTIVITY_MEMPOOL_PER_RATE * 6))"
+log "DONE — sat(mints=$ACTIVITY_MINTS_SAT swaps=$ACTIVITY_SWAPS_SAT melts=$ACTIVITY_MELTS_SAT) usd(mints=$ACTIVITY_MINTS_USD swaps=$ACTIVITY_SWAPS_USD melts=$ACTIVITY_MELTS_USD) eur(mints=$ACTIVITY_MINTS_EUR swaps=$ACTIVITY_SWAPS_EUR melts=$ACTIVITY_MELTS_EUR) bolt12(mints=$ACTIVITY_BOLT12_MINTS melts=$ACTIVITY_BOLT12_MELTS) onchain(mints=$ACTIVITY_ONCHAIN_MINTS melts=$ACTIVITY_ONCHAIN_MELTS) mempool=$((ACTIVITY_MEMPOOL_PER_RATE * 6))"

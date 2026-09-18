@@ -3,7 +3,7 @@ import {TestBed} from '@angular/core/testing';
 /* Application Dependencies */
 import {SettingDeviceService} from '@client/modules/settings/services/setting-device/setting-device.service';
 import {ThemeService} from '@client/modules/settings/services/theme/theme.service';
-import {CurrencyType} from '@client/modules/cache/services/local-storage/local-storage.types';
+import {CurrencyType, ThemeType} from '@client/modules/cache/services/local-storage/local-storage.types';
 /* Local Dependencies */
 import {ChartService} from './chart.service';
 
@@ -18,6 +18,7 @@ describe('ChartService', () => {
 		// (`sat`, `USD`, `EUR`); these tests pin the glyph branch since that's
 		// what every operator sees on first paint.
 		setting_device_stub = {
+			getTheme: () => ThemeType.DARK_MODE,
 			getLocale: () => 'en-US',
 			getCurrency: () => ({type_btc: CurrencyType.GLYPH, type_fiat: CurrencyType.GLYPH}),
 		};
@@ -32,6 +33,16 @@ describe('ChartService', () => {
 
 	it('should be created', () => {
 		expect(service).toBeTruthy();
+	});
+
+	it('keeps custom-unit colors valid when charts apply opacity', () => {
+		const expected_channels = ['255, 253, 159', '255, 214, 31', '245, 143, 34', '243, 101, 29', '156, 34, 34'];
+		for (let index = 0; index < expected_channels.length; index++) {
+			const color = service.getAssetColor('ora', index);
+			expect(service.hexToRgba(color.border, 0.75)).toBe(`rgba(${expected_channels[index]}, 0.75)`);
+			expect(service.hexToRgba(color.border, 0.15)).toBe(color.bg);
+		}
+		expect(service.getAssetColor('ora', 5)).toEqual(service.getAssetColor('ora', 0));
 	});
 
 	describe('formatTooltipAmount', () => {

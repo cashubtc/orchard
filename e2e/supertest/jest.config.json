@@ -3,6 +3,7 @@
 	"testEnvironment": "node",
 	"testRegex": ".e2e-spec.ts$",
 	"moduleFileExtensions": ["ts", "js", "json"],
+	"moduleNameMapper": {"^@e2e/(.*)$": "<rootDir>/../$1"},
 	"transform": {
 		"^.+\\.ts$": ["ts-jest", {"tsconfig": "<rootDir>/tsconfig.json"}]
 	},

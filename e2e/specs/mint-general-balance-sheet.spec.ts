@@ -455,10 +455,12 @@ test.describe('mint-general-balance-sheet — lightning disabled', {tag: '@no-li
 		await waitForRows(sheet);
 		const buttons = sheet.locator('.assets-cell button[mat-stroked-button]');
 		await expect(buttons).toHaveCount(expected_units);
-		await expect(buttons.first()).toHaveText('Lightning Configuration');
+		if (expected_units > 0) await expect(buttons.first()).toHaveText('Lightning Configuration');
 	});
 
-	test('clicking the Lightning Configuration button navigates to /lightning', async ({page}) => {
+	test('clicking the Lightning Configuration button navigates to /lightning', async ({page}, test_info) => {
+		const config = getConfig(test_info.project.name);
+		test.skip(!mintUnitsFor(config).some((unit) => BITCOIN_UNITS.includes(unit)), 'no bitcoin-denominated unit needs Lightning configuration');
 		const sheet = await openSheet(page);
 		await waitForRows(sheet);
 		await sheet.locator('.assets-cell button[mat-stroked-button]').first().click();

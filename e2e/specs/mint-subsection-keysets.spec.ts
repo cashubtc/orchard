@@ -77,17 +77,17 @@ test.describe('mint subsection keysets — /mint/keysets', {tag: '@mint'}, () =>
 	});
 
 	test('fee-rate cell matches the keyset input_fee_ppk', async ({page}, testInfo) => {
-		// The sat keyset's fee rate is the clearest single-value differential.
-		// Rows sort by derivation index desc; assert the active sat keyset's
+		// An active keyset's fee rate is the clearest single-value differential.
+		// Rows sort by derivation index desc; assert the selected active keyset's
 		// ppk appears somewhere in the fee-rate column rather than pinning a
 		// row index (multi-unit stacks interleave units).
 		const config = getConfig(testInfo.project.name);
-		const active_sat = mint.keysets(config).find((k) => k.unit === 'sat' && k.active);
-		test.skip(active_sat === undefined, 'no active sat keyset on this stack');
+		const active_keyset = mint.keysets(config).find((k) => k.active);
+		test.skip(active_keyset === undefined, 'no active keyset on this stack');
 		const table = await openPage(page);
 		const fee_cells = await table.locator('td.mat-column-input_fee_ppk').allTextContents();
 		const values = fee_cells.map(amountFromText);
-		expect(values).toContain(active_sat!.input_fee_ppk);
+		expect(values).toContain(active_keyset!.input_fee_ppk);
 	});
 
 	test('rotation FAB toggles the rotation form open and closed', async ({page}) => {

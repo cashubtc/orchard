@@ -25,11 +25,11 @@ export class ChartService {
 		eur: '--orc-asset-eur',
 	};
 	private fallback_colors = [
-		{bg: 'rgba(255, 253, 159, 0.15)', border: 'rgb(255, 253, 159)'},
-		{bg: 'rgba(255, 214, 31, 0.15)', border: 'rgb(255, 214, 31)'},
-		{bg: 'rgba(245, 143, 34, 0.15)', border: 'rgb(245, 143, 34)'},
-		{bg: 'rgba(243, 101, 29, 0.15)', border: 'rgb(243, 101, 29)'},
-		{bg: 'rgba(156, 34, 34, 0.15)', border: 'rgb(156, 34, 34)'},
+		{bg: 'rgba(255, 253, 159, 0.15)', border: '#fffd9f'},
+		{bg: 'rgba(255, 214, 31, 0.15)', border: '#ffd61f'},
+		{bg: 'rgba(245, 143, 34, 0.15)', border: '#f58f22'},
+		{bg: 'rgba(243, 101, 29, 0.15)', border: '#f3651d'},
+		{bg: 'rgba(156, 34, 34, 0.15)', border: '#9c2222'},
 	];
 	// Base hues for the series-heavy dashboard palette (percentiles, HTTP/auth/wallet, pie)
 	private categorical_base = ['#4BE0D8', '#FFE94D', '#FF5AB5', '#B281EA', '#14E0B0', '#06B4EA'];

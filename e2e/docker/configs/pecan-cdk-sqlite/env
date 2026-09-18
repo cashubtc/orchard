@@ -1,0 +1,19 @@
+# Local test credentials only — DO NOT reuse in any real deployment.
+SETUP_KEY=orchard-e2e-admin-key
+ADMIN_PASSWORD=orchard-e2e-admin-key
+LOG_LEVEL=debug
+BASE_PATH=api
+
+# Orchard manages the CDK mint. Pecan is its payment backend.
+MINT_TYPE=cdk
+MINT_API=http://cdk-mintd:3342
+MINT_RPC_HOST=cdk-mintd
+MINT_RPC_PORT=8088
+MINT_RPC_MTLS=false
+
+# Activity setup performs Pecan's required initial password change once.
+PECAN_INITIAL_PASSWORD=orchard-e2e-pecan-initial
+PECAN_PASSWORD=orchard-e2e-pecan-teller
+
+THROTTLE_LIMIT=1000
+THROTTLE_TTL=60000

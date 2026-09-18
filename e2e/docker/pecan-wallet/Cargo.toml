@@ -1,0 +1,16 @@
+[package]
+name = "orchard-pecan-wallet"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+anyhow = "1"
+cdk = { version = "=0.18.0", default-features = false, features = ["wallet"] }
+cdk-sqlite = { version = "=0.18.0", default-features = false, features = ["wallet"] }
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[profile.release]
+debug = 0
+strip = true

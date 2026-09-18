@@ -44,7 +44,7 @@ import type {ConfigInfo} from './types/config';
  * so specs continue to start in a fully-configured Orchard. The oracle split
  * stages backend state (price feed) without touching storageState.
  *
- * `workers` is set to one slot per stack so all 5 stacks' setup chains run
+ * `workers` is set to one slot per stack so all 6 stacks' setup chains run
  * in parallel and the spec phase distributes spec files across stacks. The
  * setup → settings → specs chain inside each stack is preserved by project
  * `dependencies`, independent of worker count. Tests within a single spec
@@ -70,14 +70,14 @@ import type {ConfigInfo} from './types/config';
  *   @lightning           — app-state: LIGHTNING_TYPE wired; runs on stacks
  *                          with a real LN backend (config.ln !== false)
  *   @no-lightning        — app-state: Orchard booted without LIGHTNING_TYPE;
- *                          runs on fake-cdk-postgres only
+ *                          runs on fake-cdk-postgres and pecan-cdk-sqlite
  *   @bitcoin             — app-state: BITCOIN_TYPE wired; runs on stacks with
  *                          a real bitcoind backend (config.bitcoin === true).
  *                          Use for UI gated on the bitcoin tile mounting,
  *                          where @lightning would over-include or @canary
  *                          would under-include.
  *   @no-bitcoin          — app-state: Orchard booted without BITCOIN_TYPE;
- *                          runs on fake-cdk-postgres only
+ *                          runs on fake-cdk-postgres and pecan-cdk-sqlite
  *   @mint                — app-state: a mint backend (cdk or nutshell) is
  *                          wired up. Every shipped stack has one today, so
  *                          this currently matches `@all` — it exists so

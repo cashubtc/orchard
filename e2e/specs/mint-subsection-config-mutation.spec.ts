@@ -55,11 +55,15 @@ function eventToast(page: Page): Locator {
 	return page.locator('orc-event-general-stack orc-event-general-stack-message .event-message-content');
 }
 
-/** The sat minting (NUT-04) sub-form for a payment method, found through its
+/** The minting or melting sub-form for a payment method, found through its
  *  sticky section header — the page pairs one section per unit+method and only
  *  bolt11/onchain still have a dedicated wrapper component to select on. */
-function satMethodForm(page: Page, label: string): Locator {
-	const section = page.locator('.sticky-config').filter({hasText: 'SAT Configuration'}).filter({hasText: label}).first();
+function methodForm(page: Page, unit: string, label: string, nut: 4 | 5): Locator {
+	const section = page
+		.locator('.sticky-config')
+		.filter({hasText: new RegExp(`^${unit} Configuration`, 'i')})
+		.filter({hasText: label})
+		.nth(nut === 4 ? 0 : 1);
 	return section.locator('xpath=following-sibling::div[contains(@class,"nut-wrapper")][1]');
 }
 
@@ -72,18 +76,23 @@ async function typeInto(field: Locator, value: string): Promise<void> {
 	if (value.length > 0) await field.pressSequentially(value, {delay: 0});
 }
 
-/** The daemon's advertised min/max for one sat minting (NUT-04) method, read
+/** The daemon's advertised min/max for one unit and payment method, read
  *  straight from `/v1/info`. Numeric-string keys ('4'), same accessor the
  *  config-card spec uses. Null when the mint doesn't advertise the method —
  *  the caller's skip gate (e.g. bolt12 on lnd stacks, onchain on nutshell). */
-function satNut04Method(
+function nutMethod(
 	config: ConfigInfo,
 	method: string,
+	unit: string,
+	nut: 4 | 5,
 	opts: {fresh?: boolean} = {},
 ): {min_amount: number; max_amount: number} | null {
-	const nuts = mint.getInfo(config, opts).nuts as Record<string, {methods?: Array<{method?: string; unit?: string; min_amount?: number; max_amount?: number}>}>;
-	const methods = nuts['4']?.methods ?? [];
-	const m = methods.find((x) => x.method === method && x.unit === 'sat');
+	const nuts = mint.getInfo(config, opts).nuts as Record<
+		string,
+		{methods?: Array<{method?: string; unit?: string; min_amount?: number; max_amount?: number}>}
+	>;
+	const methods = nuts[String(nut)]?.methods ?? [];
+	const m = methods.find((x) => x.method === method && x.unit === unit);
 	if (!m) return null;
 	return {min_amount: m.min_amount ?? 0, max_amount: m.max_amount ?? 0};
 }
@@ -112,18 +121,22 @@ test.describe('mint config mutation — /mint/config', {tag: '@mint'}, () => {
 	//   onchain — cln-cdk + lnd-cdk (BDK backend) + fake-cdk (fake_wallet)
 	// The runtime skip reads the daemon itself, so the matrix self-adjusts.
 	for (const scenario of [
-		{method: 'bolt11', label: 'Bolt 11'},
-		{method: 'bolt12', label: 'Bolt 12'},
-		{method: 'onchain', label: 'Onchain'},
+		{nut: 4, unit: 'sat', method: 'bolt11', label: 'Bolt 11'},
+		{nut: 4, unit: 'sat', method: 'bolt12', label: 'Bolt 12'},
+		{nut: 4, unit: 'sat', method: 'onchain', label: 'Onchain'},
+		{nut: 4, unit: 'ora', method: 'branch', label: 'branch'},
+		{nut: 5, unit: 'ora', method: 'branch', label: 'branch'},
 	] as const) {
-		test(`editing the sat/${scenario.method} min amount round-trips to the daemon and reverts`, async ({page}, testInfo) => {
+		test(`editing NUT-0${scenario.nut} ${scenario.unit}/${scenario.method} min amount round-trips to the daemon and reverts`, async ({
+			page,
+		}, testInfo) => {
 			const config = getConfig(testInfo.project.name);
 			// Only cdk mints publish concrete, revertible min/max bounds in
 			// `/v1/info`; nutshell omits the keys entirely (renders the form's
 			// default 1/∞ with nothing persisted to edit or revert cleanly).
 			test.skip(config.mint !== 'cdk', 'min/max limits are only concrete + revertible on cdk mints');
-			const before = satNut04Method(config, scenario.method, {fresh: true});
-			test.skip(before === null, `mint does not advertise a sat/${scenario.method} NUT-04 method`);
+			const before = nutMethod(config, scenario.method, scenario.unit, scenario.nut, {fresh: true});
+			test.skip(before === null, `mint does not advertise a ${scenario.unit}/${scenario.method} NUT-0${scenario.nut} method`);
 			// A value that stays a valid integer strictly below max_amount so the
 			// form's `minGreaterThan`/integer validators pass and the save fires.
 			const probe = before!.min_amount + 1;
@@ -133,25 +146,27 @@ test.describe('mint config mutation — /mint/config', {tag: '@mint'}, () => {
 			// section per unit+method pair, and stacks advertise the same
 			// methods under more than one unit. Within that, the minting
 			// (NUT-04) block comes first — NUT-05 melting renders its own later.
-			const minInput = satMethodForm(page, scenario.label).locator('orc-mint-subsection-config-form-min input[matInput]');
+			const minInput = methodForm(page, scenario.unit, scenario.label, scenario.nut).locator(
+				'orc-mint-subsection-config-form-min input[matInput]',
+			);
 			await expect(minInput).toBeVisible();
 
 			try {
 				await typeInto(minInput, String(probe));
 				// Per-field save: Enter fires onSubmit → MintNut04Update.
-				const save = page.waitForResponse(matchGql('MintNut04Update'));
+				const save = page.waitForResponse(matchGql(`MintNut0${scenario.nut}Update`));
 				await minInput.press('Enter');
 				await save;
 				await expect(eventToast(page).filter({hasText: 'Configuration updated!'})).toBeVisible();
 
 				// Backend truth: the daemon's advertised min is now the probe.
-				expect(satNut04Method(config, scenario.method, {fresh: true})!.min_amount).toBe(probe);
+				expect(nutMethod(config, scenario.method, scenario.unit, scenario.nut, {fresh: true})!.min_amount).toBe(probe);
 			} finally {
 				// Revert to the original min so the shared daemon is left pristine —
 				// re-read fresh and only save if still drifted (idempotent on retry).
-				if (satNut04Method(config, scenario.method, {fresh: true})!.min_amount !== before!.min_amount) {
+				if (nutMethod(config, scenario.method, scenario.unit, scenario.nut, {fresh: true})!.min_amount !== before!.min_amount) {
 					await typeInto(minInput, String(before!.min_amount));
-					const restore = page.waitForResponse(matchGql('MintNut04Update'));
+					const restore = page.waitForResponse(matchGql(`MintNut0${scenario.nut}Update`));
 					await minInput.press('Enter');
 					await restore;
 					await expect(eventToast(page).filter({hasText: 'Configuration updated!'})).toBeVisible();
@@ -159,7 +174,7 @@ test.describe('mint config mutation — /mint/config', {tag: '@mint'}, () => {
 			}
 
 			// Backend truth restored.
-			expect(satNut04Method(config, scenario.method, {fresh: true})!.min_amount).toBe(before!.min_amount);
+			expect(nutMethod(config, scenario.method, scenario.unit, scenario.nut, {fresh: true})!.min_amount).toBe(before!.min_amount);
 		});
 	}
 

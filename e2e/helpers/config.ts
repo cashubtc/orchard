@@ -52,6 +52,7 @@ export function featuresFor(config: ConfigInfo): string[] {
 	if (config.appSettings?.ai_enabled === true) features.push('ai');
 	if (config.appSettings?.bitcoin_oracle === true) features.push('oracle');
 	if (config.mintMetrics) features.push('mint-metrics');
+	if (config.pecan) features.push('pecan');
 	return features;
 }
 
@@ -225,6 +226,23 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 			currency_fiat: 'code',
 		},
 	},
+	'pecan-cdk-sqlite': {
+		name: 'pecan-cdk-sqlite',
+		ln: false,
+		mint: 'cdk',
+		db: 'sqlite',
+		bitcoin: false,
+		tapd: false,
+		bolt12: false,
+		onchain: false,
+		mainchain: false,
+		mintMetrics: false,
+		orchardUrl: 'http://localhost:3332',
+		...BASE,
+		containers: {mint: 'pecan-cdk-sqlite-cdk-mintd'},
+		mintPort: 3342,
+		pecan: {url: 'http://localhost:9091', container: 'pecan-cdk-sqlite-pecan'},
+	},
 };
 
 /** Accepts bare config names (`cln-nutshell-postgres`) or Playwright project
@@ -290,9 +308,9 @@ export function lndDirForNode(config: ConfigInfo, node: LnNode): string {
 
 /** Source-of-truth read for each stack's mint units. Parses the stack's
  *  `mintd.toml` (cdk) or `compose.yml` (nutshell) so this stays correct
- *  when operators change mint configs. `sat` is always the first unit —
- *  both cdk and nutshell provision it by default; `usd` / `eur` are
- *  opt-in via a per-unit `[[payment_backend]]` entry (cdk) or
+ *  when operators change mint configs. CDK units come only from configured
+ *  payment backends, including mints that do not serve sat. Extra nutshell
+ *  units are opt-in via
  *  `MINT_BACKEND_BOLT11_USD` / `_EUR` in the nutshell service env.
  *  Run from the repo root (playwright's cwd). */
 export function mintUnitsFor(config: ConfigInfo): MintUnit[] {
@@ -302,7 +320,7 @@ export function mintUnitsFor(config: ConfigInfo): MintUnit[] {
 			.split('\n')
 			.filter((l) => !l.trim().startsWith('#'))
 			.join('\n');
-	const units: MintUnit[] = ['sat'];
+	const units: MintUnit[] = [];
 
 	if (config.mint === 'cdk') {
 		const toml = stripComments(fs.readFileSync(path.join(dir, 'mintd.toml'), 'utf8'));
@@ -319,6 +337,7 @@ export function mintUnitsFor(config: ConfigInfo): MintUnit[] {
 			if (unit && !units.includes(unit[1])) units.push(unit[1]);
 		}
 	} else {
+		units.push('sat');
 		const compose = stripComments(fs.readFileSync(path.join(dir, 'compose.yml'), 'utf8'));
 		if (/MINT_BACKEND_BOLT11_USD\s*=/.test(compose)) units.push('usd');
 		if (/MINT_BACKEND_BOLT11_EUR\s*=/.test(compose)) units.push('eur');
