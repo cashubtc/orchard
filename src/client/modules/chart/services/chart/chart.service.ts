@@ -20,7 +20,7 @@ import {MintQuoteState, MeltQuoteState} from '@shared/generated.types';
 })
 export class ChartService {
 	private asset_map: Record<string, string> = {
-		sat: '--orc-asset-btc',
+		btc: '--orc-asset-btc',
 		usd: '--orc-asset-usd',
 		eur: '--orc-asset-eur',
 	};
@@ -56,14 +56,18 @@ export class ChartService {
 		private settingDeviceService: SettingDeviceService,
 	) {}
 
-	public getAssetColor(asset: string, data_index: number): {bg: string; border: string} {
+	/**
+	 * Uses asset tokens for known units and purple shades for custom units.
+	 * Pass the mint's full unit list, including inactive keysets, so chart filters
+	 * and dataset ordering cannot change the alphabetical color assignment.
+	 */
+	public getAssetColor(unit: string, units: readonly string[] = []): {bg: string; border: string} {
 		const theme = this.settingDeviceService.getTheme();
-		const asset_lower = asset.toLowerCase();
-		const color_var = this.asset_map[asset_lower];
-		if (color_var === undefined) return this.fallback_colors[data_index % this.fallback_colors.length];
-		const colorhex = this.themeService.getThemeColor(color_var, theme);
-		const colorrgba = this.hexToRgba(colorhex, 0.15);
-		return {bg: colorrgba, border: colorhex};
+		const meta = getUnitMeta(unit);
+		const color_var = this.asset_map[meta.asset] ?? '--orc-asset-custom';
+		const base_color = this.themeService.getThemeColor(color_var, theme);
+		const border = meta.family === 'custom' ? this.getCustomUnitColor(unit, units, base_color) : base_color;
+		return {bg: this.hexToRgba(border, 0.15), border};
 	}
 
 	public getThemeColor(index: number): {bg: string; border: string} {
@@ -167,6 +171,25 @@ export class ChartService {
 	public getMutedColor(border_color: string, opacity: number = 0.6): string {
 		const hex_color = border_color.startsWith('#') ? border_color : this.rgbToHex(border_color);
 		return this.hexToRgba(hex_color, opacity);
+	}
+
+	/** Returns a purple shade based on the custom unit's alphabetical position in the mint's full unit list. */
+	private getCustomUnitColor(unit: string, units: readonly string[], base_color: string): string {
+		const custom_units = [...new Set([...units, unit].map((value) => value.toLowerCase()))]
+			.filter((value) => getUnitMeta(value).family === 'custom')
+			.sort();
+		const index = custom_units.indexOf(unit.toLowerCase());
+		if (index <= 0) return base_color;
+
+		const {h, s, l} = this.hexToHsl(base_color);
+		// Nine related shades; labels remain the identifier when the palette cycles.
+		const hue_offsets = [0, -18, 18];
+		const lightness_offsets = [0, -16, 12];
+		return this.hslToHex(
+			(h + hue_offsets[Math.floor((index % 9) / 3)] + 360) % 360,
+			s,
+			Math.max(15, Math.min(90, l + lightness_offsets[index % 3])),
+		);
 	}
 
 	/**

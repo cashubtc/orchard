@@ -27,6 +27,7 @@ import {
 } from '@client/modules/chart/helpers/mint-chart-options.helpers';
 import {ChartService} from '@client/modules/chart/services/chart/chart.service';
 /* Native Dependencies */
+import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 import {MintAnalytic} from '@client/modules/mint/classes/mint-analytic.class';
 import {ChartType} from '@client/modules/mint/enums/chart-type.enum';
 
@@ -49,6 +50,8 @@ export class MintSubsectionDashboardChartComponent implements OnDestroy, OnChang
 	public mint_genesis_time = input.required<number>();
 	public selected_type = input.required<ChartType | null | undefined>();
 	public loading = input.required<boolean>();
+
+	public readonly mint_keysets = input<MintKeyset[]>([]);
 
 	public chart_type!: ChartJsType;
 	public chart_data!: ChartConfiguration['data'];
@@ -157,9 +160,12 @@ export class MintSubsectionDashboardChartComponent implements OnDestroy, OnChang
 					timestamp_first,
 				)
 			: data_unit_groups;
-		const datasets = Object.entries(data_unit_groups_prepended).map(([unit, data], index) => {
+		const datasets = Object.entries(data_unit_groups_prepended).map(([unit, data]) => {
 			const data_keyed_by_timestamp = getDataKeyedByTimestamp(data, 'amount');
-			const color = this.chartService.getAssetColor(unit, index);
+			const color = this.chartService.getAssetColor(
+				unit,
+				this.mint_keysets().map((keyset) => keyset.unit),
+			);
 			const cumulative = this.chart_type === 'line';
 			const raw_data = getAmountData(timestamp_range, data_keyed_by_timestamp, unit, cumulative);
 			const data_prepped = convertChartDataWithOracle(raw_data, unit, oracle_map, can_use_oracle);

@@ -184,6 +184,10 @@ const mintMetricsHealthResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot
 						resolve: {
 							mint_info: mintInfoResolver,
 							mint_quote_ttl: mintQuoteTtlsResolver,
+							mint_keysets: () =>
+								inject(MintService)
+									.loadMintKeysets()
+									.pipe(catchError(() => of([]))),
 						},
 						canActivate: [enabledGuard],
 						data: {

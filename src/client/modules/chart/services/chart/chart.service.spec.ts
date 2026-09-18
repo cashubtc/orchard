@@ -25,7 +25,18 @@ describe('ChartService', () => {
 		TestBed.configureTestingModule({
 			providers: [
 				{provide: SettingDeviceService, useValue: setting_device_stub},
-				{provide: ThemeService, useValue: {getThemeColor: () => '#000000'}},
+				{
+					provide: ThemeService,
+					useValue: {
+						getThemeColor: (token: string): string =>
+							({
+								'--orc-asset-btc': '#f7931a',
+								'--orc-asset-usd': '#84B08D',
+								'--orc-asset-eur': '#8AAAD8',
+								'--orc-asset-custom': '#A99BC9',
+							})[token] ?? '#000000',
+					},
+				},
 			],
 		});
 		service = TestBed.inject(ChartService);
@@ -35,14 +46,28 @@ describe('ChartService', () => {
 		expect(service).toBeTruthy();
 	});
 
-	it('keeps custom-unit colors valid when charts apply opacity', () => {
-		const expected_channels = ['255, 253, 159', '255, 214, 31', '245, 143, 34', '243, 101, 29', '156, 34, 34'];
-		for (let index = 0; index < expected_channels.length; index++) {
-			const color = service.getAssetColor('ora', index);
-			expect(service.hexToRgba(color.border, 0.75)).toBe(`rgba(${expected_channels[index]}, 0.75)`);
+	it('uses the custom purple for a single custom unit alongside known units', () => {
+		const color = service.getAssetColor('ora', ['sat', 'usd', 'ora']);
+		expect(color).toEqual({border: '#A99BC9', bg: 'rgba(169, 155, 201, 0.15)'});
+		expect(service.hexToRgba(color.border, 0.75)).toBe('rgba(169, 155, 201, 0.75)');
+	});
+
+	it('assigns distinct purple shades from the full unit list, independent of chart order or filtering', () => {
+		const units = ['ora', 'hours', 'points', 'credits', 'beans', 'tickets', 'miles', 'stars', 'visits'];
+		const colors = units.map((unit) => service.getAssetColor(unit, units));
+		expect(new Set(colors.map((color) => color.border)).size).toBe(units.length);
+		for (const unit of units) {
+			const color = service.getAssetColor(unit, units);
+			expect(service.getAssetColor(unit.toUpperCase(), [...units].reverse().concat(['SAT', unit.toUpperCase()]))).toEqual(color);
+			expect(color.border).toMatch(/^#[0-9a-f]{6}$/i);
 			expect(service.hexToRgba(color.border, 0.15)).toBe(color.bg);
 		}
-		expect(service.getAssetColor('ora', 5)).toEqual(service.getAssetColor('ora', 0));
+	});
+
+	it('preserves known asset colors, including Bitcoin denominations', () => {
+		for (const unit of ['sat', 'MSAT', 'btc']) expect(service.getAssetColor(unit).border).toBe('#f7931a');
+		expect(service.getAssetColor('USD').border).toBe('#84B08D');
+		expect(service.getAssetColor('eur').border).toBe('#8AAAD8');
 	});
 
 	describe('formatTooltipAmount', () => {

@@ -20,6 +20,7 @@ volumes:
   cln-alice-data:
   lnd-carol-data:
   postgres-data:
+  cdk-mintd-data:
   orchard-data:
   wallet-data:
   shared:
@@ -252,6 +253,8 @@ services:
       postgres: { condition: service_healthy }
     volumes:
       - cln-orchard-data:/cln:ro
+      # BDK keeps its on-chain wallet here even when the mint uses PostgreSQL.
+      - cdk-mintd-data:/tmp/cdk-mintd
       - ./mintd.toml:/config.toml:ro
       - ../../scripts/start-cdk-mintd.sh:/start-cdk-mintd.sh:ro
     env_file:
