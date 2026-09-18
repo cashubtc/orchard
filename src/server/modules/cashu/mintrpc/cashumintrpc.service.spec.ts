@@ -1,6 +1,8 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
+/* Vendor Dependencies */
+import {Client, credentials, Metadata, status, type ServiceError} from '@grpc/grpc-js';
 /* Native Dependencies */
 import {Logger} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
@@ -122,6 +124,67 @@ describe('CashuMintRpcService', () => {
 		configService.get.mockReturnValue('cdk');
 		await cashuMintRpcService.onModuleInit();
 		await expect(cashuMintRpcService.getMintInfo()).rejects.toBe(OrchardErrorCode.MintSupportError);
+	});
+
+	/** Initialize a provider that returns a real-shaped gRPC error for each test action. */
+	function mockGrpcFailure(provider: 'cdk' | 'nutshell', code: status, details: string): ServiceError {
+		const rpc_error: ServiceError = Object.assign(new Error(details), {code, details, metadata: new Metadata()});
+		const fail_request = (_request: unknown, _metadata: Metadata, callback: (error: ServiceError, response: null) => void): void => {
+			callback(rpc_error, null);
+		};
+		const client = Object.assign(new Client('localhost:0', credentials.createInsecure()), {
+			UpdateName: jest.fn(fail_request),
+			UpdateNut04Quote: jest.fn(fail_request),
+		});
+		client.close();
+		cdkService.initializeGrpcClient.mockReturnValue(client);
+		nutshellService.initializeGrpcClient.mockReturnValue(client);
+		configService.get.mockReturnValue(provider);
+		cashuMintRpcService.onModuleInit();
+		return rpc_error;
+	}
+
+	it('identifies CDK payment overrides being disabled and retains the original diagnostic', async () => {
+		const details = 'Mint quote state override is disabled';
+		mockGrpcFailure('cdk', status.PERMISSION_DENIED, details);
+		await expect(cashuMintRpcService.updateNut04Quote({quote_id: 'q', state: 'PAID'})).rejects.toEqual({
+			code: OrchardErrorCode.MintQuoteOverrideDisabled,
+			details,
+		});
+	});
+
+	it('identifies a pending CDK configuration and retains the restart diagnostic', async () => {
+		const details = 'A configuration apply is pending; restart cdk-mintd before making management RPC changes';
+		mockGrpcFailure('cdk', status.FAILED_PRECONDITION, details);
+		await expect(cashuMintRpcService.updateName({name: 'mint'})).rejects.toEqual({
+			code: OrchardErrorCode.MintRestartRequired,
+			details,
+		});
+	});
+
+	it.each([
+		{provider: 'cdk' as const, code: status.PERMISSION_DENIED, details: 'Caller is not authorized'},
+		{provider: 'cdk' as const, code: status.FAILED_PRECONDITION, details: 'No on-chain wallet information provider is configured'},
+		{provider: 'cdk' as const, code: status.FAILED_PRECONDITION, details: 'Mint quote state override is disabled'},
+		{
+			provider: 'cdk' as const,
+			code: status.PERMISSION_DENIED,
+			details: 'A configuration apply is pending; restart cdk-mintd before making management RPC changes',
+		},
+		{provider: 'nutshell' as const, code: status.PERMISSION_DENIED, details: 'Mint quote state override is disabled'},
+		{
+			provider: 'nutshell' as const,
+			code: status.FAILED_PRECONDITION,
+			details: 'A configuration apply is pending; restart cdk-mintd before making management RPC changes',
+		},
+	])('preserves unrelated $provider status $code: $details', async ({provider, code, details}) => {
+		const rpc_error = mockGrpcFailure(provider, code, details);
+		await expect(cashuMintRpcService.updateNut04Quote({quote_id: 'q', state: 'PAID'})).rejects.toBe(rpc_error);
+	});
+
+	it('does not classify payment override text from a different method', async () => {
+		const rpc_error = mockGrpcFailure('cdk', status.PERMISSION_DENIED, 'Mint quote state override is disabled');
+		await expect(cashuMintRpcService.updateName({name: 'mint'})).rejects.toBe(rpc_error);
 	});
 
 	it('getQuoteTtl forwards empty request', async () => {

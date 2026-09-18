@@ -1,9 +1,12 @@
-import {OrchardRes} from '@client/modules/api/types/api.types';
+/* Application Dependencies */
+import {type OrchardRes} from '@client/modules/api/types/api.types';
+/* Native Dependencies */
+import {formatOrchardError} from '@client/modules/error/helpers/error.helpers';
 
 export class OrchardErrors {
 	public errors: OrchardError[];
 
-	constructor(errors: OrchardRes<any>['errors']) {
+	constructor(errors: OrchardRes<unknown>['errors']) {
 		this.errors = errors
 			? errors.map((error) => new OrchardError(error.message, error.extensions.code, error.extensions?.details ?? undefined))
 			: [];
@@ -21,8 +24,8 @@ class OrchardError {
 		this.details = details;
 	}
 
+	/** Format public guidance and the support code; raw diagnostics remain separate. */
 	public getFullError(): string {
-		if (!this.details) return `${this.message} : ${this.code}`;
-		return `${this.message} : ${this.code}<br><br>${this.details}`;
+		return `${formatOrchardError(this).description} : ${this.code}`;
 	}
 }
