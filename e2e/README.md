@@ -85,7 +85,7 @@ have something to read.
 
 **fake config** (`fake-cdk-postgres`):
 
-No LN nodes, no bitcoind. cdk-mintd runs `fake_wallet` over one `[[ln]]`
+No LN nodes, no bitcoind. cdk-mintd runs `fake_wallet` over one `[[payment_backend]]`
 entry per unit — `sat`, `usd` and `ora`; Orchard boots without
 `LIGHTNING_TYPE` and without `BITCOIN_TYPE`. Its job is to exercise
 Orchard's UI when both optional services are absent, and — via `ora` — when
@@ -129,6 +129,21 @@ npm run e2e:activity:stop cln-cdk-postgres
 npm run e2e:down cln-cdk-sqlite
 npm run e2e:down all         # wipe everything including mainchain-data
 ```
+
+## CDK configuration
+
+CDK 0.18 stores its configuration in the mint database. The shared
+`start-cdk-mintd.sh` imports each stack's `mintd.toml` once with
+`config init --new-mint`; ordinary restarts preserve changes made through Orchard.
+Public regtest mnemonics are supplied by `docker/cdk-regtest.env` using `env:`
+references. The stacks explicitly allow plaintext management RPC on their test
+networks and retain CDK's default disabled payment-state override.
+
+These fixtures initialize fresh test mints. When moving an old disposable e2e
+stack to 0.18, recreate that stack with `e2e:down <config>` (deletes its test
+volumes) before `e2e:up <config>`. For an already initialized 0.18 stack, changes
+to `mintd.toml` require an explicit `cdk-mintd config apply --file /config.toml`
+inside the mint container, followed by restarting that container.
 
 ## Cadence activity simulator
 

@@ -253,10 +253,15 @@ services:
     volumes:
       - cln-orchard-data:/cln:ro
       - ./mintd.toml:/config.toml:ro
+      - ../../scripts/start-cdk-mintd.sh:/start-cdk-mintd.sh:ro
+    env_file:
+      - ../../cdk-regtest.env
     environment:
       - CDK_MINTD_WORK_DIR=/tmp/cdk-mintd
-      - CDK_MINTD_DATABASE_URL=postgresql://${PG_USER}:${PG_PASS}@postgres:5432/${PG_DB}
-    command: ["cdk-mintd", "--config", "/config.toml"]
+      - CDK_MINTD_DATABASE=postgres
+      - CDK_MINTD_POSTGRES_URL=postgresql://${PG_USER}:${PG_PASS}@postgres:5432/${PG_DB}
+      - CDK_MINTD_BDK_BITCOIND_RPC_PASSWORD=${BTC_RPC_PASS}
+    command: ["/bin/sh", "/start-cdk-mintd.sh"]
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3339/v1/info || exit 1"]
       interval: 3s

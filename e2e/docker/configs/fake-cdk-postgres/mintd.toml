@@ -1,12 +1,8 @@
-# cdk-mintd config for Orchard e2e fake-cdk-postgres. Regtest only — mnemonic
-# is the famous BIP39 test seed, DO NOT reuse in any real deployment.
+# cdk-mintd config for Orchard e2e fake-cdk-postgres. Regtest only — mnemonics
+# are public BIP39 test seeds from ../../cdk-regtest.env, DO NOT reuse in any real deployment.
 #
-# Multi-unit fake_wallet: cdk-mintd 0.17 reworked [ln] into a single-or-many
-# enum and dropped [fake_wallet].supported_units — supported units are now
-# expressed as one [[ln]] array entry per unit (sat + usd + ora here). Each
-# entry also requires min/max mint+melt bounds, else config parse fails with
-# "data did not match any variant of untagged enum LnOneOrMany". Delay values
-# are zeroed so quotes auto-confirm immediately — there is no real LN node.
+# Multi-unit fake_wallet uses one [[payment_backend]] entry per unit.
+# Quotes auto-confirm immediately — there is no real LN node.
 #
 # `ora` is the custom-unit fixture: cdk treats any unrecognised unit string as
 # CurrencyUnit::Custom and mints it a keyset like any other. It only settles
@@ -18,35 +14,38 @@
 url = "http://cdk-mintd:3341"
 listen_host = "0.0.0.0"
 listen_port = 3341
-mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+mnemonic = "env:CDK_MINTD_MNEMONIC"
 input_fee_ppk = 100
 
 [mint_info]
 name = "e2e-cdk-fake"
 description = "Orchard e2e fake-cdk-postgres"
-urls = ["https://cdk-multi-pro.cash"]
 
 [database]
 engine = "postgres"
 
-[[ln]]
-ln_backend = "fakewallet"
+[database.postgres]
+url = "env:CDK_MINTD_POSTGRES_URL"
+tls_mode = "disable"
+
+[[payment_backend]]
+backend = "fakewallet"
 unit = "sat"
 min_mint = 1
 max_mint = 500000
 min_melt = 1
 max_melt = 500000
 
-[[ln]]
-ln_backend = "fakewallet"
+[[payment_backend]]
+backend = "fakewallet"
 unit = "usd"
 min_mint = 1
 max_mint = 500000
 min_melt = 1
 max_melt = 500000
 
-[[ln]]
-ln_backend = "fakewallet"
+[[payment_backend]]
+backend = "fakewallet"
 unit = "ora"
 min_mint = 1
 max_mint = 500000
@@ -61,5 +60,7 @@ max_delay_time = 0
 
 [mint_management_rpc]
 enabled = true
+# Plaintext RPC is intentional on the isolated e2e network.
+allow_insecure = true
 address = "0.0.0.0"
 port = 8087

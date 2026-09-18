@@ -292,7 +292,7 @@ export function lndDirForNode(config: ConfigInfo, node: LnNode): string {
  *  `mintd.toml` (cdk) or `compose.yml` (nutshell) so this stays correct
  *  when operators change mint configs. `sat` is always the first unit —
  *  both cdk and nutshell provision it by default; `usd` / `eur` are
- *  opt-in via a per-unit `[[ln]]` entry (cdk, since mintd 0.17) or
+ *  opt-in via a per-unit `[[payment_backend]]` entry (cdk) or
  *  `MINT_BACKEND_BOLT11_USD` / `_EUR` in the nutshell service env.
  *  Run from the repo root (playwright's cwd). */
 export function mintUnitsFor(config: ConfigInfo): MintUnit[] {
@@ -306,15 +306,15 @@ export function mintUnitsFor(config: ConfigInfo): MintUnit[] {
 
 	if (config.mint === 'cdk') {
 		const toml = stripComments(fs.readFileSync(path.join(dir, 'mintd.toml'), 'utf8'));
-		// mintd 0.17 provisions one unit per `[ln]` / `[[ln]]` backend entry
+		// mintd provisions one unit per payment backend entry (`ln` before 0.18)
 		// via its `unit` field. Collect only those in-section — `unit` also
 		// appears under [fake_wallet] custom methods / keyset rotations, which
 		// don't provision keysets. Real-LN cdk stacks serve only sat.
-		let in_ln = false;
+		let in_backend = false;
 		for (const line of toml.split('\n')) {
 			const header = line.match(/^\s*\[\[?([^\]]+)\]\]?/);
-			if (header) in_ln = header[1] === 'ln';
-			if (!in_ln) continue;
+			if (header) in_backend = ['ln', 'payment_backend'].includes(header[1]);
+			if (!in_backend) continue;
 			const unit = line.match(/^\s*unit\s*=\s*"([a-z0-9_-]+)"/);
 			if (unit && !units.includes(unit[1])) units.push(unit[1]);
 		}
