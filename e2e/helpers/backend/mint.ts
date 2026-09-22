@@ -125,6 +125,13 @@ export const mint = {
 		return parseInt(out, 10);
 	},
 
+	/** Include custom and historical methods in quote-table assertions. */
+	quoteMethods(config: ConfigInfo, kind: 'mint' | 'melt'): string[] {
+		if (config.mint !== 'cdk') return ['bolt11'];
+		const out = mintDbQuery(config, `SELECT DISTINCT lower(payment_method) FROM ${kind}_quote ORDER BY 1`);
+		return out ? out.split('\n') : [];
+	},
+
 	/** One quote row by id — the oracle for the expanded-row detail panel
 	 *  (`Mint Quote ID` mega-string ↔ DB bijection). Null when no such row.
 	 *  nutshell keys mint quotes on `quote` and has no payment_method column

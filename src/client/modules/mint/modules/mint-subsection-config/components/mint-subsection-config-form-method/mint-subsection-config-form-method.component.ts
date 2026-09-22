@@ -20,6 +20,7 @@ import {MintQuoteState, MeltQuoteState, OrchardNut4Method, OrchardNut5Method} fr
 })
 export class MintSubsectionConfigFormMethodComponent implements OnChanges {
 	public nut = input.required<'nut4' | 'nut5'>(); // which nut configuration this controls
+	public readonly chart_units = input<readonly string[]>([]);
 	public unit = input.required<string>(); // unit to display (e.g. 'ora')
 	public method = input.required<string>(); // payment method (e.g. 'branch')
 	public form_group = input.required<FormGroup>(); // form group containing the method controls

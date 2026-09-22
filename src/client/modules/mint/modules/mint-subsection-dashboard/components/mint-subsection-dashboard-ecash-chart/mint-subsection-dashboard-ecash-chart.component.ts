@@ -19,6 +19,7 @@ import {
 import {getXAxisConfig, getTooltipTitle, formatAxisValue} from '@client/modules/chart/helpers/mint-chart-options.helpers';
 import {ChartService} from '@client/modules/chart/services/chart/chart.service';
 /* Native Dependencies */
+import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 import {MintAnalytic} from '@client/modules/mint/classes/mint-analytic.class';
 import {ChartType} from '@client/modules/mint/enums/chart-type.enum';
 
@@ -42,6 +43,8 @@ export class MintSubsectionDashboardEcashChartComponent implements OnDestroy, On
 	public selected_type = input.required<ChartType | null | undefined>();
 	public loading = input.required<boolean>();
 	public device_mobile = input.required<boolean>();
+
+	public readonly mint_keysets = input<MintKeyset[]>([]);
 
 	public chart_type!: ChartJsType;
 	public chart_data = signal<ChartConfiguration['data']>({datasets: []});
@@ -193,10 +196,12 @@ export class MintSubsectionDashboardEcashChartComponent implements OnDestroy, On
 		const is_line = cumulative;
 
 		// Promises (blind sigs) first — they sit at the bottom of the stack
-		let unit_index = 0;
 		for (const unit of all_units) {
 			if (promises_by_unit[unit]) {
-				const color = this.chartService.getAssetColor(unit, unit_index);
+				const color = this.chartService.getAssetColor(
+					unit,
+					this.mint_keysets().map((keyset) => keyset.unit),
+				);
 				const muted_color = this.chartService.getMutedColor(color.border);
 				const data_keyed = getDataKeyedByTimestamp(promises_by_unit[unit], 'count');
 				const chart_data = getCountData(timestamp_range, data_keyed, cumulative);
@@ -207,14 +212,15 @@ export class MintSubsectionDashboardEcashChartComponent implements OnDestroy, On
 						: this.buildBarPromiseDataset(chart_data, unit, color),
 				);
 			}
-			unit_index++;
 		}
 
 		// Proofs second — they sit on top of the stack
-		unit_index = 0;
 		for (const unit of all_units) {
 			if (proofs_by_unit[unit]) {
-				const color = this.chartService.getAssetColor(unit, unit_index);
+				const color = this.chartService.getAssetColor(
+					unit,
+					this.mint_keysets().map((keyset) => keyset.unit),
+				);
 				const muted_color = this.chartService.getMutedColor(color.border);
 				const data_keyed = getDataKeyedByTimestamp(proofs_by_unit[unit], 'count');
 				const chart_data = getCountData(timestamp_range, data_keyed, cumulative);
@@ -225,7 +231,6 @@ export class MintSubsectionDashboardEcashChartComponent implements OnDestroy, On
 						: this.buildBarVolumeDataset(chart_data, unit, 'proof', color),
 				);
 			}
-			unit_index++;
 		}
 
 		return datasets;

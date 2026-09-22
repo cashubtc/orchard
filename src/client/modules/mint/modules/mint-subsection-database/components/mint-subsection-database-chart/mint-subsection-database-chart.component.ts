@@ -33,6 +33,7 @@ import {ChartService} from '@client/modules/chart/services/chart/chart.service';
 import {MintSubsectionDatabaseData} from '@client/modules/mint/modules/mint-subsection-database/classes/mint-subsection-database-data.class';
 import {MintMintQuote} from '@client/modules/mint/classes/mint-mint-quote.class';
 import {MintMeltQuote} from '@client/modules/mint/classes/mint-melt-quote.class';
+import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 import {MintSwap} from '@client/modules/mint/classes/mint-swap.class';
 
 @Component({
@@ -54,6 +55,8 @@ export class MintSubsectionDatabaseChartComponent implements OnChanges, OnDestro
 	@Input() public state_enabled!: boolean;
 	@Input() public highlighted_entity_id: string | null = null;
 	public readonly device_mobile = input.required<boolean>();
+
+	public readonly mint_keysets = input<MintKeyset[]>([]);
 
 	public chart_type!: ChartJsType;
 	public chart_data!: ChartConfiguration['data'];
@@ -168,8 +171,11 @@ export class MintSubsectionDatabaseChartComponent implements OnChanges, OnDestro
 	}
 
 	private getDatasets(data_unit_groups: Record<string, MintMintQuote[] | MintMeltQuote[] | MintSwap[]>): ChartConfiguration['data'] {
-		const datasets = Object.entries(data_unit_groups).map(([unit, data], index) => {
-			const color = this.chartService.getAssetColor(unit, index);
+		const datasets = Object.entries(data_unit_groups).map(([unit, data]) => {
+			const color = this.chartService.getAssetColor(
+				unit,
+				this.mint_keysets().map((keyset) => keyset.unit),
+			);
 			const active_color = this.chartService.hexToRgba(color.border, 0.75);
 			const dimmed_color = this.chartService.hexToRgba(color.border, 0.15);
 			const meta = getUnitMeta(unit);

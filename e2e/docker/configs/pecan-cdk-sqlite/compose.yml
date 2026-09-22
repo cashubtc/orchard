@@ -1,0 +1,151 @@
+# Custom-unit mint: Pecan settles ora/branch quotes through the real CDK
+# payment-processor interface. No Bitcoin or Lightning node is needed.
+name: orchard-e2e-pecan-cdk-sqlite
+
+networks:
+  net:
+    name: orchard-e2e-pecan-cdk-sqlite
+    driver: bridge
+
+volumes:
+  pecan-data:
+  pecan-config:
+  cdk-mintd-data:
+  orchard-data:
+  wallet-data:
+
+services:
+  pecan:
+    image: ghcr.io/zeugmaster/pecan:${PECAN_VERSION}
+    container_name: pecan-cdk-sqlite-pecan
+    command: ["cdk-branch-processor"]
+    restart: on-failure
+    networks: [net]
+    ports: ["9091:9090"]
+    volumes:
+      - pecan-data:/var/lib/cdk-branch-processor
+      - pecan-config:/var/lib/pecan/config
+    environment:
+      - RUST_LOG=info,h2=warn,hyper=warn,reqwest=warn
+      - CDK_BRANCH_PROCESSOR_WORK_DIR=/var/lib/cdk-branch-processor
+      - CDK_BRANCH_PROCESSOR_CONFIG_DIR=/var/lib/pecan/config
+      - CDK_BRANCH_PROCESSOR_GRPC_ADDR=0.0.0.0
+      - CDK_BRANCH_PROCESSOR_GRPC_PORT=50051
+      - CDK_BRANCH_PROCESSOR_HTTP_ADDR=0.0.0.0
+      - CDK_BRANCH_PROCESSOR_HTTP_PORT=9090
+      - CDK_BRANCH_PROCESSOR_INITIAL_ADMIN_PASSWORD=${PECAN_INITIAL_PASSWORD}
+      - CDK_BRANCH_PROCESSOR_INITIAL_UNIT=ora
+      - CDK_BRANCH_PROCESSOR_INITIAL_MINT_URL=http://cdk-mintd:3342
+      - CDK_BRANCH_PROCESSOR_INITIAL_ADVERTISED_GRPC=pecan:50051
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9090/healthz"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+
+  cdk-mintd:
+    image: cashubtc/mintd:${CDK_MINTD_VERSION}
+    container_name: pecan-cdk-sqlite-cdk-mintd
+    restart: on-failure
+    networks: [net]
+    ports: ["3342:3342", "8088:8088"]
+    depends_on:
+      pecan: { condition: service_healthy }
+    volumes:
+      - cdk-mintd-data:/app/data
+      - ./mintd.toml:/config.toml:ro
+      - ../../scripts/start-cdk-mintd.sh:/start-cdk-mintd.sh:ro
+    env_file: [../../cdk-regtest.env]
+    environment:
+      - CDK_MINTD_WORK_DIR=/app/data
+    command: ["/bin/sh", "/start-cdk-mintd.sh"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3342/v1/info"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+
+  orchard:
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+      target: final
+    container_name: pecan-cdk-sqlite-orchard
+    restart: on-failure
+    networks: [net]
+    ports: ["3332:3321"]
+    depends_on:
+      cdk-mintd: { condition: service_healthy }
+    volumes:
+      - orchard-data:/app/data
+      - cdk-mintd-data:/mint-data:ro
+    env_file: [./env]
+    environment:
+      - NODE_ENV=production
+      - DOCKER_ENV=true
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=3321
+      - MINT_DATABASE=/mint-data/cdk-mintd.sqlite
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3321/"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+
+  wallet:
+    build:
+      context: ../..
+      dockerfile: pecan-wallet.Dockerfile
+    container_name: pecan-cdk-sqlite-wallet
+    restart: on-failure
+    networks: [net]
+    depends_on:
+      cdk-mintd: { condition: service_healthy }
+    volumes:
+      - wallet-data:/wallet
+    environment:
+      - MINT_URL=http://cdk-mintd:3342
+      - MINT_UNIT=ora
+      - MINT_METHOD=branch
+    entrypoint: ["sleep", "infinity"]
+
+  activity:
+    build:
+      context: ../..
+      dockerfile: pecan-wallet.Dockerfile
+    container_name: pecan-cdk-sqlite-activity
+    networks: [net]
+    depends_on:
+      orchard: { condition: service_healthy }
+      wallet: { condition: service_started }
+    volumes:
+      - wallet-data:/wallet
+      - ../../scripts:/scripts:ro
+    environment:
+      - MINT_URL=http://cdk-mintd:3342
+      - MINT_UNIT=ora
+      - MINT_METHOD=branch
+      - PECAN_URL=http://pecan:9090
+      - PECAN_INITIAL_PASSWORD=${PECAN_INITIAL_PASSWORD}
+      - PECAN_PASSWORD=${PECAN_PASSWORD}
+      - ACTIVITY_SKIP=${ACTIVITY_SKIP:-0}
+    entrypoint: ["node", "/scripts/activity-pecan.mjs"]
+    restart: "no"
+
+  sqlite-reader:
+    image: alpine:${ALPINE_VERSION}
+    container_name: pecan-cdk-sqlite-sqlite-reader
+    restart: on-failure
+    networks: [net]
+    depends_on:
+      orchard: { condition: service_healthy }
+    volumes:
+      - orchard-data:/orchard
+      - cdk-mintd-data:/mint
+    command: sh -c "apk add --no-cache sqlite && exec tail -f /dev/null"
+    healthcheck:
+      test: ["CMD", "sqlite3", "--version"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+      start_period: 5s

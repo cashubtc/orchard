@@ -68,7 +68,11 @@ describe('errorInterceptor', () => {
 		req.flush({errors: [{extensions: {code: 10002}}]});
 
 		const retried_req = httpTesting.expectOne('/api/test');
+		expect(authServiceSpy.refreshToken).toHaveBeenCalledTimes(1);
+		expect(retried_req.request.headers.get('Authorization')).toBe('Bearer new-token');
 		retried_req.flush({data: 'ok'});
+		expect(authServiceSpy.clearAuthCache).not.toHaveBeenCalled();
+		expect(routerSpy.navigate).not.toHaveBeenCalled();
 	});
 
 	it('should propagate an auth error (code 10002) on an anonymous request without refreshing or redirecting', () => {

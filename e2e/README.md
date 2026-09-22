@@ -7,11 +7,11 @@ See [tasks/todo.md](../tasks/todo.md) for the full rollout plan.
 
 ## Config matrix
 
-Five configs. The first four form a diagonal across (LN × Mint × DB) that
-exercises every axis exactly twice. The fifth is an LN-less multi-unit
-(sat + usd + ora) mint — cdk-mintd + fake_wallet — which exists to prove
-Orchard's mint integration tolerates an absent LN backend and handles
-multiple units, including a unit outside the Cashu norm.
+Six configs. The first four form a diagonal across (LN × Mint × DB) that
+exercises every axis exactly twice. The fifth uses CDK's fake wallet to
+cover SAT/USD with no Lightning or Bitcoin backend. The sixth uses real
+Pecan settlement for the custom unit `ora` and custom method `branch`,
+including a mint that has no SAT keyset.
 
 | Config | Bitcoin | LN | Mint | DB | Tapd | Multi-unit |
 |---|---|---|---|---|---|---|
@@ -19,7 +19,8 @@ multiple units, including a unit outside the Cashu norm.
 | `cln-nutshell-postgres` | core | cln | nutshell | postgres | — | ✓ (sat + usd + eur) |
 | `lnd-cdk-sqlite` | core | lnd | cdk | sqlite | ✓ | — |
 | `cln-cdk-postgres` | core | cln | cdk | postgres | — | — |
-| `fake-cdk-postgres` | — | — (fake) | cdk | postgres | — | ✓ (sat + usd + ora) |
+| `fake-cdk-postgres` | — | — (fake) | cdk | postgres | — | ✓ (sat + usd) |
+| `pecan-cdk-sqlite` | — | — (Pecan) | cdk | sqlite | — | ora only; branch method |
 
 ## Directory structure
 
@@ -29,11 +30,14 @@ e2e/
 ├── docker/
 │   ├── setup.Dockerfile                # shared alpine+tools image (curl/jq/xxd/docker-cli)
 │   ├── activity-fake.Dockerfile        # debian+node+bolt11+docker-cli — fake-cdk-postgres only
+│   ├── pecan-wallet.Dockerfile        # CDK 0.18 library wallet + Node fixture driver
+│   ├── pecan-wallet/                  # small Rust test helper; locked dependencies
 │   ├── scripts/
 │   │   ├── compose.sh                  # dispatcher: up/down/logs/ps
 │   │   ├── activity-cadence.sh         # long-running cadence simulator (host-controlled)
 │   │   ├── fund-lnd-topology.sh        # runs inside setup for lnd-* configs
 │   │   ├── fund-cln-topology.sh        # runs inside setup for cln-* configs
+│   │   ├── activity-pecan.mjs           # real teller-paid/voided ora/branch quotes
 │   │   ├── activity-fake.sh            # runs inside activity for fake-backed paths
 │   │   └── gen-one-bolt11.js           # in-script bolt11 signer (no-LN-stack fallback)
 │   └── configs/
@@ -51,6 +55,7 @@ e2e/
 │       ├── cln-nutshell-postgres/
 │       │   ├── compose.yml
 │       │   └── env
+│       ├── pecan-cdk-sqlite/            # compose.yml + env + mintd.toml
 │       └── fake-cdk-postgres/
 │           ├── compose.yml
 │           ├── env
@@ -85,12 +90,33 @@ have something to read.
 
 **fake config** (`fake-cdk-postgres`):
 
-No LN nodes, no bitcoind. cdk-mintd runs `fake_wallet` over one `[[ln]]`
-entry per unit — `sat`, `usd` and `ora`; Orchard boots without
-`LIGHTNING_TYPE` and without `BITCOIN_TYPE`. Its job is to exercise
-Orchard's UI when both optional services are absent, and — via `ora` — when
-a unit carries no symbol, no decimals and no fiat or bitcoin backing.
-Custom units settle over the onchain method only; see `activity-fake.sh`.
+No LN nodes, no bitcoind. cdk-mintd runs `fake_wallet` over one `[[payment_backend]]`
+entry per unit — `sat` and `usd`; Orchard boots without
+`LIGHTNING_TYPE` and without `BITCOIN_TYPE`. It exercises the absence of
+those services alongside SAT/USD and built-in payment methods.
+
+**Pecan config** (`pecan-cdk-sqlite`):
+
+Pecan connects to stock CDK through the gRPC payment-processor interface.
+Only `ora`/`branch` is configured. Pecan has no Bitcoin or Lightning dependency.
+The activity service creates three teller-paid deposits, two swaps, two
+withdrawals that reach PENDING before teller payment, an unpaid deposit,
+and a teller-voided withdrawal. Each run adds another batch; any failed
+operation stops the generator with a nonzero exit code.
+
+CDK 0.18's CLI melt command accepts only built-in methods. The small
+`pecan-wallet` test helper delegates to the pinned CDK 0.18 wallet library;
+it does not implement Cashu cryptography. Its separate locked Rust build
+is needed only for this stack. The Node driver uses Pecan's normal teller
+API and completes its required initial password change. Public quote
+identifiers are saved in the wallet volume at `/wallet/fixtures.json` for
+Orchard assertions. Tests cover native-unit amounts, quote states,
+request display/copy, configuration saves, balances, and keyset rotation.
+
+All seeds and passwords are public test fixtures. The teller account is
+`admin`, with the final password `orchard-e2e-pecan-teller` (see `env`).
+Orchard uses the shared `admin` / `tester` account. Keep fast custom-unit
+formatting tests alongside this integration coverage.
 
 ## Running
 
@@ -103,6 +129,7 @@ Use it for cadence knobs, host CLI paths, and future cross-stack e2e settings.
 npm run e2e:up lnd-nutshell-sqlite
 npm run e2e:up cln-cdk-sqlite
 npm run e2e:up fake-cdk-postgres
+npm run e2e:up pecan-cdk-sqlite
 npm run e2e:up cln-nutshell-postgres   # requires prior e2e:bootstrap-mainchain
 
 # the whole matrix (every stack, mainchain overlay included)
@@ -111,6 +138,7 @@ npm run e2e:up all
 # test runner
 npm run e2e:test                                          # full suite
 npm run e2e:test -- --project=cln-nutshell-postgres:3325  # filter
+npm run e2e:test -- --project=pecan-cdk-sqlite:3332       # custom unit/method
 
 # watch logs (single stack only — 'all' would interleave)
 npm run e2e:logs cln-cdk-sqlite
@@ -129,6 +157,21 @@ npm run e2e:activity:stop cln-cdk-postgres
 npm run e2e:down cln-cdk-sqlite
 npm run e2e:down all         # wipe everything including mainchain-data
 ```
+
+## CDK configuration
+
+CDK 0.18 stores its configuration in the mint database. The shared
+`start-cdk-mintd.sh` imports each stack's `mintd.toml` once with
+`config init --new-mint`; ordinary restarts preserve changes made through Orchard.
+Public regtest mnemonics are supplied by `docker/cdk-regtest.env` using `env:`
+references. The stacks explicitly allow plaintext management RPC on their test
+networks and retain CDK's default disabled payment-state override.
+
+These fixtures initialize fresh test mints. When moving an old disposable e2e
+stack to 0.18, recreate that stack with `e2e:down <config>` (deletes its test
+volumes) before `e2e:up <config>`. For an already initialized 0.18 stack, changes
+to `mintd.toml` require an explicit `cdk-mintd config apply --file /config.toml`
+inside the mint container, followed by restarting that container.
 
 ## Cadence activity simulator
 
@@ -187,6 +230,10 @@ Set these in `e2e/.env` (or export before `e2e:activity:start`):
   - replay both `activity` and `activity-fake` (sat via real LN + usd/eur fake paths)
   - inject failed LN pay from CLN, unpaid mint + failed melt quote
   - disrupt nutshell mint + `cln-orchard`
+- `pecan-cdk-sqlite`
+  - replay real Pecan deposits/swaps/withdrawals, including unpaid and voided quotes
+  - use the same mint disruption and health recovery checks
+
 - `fake-cdk-postgres`
   - replay `activity` for no-LN fake mint paths
   - inject unpaid mint + failed melt quote
@@ -203,15 +250,16 @@ stack's grep set.
 |---|---|---|
 | `@canary` | config-agnostic feature | `lnd-nutshell-sqlite` only |
 | `@lightning` | Orchard has `LIGHTNING_TYPE` configured (app-state) | every stack with `config.ln !== false` |
-| `@no-lightning` | Orchard boots without `LIGHTNING_TYPE` (app-state) | `fake-cdk-postgres` only |
-| `@no-bitcoin` | Orchard boots without `BITCOIN_TYPE` (app-state) | `fake-cdk-postgres` only |
+| `@no-lightning` | Orchard boots without `LIGHTNING_TYPE` (app-state) | `fake-cdk-postgres`, `pecan-cdk-sqlite` |
+| `@no-bitcoin` | Orchard boots without `BITCOIN_TYPE` (app-state) | `fake-cdk-postgres`, `pecan-cdk-sqlite` |
 | `@lnd` / `@cln` | LN impl-name tags (stack identity) | stacks with matching `config.ln` |
 | `@cdk` / `@nutshell` | mint-impl-sensitive | stacks with matching mint |
 | `@sqlite` / `@postgres` | DB-sensitive | stacks with matching DB |
 | `@tapd` | requires Taproot Assets | `lnd-cdk-sqlite` only |
 | `@mainchain` | Orchard wired to a real mainnet bitcoind | `cln-nutshell-postgres` (overlay always loaded — see [Mainchain overlay](#mainchain-overlay)) |
 | `@mint-metrics` | stack env sets `MINT_METRICS_API` to the cdk-mintd prometheus exporter (config-state) | `lnd-cdk-sqlite` only |
-| `@all` | genuine matrix coverage | all five stacks |
+| `@pecan` | Real custom-unit/custom-method settlement | `pecan-cdk-sqlite` only |
+| `@all` | genuine matrix coverage | all six stacks |
 
 **Prefer app-state tags (`@lightning` / `@no-lightning`) over impl-name
 tags (`@lnd` / `@cln`)** — they describe the Orchard configuration the spec
@@ -304,7 +352,18 @@ auth bootstrapping always happens.
 No bitcoind — Orchard boots without `BITCOIN_TYPE` to exercise its
 no-bitcoin code path.
 
-All five configs have disjoint port ranges and can run concurrently. Pair-2 / cln
+### pecan-cdk-sqlite
+
+| Service | Host port | Purpose |
+|---|---|---|
+| pecan | 9091 | Teller console/API |
+| cdk-mintd | 3342/8088 | Mint HTTP / management RPC |
+| orchard | 3332 | Orchard GraphQL + UI |
+
+The processor's gRPC port 50051 is internal. Orchard uses 3332 to avoid
+existing client preview ports 3327–3331.
+
+All six configs have disjoint port ranges and can run concurrently. Pair-2 / cln
 configs sit in the 20k/28k/55xx range to avoid collisions with Polar Lightning
 (desktop app) which occupies 18443–18453 / 10000–13999 / 11000–11099.
 `fake-cdk-postgres` uses a 38443 / 57xx / 3326 / 8087 slice for the same reason.

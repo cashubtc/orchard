@@ -4,7 +4,13 @@
  * from anywhere in `e2e/` without dragging in CONFIGS or filesystem reads.
  */
 
-export type ConfigName = 'lnd-nutshell-sqlite' | 'lnd-cdk-sqlite' | 'cln-cdk-postgres' | 'cln-nutshell-postgres' | 'fake-cdk-postgres';
+export type ConfigName =
+	| 'lnd-nutshell-sqlite'
+	| 'lnd-cdk-sqlite'
+	| 'cln-cdk-postgres'
+	| 'cln-nutshell-postgres'
+	| 'fake-cdk-postgres'
+	| 'pecan-cdk-sqlite';
 
 export type LnType = 'lnd' | 'cln';
 export type MintType = 'nutshell' | 'cdk';
@@ -61,6 +67,8 @@ interface BaseConfigInfo {
 	mainchain: boolean;
 	orchardUrl: string;
 	setupKey: string;
+	/** Real custom-method settlement backend, when this mint uses Pecan. */
+	pecan?: {url: string; container: string};
 	/** Server-persisted settings the settings setup phase applies via
 	 *  `/settings/app`. Absent fields are skipped, leaving server defaults. */
 	appSettings?: AppSettingValues;

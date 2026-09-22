@@ -282,7 +282,7 @@ init_scenario() {
             LN_HEALTH_CONTAINER="${CONFIG_NAME}-cln-orchard"
             ACTIVITY_CONTAINERS="${CONFIG_NAME}-activity ${CONFIG_NAME}-activity-fake"
             ;;
-        fake-cdk-postgres)
+        fake-cdk-postgres|pecan-cdk-sqlite)
             LN_MODE="none"
             ORCHARD_CONTAINER="${CONFIG_NAME}-orchard"
             MINT_CONTAINER="${CONFIG_NAME}-cdk-mintd"
@@ -315,8 +315,13 @@ while [ "$RUN_LOOP" -eq 1 ]; do
         start_and_wait_activity "$activity_container" || true
     done
 
-    inject_unpaid_mint_quote || true
-    inject_failed_melt_quote || true
+    if [ "$CONFIG_NAME" = "pecan-cdk-sqlite" ]; then
+        # The real teller flow seeds unpaid and voided branch quotes itself.
+        log "phase=unhappy custom_quotes included_in_pecan_activity"
+    else
+        inject_unpaid_mint_quote || true
+        inject_failed_melt_quote || true
+    fi
     inject_failed_ln_payment || true
 
     if [ "$ACTIVITY_DISRUPT_EVERY" -gt 0 ] && [ $((cycle % ACTIVITY_DISRUPT_EVERY)) -eq 0 ]; then

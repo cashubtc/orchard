@@ -14,6 +14,7 @@ import {agree} from '../../helpers/agree';
 
 describe('harness probe — supertest tier', () => {
 	const config = getActiveConfig();
+	const bitcoin_test = config.bitcoin ? it : it.skip;
 
 	it('reaches Orchard GraphQL and parses a public query', async () => {
 		const data = await gql<{auth_initialization: {initialization: boolean}}>(`
@@ -30,26 +31,18 @@ describe('harness probe — supertest tier', () => {
 
 	it('exercises bearer auth against a guarded resolver', async () => {
 		const {access_token} = await loginAsAdmin();
-		const data = await gql<{bitcoin_blockcount: {height: number}}>(
-			`query { bitcoin_blockcount { height } }`,
-			{},
-			access_token,
-		);
-		expect(data.bitcoin_blockcount.height).toBeGreaterThanOrEqual(0);
+		const data = await gql<{mint_keysets: Array<{id: string; unit: string}>}>(`query { mint_keysets { id unit } }`, {}, access_token);
+		expect(data.mint_keysets.length).toBeGreaterThan(0);
 	});
 
-	it('reaches the bitcoind container via docker exec', () => {
+	bitcoin_test('reaches the bitcoind container via docker exec', () => {
 		const height = btc.blockCount(config);
 		expect(height).toBeGreaterThanOrEqual(0);
 	});
 
-	it('Orchard block count agrees with bitcoind', async () => {
+	bitcoin_test('Orchard block count agrees with bitcoind', async () => {
 		const {access_token} = await loginAsAdmin();
-		const orchard = await gql<{bitcoin_blockcount: {height: number}}>(
-			`query { bitcoin_blockcount { height } }`,
-			{},
-			access_token,
-		);
+		const orchard = await gql<{bitcoin_blockcount: {height: number}}>(`query { bitcoin_blockcount { height } }`, {}, access_token);
 		const backend = btc.blockCount(config);
 		agree('chain height', orchard.bitcoin_blockcount.height, backend);
 	});

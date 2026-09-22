@@ -101,6 +101,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 	public page_settings!: NonNullableMintConfigSettings;
 	public mint_info: MintInfo | null = null;
 	public quote_ttls!: MintQuoteTtls;
+	public chart_units: string[] = [];
 	public minting_units: string[] = [];
 	public melting_units: string[] = [];
 	public locale!: string;
@@ -235,6 +236,8 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 		this.initTertiaryNavStatus();
 		this.minting_units = this.getUniqueUnits('nut4');
 		this.melting_units = this.getUniqueUnits('nut5');
+		const keysets: {unit: string}[] = this.route.snapshot.data['mint_keysets'] ?? [];
+		this.chart_units = [...new Set([...keysets.map((keyset) => keyset.unit), ...this.minting_units, ...this.melting_units])];
 		this.nut15_methods = this.getNut15Methods();
 		this.nut17_commands = this.getNut17Commands();
 		this.buildMethodSections();

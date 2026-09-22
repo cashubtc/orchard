@@ -150,7 +150,7 @@ export class MintSubsectionKeysetsChartComponent implements OnDestroy {
 			valid_analytics_pre.map((a) => ({...a})),
 			timestamp_first,
 		);
-		const datasets = Object.entries(data_keyset_groups_prepended).map(([keyset_id, data], index) => {
+		const datasets = Object.entries(data_keyset_groups_prepended).map(([keyset_id, data]) => {
 			const keyset = keysets.find((k) => k.id === keyset_id);
 			const unit = keyset?.unit || '';
 			const keyset_genesis_time = keyset
@@ -165,7 +165,10 @@ export class MintSubsectionKeysetsChartComponent implements OnDestroy {
 				},
 				{} as Record<string, number>,
 			);
-			const color = this.chartService.getAssetColor(unit, index);
+			const color = this.chartService.getAssetColor(
+				unit,
+				this.keysets().map((keyset) => keyset.unit),
+			);
 			const cumulative = this.chart_type() === 'line';
 			let data_prepped = getAmountData(timestamp_range, data_keyed_by_timestamp, unit, cumulative);
 

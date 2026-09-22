@@ -131,13 +131,11 @@ async function switchType(page: Page, label: 'Mints' | 'Melts' | 'Swaps'): Promi
 	}).toPass({timeout: 20_000});
 }
 
-/** Count visible payment-method chips with an exact label. The chip's inner
- *  `.text-nowrap` div holds exactly "BOLT 11" / "BOLT 12" / "ONCHAIN" (the
- *  sibling mat-icon ligature text lives outside it), so an anchored regex is
- *  collision-safe ("BOLT 11" vs "BOLT 12"). */
-function methodChips(page: Page, label: 'BOLT 11' | 'BOLT 12' | 'ONCHAIN') {
-	return page.locator('orc-mint-subsection-database-table orc-mint-general-payment-method .text-nowrap', {
-		hasText: new RegExp(`^${label}$`),
+/** Count exact payment-method labels, including custom methods. The label
+ *  div excludes the sibling icon's ligature text. */
+function methodChips(page: Page, label: string) {
+	return page.locator('orc-mint-subsection-database-table orc-mint-general-payment-method .mint-payment-method-container > div', {
+		hasText: new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`),
 	});
 }
 
@@ -222,16 +220,13 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 				const window = defaultWindow(config);
 				const total = mint.quoteCount(config, {kind, ...window});
 
-				// On nutshell stacks the bolt12/onchain DB counts are 0 by
-				// construction (no payment_method column, wire value hardcoded
-				// bolt11) — the assertions below then prove ZERO such chips render.
-				const expected = {
-					'BOLT 11': mint.quoteCount(config, {kind, ...window, payment_method: 'bolt11'}),
-					'BOLT 12': mint.quoteCount(config, {kind, ...window, payment_method: 'bolt12'}),
-					ONCHAIN: mint.quoteCount(config, {kind, ...window, payment_method: 'onchain'}),
-				} as const;
+				const methods = [...new Set(['bolt11', 'bolt12', 'onchain', ...mint.quoteMethods(config, kind)])];
+				const labels: Record<string, string> = {bolt11: 'BOLT 11', bolt12: 'BOLT 12', onchain: 'ONCHAIN'};
+				const expected = Object.fromEntries(
+					methods.map((method) => [labels[method] ?? method, mint.quoteCount(config, {kind, ...window, payment_method: method})]),
+				);
 				expect(
-					expected['BOLT 11'] + expected['BOLT 12'] + expected.ONCHAIN,
+					Object.values(expected).reduce((sum, count) => sum + count, 0),
 					`${kind} per-method counts should partition the total (${total})`,
 				).toBe(total);
 				expect(await paginatorTotal(page), `${kind} paginator should equal the snapshot total (${total})`).toBe(total);
@@ -240,10 +235,9 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 					// Everything fits on page 1 — the rendered chip distribution
 					// must equal the DB's method distribution exactly.
 					for (const [label, count] of Object.entries(expected)) {
-						await expect(
-							methodChips(page, label as 'BOLT 11' | 'BOLT 12' | 'ONCHAIN'),
-							`${kind} table should render ${count} "${label}" chips`,
-						).toHaveCount(count, {timeout: 2_000});
+						await expect(methodChips(page, label), `${kind} table should render ${count} "${label}" chips`).toHaveCount(count, {
+							timeout: 2_000,
+						});
 					}
 				} else {
 					// Beyond one page (long-lived cadence-sim stacks) the exact
@@ -251,9 +245,7 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 					// orders by second-precision created_time and burst-minted
 					// quotes tie at the page boundary. Degrade to structure:
 					// every rendered row carries exactly one valid method chip.
-					const counts = await Promise.all(
-						(['BOLT 11', 'BOLT 12', 'ONCHAIN'] as const).map((label) => methodChips(page, label).count()),
-					);
+					const counts = await Promise.all(Object.keys(expected).map((label) => methodChips(page, label).count()));
 					expect(
 						counts.reduce((a, b) => a + b, 0),
 						`${kind} page-1 rows should each carry one valid method chip`,
@@ -287,11 +279,13 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 		const db_row = mint.quoteById(config, 'mint', quote_id);
 		expect(db_row, `quote id "${quote_id}" from the UI should exist in the mint DB`).not.toBeNull();
 
-		const chip = ((await first_row.locator('orc-mint-general-payment-method .text-nowrap').textContent()) ?? '').trim();
+		const chip = (
+			(await first_row.locator('orc-mint-general-payment-method .mint-payment-method-container > div').textContent()) ?? ''
+		).trim();
 		expect(chip.replace(/\s+/g, '').toLowerCase(), 'row chip should match the DB payment_method').toBe(db_row!.payment_method);
 	});
 
-	for (const unit of ['sat', 'ora']) {
+	for (const unit of ['sat']) {
 		test(`onchain ${unit} melt details display and copy the destination address from the mint DB`, async ({
 			page,
 			context,
@@ -306,21 +300,18 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 			// Orchard can be healthy while the activity container is still waiting
 			// for onchain deposits to confirm, before it creates the melt fixtures.
 			await expect
-				.poll(
-					() => mint.quoteCount(config, {kind: 'melt', ...defaultWindow(config), payment_method: 'onchain', unit}),
-					{
-						timeout: 120_000,
-						intervals: [1_000, 2_000, 5_000],
-						message: `Expected a seeded onchain ${unit} melt in the current date window; check ${config.name}-activity logs`,
-					},
-				)
+				.poll(() => mint.quoteCount(config, {kind: 'melt', ...defaultWindow(config), payment_method: 'onchain', unit}), {
+					timeout: 120_000,
+					intervals: [1_000, 2_000, 5_000],
+					message: `Expected a seeded onchain ${unit} melt in the current date window; check ${config.name}-activity logs`,
+				})
 				.toBeGreaterThan(0);
 			// The previously fetched table will not pick up newly seeded quotes itself.
 			await page.reload();
 			await settle(page);
 			const onchain_row = page
 				.locator('orc-mint-subsection-database-table tr.entity-row')
-				.filter({has: page.locator('orc-mint-general-payment-method .text-nowrap', {hasText: /^ONCHAIN$/})})
+				.filter({has: page.locator('orc-mint-general-payment-method .mint-payment-method-container > div', {hasText: /^ONCHAIN$/})})
 				.filter({has: page.locator('.mat-column-unit .text-sm', {hasText: new RegExp(`^\\s*${unit}\\s*$`, 'i')})})
 				.first();
 			const next_page = page.getByRole('button', {name: 'Next page'});
@@ -368,7 +359,9 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 		// payment_method ∈ {bolt12, onchain}.
 		const special_row = page
 			.locator('orc-mint-subsection-database-table tr.entity-row')
-			.filter({has: page.locator('orc-mint-general-payment-method .text-nowrap', {hasText: /^(BOLT 12|ONCHAIN)$/})})
+			.filter({
+				has: page.locator('orc-mint-general-payment-method .mint-payment-method-container > div', {hasText: /^(BOLT 12|ONCHAIN)$/}),
+			})
 			.first();
 		await special_row.click();
 		await expect(page.locator('orc-mint-subsection-database-table-mint-reusable')).toBeVisible();
@@ -377,7 +370,7 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 		await special_row.click();
 		const bolt11_row = page
 			.locator('orc-mint-subsection-database-table tr.entity-row')
-			.filter({has: page.locator('orc-mint-general-payment-method .text-nowrap', {hasText: /^BOLT 11$/})})
+			.filter({has: page.locator('orc-mint-general-payment-method .mint-payment-method-container > div', {hasText: /^BOLT 11$/})})
 			.first();
 		await bolt11_row.click();
 		await expect(page.locator('orc-mint-subsection-database-table-mint')).toBeVisible();

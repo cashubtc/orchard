@@ -1,0 +1,39 @@
+# Test-only mint. Public mnemonic comes from ../../cdk-regtest.env.
+# Only ora is provisioned; branch payments settle through Pecan.
+[info]
+url = "http://cdk-mintd:3342"
+listen_host = "0.0.0.0"
+listen_port = 3342
+mnemonic = "env:CDK_MINTD_MNEMONIC"
+input_fee_ppk = 100
+
+[info.quote_ttl]
+mint_ttl = 1800
+melt_ttl = 900
+
+[mint_info]
+name = "e2e-cdk-pecan"
+description = "Orchard e2e pecan-cdk-sqlite"
+
+[database]
+engine = "sqlite"
+
+[[payment_backend]]
+backend = "grpcprocessor"
+unit = "ora"
+min_mint = 1
+max_mint = 500000
+min_melt = 1
+max_melt = 500000
+
+[grpc_processor]
+supported_units = ["ora"]
+address = "pecan"
+port = 50051
+allow_insecure = true
+
+[mint_management_rpc]
+enabled = true
+allow_insecure = true
+address = "0.0.0.0"
+port = 8088

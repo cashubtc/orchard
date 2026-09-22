@@ -59,7 +59,7 @@ import {aiIsHealthy, getReadiness, lightningAnalyticsHasRows, mintAnalyticsHasRo
  *  the cumulative window total is invariant under bucket size, so the
  *  assertion is "all intervals agree with the daemon DB", not "one
  *  interval matches and we hope the others do too". */
-const ALL_UNITS: ReadonlyArray<MintUnit> = ['sat', 'usd', 'eur'];
+const ALL_UNITS: ReadonlyArray<MintUnit> = ['sat', 'usd', 'eur', 'ora'];
 const ALL_INTERVALS = ['hour', 'day', 'week', 'month'] as const;
 type AnalyticsIntervalLiteral = (typeof ALL_INTERVALS)[number];
 

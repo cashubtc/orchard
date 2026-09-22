@@ -189,7 +189,7 @@ export class MintSubsectionDashboardBalanceChartComponent implements OnDestroy, 
 
 		const live_balance_by_unit = this.getLiveBalanceByUnit();
 
-		Object.entries(data_unit_groups_prepended).forEach(([unit, data], index) => {
+		Object.entries(data_unit_groups_prepended).forEach(([unit, data]) => {
 			const data_keyed_by_timestamp = getDataKeyedByTimestamp(data, 'amount');
 			const raw_liability_data = getAmountData(timestamp_range, data_keyed_by_timestamp, unit, true);
 			const corrected_liability_data = correctLastPointWithLiveBalance(
@@ -198,7 +198,10 @@ export class MintSubsectionDashboardBalanceChartComponent implements OnDestroy, 
 				this.page_settings().interval,
 			);
 			const liability_data = convertChartDataWithOracle(corrected_liability_data, unit, oracle_map, can_use_oracle);
-			const color = this.chartService.getAssetColor(unit, index);
+			const color = this.chartService.getAssetColor(
+				unit,
+				this.mint_keysets().map((keyset) => keyset.unit),
+			);
 			const muted_color = this.chartService.getMutedColor(color.border);
 			const yAxisID = getYAxisIdWithOracle(unit, can_use_oracle);
 
@@ -238,7 +241,7 @@ export class MintSubsectionDashboardBalanceChartComponent implements OnDestroy, 
 			const live_balance_sat = toDisplayAmount('sat', this.lightning_balance()?.open.local_balance ?? 0);
 			const corrected_asset_data = correctLastPointWithLiveBalance(raw_asset_data, live_balance_sat, this.page_settings().interval);
 			const asset_data = convertChartDataWithOracle(corrected_asset_data, 'sat', oracle_map, can_use_oracle);
-			const asset_color = this.chartService.getAssetColor('sat', 0);
+			const asset_color = this.chartService.getAssetColor('sat');
 			const muted_asset_color = this.chartService.getMutedColor(asset_color.border);
 
 			datasets.push({
@@ -285,11 +288,14 @@ export class MintSubsectionDashboardBalanceChartComponent implements OnDestroy, 
 		// Liability datasets for all units (non cumulative)
 		const data_unit_groups = groupAnalyticsByUnit(this.mint_analytics().map((a) => ({...a})));
 
-		Object.entries(data_unit_groups).forEach(([unit, data], index) => {
+		Object.entries(data_unit_groups).forEach(([unit, data]) => {
 			const data_keyed_by_timestamp = getDataKeyedByTimestamp(data, 'amount');
 			const raw_volume_data = getAmountData(timestamp_range, data_keyed_by_timestamp, unit, false);
 			const volume_data = convertChartDataWithOracle(raw_volume_data, unit, oracle_map, can_use_oracle);
-			const color = this.chartService.getAssetColor(unit, index);
+			const color = this.chartService.getAssetColor(
+				unit,
+				this.mint_keysets().map((keyset) => keyset.unit),
+			);
 			const yAxisID = getYAxisIdWithOracle(unit, can_use_oracle);
 
 			datasets.push({
@@ -311,7 +317,7 @@ export class MintSubsectionDashboardBalanceChartComponent implements OnDestroy, 
 			const ln_keyed = getDataKeyedByTimestamp(ln_data, 'amount');
 			const raw_asset_data = getAmountData(timestamp_range, ln_keyed, 'msat', false);
 			const asset_data = convertChartDataWithOracle(raw_asset_data, 'sat', oracle_map, can_use_oracle);
-			const asset_color = this.chartService.getAssetColor('sat', 0);
+			const asset_color = this.chartService.getAssetColor('sat');
 
 			datasets.push({
 				data: asset_data,

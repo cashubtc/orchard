@@ -37,6 +37,7 @@ export class MintSubsectionConfigChartMethodComponent implements OnChanges, OnDe
 	public quotes = input.required<MintMintQuote[] | MintMeltQuote[]>();
 	public loading = input.required<boolean>();
 	public locale = input.required<string>();
+	public readonly chart_units = input<readonly string[]>([]);
 	public unit = input.required<string>();
 	public method = input.required<string>();
 	public min_amount = input.required<number>();
@@ -119,7 +120,7 @@ export class MintSubsectionConfigChartMethodComponent implements OnChanges, OnDe
 
 	private getChartData(amounts: Record<string, number>[]): ChartConfiguration['data'] {
 		if (amounts.length === 0) return {datasets: []};
-		const color = this.chartService.getAssetColor(this.unit(), 0);
+		const color = this.chartService.getAssetColor(this.unit(), this.chart_units());
 		const muted_color = this.chartService.getMutedColor(color.border, 0.5);
 		const data_prepped = amounts
 			.map((amount) => ({

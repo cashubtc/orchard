@@ -7,6 +7,13 @@ import {extractRequestString} from './cashumintdb.helpers.js';
 describe('extractRequestString', () => {
 	const address = 'bcrt1qk6j0nzv6p2dy84ff6h0ukwv0309xct2huplpu5';
 
+	it.each(['Orchard teller withdrawal', '{"account":"local","reference":"42"}', '  opaque request  '])(
+		'extracts a custom payment request without interpreting its content: %s',
+		(request: string) => {
+			expect(extractRequestString(JSON.stringify({Custom: {method: 'branch', request}}))).toBe(request);
+		},
+	);
+
 	it.each([JSON.stringify({Onchain: {address}}), JSON.stringify({onchain: {address}})])(
 		'extracts the destination address from an onchain request: %s',
 		(request: string) => {
@@ -39,6 +46,10 @@ describe('extractRequestString', () => {
 		JSON.stringify({Onchain: {address: 123}}),
 		JSON.stringify({Onchain: {address: {value: address}}}),
 		JSON.stringify({Custom: {address}}),
+		JSON.stringify({Custom: null}),
+		JSON.stringify({Custom: {request: ''}}),
+		JSON.stringify({Custom: {request: 123}}),
+		JSON.stringify({Custom: {request: {account: 'local'}}}),
 	])('preserves unrecognized or malformed requests: %s', (request: string) => {
 		expect(extractRequestString(`  ${request}  `)).toBe(request);
 	});

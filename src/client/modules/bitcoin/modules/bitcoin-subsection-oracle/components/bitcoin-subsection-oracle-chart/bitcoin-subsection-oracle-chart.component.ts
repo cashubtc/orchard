@@ -125,7 +125,7 @@ export class BitcoinSubsectionOracleChartComponent implements OnDestroy {
 		// Sort by date to ensure proper line rendering
 		formatted_data.sort((a, b) => a.x - b.x);
 
-		const color = this.chartService.getAssetColor('usd', 0);
+		const color = this.chartService.getAssetColor('usd');
 
 		// Calculate interpolated data for missing dates
 		const interpolated_data = this.getInterpolatedData(formatted_data);

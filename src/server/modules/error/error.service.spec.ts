@@ -5,6 +5,7 @@ import {Logger} from '@nestjs/common';
 /* Local Dependencies */
 import {ErrorService} from './error.service.js';
 import {OrchardErrorCode} from './error.types.js';
+import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 
 describe('ErrorService', () => {
 	let errorService: ErrorService;
@@ -50,4 +51,14 @@ describe('ErrorService', () => {
 		expect(result.code).toBe(OrchardErrorCode.MintSupportError);
 		expect(result.details).toBeUndefined();
 	});
+	it.each([OrchardErrorCode.MintQuoteOverrideDisabled, OrchardErrorCode.MintRestartRequired])(
+		'keeps domain code %s and diagnostic details through GraphQL error construction',
+		(code) => {
+			const details = 'Original backend diagnostic';
+			const result = errorService.resolveError(logger, {code, details}, 'TAG', {errord: OrchardErrorCode.MintRpcActionError});
+			const api_error = new OrchardApiError(result);
+			expect(api_error.extensions).toEqual({code, details});
+			expect(api_error.message).not.toBe('MintRpcActionError');
+		},
+	);
 });

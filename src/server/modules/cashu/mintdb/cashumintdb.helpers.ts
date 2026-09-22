@@ -167,10 +167,11 @@ export function extractRequestString(raw_request?: string | null): string | null
 		const offer_paths = ['offer', 'Bolt12.offer', 'bolt12.offer'];
 		const invoice_paths = ['bolt11', 'Bolt11', 'Bolt11.bolt11', 'invoice'];
 		const address_paths = ['Onchain.address', 'onchain.address'];
+		const custom_paths = ['Custom.request'];
 		const offer = findFirstString(json, offer_paths);
 		if (offer) return offer;
 		const bolt11 = findFirstString(json, invoice_paths);
-		return bolt11 || findFirstString(json, address_paths) || trimmed;
+		return bolt11 || findFirstString(json, address_paths) || findFirstString(json, custom_paths) || trimmed;
 	} catch {
 		return trimmed;
 	}
