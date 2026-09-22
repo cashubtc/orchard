@@ -21,6 +21,7 @@ import * as migrations from './database/migrations/index.js';
 import {UnixTimestamp} from './modules/graphql/scalars/unixtimestamp.scalar.js';
 import {Timezone} from './modules/graphql/scalars/timezone.scalar.js';
 import {Base64} from './modules/graphql/scalars/base64.scalar.js';
+import {formatGraphQLError} from './modules/graphql/graphql.helpers.js';
 /* Application Configuration */
 import {config} from './config/configuration.js';
 
@@ -40,15 +41,7 @@ function initializeGraphQL(configService: ConfigService): ApolloDriverConfig {
 			Timezone: Timezone,
 			Base64: Base64,
 		},
-		formatError: (error) => {
-			if (!configService.get('mode.production')) return error;
-			return {
-				message: error.message,
-				extensions: {
-					code: error.extensions?.code,
-				},
-			};
-		},
+		formatError: (error) => formatGraphQLError(error, is_production),
 	};
 }
 
