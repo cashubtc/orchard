@@ -10,7 +10,7 @@ import {enabledGuard} from '@client/modules/routing/guards/enabled/enabled.guard
 import {mintMetricsGuard} from '@client/modules/routing/guards/mint-metrics/mint-metrics.guard';
 import {ErrorService} from '@client/modules/error/services/error.service';
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
-import {isAuthRedirectError} from '@client/modules/error/helpers/error.helpers';
+import {isAuthRedirectError, toConnectionError} from '@client/modules/error/helpers/error.helpers';
 import {OrcNavModule} from '@client/modules/nav/nav.module';
 import {OrcMintGeneralModule} from '@client/modules/mint/modules/mint-general/mint-general.module';
 import {provideChartConfig} from '@client/modules/chart/chart.providers';
@@ -31,7 +31,7 @@ function catchMintResolveError<T>(route: ActivatedRouteSnapshot, state: RouterSt
 	return catchError((error) => {
 		if (isAuthRedirectError(error)) return EMPTY;
 		errorService.resolve_errors.push(error);
-		const errors = error instanceof OrchardErrors ? error.errors : [];
+		const errors = error instanceof OrchardErrors ? error.errors : [toConnectionError(error)];
 		router.navigate(['mint', 'error'], {state: {error: {errors}, target: state.url, sub_section: route.data['sub_section']}});
 		return of([]);
 	});

@@ -1,3 +1,5 @@
+/* Core Dependencies */
+import {HttpErrorResponse} from '@angular/common/http';
 /* Native Dependencies */
 import {type OrchardError} from '@client/modules/error/types/error.types';
 
@@ -6,7 +8,14 @@ export interface ErrorInfo {
 	readonly description: string;
 }
 
+/** Client-side code for failures that never produced an Orchard error; server codes start at 10001 */
+export const CONNECTION_ERROR_CODE = 0;
+
 const error_messages: Readonly<Partial<Record<number, ErrorInfo>>> = {
+	[CONNECTION_ERROR_CODE]: {
+		title: 'ORCHARD CONNECTION ERROR',
+		description: 'Orchard could not get a usable response from its server. Check that it is running, then retry.',
+	},
 	20001: {
 		title: 'BITCOIN RPC ERROR',
 		description: 'Orchard was unable to connect to the bitcoin RPC',
@@ -76,4 +85,21 @@ export function formatOrchardError(error: OrchardError): ErrorInfo {
 export function isAuthRedirectError(error: unknown): boolean {
 	const type = (error as {type?: unknown} | null | undefined)?.type;
 	return type === 'auth_error' || type === 'refresh_error';
+}
+
+/** Describes an error that carries no Orchard code, such as an unreachable server, so error pages never render empty. */
+export function toConnectionError(error: unknown): OrchardError {
+	if (!(error instanceof HttpErrorResponse)) {
+		return {
+			code: CONNECTION_ERROR_CODE,
+			message: 'OrchardConnectionError',
+			details: error instanceof Error ? error.message : undefined,
+		};
+	}
+	const outcome = error.status ? `responded with HTTP ${error.status} ${error.statusText}`.trim() : 'did not respond';
+	return {
+		code: CONNECTION_ERROR_CODE,
+		message: 'OrchardConnectionError',
+		details: `Orchard's server ${outcome}. Check that it is running, then retry.`,
+	};
 }

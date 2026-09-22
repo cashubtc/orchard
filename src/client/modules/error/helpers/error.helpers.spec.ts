@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {HttpErrorResponse} from '@angular/common/http';
 /* Native Dependencies */
-import {formatOrchardError, isAuthRedirectError} from './error.helpers';
+import {CONNECTION_ERROR_CODE, formatOrchardError, isAuthRedirectError, toConnectionError} from './error.helpers';
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
 
 describe('Orchard error formatting', () => {
@@ -58,5 +58,35 @@ describe('isAuthRedirectError', () => {
 	it('ignores Orchard errors and non-objects', () => {
 		const orchard_error = new OrchardErrors([{message: 'MintRpcActionError', extensions: {code: 40006}}]);
 		for (const error of [orchard_error, null, undefined, 'auth_error', 40006]) expect(isAuthRedirectError(error)).toBeFalse();
+	});
+});
+
+describe('toConnectionError', () => {
+	it('explains a request that got no response', () => {
+		const error = toConnectionError(new HttpErrorResponse({status: 0, url: '/proxy/api'}));
+		expect(formatOrchardError(error)).toEqual({
+			title: 'ORCHARD CONNECTION ERROR',
+			description: "Orchard's server did not respond. Check that it is running, then retry.",
+		});
+		expect(error.code).toBe(CONNECTION_ERROR_CODE);
+	});
+
+	it('names the HTTP status when a proxy answered for the server', () => {
+		const error = toConnectionError(new HttpErrorResponse({status: 502, statusText: 'Bad Gateway', url: '/proxy/api'}));
+		expect(formatOrchardError(error).description).toBe(
+			"Orchard's server responded with HTTP 502 Bad Gateway. Check that it is running, then retry.",
+		);
+	});
+
+	it('uses the thrown message for other failures, and the catalog text when there is none', () => {
+		expect(formatOrchardError(toConnectionError(new TypeError('response.data is null'))).description).toBe('response.data is null');
+		expect(formatOrchardError(toConnectionError('boom')).description).toBe(
+			'Orchard could not get a usable response from its server. Check that it is running, then retry.',
+		);
+	});
+
+	it('can be cloned into router state, unlike the raw HTTP error', () => {
+		const http_error = new HttpErrorResponse({status: 502, statusText: 'Bad Gateway', url: '/proxy/api'});
+		expect(() => structuredClone(toConnectionError(http_error))).not.toThrow();
 	});
 });
