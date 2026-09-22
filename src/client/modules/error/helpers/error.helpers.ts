@@ -47,15 +47,6 @@ const error_messages: Readonly<Partial<Record<number, ErrorInfo>>> = {
 		title: 'MINT METRICS ERROR',
 		description: 'Orchard was unable to reach the mint metrics endpoint',
 	},
-	40015: {
-		title: 'MINT PAYMENT OVERRIDE DISABLED',
-		description:
-			'CDK has disabled manual payment overrides. To use this action, enable mint_management_rpc.allow_mint_quote_payment_override in CDK’s configuration and restart cdk-mintd.',
-	},
-	40016: {
-		title: 'MINT RESTART REQUIRED',
-		description: 'CDK has configuration changes waiting to be applied. Restart cdk-mintd, then retry.',
-	},
 	60001: {
 		title: 'TAPROOT ASSETS RPC ERROR',
 		description: 'Orchard was unable to connect to the taproot assets RPC',
@@ -66,12 +57,17 @@ const error_messages: Readonly<Partial<Record<number, ErrorInfo>>> = {
 	},
 };
 
-/** Resolve public wording shared by error cards and mutation toasts. */
+/**
+ * Resolve wording shared by error cards and mutation toasts.
+ * The code supplies the title; the backend's own diagnostic supplies the description when it sent one,
+ * so a message we have no catalog entry for still reaches the operator verbatim.
+ */
 export function formatOrchardError(error: OrchardError): ErrorInfo {
-	return (
-		error_messages[error.code] ?? {
-			title: 'UNKNOWN ERROR',
-			description: error.message || 'An unexpected error occurred. Check the event log for details.',
-		}
-	);
+	const catalog_info = error_messages[error.code];
+	const title = catalog_info?.title ?? 'UNKNOWN ERROR';
+	const fallback_description = error.message || 'An unexpected error occurred. Check the event log for details.';
+	return {
+		title,
+		description: error.details?.trim() || catalog_info?.description || fallback_description,
+	};
 }

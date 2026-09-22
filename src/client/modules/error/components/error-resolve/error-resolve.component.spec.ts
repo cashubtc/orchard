@@ -24,13 +24,14 @@ describe('ErrorResolveComponent', () => {
 		expect(component).toBeTruthy();
 	});
 
-	it('renders actionable restart guidance from the shared error catalog', () => {
-		fixture.componentRef.setInput('error', {code: 40016, message: 'MintRestartRequired'});
+	it('renders the backend diagnostic under the title for the code', () => {
+		const details = 'A configuration apply is pending; restart cdk-mintd before making management RPC changes';
+		fixture.componentRef.setInput('error', {code: 40006, message: 'MintRpcActionError', details});
 		fixture.detectChanges();
 		const element: HTMLElement = fixture.nativeElement;
-		expect(element.textContent).toContain('MINT RESTART REQUIRED');
-		expect(element.textContent).toContain('Restart cdk-mintd, then retry.');
-		expect(element.textContent).toContain('40016');
+		expect(element.textContent).toContain('MINT RPC ACTION ERROR');
+		expect(element.textContent).toContain(details);
+		expect(element.textContent).toContain('40006');
 	});
 
 	it('keeps the existing Bitcoin connection explanation and code', () => {

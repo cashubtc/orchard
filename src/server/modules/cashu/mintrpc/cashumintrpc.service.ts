@@ -46,11 +46,6 @@ export class CashuMintRpcService implements OnModuleInit {
 			this.grpc_client[method](request, this.grpc_metadata, (error: ServiceError | null, response: any) => {
 				if (error) {
 					this.logger.debug(`gRPC error: ${error.message}`);
-					const cdk_error_code = this.getCdkErrorCode(method, error);
-					if (cdk_error_code !== undefined) {
-						reject({code: cdk_error_code, details: error.details});
-						return;
-					}
 
 					switch (error.code) {
 						case status.INVALID_ARGUMENT:
@@ -73,25 +68,6 @@ export class CashuMintRpcService implements OnModuleInit {
 				resolve(response);
 			});
 		});
-	}
-
-	/** Identify known CDK conditions without reclassifying unrelated RPC failures. */
-	private getCdkErrorCode(method: string, error: ServiceError): OrchardErrorCode | undefined {
-		if (this.type !== MintType.CDK) return undefined;
-		if (
-			method === 'UpdateNut04Quote' &&
-			error.code === status.PERMISSION_DENIED &&
-			error.details === 'Mint quote state override is disabled'
-		) {
-			return OrchardErrorCode.MintQuoteOverrideDisabled;
-		}
-		if (
-			error.code === status.FAILED_PRECONDITION &&
-			error.details === 'A configuration apply is pending; restart cdk-mintd before making management RPC changes'
-		) {
-			return OrchardErrorCode.MintRestartRequired;
-		}
-		return undefined;
 	}
 
 	async getMintInfo(): Promise<CashuMintInfoRpc> {

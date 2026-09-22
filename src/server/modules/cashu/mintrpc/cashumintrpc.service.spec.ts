@@ -144,47 +144,23 @@ describe('CashuMintRpcService', () => {
 		return rpc_error;
 	}
 
-	it('identifies CDK payment overrides being disabled and retains the original diagnostic', async () => {
-		const details = 'Mint quote state override is disabled';
-		mockGrpcFailure('cdk', status.PERMISSION_DENIED, details);
-		await expect(cashuMintRpcService.updateNut04Quote({quote_id: 'q', state: 'PAID'})).rejects.toEqual({
-			code: OrchardErrorCode.MintQuoteOverrideDisabled,
-			details,
-		});
-	});
-
-	it('identifies a pending CDK configuration and retains the restart diagnostic', async () => {
-		const details = 'A configuration apply is pending; restart cdk-mintd before making management RPC changes';
-		mockGrpcFailure('cdk', status.FAILED_PRECONDITION, details);
-		await expect(cashuMintRpcService.updateName({name: 'mint'})).rejects.toEqual({
-			code: OrchardErrorCode.MintRestartRequired,
-			details,
-		});
-	});
-
 	it.each([
-		{provider: 'cdk' as const, code: status.PERMISSION_DENIED, details: 'Caller is not authorized'},
-		{provider: 'cdk' as const, code: status.FAILED_PRECONDITION, details: 'No on-chain wallet information provider is configured'},
-		{provider: 'cdk' as const, code: status.FAILED_PRECONDITION, details: 'Mint quote state override is disabled'},
+		{provider: 'cdk' as const, code: status.PERMISSION_DENIED, details: 'Mint quote state override is disabled'},
 		{
 			provider: 'cdk' as const,
-			code: status.PERMISSION_DENIED,
-			details: 'A configuration apply is pending; restart cdk-mintd before making management RPC changes',
-		},
-		{provider: 'nutshell' as const, code: status.PERMISSION_DENIED, details: 'Mint quote state override is disabled'},
-		{
-			provider: 'nutshell' as const,
 			code: status.FAILED_PRECONDITION,
 			details: 'A configuration apply is pending; restart cdk-mintd before making management RPC changes',
 		},
-	])('preserves unrelated $provider status $code: $details', async ({provider, code, details}) => {
+		{provider: 'cdk' as const, code: status.PERMISSION_DENIED, details: 'Caller is not authorized'},
+		{
+			provider: 'nutshell' as const,
+			code: status.FAILED_PRECONDITION,
+			details: 'No on-chain wallet information provider is configured',
+		},
+	])('forwards the $provider gRPC failure with its diagnostic intact: $details', async ({provider, code, details}) => {
 		const rpc_error = mockGrpcFailure(provider, code, details);
 		await expect(cashuMintRpcService.updateNut04Quote({quote_id: 'q', state: 'PAID'})).rejects.toBe(rpc_error);
-	});
-
-	it('does not classify payment override text from a different method', async () => {
-		const rpc_error = mockGrpcFailure('cdk', status.PERMISSION_DENIED, 'Mint quote state override is disabled');
-		await expect(cashuMintRpcService.updateName({name: 'mint'})).rejects.toBe(rpc_error);
+		expect(rpc_error.details).toBe(details);
 	});
 
 	it('getQuoteTtl forwards empty request', async () => {
