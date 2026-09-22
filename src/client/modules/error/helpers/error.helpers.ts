@@ -71,3 +71,9 @@ export function formatOrchardError(error: OrchardError): ErrorInfo {
 		description: error.details?.trim() || catalog_info?.description || fallback_description,
 	};
 }
+
+/** Whether an error is the interceptor's session failure, which it handles by routing to /auth. */
+export function isAuthRedirectError(error: unknown): boolean {
+	const type = (error as {type?: unknown} | null | undefined)?.type;
+	return type === 'auth_error' || type === 'refresh_error';
+}
