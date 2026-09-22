@@ -339,7 +339,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 				.filter((method) => method.unit === unit)
 				.forEach((method) => {
 					const {decimals} = getUnitMeta(method.unit);
-					const precision_validator = decimals === 0 ? OrchardValidators.integer : OrchardValidators.decimals(decimals);
+					const precision_validator = OrchardValidators.decimals(decimals);
 					const min_validators = [Validators.required, Validators.min(0), precision_validator];
 					const max_validators = [Validators.required, OrchardValidators.minGreaterThan('min_amount'), precision_validator];
 
@@ -363,7 +363,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 				.filter((method) => method.unit === unit)
 				.forEach((method) => {
 					const {decimals} = getUnitMeta(method.unit);
-					const precision_validator = decimals === 0 ? OrchardValidators.integer : OrchardValidators.decimals(decimals);
+					const precision_validator = OrchardValidators.decimals(decimals);
 					const min_validators = [Validators.required, Validators.min(0), precision_validator];
 					const max_validators = [Validators.required, OrchardValidators.minGreaterThan('min_amount'), precision_validator];
 
