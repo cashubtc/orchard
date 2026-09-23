@@ -24,7 +24,7 @@ class OrchardError {
 		this.details = details;
 	}
 
-	/** Format public guidance and the support code; raw diagnostics remain separate. */
+	/** Format the resolved description and the support code. */
 	public getFullError(): string {
 		return `${formatOrchardError(this).description} : ${this.code}`;
 	}

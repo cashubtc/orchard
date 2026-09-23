@@ -33,9 +33,7 @@ describe('EventGeneralStackMessageComponent', () => {
 		{code: 99999, message: 'FutureBackendError', expected: 'FutureBackendError'},
 	]) {
 		it(`renders error ${scenario.code} with its explanation and support code`, () => {
-			const error = new OrchardErrors([
-				{message: scenario.message, extensions: {code: scenario.code, details: 'Private backend diagnostic'}},
-			]).errors[0];
+			const error = new OrchardErrors([{message: scenario.message, extensions: {code: scenario.code}}]).errors[0];
 			fixture.componentRef.setInput('event', new EventData({type: 'ERROR', message: error.getFullError()}));
 			fixture.detectChanges();
 			const element: HTMLElement = fixture.nativeElement;
@@ -43,10 +41,19 @@ describe('EventGeneralStackMessageComponent', () => {
 			expect(toast).not.toBeNull();
 			expect(toast?.textContent).toContain(scenario.expected);
 			expect(toast?.textContent).toContain(String(scenario.code));
-			expect(toast?.textContent).not.toContain('Private backend diagnostic');
-			expect(toast?.textContent).not.toContain('Restart cdk-mintd');
 		});
 	}
+
+	it('surfaces the backend diagnostic in place of the catalog explanation', () => {
+		const details = 'A configuration apply is pending; restart cdk-mintd before making management RPC changes';
+		const error = new OrchardErrors([{message: 'MintRpcActionError', extensions: {code: 40006, details}}]).errors[0];
+		fixture.componentRef.setInput('event', new EventData({type: 'ERROR', message: error.getFullError()}));
+		fixture.detectChanges();
+		const element: HTMLElement = fixture.nativeElement;
+		const toast = element.querySelector('.event-error .event-message-content');
+		expect(toast?.textContent).toContain(details);
+		expect(toast?.textContent).toContain('40006');
+	});
 
 	for (const scenario of [
 		{type: 'SUCCESS' as const, message: 'Information updated!', class_name: 'event-success'},

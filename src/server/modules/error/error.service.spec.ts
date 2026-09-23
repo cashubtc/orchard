@@ -51,14 +51,11 @@ describe('ErrorService', () => {
 		expect(result.code).toBe(OrchardErrorCode.MintSupportError);
 		expect(result.details).toBeUndefined();
 	});
-	it.each([OrchardErrorCode.MintQuoteOverrideDisabled, OrchardErrorCode.MintRestartRequired])(
-		'keeps domain code %s and diagnostic details through GraphQL error construction',
-		(code) => {
-			const details = 'Original backend diagnostic';
-			const result = errorService.resolveError(logger, {code, details}, 'TAG', {errord: OrchardErrorCode.MintRpcActionError});
-			const api_error = new OrchardApiError(result);
-			expect(api_error.extensions).toEqual({code, details});
-			expect(api_error.message).not.toBe('MintRpcActionError');
-		},
-	);
+	it('falls back to the caller default while forwarding an unmapped backend diagnostic', () => {
+		const details = 'A configuration apply is pending; restart cdk-mintd before making management RPC changes';
+		/* gRPC statuses are small integers, so they never match an OrchardErrorCode and the caller default stands */
+		const result = errorService.resolveError(logger, {code: 9, details}, 'TAG', {errord: OrchardErrorCode.MintRpcActionError});
+		const api_error = new OrchardApiError(result);
+		expect(api_error.extensions).toEqual({code: OrchardErrorCode.MintRpcActionError, details});
+	});
 });

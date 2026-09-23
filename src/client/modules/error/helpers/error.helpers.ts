@@ -1,3 +1,5 @@
+/* Core Dependencies */
+import {HttpErrorResponse} from '@angular/common/http';
 /* Native Dependencies */
 import {type OrchardError} from '@client/modules/error/types/error.types';
 
@@ -6,7 +8,14 @@ export interface ErrorInfo {
 	readonly description: string;
 }
 
+/** Client-side code for failures that never produced an Orchard error; server codes start at 10001 */
+export const CONNECTION_ERROR_CODE = 0;
+
 const error_messages: Readonly<Partial<Record<number, ErrorInfo>>> = {
+	[CONNECTION_ERROR_CODE]: {
+		title: 'ORCHARD CONNECTION ERROR',
+		description: 'Orchard could not get a usable response from its server. Check that it is running, then retry.',
+	},
 	20001: {
 		title: 'BITCOIN RPC ERROR',
 		description: 'Orchard was unable to connect to the bitcoin RPC',
@@ -47,15 +56,6 @@ const error_messages: Readonly<Partial<Record<number, ErrorInfo>>> = {
 		title: 'MINT METRICS ERROR',
 		description: 'Orchard was unable to reach the mint metrics endpoint',
 	},
-	40015: {
-		title: 'MINT PAYMENT OVERRIDE DISABLED',
-		description:
-			'CDK has disabled manual payment overrides. To use this action, enable mint_management_rpc.allow_mint_quote_payment_override in CDK’s configuration and restart cdk-mintd.',
-	},
-	40016: {
-		title: 'MINT RESTART REQUIRED',
-		description: 'CDK has configuration changes waiting to be applied. Restart cdk-mintd, then retry.',
-	},
 	60001: {
 		title: 'TAPROOT ASSETS RPC ERROR',
 		description: 'Orchard was unable to connect to the taproot assets RPC',
@@ -66,12 +66,40 @@ const error_messages: Readonly<Partial<Record<number, ErrorInfo>>> = {
 	},
 };
 
-/** Resolve public wording shared by error cards and mutation toasts. */
+/**
+ * Resolve wording shared by error cards and mutation toasts.
+ * The code supplies the title; the backend's own diagnostic supplies the description when it sent one,
+ * so a message we have no catalog entry for still reaches the operator verbatim.
+ */
 export function formatOrchardError(error: OrchardError): ErrorInfo {
-	return (
-		error_messages[error.code] ?? {
-			title: 'UNKNOWN ERROR',
-			description: error.message || 'An unexpected error occurred. Check the event log for details.',
-		}
-	);
+	const catalog_info = error_messages[error.code];
+	const title = catalog_info?.title ?? 'UNKNOWN ERROR';
+	const fallback_description = error.message || 'An unexpected error occurred. Check the event log for details.';
+	return {
+		title,
+		description: error.details?.trim() || catalog_info?.description || fallback_description,
+	};
+}
+
+/** Whether an error is the interceptor's session failure, which it handles by routing to /auth. */
+export function isAuthRedirectError(error: unknown): boolean {
+	const type = (error as {type?: unknown} | null | undefined)?.type;
+	return type === 'auth_error' || type === 'refresh_error';
+}
+
+/** Describes an error that carries no Orchard code, such as an unreachable server, so error pages never render empty. */
+export function toConnectionError(error: unknown): OrchardError {
+	if (!(error instanceof HttpErrorResponse)) {
+		return {
+			code: CONNECTION_ERROR_CODE,
+			message: 'OrchardConnectionError',
+			details: error instanceof Error ? error.message : undefined,
+		};
+	}
+	const outcome = error.status ? `responded with HTTP ${error.status} ${error.statusText}`.trim() : 'did not respond';
+	return {
+		code: CONNECTION_ERROR_CODE,
+		message: 'OrchardConnectionError',
+		details: `Orchard's server ${outcome}. Check that it is running, then retry.`,
+	};
 }

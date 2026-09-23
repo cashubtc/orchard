@@ -2,13 +2,15 @@
 import {NgModule, inject} from '@angular/core';
 import {RouterModule as CoreRouterModule, Router, ResolveFn, ActivatedRouteSnapshot, RouterStateSnapshot} from '@angular/router';
 /* Vendor Dependencies */
-import {catchError, of} from 'rxjs';
+import {catchError, EMPTY, of, type OperatorFunction} from 'rxjs';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 /* Application Dependencies */
 import {errorResolveGuard} from '@client/modules/error/guards/error-resolve.guard';
 import {enabledGuard} from '@client/modules/routing/guards/enabled/enabled.guard';
 import {mintMetricsGuard} from '@client/modules/routing/guards/mint-metrics/mint-metrics.guard';
 import {ErrorService} from '@client/modules/error/services/error.service';
+import {OrchardErrors} from '@client/modules/error/classes/error.class';
+import {isAuthRedirectError, toConnectionError} from '@client/modules/error/helpers/error.helpers';
 import {OrcNavModule} from '@client/modules/nav/nav.module';
 import {OrcMintGeneralModule} from '@client/modules/mint/modules/mint-general/mint-general.module';
 import {provideChartConfig} from '@client/modules/chart/chart.providers';
@@ -19,56 +21,40 @@ import {MintSectionComponent} from './components/mint-section/mint-section.compo
 /* Shared Dependencies */
 import {AiAssistant} from '@shared/generated.types';
 
-const mintInfoResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
-	const mintService = inject(MintService);
+/**
+ * Routes a failed mint resolve to the error page, leaving auth failures to the interceptor's /auth redirect.
+ * Router state must survive pushState cloning, so it only carries Orchard errors.
+ */
+function catchMintResolveError<T>(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): OperatorFunction<T, T | never[]> {
 	const router = inject(Router);
 	const errorService = inject(ErrorService);
-	return mintService.loadMintInfo().pipe(
-		catchError((error) => {
-			errorService.resolve_errors.push(error);
-			router.navigate(['mint', 'error'], {state: {error, target: state.url, sub_section: route.data['sub_section']}});
-			return of([]);
-		}),
-	);
+	return catchError((error) => {
+		if (isAuthRedirectError(error)) return EMPTY;
+		errorService.resolve_errors.push(error);
+		const errors = error instanceof OrchardErrors ? error.errors : [toConnectionError(error)];
+		router.navigate(['mint', 'error'], {state: {error: {errors}, target: state.url, sub_section: route.data['sub_section']}});
+		return of([]);
+	});
+}
+
+const mintInfoResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
+	const mintService = inject(MintService);
+	return mintService.loadMintInfo().pipe(catchMintResolveError(route, state));
 };
 
 const mintBalancesResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
 	const mintService = inject(MintService);
-	const router = inject(Router);
-	const errorService = inject(ErrorService);
-	return mintService.loadMintBalances().pipe(
-		catchError((error) => {
-			errorService.resolve_errors.push(error);
-			router.navigate(['mint', 'error'], {state: {error, target: state.url, sub_section: route.data['sub_section']}});
-			return of([]);
-		}),
-	);
+	return mintService.loadMintBalances().pipe(catchMintResolveError(route, state));
 };
 
 const mintKeysetsResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
 	const mintService = inject(MintService);
-	const router = inject(Router);
-	const errorService = inject(ErrorService);
-	return mintService.loadMintKeysets().pipe(
-		catchError((error) => {
-			errorService.resolve_errors.push(error);
-			router.navigate(['mint', 'error'], {state: {error, target: state.url, sub_section: route.data['sub_section']}});
-			return of([]);
-		}),
-	);
+	return mintService.loadMintKeysets().pipe(catchMintResolveError(route, state));
 };
 
 const mintKeysetCountsResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
 	const mintService = inject(MintService);
-	const router = inject(Router);
-	const errorService = inject(ErrorService);
-	return mintService.loadMintKeysetCounts({}).pipe(
-		catchError((error) => {
-			errorService.resolve_errors.push(error);
-			router.navigate(['mint', 'error'], {state: {error, target: state.url, sub_section: route.data['sub_section']}});
-			return of([]);
-		}),
-	);
+	return mintService.loadMintKeysetCounts({}).pipe(catchMintResolveError(route, state));
 };
 
 const mintDatabaseInfoResolver: ResolveFn<any> = (_route: ActivatedRouteSnapshot, _state: RouterStateSnapshot) => {
@@ -82,28 +68,12 @@ const mintDatabaseInfoResolver: ResolveFn<any> = (_route: ActivatedRouteSnapshot
 
 const mintInfoRpcResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
 	const mintService = inject(MintService);
-	const router = inject(Router);
-	const errorService = inject(ErrorService);
-	return mintService.getMintInfo().pipe(
-		catchError((error) => {
-			errorService.resolve_errors.push(error);
-			router.navigate(['mint', 'error'], {state: {error, target: state.url, sub_section: route.data['sub_section']}});
-			return of([]);
-		}),
-	);
+	return mintService.getMintInfo().pipe(catchMintResolveError(route, state));
 };
 
 const mintQuoteTtlsResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
 	const mintService = inject(MintService);
-	const router = inject(Router);
-	const errorService = inject(ErrorService);
-	return mintService.getMintQuoteTtls().pipe(
-		catchError((error) => {
-			errorService.resolve_errors.push(error);
-			router.navigate(['mint', 'error'], {state: {error, target: state.url, sub_section: route.data['sub_section']}});
-			return of([]);
-		}),
-	);
+	return mintService.getMintQuoteTtls().pipe(catchMintResolveError(route, state));
 };
 
 // Soft resolver: keep the metrics page usable when /v1/info fails instead of redirecting to error
@@ -114,15 +84,7 @@ const mintInfoOptionalResolver: ResolveFn<any> = () => {
 
 const mintMetricsHealthResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
 	const mintService = inject(MintService);
-	const router = inject(Router);
-	const errorService = inject(ErrorService);
-	return mintService.loadMintMetricsHealth().pipe(
-		catchError((error) => {
-			errorService.resolve_errors.push(error);
-			router.navigate(['mint', 'error'], {state: {error, target: state.url, sub_section: route.data['sub_section']}});
-			return of([]);
-		}),
-	);
+	return mintService.loadMintMetricsHealth().pipe(catchMintResolveError(route, state));
 };
 
 @NgModule({

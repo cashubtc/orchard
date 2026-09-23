@@ -23,4 +23,14 @@ describe('FormErrorComponent', () => {
 	it('should create', () => {
 		expect(component).toBeTruthy();
 	});
+
+	it('should describe a zero-decimal precision error as a whole number', () => {
+		fixture.componentRef.setInput('errors', {orchardDecimals: {decimals: 0}});
+		expect(component.known_error()).toBe('Must be a whole number');
+	});
+
+	it('should describe a fractional precision error by its decimal places', () => {
+		fixture.componentRef.setInput('errors', {orchardDecimals: {decimals: 2}});
+		expect(component.known_error()).toBe('Must have 2 decimals');
+	});
 });

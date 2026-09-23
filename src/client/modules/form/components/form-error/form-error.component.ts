@@ -22,6 +22,7 @@ export class FormErrorComponent {
 		if (errors['min']) return `Must be at least ${errors['min']?.min}`;
 		if (errors['max']) return `Cannot be greater than ${errors['max']?.max}`;
 		if (errors['orchardInteger']) return 'Must be a whole number';
+		if (errors['orchardDecimals']?.decimals === 0) return 'Must be a whole number';
 		if (errors['orchardDecimals']) return `Must have ${errors['orchardDecimals'].decimals} decimals`;
 		if (errors['orchardMicros']) return 'Invalid format';
 		if (errors['orchardUrl']) return 'Must be a valid URL';
