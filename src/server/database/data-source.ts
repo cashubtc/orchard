@@ -17,6 +17,10 @@ import {Conversation} from '../modules/ai/conversation/conversation.entity.js';
 import {BitcoinAnalytics} from '../modules/bitcoin/analytics/btcanalytics.entity.js';
 import {SystemMetrics} from '../modules/system/metrics/sysmetrics.entity.js';
 import {MintMetrics} from '../modules/cashu/mintmetrics/mintmetrics.entity.js';
+import {CashuWalletSeed} from '../modules/cashu/wallet/cashuwalletseed.entity.js';
+import {CashuWalletCounter} from '../modules/cashu/wallet/cashuwalletcounter.entity.js';
+import {CashuWalletProof} from '../modules/cashu/wallet/cashuwalletproof.entity.js';
+import {CashuWalletOperation} from '../modules/cashu/wallet/cashuwalletoperation.entity.js';
 /* Local Dependencies */
 import * as migrations from './migrations/index.js';
 
@@ -40,6 +44,10 @@ export const AppDataSource = new DataSource({
 		Conversation,
 		SystemMetrics,
 		MintMetrics,
+		CashuWalletSeed,
+		CashuWalletCounter,
+		CashuWalletProof,
+		CashuWalletOperation,
 	],
 	migrations: Object.values(migrations),
 	synchronize: false,

@@ -14,3 +14,4 @@ export * from './1773335932251-AddAgentTables.js';
 export * from './1773716740605-AddUniqueTelegramChatId.js';
 export * from './1774580997955-AddAgentScheduleColumns.js';
 export * from './1783982762826-AddMintMetricsTable.js';
+export * from './1790636757268-AddCashuWalletTables.js';

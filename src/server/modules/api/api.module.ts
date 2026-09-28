@@ -40,6 +40,8 @@ import {MintCountModule} from './mint/count/mintcount.module.js';
 import {MintWatchdogModule} from './mint/watchdog/mintwatchdog.module.js';
 import {MintActivityModule} from './mint/activity/mintactivity.module.js';
 import {ApiMintMetricsModule} from './mint/metrics/mintmetrics.module.js';
+// Cashu Wallet Endpoints
+import {EcashBalanceModule} from './ecash/balance/ecashbalance.module.js';
 // AI Endpoints
 import {AiModelModule} from './ai/model/aimodel.module.js';
 import {AiAssistantModule} from './ai/assistant/aiassistant.module.js';
@@ -100,6 +102,7 @@ import './api.enums.js';
 		MintWatchdogModule,
 		MintActivityModule,
 		ApiMintMetricsModule,
+		EcashBalanceModule,
 		AiModelModule,
 		AiAssistantModule,
 		AiChatModule,
