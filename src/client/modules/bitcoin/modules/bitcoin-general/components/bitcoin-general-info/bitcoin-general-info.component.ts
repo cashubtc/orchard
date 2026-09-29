@@ -7,6 +7,8 @@ import {BitcoinBlockchainInfo} from '@client/modules/bitcoin/classes/bitcoin-blo
 import {BitcoinNetworkInfo} from '@client/modules/bitcoin/classes/bitcoin-network-info.class';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 import {PublicPort} from '@client/modules/public/classes/public-port.class';
+import {ThemeType} from '@client/modules/cache/services/local-storage/local-storage.types';
+import {SettingDeviceService} from '@client/modules/settings/services/setting-device/setting-device.service';
 /* Components */
 import {NetworkConnectionComponent} from '@client/modules/network/components/network-connection/network-connection.component';
 
@@ -24,7 +26,8 @@ type BitcoinUri = {
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BitcoinGeneralInfoComponent {
-	private dialog = inject(MatDialog);
+	private readonly dialog = inject(MatDialog);
+	private readonly settingDeviceService = inject(SettingDeviceService);
 
 	public blockchain_info = input.required<BitcoinBlockchainInfo | null>();
 	public network_info = input.required<BitcoinNetworkInfo | null>();
@@ -70,8 +73,10 @@ export class BitcoinGeneralInfoComponent {
 		};
 	}
 
+	/** Opens the connection with a block logo matching the QR's current theme. */
 	public async onUriClick(uri: BitcoinUri): Promise<void> {
-		const image = await this.createBlockPng('#000000');
+		const color = this.settingDeviceService.getTheme() === ThemeType.LIGHT_MODE ? '#ffffff' : '#000000';
+		const image = await this.createBlockPng(color);
 		this.dialog.open(NetworkConnectionComponent, {
 			data: {
 				uri: uri.uri,

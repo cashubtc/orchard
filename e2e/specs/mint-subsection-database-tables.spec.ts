@@ -285,6 +285,64 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 		expect(chip.replace(/\s+/g, '').toLowerCase(), 'row chip should match the DB payment_method').toBe(db_row!.payment_method);
 	});
 
+	for (const kind of ['mint', 'melt'] as const) {
+		for (const viewport_width of [320, 1280]) {
+			test(`${kind} QR expands, changes quality and downloads at ${viewport_width}px`, async ({page}, testInfo) => {
+				const config = getConfig(testInfo.project.name);
+				test.skip(mint.quoteCount(config, {kind, ...defaultWindow(config)}) === 0, 'no quotes in the current window');
+				await page.setViewportSize({width: viewport_width, height: viewport_width === 320 ? 900 : 720});
+				if (kind === 'melt') await switchType(page, 'Melts');
+				await settle(page);
+				await page.locator('orc-mint-subsection-database-table tr.entity-row').first().click();
+				const detail = page.locator(`orc-mint-subsection-database-table-${kind}`);
+				const expand = detail.getByRole('button', {name: /^Expand /});
+				const title = (await expand.getAttribute('aria-label'))!.replace(/^Expand /, '');
+				await expand.hover();
+				await expect(expand.locator('mat-icon')).toHaveCSS('opacity', '1');
+				await expand.focus();
+				await expand.press('Enter');
+
+				const dialog = page.locator('orc-graphic-qr-dialog');
+				await expect(dialog.getByText(title, {exact: true})).toBeVisible();
+				await expect(dialog.locator('orc-button-copy, mat-slide-toggle, .graphic-qr-expand')).toHaveCount(0);
+				const qr = dialog.getByRole('img', {name: 'QR code', exact: true});
+				await expect(qr).toBeVisible();
+				const slider = dialog.getByRole('slider', {name: 'Error correction', exact: true});
+				await slider.press('Home');
+				await expect(dialog.getByText('Error correction: Low', {exact: true})).toBeVisible();
+				const low_path = await qr.locator('path').first().getAttribute('d');
+				await slider.press('End');
+				await expect(dialog.getByText('Error correction: High', {exact: true})).toBeVisible();
+				await expect.poll(() => qr.locator('path').first().getAttribute('d')).not.toBe(low_path);
+				const fits = await dialog.locator('mat-dialog-content').evaluate((content: HTMLElement) => {
+					const bounds = content.querySelector('orc-graphic-qr')!.getBoundingClientRect();
+					const content_bounds = content.getBoundingClientRect();
+					return (
+						bounds.width > 195 &&
+						Math.abs(bounds.width - bounds.height) < 1 &&
+						content.scrollWidth === content.clientWidth &&
+						bounds.top >= content_bounds.top &&
+						bounds.bottom <= content_bounds.bottom
+					);
+				});
+				expect(fits).toBe(true);
+
+				const download_promise = page.waitForEvent('download');
+				await dialog.getByRole('button', {name: 'Download', exact: true}).click();
+				const download = await download_promise;
+				expect(download.suggestedFilename()).toMatch(/_qr\.png$/);
+				expect(await download.failure()).toBeNull();
+				await expect(dialog).toHaveCount(0);
+				await expect(expand).toBeVisible();
+				await expect(expand).toBeFocused();
+				await expand.press('Space');
+				await dialog.getByRole('button', {name: 'Cancel', exact: true}).click();
+				await expect(dialog).toHaveCount(0);
+				await expect(expand).toBeVisible();
+			});
+		}
+	}
+
 	for (const unit of ['sat']) {
 		test(`onchain ${unit} melt details display and copy the destination address from the mint DB`, async ({
 			page,

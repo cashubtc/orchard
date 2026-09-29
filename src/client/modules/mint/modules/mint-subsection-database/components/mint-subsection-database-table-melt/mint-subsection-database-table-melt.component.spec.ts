@@ -4,6 +4,7 @@ import {By} from '@angular/platform-browser';
 
 /* Application Dependencies */
 import {ButtonCopyComponent} from '@client/modules/button/components/button-copy/button-copy.component';
+import {GraphicQrComponent} from '@client/modules/graphic/components/graphic-qr/graphic-qr.component';
 
 /* Native Dependencies */
 import {MintMeltQuote} from '@client/modules/mint/classes/mint-melt-quote.class';
@@ -14,7 +15,6 @@ import {MintSubsectionDatabaseTableMeltComponent} from './mint-subsection-databa
 import {MeltQuoteState} from '@shared/generated.types';
 
 describe('MintSubsectionDatabaseTableMeltComponent', () => {
-	let component: MintSubsectionDatabaseTableMeltComponent;
 	let fixture: ComponentFixture<MintSubsectionDatabaseTableMeltComponent>;
 
 	beforeEach(async () => {
@@ -23,7 +23,6 @@ describe('MintSubsectionDatabaseTableMeltComponent', () => {
 		}).compileComponents();
 
 		fixture = TestBed.createComponent(MintSubsectionDatabaseTableMeltComponent);
-		component = fixture.componentInstance;
 		fixture.componentRef.setInput('loading', false);
 		fixture.componentRef.setInput('bitcoin_oracle_data', null);
 		fixture.componentRef.setInput('device_desktop', true);
@@ -62,7 +61,8 @@ describe('MintSubsectionDatabaseTableMeltComponent', () => {
 				.map((element) => element.componentInstance as ButtonCopyComponent);
 			expect(copy_buttons.map((button) => button.text())).toContain(request);
 			expect(element.querySelector('.w-max-36 .mega-string')?.textContent?.trim()).toBe(request);
-			expect(component.qr_code._options.data).toBe(request);
+			const qr: GraphicQrComponent = fixture.debugElement.query(By.directive(GraphicQrComponent)).componentInstance;
+			expect(qr.data()).toBe(request);
 		});
 	}
 });
