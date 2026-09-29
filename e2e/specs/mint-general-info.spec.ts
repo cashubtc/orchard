@@ -34,6 +34,7 @@
  *     reflects `data.section + data.type`, full URL appears in the
  *     .mega-string row, dialog dismisses on Close. Only runs when at
  *     least one chip rendered.
+ *   - QR: responsive sizing, centre logo toggle, and PNG download
  *   - icon: per-fixture branch — placeholder `+` button when the daemon
  *     leaves `info.icon_url` unset; the `'icon'` branch is skipped here
  *     (no fixture seeds an icon URL today)
@@ -54,8 +55,6 @@
  *     on the icon child — dead from this parent's perspective)
  *   - `mint-general-name` `'error'` branch (parent never binds [error]
  *     on the name child — same; dead from this parent)
- *   - QR style slider + image toggle inside the dialog (raster timing-
- *     sensitive — covered in `network-connection.component.spec.ts`)
  */
 
 import {test, expect, type Locator, type Page} from '@playwright/test';
@@ -306,28 +305,33 @@ test.describe('mint-general-info card', {tag: '@mint'}, () => {
 		expect(clipboardText).toBe(urls[0]);
 	});
 
-	test('QR style slider re-rasters the QR when changed', async ({page}, testInfo) => {
-		// Each `qr_options.style` value emits a different SVG `<path>` `d` attribute.
-		// Diff before/after rather than matching specific path text.
-		const config = getConfig(testInfo.project.name);
-		const info = mint.getInfo(config);
-		test.skip((info.urls ?? []).length === 0, 'daemon advertises no info.urls — no QR to inspect');
+	for (const viewport_width of [320, 1280]) {
+		test(`QR stays square without horizontal scrolling at ${viewport_width}px`, async ({page}, testInfo) => {
+			const config = getConfig(testInfo.project.name);
+			const info = mint.getInfo(config);
+			test.skip((info.urls ?? []).length === 0, 'daemon advertises no info.urls — no QR to inspect');
+			await page.setViewportSize({width: viewport_width, height: 900});
 
-		const dialog = await openUriDialog(page);
-		const qrPath = dialog.locator('svg path').first();
-		await expect(qrPath).toBeAttached();
-		const before = await qrPath.getAttribute('d');
-
-		// Drive the slider via its underlying `<input>` — Material's drag handle is awkward to grab,
-		// the native input fires `input` cleanly.
-		await dialog.locator('input[matSliderThumb]').evaluate((el: HTMLInputElement) => {
-			const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-			setter?.call(el, '3');
-			el.dispatchEvent(new Event('input', {bubbles: true}));
+			const dialog = await openUriDialog(page);
+			await expect(dialog.getByRole('img', {name: 'QR code', exact: true})).toBeVisible();
+			await expect
+				.poll(() =>
+					dialog.locator('mat-dialog-content').evaluate((content: HTMLElement) => {
+						const qr = content.querySelector<HTMLElement>('orc-graphic-qr')!;
+						const bounds = qr.getBoundingClientRect();
+						const style = getComputedStyle(content);
+						const available_width = content.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+						return (
+							bounds.width > 0 &&
+							Math.abs(bounds.width - bounds.height) < 1 &&
+							bounds.width <= available_width &&
+							content.scrollWidth <= content.clientWidth
+						);
+					}),
+				)
+				.toBe(true);
 		});
-
-		await expect.poll(async () => qrPath.getAttribute('d')).not.toBe(before);
-	});
+	}
 
 	test('image toggle off removes the centre image from the QR', async ({page}, testInfo) => {
 		const config = getConfig(testInfo.project.name);
@@ -335,18 +339,18 @@ test.describe('mint-general-info card', {tag: '@mint'}, () => {
 		test.skip((info.urls ?? []).length === 0, 'daemon advertises no info.urls — no QR to inspect');
 
 		const dialog = await openUriDialog(page);
-		const qrImage = dialog.locator('svg image');
+		const qrImage = dialog.locator('orc-graphic-qr img');
 		await expect(qrImage).toHaveCount(1);
 
-		await dialog.locator('mat-slide-toggle button').click();
+		await dialog.getByRole('switch', {name: 'Logo', exact: true}).click();
 		await expect(qrImage).toHaveCount(0);
 
-		await dialog.locator('mat-slide-toggle button').click();
+		await dialog.getByRole('switch', {name: 'Logo', exact: true}).click();
 		await expect(qrImage).toHaveCount(1);
 	});
 
 	test('Download button saves a PNG named after the mint and dismisses the dialog', async ({page}, testInfo) => {
-		// Single click both fires `qr_code.download(...)` and dismisses via `mat-dialog-close`.
+		// Single click both downloads the QR and dismisses via `mat-dialog-close`.
 		const config = getConfig(testInfo.project.name);
 		const info = mint.getInfo(config);
 		test.skip((info.urls ?? []).length === 0, 'daemon advertises no info.urls — no QR to download');

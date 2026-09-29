@@ -16,13 +16,18 @@
 			<span class="mega-string">{{ data.uri }}</span>
 		</orc-button-copy>
 	</div>
-	<div #qr_canvas></div>
-	<div class="p-h-1 p-t-1 flex flex-gap-2 flex-items-center" [formGroup]="qr_options">
-		<mat-slider class="w-full flex-grow" min="0" max="3" step="1" showTickMarks>
-			<input matSliderThumb formControlName="style" (input)="onStyleChange()" />
+	<orc-graphic-qr [data]="data.uri" [image]="qr_image()" [ecc]="ecc()" [size]="size()"></orc-graphic-qr>
+	<div class="p-h-1 p-t-1 flex flex-gap-2 flex-items-center">
+		<mat-slider class="w-full flex-grow" min="0" [max]="ecc_max" step="1" showTickMarks>
+			<input matSliderThumb aria-label="Error correction" [value]="ecc_index()" (valueChange)="onEccChange($event)" />
 		</mat-slider>
 		<div>
-			<mat-slide-toggle formControlName="image" name="qr_logo" (change)="onImageChange($event)"></mat-slide-toggle>
+			<mat-slide-toggle
+				name="qr_logo"
+				aria-label="Logo"
+				[checked]="show_image()"
+				(change)="onImageChange($event.checked)"
+			></mat-slide-toggle>
 		</div>
 	</div>
 </mat-dialog-content>

@@ -1,13 +1,11 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, inject, computed, viewChild, ElementRef, AfterViewInit} from '@angular/core';
-import {FormGroup, FormControl, Validators} from '@angular/forms';
+import {ChangeDetectionStrategy, Component, inject, computed, signal, viewChild} from '@angular/core';
 /* Vendor Dependencies */
 import {MAT_DIALOG_DATA} from '@angular/material/dialog';
-import QRCodeStyling, {DotType, CornerSquareType} from 'qr-code-styling';
-import {MatSlideToggleChange} from '@angular/material/slide-toggle';
+import type {ErrorCorrection} from 'qr';
 /* Application Dependencies */
-import {ThemeService} from '@client/modules/settings/services/theme/theme.service';
-import {ThemeType} from '@client/modules/cache/services/local-storage/local-storage.types';
+import {GraphicQrComponent} from '@client/modules/graphic/components/graphic-qr/graphic-qr.component';
+import {QR_ECC_LEVELS, QR_ECC_LOGO_FLOOR} from '@client/modules/graphic/helpers/graphic-qr.helpers';
 /* Native Dependencies */
 import {NetworkConnection} from '@client/modules/network/types/network-connection.type';
 
@@ -18,18 +16,18 @@ import {NetworkConnection} from '@client/modules/network/types/network-connectio
 	styleUrl: './network-connection.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NetworkConnectionComponent implements AfterViewInit {
-	private themeService = inject(ThemeService);
+export class NetworkConnectionComponent {
 	public data = inject<NetworkConnection>(MAT_DIALOG_DATA);
 
-	public qr_canvas = viewChild<ElementRef>('qr_canvas');
+	public readonly ecc_max = QR_ECC_LEVELS.length - 1;
 
-	public qr_code!: QRCodeStyling;
+	public readonly show_image = signal<boolean>(true);
+	public readonly ecc_index = signal<number>(this.ecc_max);
 
-	public readonly qr_options = new FormGroup({
-		style: new FormControl<string | null>('0', [Validators.required]),
-		image: new FormControl<boolean | null>(true, [Validators.required]),
-	});
+	public readonly qr_image = computed(() => (this.show_image() ? this.data.image : null));
+	public readonly ecc = computed((): ErrorCorrection => QR_ECC_LEVELS[this.ecc_index()]);
+
+	private readonly logo_floor_index = QR_ECC_LEVELS.indexOf(QR_ECC_LOGO_FLOOR);
 
 	public size = computed(() => {
 		return this.data.device_type === 'mobile' ? 295 : 395;
@@ -48,90 +46,30 @@ export class NetworkConnectionComponent implements AfterViewInit {
 		}
 	});
 
-	private readonly corner_squre_options: Record<string, CornerSquareType> = {
-		'0': 'extra-rounded',
-		'1': 'extra-rounded',
-		'2': 'square',
-		'3': 'square',
-	};
-	private readonly dot_options: Record<string, DotType> = {
-		'0': 'extra-rounded',
-		'1': 'rounded',
-		'2': 'classy',
-		'3': 'square',
-	};
+	private readonly qr = viewChild(GraphicQrComponent);
 
-	ngAfterViewInit(): void {
-		this.initQR();
+	/* *******************************************************
+		QR Options
+	******************************************************** */
+
+	/** Sets the error correction level; levels too sparse to rebuild a logo turn the logo off */
+	public onEccChange(index: number): void {
+		this.ecc_index.set(index);
+		if (index < this.logo_floor_index) this.show_image.set(false);
 	}
 
-	private initQR(): void {
-		const qr_primary_color = this.themeService.getThemeColor('--mat-sys-surface') || '#000000';
-		const qr_corner_dot_color = this.themeService.getThemeColor('--mat-sys-surface-container-highest') || '#000000';
-		const themeless_primary_color = this.themeService.extractThemeColor(qr_primary_color, ThemeType.DARK_MODE);
-		const themeless_corner_dot_color = this.themeService.extractThemeColor(qr_corner_dot_color, ThemeType.DARK_MODE);
-		const themeless_bg = this.themeService.getThemeColor('--mat-sys-on-secondary-container', ThemeType.DARK_MODE);
-
-		this.qr_code = new QRCodeStyling({
-			width: this.size(),
-			height: this.size(),
-			type: 'svg',
-			data: this.data.uri,
-			image: this.data.image,
-			shape: 'square',
-			margin: 0,
-			qrOptions: {
-				typeNumber: 0,
-				mode: 'Byte',
-				errorCorrectionLevel: 'Q',
-			},
-			imageOptions: {
-				hideBackgroundDots: true,
-				imageSize: 0.3,
-				margin: 5,
-				crossOrigin: 'anonymous',
-			},
-			dotsOptions: {
-				color: themeless_primary_color,
-				type: 'extra-rounded',
-			},
-			backgroundOptions: {
-				color: themeless_bg,
-			},
-			cornersSquareOptions: {
-				color: themeless_primary_color,
-				type: 'extra-rounded',
-			},
-			cornersDotOptions: {
-				color: themeless_corner_dot_color,
-				type: 'square',
-			},
-		});
-
-		this.qr_code.append(this.qr_canvas()?.nativeElement);
+	/** Toggles the logo; showing it raises error correction to the logo floor */
+	public onImageChange(checked: boolean): void {
+		this.show_image.set(checked);
+		if (checked && this.ecc_index() < this.logo_floor_index) this.ecc_index.set(this.logo_floor_index);
 	}
 
-	public onStyleChange(): void {
-		if (this.qr_options.value.style === null || this.qr_options.value.style === undefined) return;
-		const style_value = this.qr_options.value.style;
-		this.qr_code.update({
-			dotsOptions: {
-				type: this.dot_options[style_value],
-			},
-			cornersSquareOptions: {
-				type: this.corner_squre_options[style_value],
-			},
-		});
-	}
+	/* *******************************************************
+		Export
+	******************************************************** */
 
-	public onImageChange(event: MatSlideToggleChange): void {
-		if (this.qr_options.value.image === null || this.qr_options.value.image === undefined) return;
-		this.qr_code.update({
-			image: event.checked ? this.data.image : undefined,
-		});
-	}
-
+	/** Saves the QR as a PNG named after the connection */
 	public download(): void {
-		this.qr_code.download({name: `${this.data.name}_qr`, extension: 'png'});
+		this.qr()?.download(`${this.data.name}_qr`);
 	}
 }
