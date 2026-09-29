@@ -17,12 +17,7 @@ export class EcashBalanceService {
 		private errorService: ErrorService,
 	) {}
 
-	/**
-	 * Get a user's ecash wallet balances
-	 * @param {string} tag - Log tag
-	 * @param {string} user_id - Wallet owner
-	 * @returns {Promise<OrchardEcashBalance[]>} Balances by unit and keyset
-	 */
+	/** Get a user's ecash wallet balances */
 	async getEcashBalances(tag: string, user_id: string): Promise<OrchardEcashBalance[]> {
 		try {
 			const balances = await this.cashuWalletService.getBalances(user_id);

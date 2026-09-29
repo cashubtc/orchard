@@ -34,7 +34,7 @@ describe('EcashBalanceService', () => {
 	});
 
 	it("getEcashBalances maps the user's balances to OrchardEcashBalance[]", async () => {
-		cashuWalletService.getBalances.mockResolvedValue([{unit: 'sat', keyset_id: '00abc', balance: 1}]);
+		cashuWalletService.getBalances.mockResolvedValue([{mint_id: 'mint-1', unit: 'sat', balance: 1}]);
 		const result = await ecashBalanceService.getEcashBalances('TAG', 'user-1');
 		expect(cashuWalletService.getBalances).toHaveBeenCalledWith('user-1');
 		expect(result[0]).toBeInstanceOf(OrchardEcashBalance);
@@ -44,7 +44,8 @@ describe('EcashBalanceService', () => {
 		cashuWalletService.getBalances.mockRejectedValue(new Error('boom'));
 		errorService.resolveError.mockReturnValue({code: OrchardErrorCode.EcashWalletError} as any);
 		await expect(ecashBalanceService.getEcashBalances('TAG', 'user-1')).rejects.toBeInstanceOf(OrchardApiError);
-		const call = errorService.resolveError.mock.calls[0];
-		expect(call?.[3]).toEqual({errord: OrchardErrorCode.EcashWalletError});
+		expect(errorService.resolveError).toHaveBeenCalledWith(expect.anything(), expect.any(Error), 'TAG', {
+			errord: OrchardErrorCode.EcashWalletError,
+		});
 	});
 });

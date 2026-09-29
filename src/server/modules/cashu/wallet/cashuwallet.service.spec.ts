@@ -96,12 +96,12 @@ describe('CashuWalletService', () => {
 	});
 
 	describe('getBalances', () => {
-		it("sums the user's ready proofs as numbers", async () => {
-			mock_query_builder.getRawMany.mockResolvedValue([{unit: 'sat', keyset_id: '00abc', balance: '42'}]);
+		it("sums the user's ready proofs by mint and unit", async () => {
+			mock_query_builder.getRawMany.mockResolvedValue([{mint_id: 'mint-1', unit: 'sat', balance: '42'}]);
 			const balances = await service.getBalances('user-1');
 			expect(mock_query_builder.where).toHaveBeenCalledWith('proof.user_id = :user_id', {user_id: 'user-1'});
 			expect(mock_query_builder.andWhere).toHaveBeenCalledWith('proof.state = :state', {state: WalletProofState.READY});
-			expect(balances).toEqual([{unit: 'sat', keyset_id: '00abc', balance: 42}]);
+			expect(balances).toEqual([{mint_id: 'mint-1', unit: 'sat', balance: 42}]);
 		});
 	});
 });

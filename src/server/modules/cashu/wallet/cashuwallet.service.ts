@@ -5,7 +5,8 @@ import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {Repository} from 'typeorm';
 import {DateTime} from 'luxon';
-import {generateMnemonic, mnemonicToSeedSync} from '@scure/bip39';
+import {mnemonicToSeedSync} from '@cashu/cashu-ts';
+import {generateMnemonic} from '@scure/bip39';
 import {wordlist} from '@scure/bip39/wordlists/english.js';
 /* Application Dependencies */
 import {deriveEncryptionKeyFromHex, encryptValue, decryptValue} from '#server/modules/setting/setting.helpers';
@@ -32,11 +33,7 @@ export class CashuWalletService {
 		Seed
 	******************************************************** */
 
-	/**
-	 * Get a user's BIP-39 seed, creating and persisting a new mnemonic on first use
-	 * @param {string} user_id - Wallet owner
-	 * @returns {Promise<Uint8Array>} The 64-byte seed
-	 */
+	/** Get a user's BIP-39 seed, creating and persisting a new mnemonic on first use */
 	public getSeed(user_id: string): Promise<Uint8Array> {
 		const cached = this.seeds.get(user_id);
 		if (cached) return cached;
@@ -48,11 +45,7 @@ export class CashuWalletService {
 		return seed;
 	}
 
-	/**
-	 * Load a user's stored mnemonic, or generate and store a new one
-	 * @param {string} user_id - Wallet owner
-	 * @returns {Promise<Uint8Array>} The 64-byte seed
-	 */
+	/** Load a user's stored mnemonic, or generate and store a new one */
 	private async loadOrCreateSeed(user_id: string): Promise<Uint8Array> {
 		const encryption_key = this.getEncryptionKey();
 		const existing = await this.walletSeedRepository.findOne({where: {user_id}});
@@ -68,22 +61,14 @@ export class CashuWalletService {
 		return mnemonicToSeedSync(mnemonic);
 	}
 
-	/**
-	 * Derive the seed encryption key from the crypto key
-	 * @returns {Buffer} 32-byte encryption key
-	 */
+	/** Derive the seed encryption key from the crypto key */
 	private getEncryptionKey(): Buffer {
 		const crypto_key = this.configService.get<string>('server.crypto_key');
 		if (!crypto_key) throw new Error('No crypto key available; the ecash wallet seed cannot be stored');
 		return deriveEncryptionKeyFromHex(crypto_key);
 	}
 
-	/**
-	 * Decrypt the stored mnemonic with an actionable error on key mismatch
-	 * @param {string} stored_value - Encrypted mnemonic
-	 * @param {Buffer} encryption_key - 32-byte encryption key
-	 * @returns {string} The plaintext mnemonic
-	 */
+	/** Decrypt the stored mnemonic with an actionable error on key mismatch */
 	private decryptMnemonic(stored_value: string, encryption_key: Buffer): string {
 		try {
 			return decryptValue(stored_value, encryption_key);
@@ -96,21 +81,17 @@ export class CashuWalletService {
 		Balances
 	******************************************************** */
 
-	/**
-	 * Sum a user's ready proofs by unit and keyset
-	 * @param {string} user_id - Wallet owner
-	 * @returns {Promise<CashuWalletBalance[]>} Balances in the smallest unit
-	 */
+	/** Sum a user's ready proofs by mint and unit */
 	public async getBalances(user_id: string): Promise<CashuWalletBalance[]> {
 		const rows = await this.walletProofRepository
 			.createQueryBuilder('proof')
-			.select('proof.unit', 'unit')
-			.addSelect('proof.keyset_id', 'keyset_id')
+			.select('proof.mint_id', 'mint_id')
+			.addSelect('proof.unit', 'unit')
 			.addSelect('SUM(proof.amount)', 'balance')
 			.where('proof.user_id = :user_id', {user_id})
 			.andWhere('proof.state = :state', {state: WalletProofState.READY})
-			.groupBy('proof.unit')
-			.addGroupBy('proof.keyset_id')
+			.groupBy('proof.mint_id')
+			.addGroupBy('proof.unit')
 			.getRawMany<CashuWalletBalance>();
 		return rows.map((row) => ({...row, balance: Number(row.balance)}));
 	}

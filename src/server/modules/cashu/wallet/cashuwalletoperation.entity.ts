@@ -18,6 +18,14 @@ export class CashuWalletOperation {
 	@Column({type: 'text'})
 	user_id: string;
 
+	// Wallet mint (cashu_wallet_mints.id) the operation talks to
+	@Column({type: 'text'})
+	mint_id: string;
+
+	// Payment method for mint/melt operations (bolt11, bolt12, onchain or a custom name); null for swaps
+	@Column({type: 'text', nullable: true})
+	method: string | null;
+
 	@Column({type: 'text'})
 	type: WalletOperationType;
 

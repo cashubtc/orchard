@@ -61,6 +61,10 @@ describe('network-guard', () => {
 			await expect(assertPublicHost('::1')).rejects.toThrow('private/reserved');
 		});
 
+		it('rejects the IPv6 unspecified address', async () => {
+			await expect(assertPublicHost('::')).rejects.toThrow('private/reserved');
+		});
+
 		it('rejects IPv6 unique local', async () => {
 			await expect(assertPublicHost('fd00::1')).rejects.toThrow('private/reserved');
 		});

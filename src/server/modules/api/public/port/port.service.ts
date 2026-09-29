@@ -4,8 +4,9 @@ import {ConfigService} from '@nestjs/config';
 import * as net from 'net';
 /* Vendor Dependencies */
 import {SocksClient} from 'socks';
+/* Application Dependencies */
+import {assertPublicHost} from '#server/modules/fetch/network-guard';
 /* Local Dependencies */
-import {assertPublicHost} from '../network-guard.js';
 import {OrchardPublicPort} from './port.model.js';
 import {PublicPortInput} from './port.input.js';
 

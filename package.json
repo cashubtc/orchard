@@ -69,7 +69,7 @@
     "@angular/router": "^21.2.17",
     "@apollo/server": "^5.5.1",
     "@as-integrations/express5": "^1.1.2",
-    "@cashu/cashu-ts": "^4.10.2",
+    "@cashu/cashu-ts": "^4.11.0",
     "@grpc/grpc-js": "^1.14.4",
     "@grpc/proto-loader": "^0.8.1",
     "@nestjs/apollo": "13.4.5",

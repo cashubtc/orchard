@@ -26,6 +26,8 @@ const BLOCKED_CIDRS: {network: bigint; mask: bigint}[] = [
 	parseCidr('192.0.0.0/24'),
 	/* 198.18.0.0/15     — Benchmarking (RFC 2544) */
 	parseCidr('198.18.0.0/15'),
+	/* ::/128            — IPv6 unspecified */
+	parseCidr6('::/128'),
 	/* ::1/128           — IPv6 loopback */
 	parseCidr6('::1/128'),
 	/* fc00::/7          — IPv6 unique local */

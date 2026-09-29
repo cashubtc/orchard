@@ -2,8 +2,8 @@
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
 import {FetchService} from '#server/modules/fetch/fetch.service';
+import {assertPublicUrl} from '#server/modules/fetch/network-guard';
 /* Local Dependencies */
-import {assertPublicUrl} from '../network-guard.js';
 import {OrchardPublicUrl} from './url.model.js';
 
 @Injectable()

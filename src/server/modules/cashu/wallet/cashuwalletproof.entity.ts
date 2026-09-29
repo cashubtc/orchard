@@ -7,7 +7,7 @@ import {WalletProofState} from './cashuwallet.enums.js';
  * Ecash proofs held by users' wallets.
  */
 @Entity('cashu_wallet_proofs')
-@Index(['user_id', 'unit', 'state'])
+@Index(['user_id', 'mint_id', 'unit', 'state'])
 @Index(['used_by_op_id'])
 export class CashuWalletProof {
 	// Proof secret, unique per proof
@@ -17,6 +17,10 @@ export class CashuWalletProof {
 	// Owner of the proof
 	@Column({type: 'text'})
 	user_id: string;
+
+	// Wallet mint (cashu_wallet_mints.id) that issued the proof
+	@Column({type: 'text'})
+	mint_id: string;
 
 	// Keyset id the proof was signed with
 	@Column({type: 'text'})
