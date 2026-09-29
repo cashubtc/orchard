@@ -25,8 +25,14 @@ const ACTION_BY_CODE: Partial<Record<number, WalletErrorAction>> = {
 	[CashuMintErrorCode.KEYSET_EXPIRED]: WalletErrorAction.REBUILD,
 };
 
+/** Thrown by the guarded mint transport when a mint URL resolves to a private or local address */
+export class MintAddressError extends Error {
+	name = 'MintAddressError';
+}
+
 /** Decide what a journaled operation does after a mint call fails; unknown outcomes wait, only definitive rejections fail */
 export const classifyMintError = (error: unknown): WalletErrorAction => {
+	if (error instanceof MintAddressError) return WalletErrorAction.FAIL;
 	if (error instanceof StaleKeysetError) return WalletErrorAction.REBUILD;
 	if (isMintOperationError(error)) return ACTION_BY_CODE[error.code] ?? WalletErrorAction.FAIL;
 	if (error instanceof HttpResponseError && !(error instanceof RateLimitError) && error.status < 500) return WalletErrorAction.FAIL;
@@ -35,9 +41,10 @@ export const classifyMintError = (error: unknown): WalletErrorAction => {
 
 /** Operator-readable description of a mint call failure, naming the NUT error code when the mint sent one */
 export const describeMintError = (error: unknown): string => {
-	if (isMintOperationError(error)) {
-		const auth = AUTH_CODES.has(error.code) ? '; this mint requires authentication, which Orchard wallets do not support yet' : '';
-		return `Mint error ${error.code}: ${error.message}${auth}`;
+	const mint_error = error instanceof StaleKeysetError && isMintOperationError(error.cause) ? error.cause : error;
+	if (isMintOperationError(mint_error)) {
+		const auth = AUTH_CODES.has(mint_error.code) ? '; this mint requires authentication, which Orchard wallets do not support yet' : '';
+		return `Mint error ${mint_error.code}: ${mint_error.message}${auth}`;
 	}
 	if (error instanceof HttpResponseError) return `${error.message} (HTTP ${error.status})`;
 	return error instanceof Error ? error.message : String(error);

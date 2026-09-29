@@ -9,6 +9,15 @@ export type CashuWalletBalance = {
 	balance: number;
 };
 
+export type CashuWalletMintRequest = {
+	user_id: string;
+	mint_id: string;
+	unit: string;
+	amount: number;
+	method: string;
+	quote_id: string;
+};
+
 export type CashuWalletMintRecord = CashuWalletMint & {
 	is_orchard: boolean;
 };

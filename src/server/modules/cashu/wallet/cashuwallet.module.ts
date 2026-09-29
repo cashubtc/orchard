@@ -11,13 +11,14 @@ import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
 import {CashuWalletService} from './cashuwallet.service.js';
 import {CashuWalletMintService} from './cashuwalletmint.service.js';
+import {CashuWalletOperationService} from './cashuwalletoperation.service.js';
 
 @Module({
 	imports: [
 		TypeOrmModule.forFeature([CashuWalletSeed, CashuWalletCounter, CashuWalletProof, CashuWalletOperation, CashuWalletMint]),
 		FetchModule,
 	],
-	providers: [CashuWalletService, CashuWalletMintService],
-	exports: [CashuWalletService, CashuWalletMintService],
+	providers: [CashuWalletService, CashuWalletMintService, CashuWalletOperationService],
+	exports: [CashuWalletService, CashuWalletMintService, CashuWalletOperationService],
 })
 export class CashuWalletModule {}

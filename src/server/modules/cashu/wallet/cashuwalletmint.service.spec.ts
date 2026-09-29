@@ -204,6 +204,19 @@ describe('CashuWalletMintService', () => {
 		});
 	});
 
+	describe('getMint', () => {
+		it('reaches the Orchard mint through MINT_API', async () => {
+			const [orchard] = await service.listMints('user-1');
+			expect((await service.getMint(orchard)).mintUrl).toBe(ORCHARD_API);
+		});
+
+		it('re-checks the address of other mints on every request', async () => {
+			const client = await service.getMint({urls: ['https://10.0.0.9'], pubkey: '02other'} as CashuWalletMint);
+			await expect(client.getInfo()).rejects.toThrow('private/reserved');
+			expect(lookedUp()).toEqual([]);
+		});
+	});
+
 	describe('removeMint', () => {
 		beforeEach(async () => {
 			route('https://203.0.113.10', async () => response(cedar_info));

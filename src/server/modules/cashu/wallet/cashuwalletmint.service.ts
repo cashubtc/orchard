@@ -13,6 +13,7 @@ import {
 	MintOperationError,
 	NetworkError,
 	RateLimitError,
+	Wallet,
 	normalizeMintUrl,
 	type RequestFn,
 	type RequestOptions,
@@ -26,11 +27,13 @@ import {CashuWalletMint} from './cashuwalletmint.entity.js';
 import {CashuWalletProof} from './cashuwalletproof.entity.js';
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
 import {WalletProofState, WalletOperationState} from './cashuwallet.enums.js';
+import {MintAddressError} from './cashuwallet.helpers.js';
 import type {CashuWalletMintRecord, OrchardMintIdentity} from './cashuwallet.types.js';
 
 const MINT_TIMEOUT_MS = 10_000;
 const MINT_MAX_BYTES = 256 * 1024;
 const ORCHARD_RETRY_MS = 30_000;
+const WALLET_TTL_MS = 5 * 60_000;
 
 const walletError = (details: string) => ({code: OrchardErrorCode.EcashWalletError, details});
 
@@ -38,8 +41,10 @@ const walletError = (details: string) => ({code: OrchardErrorCode.EcashWalletErr
 export class CashuWalletMintService {
 	private readonly logger = new Logger(CashuWalletMintService.name);
 	private readonly request: RequestFn = (options) => this.requestMint(options);
+	private readonly guarded_request: RequestFn = (options) => this.requestPublicMint(options);
 	private orchard_identity: Promise<OrchardMintIdentity | null> | null = null;
 	private orchard_failed_at = 0;
+	private wallets = new Map<string, {wallet: Promise<Wallet>; expires_at: number}>();
 
 	constructor(
 		@InjectRepository(CashuWalletMint)
@@ -107,6 +112,34 @@ export class CashuWalletMintService {
 			throw walletError('This mint has wallet operations in progress');
 		}
 		await this.walletMintRepository.delete({id: mint.id});
+	}
+
+	/** Loaded cashu-ts wallet for a mint and unit, cached briefly; cashu-ts repairs stale keysets itself */
+	public getWallet(mint_id: string, unit: string): Promise<Wallet> {
+		const key = `${mint_id}:${unit}`;
+		const cached = this.wallets.get(key);
+		if (cached && cached.expires_at > Date.now()) return cached.wallet;
+		const wallet = this.loadWallet(mint_id, unit).catch((error) => {
+			this.wallets.delete(key);
+			throw error;
+		});
+		this.wallets.set(key, {wallet, expires_at: Date.now() + WALLET_TTL_MS});
+		return wallet;
+	}
+
+	/** Build a cashu-ts wallet for a wallet mint and load its keysets */
+	private async loadWallet(mint_id: string, unit: string): Promise<Wallet> {
+		const mint = await this.walletMintRepository.findOneByOrFail({id: mint_id});
+		const wallet = new Wallet(await this.getMint(mint), {unit});
+		await wallet.loadMint();
+		return wallet;
+	}
+
+	/** cashu-ts Mint client for a wallet mint: MINT_API for the Orchard mint, the guarded transport for the rest */
+	public async getMint(mint: CashuWalletMint): Promise<Mint> {
+		const identity = await this.getOrchardIdentity();
+		if (identity && this.isOrchardMint(mint, identity)) return new Mint(identity.api_url, {customRequest: this.request});
+		return new Mint(mint.urls[0], {customRequest: this.guarded_request});
 	}
 
 	/* *******************************************************
@@ -244,6 +277,14 @@ export class CashuWalletMintService {
 	/* *******************************************************
 		Transport
 	******************************************************** */
+
+	/** Transport for user-added mints: re-checks the address on every request before sending it */
+	private async requestPublicMint<T>(options: RequestOptions): Promise<T> {
+		await this.assertPublicMintUrl(options.endpoint).catch((error) => {
+			throw new MintAddressError(error?.details ?? error?.message ?? String(error));
+		});
+		return this.requestMint<T>(options);
+	}
 
 	/** cashu-ts RequestFn over FetchService (Tor proxy, timeout, size cap, no redirects), keeping its error contract */
 	private async requestMint<T>({endpoint, requestBody, headers, method, requestTimeout}: RequestOptions): Promise<T> {

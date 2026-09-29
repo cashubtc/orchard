@@ -3,7 +3,7 @@ import {expect} from '@jest/globals';
 /* Vendor Dependencies */
 import {HttpResponseError, MintOperationError, NetworkError, RateLimitError, StaleKeysetError} from '@cashu/cashu-ts';
 /* Local Dependencies */
-import {classifyMintError, describeMintError} from './cashuwallet.helpers.js';
+import {MintAddressError, classifyMintError, describeMintError} from './cashuwallet.helpers.js';
 import {CashuMintErrorCode, WalletErrorAction} from './cashuwallet.enums.js';
 
 describe('classifyMintError', () => {
@@ -35,6 +35,10 @@ describe('classifyMintError', () => {
 		expect(classifyMintError(new Error('unexpected'))).toBe(WalletErrorAction.WAIT);
 	});
 
+	it('fails when the guarded transport refuses the address', () => {
+		expect(classifyMintError(new MintAddressError('resolves to a private address'))).toBe(WalletErrorAction.FAIL);
+	});
+
 	it('fails on other client errors', () => {
 		expect(classifyMintError(new HttpResponseError('not found', 404))).toBe(WalletErrorAction.FAIL);
 	});
@@ -43,6 +47,11 @@ describe('classifyMintError', () => {
 describe('describeMintError', () => {
 	it('names the NUT code and detail', () => {
 		expect(describeMintError(new MintOperationError(11001, 'Token already spent'))).toBe('Mint error 11001: Token already spent');
+	});
+
+	it("keeps the mint's code when cashu-ts wraps a keyset rejection", () => {
+		const error = new StaleKeysetError(true, {cause: new MintOperationError(12002, 'Keyset inactive')});
+		expect(describeMintError(error)).toBe('Mint error 12002: Keyset inactive');
 	});
 
 	it('explains auth-protected mints', () => {
