@@ -101,7 +101,7 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.23.0",
-    "qr-code-styling": "^1.9.2",
+    "qr": "^0.7.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "socks-proxy-agent": "^10.1.0",

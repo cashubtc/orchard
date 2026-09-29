@@ -1,0 +1,31 @@
+@use 'molecule/molecule';
+
+:host {
+	@extend %orc-on-secondary-container-bg;
+	@extend %orc-corner-medium;
+	display: block;
+	position: relative;
+	max-width: 100%;
+	aspect-ratio: 1;
+	overflow: hidden;
+}
+
+svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.graphic-qr-modules {
+	fill: var(--mat-sys-surface);
+}
+
+.graphic-qr-eyes {
+	fill: var(--mat-sys-surface-container-highest);
+}
+
+.graphic-qr-logo {
+	@extend %orc-corner-full;
+	position: absolute;
+	object-fit: cover;
+}

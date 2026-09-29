@@ -1,0 +1,17 @@
+@if (geometry(); as geometry) {
+	<svg [attr.viewBox]="view_box()" role="img" aria-label="QR code">
+		<path #modules_path class="graphic-qr-modules" fill-rule="evenodd" [attr.d]="geometry.modules_path" />
+		<path #eyes_path class="graphic-qr-eyes" [attr.d]="geometry.eyes_path" />
+	</svg>
+	@if (logo_box(); as logo_box) {
+		<img
+			class="graphic-qr-logo"
+			alt=""
+			[src]="image()"
+			[style.left.%]="logo_box.left"
+			[style.top.%]="logo_box.top"
+			[style.width.%]="logo_box.size"
+			[style.height.%]="logo_box.size"
+		/>
+	}
+}

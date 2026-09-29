@@ -25,6 +25,7 @@ import {OrcFormModule} from '@client/modules/form/form.module';
 import {OrcLocalModule} from '@client/modules/local/local.module';
 import {OrcCrewModule} from '@client/modules/crew/crew.module';
 import {OrcButtonModule} from '@client/modules/button/button.module';
+import {OrcGraphicModule} from '@client/modules/graphic/graphic.module';
 /* Local Dependencies */
 import {IndexSubsectionCrewComponent} from './components/index-subsection-crew/index-subsection-crew.component';
 import {IndexSubsectionCrewControlComponent} from './components/index-subsection-crew-control/index-subsection-crew-control.component';
@@ -79,6 +80,7 @@ import {IndexSubsectionCrewTableUserComponent} from './components/index-subsecti
 		OrcLocalModule,
 		OrcCrewModule,
 		OrcButtonModule,
+		OrcGraphicModule,
 	],
 })
 export class OrcIndexSubsectionCrewModule {}

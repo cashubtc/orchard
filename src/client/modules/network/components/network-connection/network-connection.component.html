@@ -16,14 +16,15 @@
 			<span class="mega-string">{{ data.uri }}</span>
 		</orc-button-copy>
 	</div>
-	<div #qr_canvas></div>
-	<div class="p-h-1 p-t-1 flex flex-gap-2 flex-items-center" [formGroup]="qr_options">
-		<mat-slider class="w-full flex-grow" min="0" max="3" step="1" showTickMarks>
-			<input matSliderThumb formControlName="style" (input)="onStyleChange()" />
-		</mat-slider>
-		<div>
-			<mat-slide-toggle formControlName="image" name="qr_logo" (change)="onImageChange($event)"></mat-slide-toggle>
+	<orc-graphic-qr [data]="data.uri" [image]="qr_image()" [ecc]="ecc()" [size]="size()"></orc-graphic-qr>
+	<div class="p-t-1 flex flex-gap-1 flex-items-center">
+		<div class="flex flex-column flex-grow">
+			<mat-slider class="w-full" [min]="ecc_min()" [max]="ecc_max" step="1" showTickMarks>
+				<input matSliderThumb [value]="ecc_index()" (valueChange)="ecc_index.set($event)" />
+			</mat-slider>
+			<div class="font-size-xs orc-outline-color">Error correction: {{ ecc() | titlecase }}</div>
 		</div>
+		<mat-slide-toggle name="qr_logo" [checked]="show_image()" (change)="show_image.set($event.checked)">Logo</mat-slide-toggle>
 	</div>
 </mat-dialog-content>
 
