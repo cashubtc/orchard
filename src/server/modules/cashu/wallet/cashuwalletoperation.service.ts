@@ -7,6 +7,7 @@ import {DateTime} from 'luxon';
 import {
 	Amount,
 	JSONInt,
+	MintQuoteState,
 	OutputData,
 	StaleKeysetError,
 	splitAmount,
@@ -14,6 +15,8 @@ import {
 	type SerializedOutputData,
 	type Wallet,
 } from '@cashu/cashu-ts';
+/* Application Dependencies */
+import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
 /* Local Dependencies */
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
 import {CashuWalletProof} from './cashuwalletproof.entity.js';
@@ -21,8 +24,10 @@ import {CashuWalletCounter} from './cashuwalletcounter.entity.js';
 import {CashuWalletService} from './cashuwallet.service.js';
 import {CashuWalletMintService} from './cashuwalletmint.service.js';
 import {WalletErrorAction, WalletOperationState, WalletOperationType, WalletProofState} from './cashuwallet.enums.js';
-import {classifyMintError, describeMintError} from './cashuwallet.helpers.js';
-import type {CashuWalletMintRequest} from './cashuwallet.types.js';
+import {classifyMintError, deriveQuoteKey, describeMintError, walletError} from './cashuwallet.helpers.js';
+import type {CashuWalletIssueRequest, CashuWalletMintRequest} from './cashuwallet.types.js';
+
+const QUOTE_KEY_COUNTER = 'nut20';
 
 @Injectable()
 export class CashuWalletOperationService implements OnApplicationBootstrap {
@@ -37,6 +42,7 @@ export class CashuWalletOperationService implements OnApplicationBootstrap {
 		private walletCounterRepository: Repository<CashuWalletCounter>,
 		private cashuWalletService: CashuWalletService,
 		private cashuWalletMintService: CashuWalletMintService,
+		private cashuMintRpcService: CashuMintRpcService,
 	) {}
 
 	/** Resume operations interrupted by a restart, without blocking startup */
@@ -88,6 +94,38 @@ export class CashuWalletOperationService implements OnApplicationBootstrap {
 	}
 
 	/* *******************************************************
+		Issuance
+	******************************************************** */
+
+	/** Issue ecash on the Orchard mint without a payment: journal a fresh bolt11 quote, force it paid over the mint RPC, then mint */
+	public async issueEcash(request: CashuWalletIssueRequest): Promise<CashuWalletOperation> {
+		const mint = await this.cashuWalletMintService.getOrchardMint(request.user_id);
+		const operation = await this.createIssueOperation(mint.id, request).catch((error) => {
+			throw walletError(`The Orchard mint could not start the issue: ${describeMintError(error)}`);
+		});
+		try {
+			await this.cashuMintRpcService.updateNut04Quote({quote_id: operation.quote_id!, state: MintQuoteState.PAID});
+		} catch (error) {
+			const reason = `Mint RPC could not mark the quote paid: ${describeMintError(error)}`;
+			await this.transition(operation, WalletOperationState.FAILED, {error: reason});
+			throw walletError(reason);
+		}
+		return this.executeMintOperation(operation.id);
+	}
+
+	/** Journal an issue on a fresh bolt11 quote, locked to a seed-derived key (NUT-20) when the mint supports it */
+	private async createIssueOperation(mint_id: string, request: CashuWalletIssueRequest): Promise<CashuWalletOperation> {
+		const wallet = await this.cashuWalletMintService.getWallet(mint_id, request.unit);
+		const locked = wallet.getMintInfo().isSupported(20).supported;
+		const quote_counter = locked ? await this.reserveCounters(request.user_id, QUOTE_KEY_COUNTER, 1) : null;
+		const quote =
+			quote_counter === null
+				? await wallet.createMintQuoteBolt11(request.amount)
+				: await wallet.createLockedMintQuote(request.amount, (await this.getQuoteKey(request.user_id, quote_counter)).pubkey);
+		return this.createMintOperation({...request, mint_id, method: 'bolt11', quote_id: quote.quote, quote_counter});
+	}
+
+	/* *******************************************************
 		Execution
 	******************************************************** */
 
@@ -95,11 +133,13 @@ export class CashuWalletOperationService implements OnApplicationBootstrap {
 	private async attemptMint(operation: CashuWalletOperation, wallet: Wallet, allow_rebuild: boolean): Promise<CashuWalletOperation> {
 		try {
 			const outputs = this.deserializeOutputs(operation.outputs);
+			const privkey =
+				operation.quote_counter === null ? undefined : (await this.getQuoteKey(operation.user_id, operation.quote_counter)).privkey;
 			const preview = await wallet.prepareMint(
 				operation.method,
 				operation.amount,
 				{quote: operation.quote_id},
-				{},
+				{privkey},
 				{type: 'custom', data: outputs},
 			);
 			return await this.finalize(operation, await wallet.completeMint(preview));
@@ -211,15 +251,20 @@ export class CashuWalletOperationService implements OnApplicationBootstrap {
 		return OutputData.createDeterministicData(amount, await this.cashuWalletService.getSeed(user_id), start, keyset, split);
 	}
 
-	/** Atomically claim the next n counters for a keyset; a crash can waste counters but never reuse them */
-	private async reserveCounters(user_id: string, keyset_id: string, count: number): Promise<number> {
+	/** Atomically claim the next n counters for a counter key; a crash can waste counters but never reuse them */
+	private async reserveCounters(user_id: string, counter_key: string, count: number): Promise<number> {
 		const rows: {next: number}[] = await this.walletCounterRepository.query(
-			`INSERT INTO cashu_wallet_counters (user_id, keyset_id, next, updated_at) VALUES (?, ?, ?, ?)
-			ON CONFLICT(user_id, keyset_id) DO UPDATE SET next = cashu_wallet_counters.next + excluded.next, updated_at = excluded.updated_at
+			`INSERT INTO cashu_wallet_counters (user_id, counter_key, next, updated_at) VALUES (?, ?, ?, ?)
+			ON CONFLICT(user_id, counter_key) DO UPDATE SET next = cashu_wallet_counters.next + excluded.next, updated_at = excluded.updated_at
 			RETURNING next`,
-			[user_id, keyset_id, count, DateTime.now().toUnixInteger()],
+			[user_id, counter_key, count, DateTime.now().toUnixInteger()],
 		);
 		return rows[0].next - count;
+	}
+
+	/** Keypair (hex) that locks and signs for a NUT-20 locked quote */
+	private async getQuoteKey(user_id: string, counter: number): Promise<{privkey: string; pubkey: string}> {
+		return deriveQuoteKey(await this.cashuWalletService.getSeed(user_id), counter);
 	}
 
 	/** Outputs in cashu-ts storage form */

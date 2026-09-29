@@ -47,6 +47,14 @@ export class CashuWalletOperation {
 	@Column({type: 'text', nullable: true})
 	quote_id: string | null;
 
+	// NUT-20 seed counter of the key locking the quote; null for unlocked quotes
+	@Column({type: 'integer', nullable: true})
+	quote_counter: number | null;
+
+	// Operator note shown in wallet history
+	@Column({type: 'text', nullable: true})
+	memo: string | null;
+
 	// Serialized output data (secrets, blinding factors, blinded messages) sent to the mint
 	@Column({type: 'text', nullable: true})
 	outputs: string | null;

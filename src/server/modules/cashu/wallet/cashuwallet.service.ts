@@ -14,7 +14,8 @@ import {deriveEncryptionKeyFromHex, encryptValue, decryptValue} from '#server/mo
 import {CashuWalletSeed} from './cashuwalletseed.entity.js';
 import {CashuWalletProof} from './cashuwalletproof.entity.js';
 import {WalletProofState} from './cashuwallet.enums.js';
-import type {CashuWalletBalance} from './cashuwallet.types.js';
+import {walletError} from './cashuwallet.helpers.js';
+import type {CashuWalletBalance, CashuWalletSeedStatus} from './cashuwallet.types.js';
 
 @Injectable()
 export class CashuWalletService {
@@ -45,6 +46,25 @@ export class CashuWalletService {
 		return seed;
 	}
 
+	/** A user's mnemonic for backup, creating the wallet seed on first use */
+	public async getMnemonic(user_id: string): Promise<string> {
+		await this.getSeed(user_id);
+		const stored = await this.walletSeedRepository.findOneByOrFail({user_id});
+		return this.decryptMnemonic(stored.mnemonic, this.getEncryptionKey());
+	}
+
+	/** A user's seed backup status, or null before the wallet is first used */
+	public async getSeedStatus(user_id: string): Promise<CashuWalletSeedStatus | null> {
+		return this.walletSeedRepository.findOne({where: {user_id}, select: ['created_at', 'backed_up_at']});
+	}
+
+	/** Record that a user has written down their mnemonic; refused before a seed exists */
+	public async markBackedUp(user_id: string): Promise<CashuWalletSeedStatus> {
+		const result = await this.walletSeedRepository.update({user_id}, {backed_up_at: DateTime.now().toUnixInteger()});
+		if (!result.affected) throw walletError('This wallet has no seed yet; reveal the mnemonic before confirming a backup');
+		return (await this.getSeedStatus(user_id))!;
+	}
+
 	/** Load a user's stored mnemonic, or generate and store a new one */
 	private async loadOrCreateSeed(user_id: string): Promise<Uint8Array> {
 		const encryption_key = this.getEncryptionKey();
@@ -56,6 +76,7 @@ export class CashuWalletService {
 			user_id,
 			mnemonic: encryptValue(mnemonic, encryption_key),
 			created_at: DateTime.now().toUnixInteger(),
+			backed_up_at: null,
 		});
 		this.logger.log(`Created a new ecash wallet seed for user ${user_id}`);
 		return mnemonicToSeedSync(mnemonic);

@@ -30,6 +30,7 @@ import {
 } from '#server/modules/event/event.enums';
 import {SystemMetric, SystemMetricsInterval} from '#server/modules/system/metrics/sysmetrics.enums';
 import {MintMetricType} from '#server/modules/cashu/mintmetrics/mintmetrics.enums';
+import {WalletOperationType, WalletOperationState} from '#server/modules/cashu/wallet/cashuwallet.enums';
 
 registerEnumType(MintQuoteState, {
 	name: 'MintQuoteState',
@@ -383,5 +384,22 @@ registerEnumType(MintMetricType, {
 		gauge: {description: 'Point-in-time value'},
 		counter: {description: 'Monotonic cumulative value'},
 		histogram: {description: 'Distribution of observed values'},
+	},
+});
+registerEnumType(WalletOperationType, {
+	name: 'WalletOperationType',
+	description: 'Type of an ecash wallet operation',
+	valuesMap: {
+		MINT: {description: 'Ecash minted into the wallet'},
+	},
+});
+registerEnumType(WalletOperationState, {
+	name: 'WalletOperationState',
+	description: 'State of an ecash wallet operation',
+	valuesMap: {
+		PENDING: {description: 'Journaled; the mint has not been asked yet'},
+		EXECUTING: {description: 'Sent to the mint; retried until it settles'},
+		FINALIZED: {description: 'Completed'},
+		FAILED: {description: 'Rejected definitively; nothing was issued'},
 	},
 });

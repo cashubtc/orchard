@@ -21,21 +21,18 @@ import {
 /* Application Dependencies */
 import {FetchService} from '#server/modules/fetch/fetch.service';
 import {assertPublicHost} from '#server/modules/fetch/network-guard';
-import {OrchardErrorCode} from '#server/modules/error/error.types';
 /* Local Dependencies */
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
 import {CashuWalletProof} from './cashuwalletproof.entity.js';
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
 import {WalletProofState, WalletOperationState} from './cashuwallet.enums.js';
-import {MintAddressError} from './cashuwallet.helpers.js';
+import {MintAddressError, walletError} from './cashuwallet.helpers.js';
 import type {CashuWalletMintRecord, OrchardMintIdentity} from './cashuwallet.types.js';
 
 const MINT_TIMEOUT_MS = 10_000;
 const MINT_MAX_BYTES = 256 * 1024;
 const ORCHARD_RETRY_MS = 30_000;
 const WALLET_TTL_MS = 5 * 60_000;
-
-const walletError = (details: string) => ({code: OrchardErrorCode.EcashWalletError, details});
 
 @Injectable()
 export class CashuWalletMintService {
@@ -157,6 +154,13 @@ export class CashuWalletMintService {
 			return identity;
 		});
 		return this.orchard_identity;
+	}
+
+	/** The Orchard mint in a user's wallet, added if missing; refused while the mint can't be reached */
+	public async getOrchardMint(user_id: string): Promise<CashuWalletMint> {
+		const identity = await this.getOrchardIdentity();
+		if (!identity) throw walletError('The Orchard mint is not responding at MINT_API; check that the mint is running');
+		return this.ensureOrchardMint(user_id, identity);
 	}
 
 	/** Return the Orchard mint from a user's wallet, adding it if it's not there yet */

@@ -5,9 +5,10 @@ import {getRepositoryToken} from '@nestjs/typeorm';
 import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {DataSource} from 'typeorm';
-import {createBlindSignature, createNewMintKeys, pointFromHex, serializeMintKeys} from '@cashu/cashu-ts';
+import {createBlindSignature, createNewMintKeys, pointFromHex, serializeMintKeys, verifyMintQuoteSignature} from '@cashu/cashu-ts';
 /* Application Dependencies */
 import {FetchService} from '#server/modules/fetch/fetch.service';
+import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
 /* Local Dependencies */
 import {CashuWalletOperationService} from './cashuwalletoperation.service.js';
 import {CashuWalletMintService} from './cashuwalletmint.service.js';
@@ -17,18 +18,24 @@ import {CashuWalletProof} from './cashuwalletproof.entity.js';
 import {CashuWalletCounter} from './cashuwalletcounter.entity.js';
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
 import {WalletOperationState, WalletProofState} from './cashuwallet.enums.js';
+import {walletError} from './cashuwallet.helpers.js';
 
 /** Minimal mint that signs outputs for real with cashu-ts crypto; `failures` queues NUT errors for /v1/mint */
 const createFakeMint = () => {
 	const keyset = createNewMintKeys(8, undefined, {unit: 'sat'});
 	const signed = new Map<string, {id: string; amount: number; C_: string}>();
+	const quotes = new Map<string, {pubkey?: string; state: string}>();
 	const failures: {code: number; detail: string}[] = [];
 	const info = {
 		name: 'Orchard Test Mint',
 		pubkey: '02orchard',
 		version: 'cdk',
 		contact: [],
-		nuts: {4: {methods: [{method: 'bolt11', unit: 'sat'}], disabled: false}, 5: {methods: [], disabled: false}},
+		nuts: {
+			4: {methods: [{method: 'bolt11', unit: 'sat'}], disabled: false},
+			5: {methods: [], disabled: false},
+			20: {supported: true},
+		},
 	};
 	const keysets = {keysets: [{id: keyset.keysetId, unit: 'sat', active: true, input_fee_ppk: 0}]};
 	const keys = {keysets: [{id: keyset.keysetId, unit: 'sat', active: true, keys: serializeMintKeys(keyset.pubKeys)}]};
@@ -40,9 +47,30 @@ const createFakeMint = () => {
 		if (path === '/v1/info') return [200, info];
 		if (path === '/v1/keysets') return [200, keysets];
 		if (path.startsWith('/v1/keys')) return [200, keys];
+		if (path === '/v1/mint/quote/bolt11') {
+			const quote = `quote-${quotes.size + 1}`;
+			quotes.set(quote, {pubkey: body.pubkey, state: 'UNPAID'});
+			return [
+				200,
+				{
+					quote,
+					request: `lnbc${body.amount * 10}n1fake`,
+					amount: body.amount,
+					unit: body.unit,
+					state: 'UNPAID',
+					expiry: null,
+					pubkey: body.pubkey,
+				},
+			];
+		}
 		if (path === '/v1/mint/bolt11') {
 			const failure = failures.shift();
 			if (failure) return [400, failure];
+			const quote = quotes.get(body.quote);
+			if (quote?.state === 'UNPAID') return [400, {code: 20001, detail: 'Quote not paid'}];
+			if (quote?.pubkey && !verifyMintQuoteSignature(quote.pubkey, body.quote, body.outputs, body.signature ?? '')) {
+				return [400, {code: 20008, detail: 'Invalid signature'}];
+			}
 			if (body.outputs.some((output: any) => signed.has(output.B_))) return [400, {code: 11003, detail: 'Outputs already signed'}];
 			const signatures = body.outputs.map((output: any) => {
 				const signature = sign(output);
@@ -57,7 +85,7 @@ const createFakeMint = () => {
 		}
 		return [404, {detail: 'not found'}];
 	};
-	return {keyset, failures, handle};
+	return {keyset, quotes, failures, handle};
 };
 
 describe('CashuWalletOperationService', () => {
@@ -74,6 +102,12 @@ describe('CashuWalletOperationService', () => {
 			return {ok: status < 300, status, text: async () => JSON.stringify(body), headers: {get: () => null}};
 		}),
 	};
+	const mint_rpc = {
+		updateNut04Quote: jest.fn(async ({quote_id, state}: {quote_id: string; state: string}) => {
+			mint.quotes.get(quote_id)!.state = state;
+			return {quote_id, state};
+		}),
+	};
 	const seed = new Uint8Array(64).fill(7);
 
 	const request = (quote_id = 'quote-1') => ({
@@ -83,10 +117,13 @@ describe('CashuWalletOperationService', () => {
 		amount: 100,
 		method: 'bolt11',
 		quote_id,
+		quote_counter: null,
+		memo: null,
 	});
+	const operations = () => data_source.getRepository(CashuWalletOperation).find();
 	const proofs = () => data_source.getRepository(CashuWalletProof).find();
 	const counter = () =>
-		data_source.getRepository(CashuWalletCounter).findOneByOrFail({user_id: 'user-1', keyset_id: mint.keyset.keysetId});
+		data_source.getRepository(CashuWalletCounter).findOneByOrFail({user_id: 'user-1', counter_key: mint.keyset.keysetId});
 
 	beforeEach(async () => {
 		jest.clearAllMocks();
@@ -119,6 +156,7 @@ describe('CashuWalletOperationService', () => {
 					useValue: {get: jest.fn((key: string) => (key === 'cashu.api' ? 'http://localhost:3338' : undefined))},
 				},
 				{provide: FetchService, useValue: fetch_service},
+				{provide: CashuMintRpcService, useValue: mint_rpc},
 				...[CashuWalletOperation, CashuWalletProof, CashuWalletCounter, CashuWalletMint].map((entity) => ({
 					provide: getRepositoryToken(entity),
 					useValue: data_source.getRepository(entity),
@@ -193,5 +231,21 @@ describe('CashuWalletOperationService', () => {
 		expect(result.state).toBe(WalletOperationState.FINALIZED);
 		expect((await counter()).next).toBe(6);
 		expect(JSON.parse(result.outputs!)[0].secret).not.toBe(JSON.parse(operation.outputs!)[0].secret);
+	});
+
+	it('issues on the Orchard mint through a NUT-20 locked quote forced paid over the mint RPC', async () => {
+		const result = await service.issueEcash({user_id: 'user-1', unit: 'sat', amount: 100, memo: 'Giveaway'});
+		expect(result).toMatchObject({state: WalletOperationState.FINALIZED, mint_id: mint_row.id, quote_counter: 0, memo: 'Giveaway'});
+		expect(mint.quotes.get(result.quote_id!)).toMatchObject({pubkey: expect.stringMatching(/^0[23][0-9a-f]{64}$/), state: 'PAID'});
+		expect(mint_rpc.updateNut04Quote).toHaveBeenCalledWith({quote_id: result.quote_id, state: 'PAID'});
+		expect((await proofs()).reduce((sum, proof) => sum + proof.amount, 0)).toBe(100);
+	});
+
+	it('fails the issue when the mint RPC cannot mark the quote paid', async () => {
+		mint_rpc.updateNut04Quote.mockRejectedValueOnce({code: 40007, details: 'quote not found'});
+		const reason = 'Mint RPC could not mark the quote paid: quote not found';
+		await expect(service.issueEcash({user_id: 'user-1', unit: 'sat', amount: 100, memo: null})).rejects.toEqual(walletError(reason));
+		expect(await operations()).toEqual([expect.objectContaining({state: WalletOperationState.FAILED, error: reason})]);
+		expect(await proofs()).toEqual([]);
 	});
 });

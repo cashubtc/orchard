@@ -1,5 +1,8 @@
 /* Vendor Dependencies */
 import {HttpResponseError, RateLimitError, StaleKeysetError, isMintOperationError} from '@cashu/cashu-ts';
+import {HDKey} from '@scure/bip32';
+/* Application Dependencies */
+import {OrchardErrorCode, OrchardErrorMessages} from '#server/modules/error/error.types';
 /* Local Dependencies */
 import {CashuMintErrorCode, WalletErrorAction} from './cashuwallet.enums.js';
 
@@ -25,6 +28,9 @@ const ACTION_BY_CODE: Partial<Record<number, WalletErrorAction>> = {
 	[CashuMintErrorCode.KEYSET_EXPIRED]: WalletErrorAction.REBUILD,
 };
 
+/** Operator-facing wallet error, resolved to EcashWalletError with its details */
+export const walletError = (details: string) => ({code: OrchardErrorCode.EcashWalletError, details});
+
 /** Thrown by the guarded mint transport when a mint URL resolves to a private or local address */
 export class MintAddressError extends Error {
 	name = 'MintAddressError';
@@ -39,7 +45,14 @@ export const classifyMintError = (error: unknown): WalletErrorAction => {
 	return WalletErrorAction.WAIT;
 };
 
-/** Operator-readable description of a mint call failure, naming the NUT error code when the mint sent one */
+/** NUT-20 quote locking keypair (hex) for a counter, derived from the wallet seed */
+export const deriveQuoteKey = (seed: Uint8Array, counter: number): {privkey: string; pubkey: string} => {
+	const node = HDKey.fromMasterSeed(seed).derive(`m/129373'/20'/0'/0'/${counter}`);
+	if (!node.privateKey || !node.publicKey) throw new Error(`No quote key at counter ${counter}`);
+	return {privkey: Buffer.from(node.privateKey).toString('hex'), pubkey: Buffer.from(node.publicKey).toString('hex')};
+};
+
+/** Operator-readable description of a failed mint or mint RPC call, naming the NUT error code when the mint sent one */
 export const describeMintError = (error: unknown): string => {
 	const mint_error = error instanceof StaleKeysetError && isMintOperationError(error.cause) ? error.cause : error;
 	if (isMintOperationError(mint_error)) {
@@ -47,5 +60,7 @@ export const describeMintError = (error: unknown): string => {
 		return `Mint error ${mint_error.code}: ${mint_error.message}${auth}`;
 	}
 	if (error instanceof HttpResponseError) return `${error.message} (HTTP ${error.status})`;
-	return error instanceof Error ? error.message : String(error);
+	if (error instanceof Error) return error.message;
+	const orchard_error = (typeof error === 'number' ? {code: error} : error) as {code?: number; details?: string} | null;
+	return orchard_error?.details ?? OrchardErrorMessages[orchard_error?.code ?? ''] ?? String(error);
 };

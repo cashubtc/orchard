@@ -68,6 +68,8 @@ enabled = true
 allow_insecure = true
 address = "0.0.0.0"
 port = 8086
+# Lets Orchard force mint quotes paid (ecash issuance, "Set as Paid").
+allow_mint_quote_payment_override = true
 
 # Prometheus exporter scraped by Orchard's collect-mint-metrics cron
 # (orchard boots with MINT_METRICS_API=http://cdk-mintd:9090, set in this

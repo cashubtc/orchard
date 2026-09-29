@@ -19,7 +19,7 @@ describe('CashuWalletService', () => {
 	const test_crypto_key = 'ab'.repeat(32);
 	const test_mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 
-	const mock_seed_repository = {findOne: jest.fn(), insert: jest.fn()};
+	const mock_seed_repository = {findOne: jest.fn(), findOneByOrFail: jest.fn(), insert: jest.fn(), update: jest.fn()};
 	const mock_query_builder: any = {
 		select: jest.fn().mockReturnThis(),
 		addSelect: jest.fn().mockReturnThis(),
@@ -92,6 +92,31 @@ describe('CashuWalletService', () => {
 			mock_config_service.get.mockImplementation((key: string) => (key === 'server.crypto_key' ? test_crypto_key : undefined));
 			mock_seed_repository.findOne.mockResolvedValue(null);
 			await expect(service.getSeed('user-1')).resolves.toBeInstanceOf(Uint8Array);
+		});
+	});
+
+	describe('getMnemonic', () => {
+		it('reveals the stored mnemonic', async () => {
+			const encrypted = encryptValue(test_mnemonic, deriveEncryptionKeyFromHex(test_crypto_key));
+			const stored = {user_id: 'user-1', mnemonic: encrypted, created_at: 0, backed_up_at: null};
+			mock_seed_repository.findOne.mockResolvedValue(stored);
+			mock_seed_repository.findOneByOrFail.mockResolvedValue(stored);
+			await expect(service.getMnemonic('user-1')).resolves.toBe(test_mnemonic);
+		});
+	});
+
+	describe('markBackedUp', () => {
+		it('stamps the backup time on the seed', async () => {
+			mock_seed_repository.update.mockResolvedValue({affected: 1});
+			mock_seed_repository.findOne.mockResolvedValue({created_at: 0, backed_up_at: 1});
+			await expect(service.markBackedUp('user-1')).resolves.toEqual({created_at: 0, backed_up_at: 1});
+			expect(mock_seed_repository.update).toHaveBeenCalledWith({user_id: 'user-1'}, {backed_up_at: expect.any(Number)});
+		});
+
+		it('refuses before a seed exists instead of creating an unseen one', async () => {
+			mock_seed_repository.update.mockResolvedValue({affected: 0});
+			await expect(service.markBackedUp('user-1')).rejects.toMatchObject({details: expect.stringContaining('no seed yet')});
+			expect(mock_seed_repository.insert).not.toHaveBeenCalled();
 		});
 	});
 

@@ -16,4 +16,8 @@ export class CashuWalletSeed {
 	// Creation timestamp (unix)
 	@Column({type: 'integer'})
 	created_at: number;
+
+	// When the user confirmed writing down the mnemonic (unix)
+	@Column({type: 'integer', nullable: true})
+	backed_up_at: number | null;
 }

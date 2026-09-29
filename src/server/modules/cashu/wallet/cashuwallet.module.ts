@@ -3,6 +3,7 @@ import {Module} from '@nestjs/common';
 import {TypeOrmModule} from '@nestjs/typeorm';
 /* Application Dependencies */
 import {FetchModule} from '#server/modules/fetch/fetch.module';
+import {CashuMintRpcModule} from '#server/modules/cashu/mintrpc/cashumintrpc.module';
 /* Local Dependencies */
 import {CashuWalletSeed} from './cashuwalletseed.entity.js';
 import {CashuWalletCounter} from './cashuwalletcounter.entity.js';
@@ -17,6 +18,7 @@ import {CashuWalletOperationService} from './cashuwalletoperation.service.js';
 	imports: [
 		TypeOrmModule.forFeature([CashuWalletSeed, CashuWalletCounter, CashuWalletProof, CashuWalletOperation, CashuWalletMint]),
 		FetchModule,
+		CashuMintRpcModule,
 	],
 	providers: [CashuWalletService, CashuWalletMintService, CashuWalletOperationService],
 	exports: [CashuWalletService, CashuWalletMintService, CashuWalletOperationService],
