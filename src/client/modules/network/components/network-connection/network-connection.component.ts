@@ -25,9 +25,9 @@ export class NetworkConnectionComponent {
 	public readonly ecc_index = signal<number>(this.ecc_max);
 
 	public readonly qr_image = computed(() => (this.show_image() ? this.data.image : null));
-	/** Lowest slider step; a logo needs enough redundancy to rebuild the modules it covers */
-	public readonly ecc_min = computed(() => (this.show_image() ? QR_ECC_LEVELS.indexOf(QR_ECC_LOGO_FLOOR) : 0));
-	public readonly ecc = computed((): ErrorCorrection => QR_ECC_LEVELS[Math.max(this.ecc_index(), this.ecc_min())]);
+	public readonly ecc = computed((): ErrorCorrection => QR_ECC_LEVELS[this.ecc_index()]);
+
+	private readonly logo_floor_index = QR_ECC_LEVELS.indexOf(QR_ECC_LOGO_FLOOR);
 
 	public size = computed(() => {
 		return this.data.device_type === 'mobile' ? 295 : 395;
@@ -47,6 +47,26 @@ export class NetworkConnectionComponent {
 	});
 
 	private readonly qr = viewChild(GraphicQrComponent);
+
+	/* *******************************************************
+		QR Options
+	******************************************************** */
+
+	/** Sets the error correction level; levels too sparse to rebuild a logo turn the logo off */
+	public onEccChange(index: number): void {
+		this.ecc_index.set(index);
+		if (index < this.logo_floor_index) this.show_image.set(false);
+	}
+
+	/** Toggles the logo; showing it raises error correction to the logo floor */
+	public onImageChange(checked: boolean): void {
+		this.show_image.set(checked);
+		if (checked && this.ecc_index() < this.logo_floor_index) this.ecc_index.set(this.logo_floor_index);
+	}
+
+	/* *******************************************************
+		Export
+	******************************************************** */
 
 	/** Saves the QR as a PNG named after the connection */
 	public download(): void {

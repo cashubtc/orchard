@@ -1,0 +1,15 @@
+.mat-mdc-dialog-title::before {
+	height: 0;
+}
+
+orc-graphic-qr {
+	margin-inline: auto;
+	// Reserve room for the quality controls in Material's 65vh content area.
+	max-width: min(100%, max(195px, calc(65dvh - 112px)));
+}
+
+mat-slider {
+	display: block;
+	width: calc(100% - 16px);
+	margin-inline: 8px;
+}

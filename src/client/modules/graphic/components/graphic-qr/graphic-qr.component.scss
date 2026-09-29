@@ -29,3 +29,37 @@ svg {
 	position: absolute;
 	object-fit: cover;
 }
+
+.graphic-qr-expand {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	border: 0;
+	border-radius: inherit;
+	background: transparent;
+	cursor: zoom-in;
+	transition: background-color 120ms;
+
+	mat-icon {
+		position: absolute;
+		right: 4px;
+		bottom: 4px;
+		border-radius: 50%;
+		background: var(--mat-sys-surface);
+		color: var(--mat-sys-on-surface);
+		opacity: 0;
+	}
+
+	&:hover,
+	&:focus-visible {
+		background: light-dark(#00000014, #ffffff14);
+		outline: 2px solid var(--mat-sys-primary);
+		outline-offset: -2px;
+
+		mat-icon {
+			opacity: 1;
+		}
+	}
+}

@@ -37,11 +37,17 @@ describe('NetworkConnectionComponent', () => {
 		expect(component).toBeTruthy();
 	});
 
-	it('holds error correction at the logo floor while the logo is shown', () => {
-		component.ecc_index.set(0);
-		expect(component.ecc()).toBe('quartile');
-		component.show_image.set(false);
+	it('turns the logo off when error correction drops below the logo floor', () => {
+		component.onEccChange(0);
 		expect(component.ecc()).toBe('low');
+		expect(component.show_image()).toBeFalse();
+	});
+
+	it('raises error correction to the logo floor when the logo is turned back on', () => {
+		component.onEccChange(1);
+		component.onImageChange(true);
+		expect(component.ecc()).toBe('quartile');
+		expect(component.show_image()).toBeTrue();
 	});
 
 	for (const dialog_width of [288, 443]) {

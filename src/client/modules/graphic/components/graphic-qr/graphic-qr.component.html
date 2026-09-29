@@ -14,4 +14,15 @@
 			[style.height.%]="logo_box.size"
 		/>
 	}
+	@if (expandable()) {
+		<button
+			type="button"
+			class="graphic-qr-expand"
+			[attr.aria-label]="'Expand ' + dialog_title()"
+			aria-haspopup="dialog"
+			(click)="onExpand($event)"
+		>
+			<mat-icon aria-hidden="true">zoom_in</mat-icon>
+		</button>
+	}
 }

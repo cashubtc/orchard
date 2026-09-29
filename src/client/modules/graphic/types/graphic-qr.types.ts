@@ -1,3 +1,6 @@
+/* Vendor Dependencies */
+import type {ErrorCorrection} from 'qr';
+
 /** Borderless square module matrix, indexed [row][col] (true = dark) */
 export type QrMatrix = boolean[][];
 
@@ -14,4 +17,11 @@ export type QrGeometry = {
 	modules_path: string;
 	eyes_path: string;
 	logo: QrLogo | null;
+};
+/** Content and initial quality for an expanded QR dialog. */
+export type QrDialogData = {
+	title: string;
+	data: string;
+	image: string | null;
+	ecc: ErrorCorrection | null;
 };

@@ -1,7 +1,11 @@
 <div class="mint-quote-container p-v-1">
 	<div class="flex flex-gap-2 flex-wrap">
 		<div class="flex-grow flex flex-items-center flex-justify-center">
-			<orc-graphic-qr [data]="quote().request"></orc-graphic-qr>
+			<orc-graphic-qr
+				[data]="quote().request"
+				[expandable]="true"
+				[dialog_title]="quote().payment_method === 'bolt11' ? 'Lightning invoice' : request_label()"
+			></orc-graphic-qr>
 		</div>
 		<div class="flex flex-gap-2 flex-wrap-reverse">
 			<div class="flex flex-column flex-gap-1">

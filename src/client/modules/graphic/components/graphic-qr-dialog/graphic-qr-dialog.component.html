@@ -1,0 +1,18 @@
+<div mat-dialog-title>
+	<div class="title-l">{{ data.title }}</div>
+</div>
+
+<mat-dialog-content>
+	<orc-graphic-qr [data]="data.data" [image]="data.image" [ecc]="ecc()" [size]="512"></orc-graphic-qr>
+	<div class="p-t-1">
+		<mat-slider [min]="ecc_min" [max]="ecc_max" step="1" showTickMarks>
+			<input matSliderThumb aria-label="Error correction" [value]="ecc_index()" (valueChange)="ecc_index.set($event)" />
+		</mat-slider>
+		<div class="font-size-xs orc-outline-color">Error correction: {{ ecc() | titlecase }}</div>
+	</div>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+	<button mat-stroked-button mat-dialog-close (click)="download()">Download</button>
+	<button mat-button mat-dialog-close>Cancel</button>
+</mat-dialog-actions>

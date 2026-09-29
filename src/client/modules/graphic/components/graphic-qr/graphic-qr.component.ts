@@ -2,11 +2,13 @@
 import {ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, viewChild} from '@angular/core';
 
 /* Vendor Dependencies */
+import {MatDialog} from '@angular/material/dialog';
 import type {ErrorCorrection} from 'qr';
 
 /* Native Dependencies */
 import {buildQrGeometry, encodeQrMatrix, resolveQrEcc} from '@client/modules/graphic/helpers/graphic-qr.helpers';
-import {QrGeometry, QrLogo} from '@client/modules/graphic/types/graphic-qr.types';
+import {QrDialogData, QrGeometry, QrLogo} from '@client/modules/graphic/types/graphic-qr.types';
+import {GraphicQrDialogComponent} from '@client/modules/graphic/components/graphic-qr-dialog/graphic-qr-dialog.component';
 
 /** Edge length of the downloaded PNG, in pixels */
 const DOWNLOAD_SIZE = 1024;
@@ -23,12 +25,15 @@ const DOWNLOAD_SIZE = 1024;
 })
 export class GraphicQrComponent {
 	private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+	private readonly dialog = inject(MatDialog);
 
 	public readonly data = input.required<string>();
 	public readonly size = input<number>(195);
 	public readonly image = input<string | null>(null);
 	/** Error correction level; null picks a default for the logo state. Raised to the logo floor when a logo is shown. */
 	public readonly ecc = input<ErrorCorrection | null>(null);
+	public readonly expandable = input<boolean>(false);
+	public readonly dialog_title = input<string>('QR code');
 
 	public readonly geometry = computed((): QrGeometry | null => {
 		const with_logo = !!this.image();
@@ -50,6 +55,23 @@ export class GraphicQrComponent {
 
 	private readonly modules_path = viewChild<ElementRef<SVGPathElement>>('modules_path');
 	private readonly eyes_path = viewChild<ElementRef<SVGPathElement>>('eyes_path');
+
+	/* *******************************************************
+		Expand
+	******************************************************** */
+
+	/** Opens a larger QR without toggling the surrounding table row. */
+	public onExpand(event: Event): void {
+		event.stopPropagation();
+		if (!this.expandable() || !this.geometry()) return;
+		this.dialog.open<GraphicQrDialogComponent, QrDialogData>(GraphicQrDialogComponent, {
+			width: '560px',
+			maxWidth: 'calc(100vw - 32px)',
+			maxHeight: 'calc(100dvh - 32px)',
+			autoFocus: 'dialog',
+			data: {title: this.dialog_title(), data: this.data(), image: this.image(), ecc: this.ecc()},
+		});
+	}
 
 	/* *******************************************************
 		Export

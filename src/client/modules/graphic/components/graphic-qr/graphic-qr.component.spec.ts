@@ -1,5 +1,7 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
+/* Vendor Dependencies */
+import {MatDialog} from '@angular/material/dialog';
 /* Native Dependencies */
 import {OrcGraphicModule} from '@client/modules/graphic/graphic.module';
 /* Local Dependencies */
@@ -41,5 +43,35 @@ describe('GraphicQrComponent', () => {
 		fixture.componentRef.setInput('data', '');
 		fixture.detectChanges();
 		expect(fixture.nativeElement.querySelector('svg')).toBeNull();
+	});
+
+	it('does not offer expansion unless enabled', () => {
+		expect(fixture.nativeElement.querySelector('button')).toBeNull();
+	});
+
+	it('opens an expanded QR without bubbling the click to its row', async () => {
+		fixture.componentRef.setInput('expandable', true);
+		fixture.componentRef.setInput('dialog_title', 'Orchard invite link');
+		fixture.detectChanges();
+		const element: HTMLElement = fixture.nativeElement;
+		const row_click = jasmine.createSpy('row click');
+		element.addEventListener('click', row_click);
+		const button = element.querySelector<HTMLButtonElement>('button')!;
+		expect(button.getAttribute('aria-label')).toBe('Expand Orchard invite link');
+		expect(button.getAttribute('aria-haspopup')).toBe('dialog');
+		button.click();
+		fixture.detectChanges();
+		await fixture.whenStable();
+
+		const dialog = TestBed.inject(MatDialog);
+		try {
+			expect(row_click).not.toHaveBeenCalled();
+			expect(dialog.openDialogs.length).toBe(1);
+			expect(document.querySelector('orc-graphic-qr-dialog [mat-dialog-title]')?.textContent).toContain('Orchard invite link');
+			expect(document.querySelector('orc-graphic-qr-dialog .graphic-qr-expand')).toBeNull();
+		} finally {
+			dialog.closeAll();
+			await fixture.whenStable();
+		}
 	});
 });
