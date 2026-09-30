@@ -1,6 +1,6 @@
 /* Core Dependencies */
 import {Logger} from '@nestjs/common';
-import {Resolver, Query, Mutation, Args, Context, Int, ID} from '@nestjs/graphql';
+import {Resolver, Query, Mutation, Args, Context, Float, Int, ID} from '@nestjs/graphql';
 /* Application Dependencies */
 import {Roles} from '#server/modules/auth/decorators/auth.decorator';
 import {UserRole} from '#server/modules/user/user.enums';
@@ -79,7 +79,7 @@ export class EcashOperationResolver {
 	async ecash_issue(
 		@Context() context: any,
 		@Args('unit', {description: 'Unit to issue'}) unit: string,
-		@Args('amount', {type: () => Int, description: 'Amount in the smallest unit'}) amount: number,
+		@Args('amount', {type: () => Float, description: 'Amount in the smallest unit'}) amount: number,
 		@Args('memo', {type: () => String, nullable: true, description: 'Note shown in wallet history'}) memo: string | null,
 	): Promise<OrchardEcashOperation> {
 		const tag = 'MUTATION { ecash_issue }';

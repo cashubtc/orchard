@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Field, ID, Int, ObjectType} from '@nestjs/graphql';
+import {Field, Float, ID, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 import {WalletOperationType, WalletOperationState} from '#server/modules/cashu/wallet/cashuwallet.enums';
@@ -25,7 +25,7 @@ export class OrchardEcashOperation {
 	@Field({description: 'Unit of the amount'})
 	unit: string;
 
-	@Field(() => Int, {description: 'Amount in the smallest unit'})
+	@Field(() => Float, {description: 'Amount in the smallest unit'})
 	amount: number;
 
 	@Field(() => String, {nullable: true, description: 'Operator note'})
