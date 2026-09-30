@@ -1,7 +1,7 @@
 import type {MigrationInterface, QueryRunner} from 'typeorm';
 
-export class AddCashuWalletTables1790785242865 implements MigrationInterface {
-	name = 'AddCashuWalletTables1790785242865';
+export class AddCashuWalletTables1790789419169 implements MigrationInterface {
+	name = 'AddCashuWalletTables1790789419169';
 
 	public async up(queryRunner: QueryRunner): Promise<void> {
 		await queryRunner.query(
@@ -23,15 +23,23 @@ export class AddCashuWalletTables1790785242865 implements MigrationInterface {
 		await queryRunner.query(`CREATE INDEX "IDX_69ed44119dbc3ba953fa0c742e" ON "cashu_wallet_operations" ("user_id", "created_at") `);
 		await queryRunner.query(`CREATE INDEX "IDX_e4f44e142d1ffd25d61b857637" ON "cashu_wallet_operations" ("state") `);
 		await queryRunner.query(
-			`CREATE TABLE "cashu_wallet_mints" ("id" varchar PRIMARY KEY NOT NULL, "user_id" text NOT NULL, "pubkey" text, "urls" text NOT NULL, "name" text, "info" text, "info_updated_at" integer, "created_at" integer NOT NULL)`,
+			`CREATE TABLE "cashu_wallet_mints" ("id" varchar PRIMARY KEY NOT NULL, "user_id" text NOT NULL, "pubkey" text, "urls" text NOT NULL, "created_at" integer NOT NULL)`,
 		);
 		await queryRunner.query(`CREATE INDEX "IDX_87ad8a4e79b760339c406cc310" ON "cashu_wallet_mints" ("user_id") `);
 		await queryRunner.query(
 			`CREATE UNIQUE INDEX "IDX_45c61727a5e1f615ef22bd8ccc" ON "cashu_wallet_mints" ("user_id", "pubkey") WHERE pubkey IS NOT NULL`,
 		);
+		await queryRunner.query(
+			`CREATE TABLE "cashu_wallet_mint_infos" ("mint_url" text PRIMARY KEY NOT NULL, "pubkey" text, "name" text, "info" text NOT NULL, "info_updated_at" integer NOT NULL, "keysets_updated_at" integer)`,
+		);
+		await queryRunner.query(
+			`CREATE TABLE "cashu_wallet_mint_keysets" ("mint_url" text NOT NULL, "id" text NOT NULL, "unit" text NOT NULL, "active" boolean NOT NULL, "input_fee_ppk" integer NOT NULL DEFAULT (0), "final_expiry" integer, "keys" text, "updated_at" integer NOT NULL, PRIMARY KEY ("mint_url", "id"))`,
+		);
 	}
 
 	public async down(queryRunner: QueryRunner): Promise<void> {
+		await queryRunner.query(`DROP TABLE "cashu_wallet_mint_keysets"`);
+		await queryRunner.query(`DROP TABLE "cashu_wallet_mint_infos"`);
 		await queryRunner.query(`DROP INDEX "IDX_45c61727a5e1f615ef22bd8ccc"`);
 		await queryRunner.query(`DROP INDEX "IDX_87ad8a4e79b760339c406cc310"`);
 		await queryRunner.query(`DROP TABLE "cashu_wallet_mints"`);

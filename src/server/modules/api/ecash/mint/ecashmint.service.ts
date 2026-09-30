@@ -6,7 +6,7 @@ import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {ErrorService} from '#server/modules/error/error.service';
 /* Local Dependencies */
-import {OrchardEcashMint} from './ecashmint.model.js';
+import {OrchardEcashMint, OrchardEcashMintStatus} from './ecashmint.model.js';
 
 @Injectable()
 export class EcashMintService {
@@ -22,6 +22,19 @@ export class EcashMintService {
 		try {
 			const mints = await this.cashuWalletMintService.listMints(user_id);
 			return mints.map((mint) => new OrchardEcashMint(mint));
+		} catch (error) {
+			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
+				errord: OrchardErrorCode.EcashWalletError,
+			});
+			throw new OrchardApiError(orchard_error);
+		}
+	}
+
+	/** Check whether each mint in a user's wallet is reachable */
+	async getEcashMintStatus(tag: string, user_id: string): Promise<OrchardEcashMintStatus[]> {
+		try {
+			const statuses = await this.cashuWalletMintService.checkMints(user_id);
+			return statuses.map((status) => new OrchardEcashMintStatus(status));
 		} catch (error) {
 			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
 				errord: OrchardErrorCode.EcashWalletError,

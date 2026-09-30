@@ -17,6 +17,9 @@ import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
 import {CashuWalletProof} from './cashuwalletproof.entity.js';
 import {CashuWalletCounter} from './cashuwalletcounter.entity.js';
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
+import {CashuWalletMintInfo} from './cashuwalletmintinfo.entity.js';
+import {CashuWalletMintKeyset} from './cashuwalletmintkeyset.entity.js';
+import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
 import {WalletOperationState, WalletOperationType, WalletProofState} from './cashuwallet.enums.js';
 import {walletError} from './cashuwallet.helpers.js';
 import type {CashuWalletOperationFilters} from './cashuwallet.types.js';
@@ -126,31 +129,22 @@ describe('CashuWalletOperationService', () => {
 		data_source.getRepository(CashuWalletCounter).findOneByOrFail({user_id: 'user-1', counter_key: mint.keyset.keysetId});
 	const reload = (id: string) => data_source.getRepository(CashuWalletOperation).findOneByOrFail({id});
 
-	beforeEach(async () => {
-		jest.clearAllMocks();
-		mint = createFakeMint();
-		offline = false;
-		data_source = new DataSource({
-			type: 'better-sqlite3',
-			database: ':memory:',
-			entities: [CashuWalletOperation, CashuWalletProof, CashuWalletCounter, CashuWalletMint],
-			synchronize: true,
-		});
-		await data_source.initialize();
-		mint_row = await data_source.getRepository(CashuWalletMint).save({
-			user_id: 'user-1',
-			pubkey: '02orchard',
-			urls: ['https://mint.orchard.example'],
-			name: 'Orchard Test Mint',
-			info: null,
-			info_updated_at: null,
-			created_at: 0,
-		});
+	const entities = [
+		CashuWalletOperation,
+		CashuWalletProof,
+		CashuWalletCounter,
+		CashuWalletMint,
+		CashuWalletMintInfo,
+		CashuWalletMintKeyset,
+	];
 
+	/** A fresh service graph over the shared database, like Orchard after a restart */
+	const createService = async (): Promise<CashuWalletOperationService> => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				CashuWalletOperationService,
 				CashuWalletMintService,
+				CashuWalletMintCacheService,
 				{provide: CashuWalletService, useValue: {getSeed: jest.fn(async () => seed)}},
 				{
 					provide: ConfigService,
@@ -158,14 +152,25 @@ describe('CashuWalletOperationService', () => {
 				},
 				{provide: FetchService, useValue: fetch_service},
 				{provide: CashuMintRpcService, useValue: mint_rpc},
-				...[CashuWalletOperation, CashuWalletProof, CashuWalletCounter, CashuWalletMint].map((entity) => ({
-					provide: getRepositoryToken(entity),
-					useValue: data_source.getRepository(entity),
-				})),
+				...entities.map((entity) => ({provide: getRepositoryToken(entity), useValue: data_source.getRepository(entity)})),
 			],
 		}).compile();
+		return module.get<CashuWalletOperationService>(CashuWalletOperationService);
+	};
 
-		service = module.get<CashuWalletOperationService>(CashuWalletOperationService);
+	beforeEach(async () => {
+		jest.clearAllMocks();
+		mint = createFakeMint();
+		offline = false;
+		data_source = new DataSource({type: 'better-sqlite3', database: ':memory:', entities, synchronize: true});
+		await data_source.initialize();
+		mint_row = await data_source.getRepository(CashuWalletMint).save({
+			user_id: 'user-1',
+			pubkey: '02orchard',
+			urls: ['https://mint.orchard.example'],
+			created_at: 0,
+		});
+		service = await createService();
 	});
 
 	afterEach(async () => {
@@ -190,6 +195,39 @@ describe('CashuWalletOperationService', () => {
 		expect(stored.map((proof) => proof.amount).sort((a, b) => a - b)).toEqual([4, 32, 64]);
 		expect(stored.every((proof) => proof.state === WalletProofState.READY && proof.created_by_op_id === operation.id)).toBe(true);
 		expect(fetch_service.fetchWithProxy.mock.calls.filter(([url]) => url.endsWith('/v1/keysets'))).toHaveLength(1);
+	});
+
+	it('loads from the mint when the cached keyset has no keys, and caches what it loaded', async () => {
+		const now = Math.floor(Date.now() / 1000);
+		await data_source
+			.getRepository(CashuWalletMintInfo)
+			.save({mint_url: 'http://localhost:3338', info: '{"name":"x","nuts":{}}', info_updated_at: now, keysets_updated_at: now});
+		await data_source
+			.getRepository(CashuWalletMintKeyset)
+			.save({mint_url: 'http://localhost:3338', id: mint.keyset.keysetId, unit: 'sat', active: true, keys: null, updated_at: now});
+
+		const operation = await service.createMintOperation(request());
+		expect((await service.executeMintOperation(operation.id)).state).toBe(WalletOperationState.FINALIZED);
+		expect(await data_source.getRepository(CashuWalletMintKeyset).findOneByOrFail({id: mint.keyset.keysetId})).toMatchObject({
+			keys: expect.any(String),
+		});
+	});
+
+	it('builds the wallet from the shared cache after a restart, without fetching keysets or keys again', async () => {
+		const first = await service.createMintOperation(request('quote-1'));
+		await service.executeMintOperation(first.id);
+		const keyset_calls = () => fetch_service.fetchWithProxy.mock.calls.filter(([url]) => /\/v1\/keys(ets)?(\/|$)/.test(url)).length;
+		const before = keyset_calls();
+
+		const restarted = await createService();
+		const second = await restarted.createMintOperation(request('quote-2'));
+		expect((await restarted.executeMintOperation(second.id)).state).toBe(WalletOperationState.FINALIZED);
+		expect(keyset_calls()).toBe(before);
+		expect(await data_source.getRepository(CashuWalletMintKeyset).findOneByOrFail({id: mint.keyset.keysetId})).toMatchObject({
+			mint_url: 'http://localhost:3338',
+			active: true,
+			keys: expect.any(String),
+		});
 	});
 
 	it('restores through NUT-09 when a replay finds its outputs already signed', async () => {

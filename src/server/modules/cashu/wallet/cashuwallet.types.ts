@@ -1,5 +1,5 @@
 /* Vendor Dependencies */
-import type {MintInfo, MintQuoteBaseResponse, MintQuoteState} from '@cashu/cashu-ts';
+import type {MintQuoteBaseResponse, MintQuoteState} from '@cashu/cashu-ts';
 /* Local Dependencies */
 import type {CashuWalletMint} from './cashuwalletmint.entity.js';
 import type {CashuWalletSeed} from './cashuwalletseed.entity.js';
@@ -48,13 +48,25 @@ export type CashuWalletIssueRequest = {
 	memo: string | null;
 };
 
+export type CashuWalletMintProbe = {
+	online: boolean;
+	latency_ms: number | null;
+	error: string | null;
+	checked_at: number;
+};
+
+export type CashuWalletMintStatus = CashuWalletMintProbe & {
+	mint_id: string;
+};
+
 export type CashuWalletMintRecord = CashuWalletMint & {
 	is_orchard: boolean;
+	name: string | null;
+	info: string | null;
 };
 
 export type OrchardMintIdentity = {
 	pubkey: string | null;
 	urls: string[];
 	api_url: string;
-	info: MintInfo;
 };

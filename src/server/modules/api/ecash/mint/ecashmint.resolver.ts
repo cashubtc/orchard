@@ -3,7 +3,7 @@ import {Logger} from '@nestjs/common';
 import {Resolver, Query, Mutation, Args, Context, ID} from '@nestjs/graphql';
 /* Local Dependencies */
 import {EcashMintService} from './ecashmint.service.js';
-import {OrchardEcashMint} from './ecashmint.model.js';
+import {OrchardEcashMint, OrchardEcashMintStatus} from './ecashmint.model.js';
 
 @Resolver()
 export class EcashMintResolver {
@@ -16,6 +16,13 @@ export class EcashMintResolver {
 		const tag = 'GET { ecash_mints }';
 		this.logger.debug(tag);
 		return await this.ecashMintService.getEcashMints(tag, context.req.user.id);
+	}
+
+	@Query(() => [OrchardEcashMintStatus], {description: "Check whether each mint in the current user's ecash wallet is reachable"})
+	async ecash_mint_status(@Context() context: any): Promise<OrchardEcashMintStatus[]> {
+		const tag = 'GET { ecash_mint_status }';
+		this.logger.debug(tag);
+		return await this.ecashMintService.getEcashMintStatus(tag, context.req.user.id);
 	}
 
 	@Mutation(() => OrchardEcashMint, {description: "Add a mint to the current user's ecash wallet"})

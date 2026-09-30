@@ -277,7 +277,9 @@ export class CashuWalletOperationService implements OnApplicationBootstrap {
 		const restored = await wallet.mint.restore({outputs: outputs.map((output) => output.blindedMessage)});
 		if (restored.signatures.length === 0) return [];
 		const signatures = new Map(restored.outputs.map((output, index) => [output.B_, restored.signatures[index]]));
-		await wallet.ensureOperableKeysets(restored.signatures.map((signature) => signature.id));
+		await wallet
+			.ensureOperableKeysets(restored.signatures.map((signature) => signature.id))
+			.finally(() => this.cashuWalletMintService.saveKeychain(wallet.keyChain.cache));
 		const proofs = outputs.flatMap((output) => {
 			const signature = signatures.get(output.blindedMessage.B_);
 			if (!signature || !Amount.from(signature.amount).equals(output.blindedMessage.amount)) return [];
@@ -289,7 +291,9 @@ export class CashuWalletOperationService implements OnApplicationBootstrap {
 
 	/** The mint signed nothing on a stale keyset: rebuild outputs on fresh counters and try once more */
 	private async rebuild(operation: CashuWalletOperation, wallet: Wallet, error: unknown): Promise<CashuWalletOperation> {
-		if (!(error instanceof StaleKeysetError && error.repaired)) await wallet.loadMint(true);
+		if (!(error instanceof StaleKeysetError && error.repaired)) {
+			await wallet.loadMint(true).finally(() => this.cashuWalletMintService.saveKeychain(wallet.keyChain.cache));
+		}
 		const outputs = await this.createOutputs(operation.user_id, wallet, operation.amount);
 		const rebuilt = await this.transition(operation, WalletOperationState.EXECUTING, {outputs: this.serializeOutputs(outputs)});
 		return this.attemptMint(rebuilt, wallet, false);

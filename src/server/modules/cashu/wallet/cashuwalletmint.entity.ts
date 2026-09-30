@@ -22,18 +22,6 @@ export class CashuWalletMint {
 	@Column({type: 'simple-json'})
 	urls: string[];
 
-	// Mint name from /v1/info, null until first lookup succeeds
-	@Column({type: 'text', nullable: true})
-	name: string | null;
-
-	// Cached /v1/info response (JSON)
-	@Column({type: 'text', nullable: true})
-	info: string | null;
-
-	// Last successful /v1/info lookup (unix)
-	@Column({type: 'integer', nullable: true})
-	info_updated_at: number | null;
-
 	// Creation timestamp (unix)
 	@Column({type: 'integer'})
 	created_at: number;

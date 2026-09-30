@@ -7,6 +7,7 @@ import {ConfigService} from '@nestjs/config';
 import {FetchService} from '#server/modules/fetch/fetch.service';
 /* Local Dependencies */
 import {CashuWalletMintService} from './cashuwalletmint.service.js';
+import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
 import {CashuWalletProof} from './cashuwalletproof.entity.js';
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
@@ -15,7 +16,7 @@ describe('CashuWalletMintService', () => {
 	let service: CashuWalletMintService;
 	let rows: CashuWalletMint[];
 	let config: Record<string, string | undefined>;
-	let routes: Record<string, () => Promise<any>>;
+	let routes: Record<string, (options?: any) => Promise<any>>;
 
 	const ORCHARD_API = 'http://localhost:3338';
 	const nuts = {4: {methods: [{method: 'bolt11', unit: 'sat'}], disabled: false}, 5: {methods: [], disabled: false}};
@@ -35,7 +36,7 @@ describe('CashuWalletMintService', () => {
 		text: async () => (typeof body === 'string' ? body : JSON.stringify(body)),
 		headers: {get: (name: string) => headers[name] ?? null},
 	});
-	const route = (url: string, respond: () => Promise<any>) => (routes[`${url}/v1/info`] = respond);
+	const route = (url: string, respond: (options?: any) => Promise<any>) => (routes[`${url}/v1/info`] = respond);
 	const lookedUp = () => fetch_service.fetchWithProxy.mock.calls.map(([url]) => url).filter((url) => !url.startsWith(ORCHARD_API));
 
 	const mint_repository = {
@@ -53,11 +54,19 @@ describe('CashuWalletMintService', () => {
 			rows = rows.filter((row) => row.id !== id);
 		}),
 	};
+	const cached_infos = new Map<string, {name: string | null; info: string}>();
+	const cache_service = {
+		getInfos: jest.fn(
+			async (urls: string[]) => new Map(urls.filter((url) => cached_infos.has(url)).map((url) => [url, cached_infos.get(url)])),
+		),
+		saveInfo: jest.fn(async (url: string, info: {name?: string}) => void cached_infos.set(url, {name: info.name || null, info: '{}'})),
+		refreshKeysets: jest.fn().mockResolvedValue(undefined),
+	};
 	const proof_repository = {count: jest.fn()};
 	const operation_repository = {count: jest.fn()};
 	const fetch_service = {
-		fetchWithProxy: jest.fn((url: string, _options?: any) =>
-			routes[url] ? routes[url]() : Promise.reject(new Error(`no route for ${url}`)),
+		fetchWithProxy: jest.fn((url: string, options?: any) =>
+			routes[url] ? routes[url](options) : Promise.reject(new Error(`no route for ${url}`)),
 		),
 	};
 
@@ -65,6 +74,7 @@ describe('CashuWalletMintService', () => {
 		jest.clearAllMocks();
 		rows = [];
 		routes = {};
+		cached_infos.clear();
 		route(ORCHARD_API, async () => response(orchard_info));
 		config = {'cashu.api': ORCHARD_API, 'server.proxy': undefined};
 		proof_repository.count.mockResolvedValue(0);
@@ -78,6 +88,7 @@ describe('CashuWalletMintService', () => {
 				{provide: getRepositoryToken(CashuWalletOperation), useValue: operation_repository},
 				{provide: ConfigService, useValue: {get: jest.fn((key: string) => config[key])}},
 				{provide: FetchService, useValue: fetch_service},
+				{provide: CashuWalletMintCacheService, useValue: cache_service},
 			],
 		}).compile();
 
@@ -128,6 +139,13 @@ describe('CashuWalletMintService', () => {
 			expect(mints[0].is_orchard).toBe(true);
 		});
 
+		it('joins the cached info of the URL each mint is reached at', async () => {
+			cache_service.getInfos.mockResolvedValueOnce(new Map([[ORCHARD_API, {name: 'Orchard Test Mint', info: '{"name":"x"}'}]]));
+			const [mint] = await service.listMints('user-1');
+			expect(cache_service.getInfos).toHaveBeenCalledWith([ORCHARD_API]);
+			expect(mint).toMatchObject({name: 'Orchard Test Mint', info: '{"name":"x"}'});
+		});
+
 		it('skips the Orchard mint when none is configured', async () => {
 			config['cashu.api'] = undefined;
 			expect(await service.listMints('user-1')).toEqual([]);
@@ -157,7 +175,7 @@ describe('CashuWalletMintService', () => {
 			const mint = await service.addMint('user-1', 'https://203.0.113.10/');
 			expect(fetch_service.fetchWithProxy).toHaveBeenCalledWith(
 				'https://203.0.113.10/v1/info',
-				expect.objectContaining({method: 'GET', redirect: 'error', timeout: 10000, size: 262144}),
+				expect.objectContaining({method: 'GET', redirect: 'error', signal: expect.any(AbortSignal), size: 262144}),
 			);
 			expect(mint).toMatchObject({name: 'Cedar Mint', pubkey: '02cedar', urls: ['https://203.0.113.10'], is_orchard: false});
 		});
@@ -201,6 +219,62 @@ describe('CashuWalletMintService', () => {
 			await expect(service.addMint('user-1', 'https://203.0.113.10')).rejects.toMatchObject({
 				details: expect.stringContaining(message),
 			});
+		});
+	});
+
+	describe('checkMints', () => {
+		const addRow = (id: string, url: string) => rows.push({id, user_id: 'user-1', pubkey: `02${id}`, urls: [url]} as CashuWalletMint);
+
+		it('reports each mint online or offline with the reason, checking them all', async () => {
+			route('https://203.0.113.10', async () => response(cedar_info));
+			const refused = Object.assign(new Error('request to https://203.0.113.11/v1/info failed, reason: '), {code: 'ECONNREFUSED'});
+			route('https://203.0.113.11', () => Promise.reject(refused));
+			addRow('cedar', 'https://203.0.113.10');
+			addRow('kelp', 'https://203.0.113.11');
+			addRow('lan', 'https://10.0.0.9');
+
+			expect(await service.checkMints('user-1')).toMatchObject([
+				{mint_id: 'cedar', online: true, latency_ms: expect.any(Number), error: null},
+				{mint_id: 'kelp', online: false, latency_ms: null, error: 'https://203.0.113.11/v1/info: ECONNREFUSED'},
+				{mint_id: 'lan', online: false, error: expect.stringContaining('private/reserved')},
+				{online: true},
+			]);
+			expect(lookedUp()).not.toContain('https://10.0.0.9/v1/info');
+		});
+
+		it('shares a status for 60s, saving fresh info and refreshing keysets only when the mint answers', async () => {
+			const now = jest.spyOn(Date, 'now').mockReturnValue(1_000_000);
+			route('https://203.0.113.10', async () => response(cedar_info));
+			route('https://203.0.113.11', () => Promise.reject(new Error('socket hang up')));
+			addRow('cedar', 'https://203.0.113.10');
+			addRow('kelp', 'https://203.0.113.11');
+			const cedarChecks = () => lookedUp().filter((url) => url === 'https://203.0.113.10/v1/info').length;
+
+			await service.checkMints('user-1');
+			await service.checkMints('user-1');
+			expect(cedarChecks()).toBe(1);
+			expect(cache_service.saveInfo).toHaveBeenCalledWith('https://203.0.113.10', expect.objectContaining({name: 'Cedar Mint'}));
+			expect(cache_service.saveInfo).not.toHaveBeenCalledWith('https://203.0.113.11', expect.anything());
+			expect(cache_service.refreshKeysets).toHaveBeenCalledWith(expect.objectContaining({mintUrl: 'https://203.0.113.10'}));
+			expect(cache_service.refreshKeysets).not.toHaveBeenCalledWith(expect.objectContaining({mintUrl: 'https://203.0.113.11'}));
+
+			now.mockReturnValue(1_060_001);
+			await service.checkMints('user-1');
+			expect(cedarChecks()).toBe(2);
+			now.mockRestore();
+		});
+	});
+
+	describe('transport', () => {
+		it('aborts a mint that never answers once the request timeout passes', async () => {
+			const aborted = () => Object.assign(new Error('The operation was aborted.'), {name: 'AbortError'});
+			route(
+				'https://203.0.113.12',
+				({signal}) => new Promise((_, reject) => signal.addEventListener('abort', () => reject(aborted()))),
+			);
+			await expect(service['requestMint']({endpoint: 'https://203.0.113.12/v1/info', requestTimeout: 20})).rejects.toThrow(
+				'https://203.0.113.12/v1/info: timed out after 20ms',
+			);
 		});
 	});
 

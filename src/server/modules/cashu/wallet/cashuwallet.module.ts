@@ -10,17 +10,28 @@ import {CashuWalletCounter} from './cashuwalletcounter.entity.js';
 import {CashuWalletProof} from './cashuwalletproof.entity.js';
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
+import {CashuWalletMintInfo} from './cashuwalletmintinfo.entity.js';
+import {CashuWalletMintKeyset} from './cashuwalletmintkeyset.entity.js';
 import {CashuWalletService} from './cashuwallet.service.js';
 import {CashuWalletMintService} from './cashuwalletmint.service.js';
+import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
 import {CashuWalletOperationService} from './cashuwalletoperation.service.js';
 
 @Module({
 	imports: [
-		TypeOrmModule.forFeature([CashuWalletSeed, CashuWalletCounter, CashuWalletProof, CashuWalletOperation, CashuWalletMint]),
+		TypeOrmModule.forFeature([
+			CashuWalletSeed,
+			CashuWalletCounter,
+			CashuWalletProof,
+			CashuWalletOperation,
+			CashuWalletMint,
+			CashuWalletMintInfo,
+			CashuWalletMintKeyset,
+		]),
 		FetchModule,
 		CashuMintRpcModule,
 	],
-	providers: [CashuWalletService, CashuWalletMintService, CashuWalletOperationService],
+	providers: [CashuWalletService, CashuWalletMintService, CashuWalletMintCacheService, CashuWalletOperationService],
 	exports: [CashuWalletService, CashuWalletMintService, CashuWalletOperationService],
 })
 export class CashuWalletModule {}

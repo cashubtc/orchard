@@ -15,6 +15,7 @@ import {
 	RateLimitError,
 	Wallet,
 	normalizeMintUrl,
+	type KeyChainCache,
 	type RequestFn,
 	type RequestOptions,
 } from '@cashu/cashu-ts';
@@ -23,16 +24,20 @@ import {FetchService} from '#server/modules/fetch/fetch.service';
 import {assertPublicHost} from '#server/modules/fetch/network-guard';
 /* Local Dependencies */
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
+import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
 import {CashuWalletProof} from './cashuwalletproof.entity.js';
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
 import {WalletProofState, WalletOperationState} from './cashuwallet.enums.js';
-import {MintAddressError, walletError} from './cashuwallet.helpers.js';
-import type {CashuWalletMintRecord, OrchardMintIdentity} from './cashuwallet.types.js';
+import {MintAddressError, describeMintError, walletError} from './cashuwallet.helpers.js';
+import type {CashuWalletMintProbe, CashuWalletMintRecord, CashuWalletMintStatus, OrchardMintIdentity} from './cashuwallet.types.js';
 
 const MINT_TIMEOUT_MS = 10_000;
 const MINT_MAX_BYTES = 256 * 1024;
 const ORCHARD_RETRY_MS = 30_000;
 const WALLET_TTL_MS = 5 * 60_000;
+const STATUS_TTL_MS = 60_000;
+
+type Memo<T> = {value: Promise<T>; expires_at: number};
 
 @Injectable()
 export class CashuWalletMintService {
@@ -41,7 +46,8 @@ export class CashuWalletMintService {
 	private readonly guarded_request: RequestFn = (options) => this.requestPublicMint(options);
 	private orchard_identity: Promise<OrchardMintIdentity | null> | null = null;
 	private orchard_failed_at = 0;
-	private wallets = new Map<string, {wallet: Promise<Wallet>; expires_at: number}>();
+	private wallets = new Map<string, Memo<Wallet>>();
+	private statuses = new Map<string, Memo<CashuWalletMintProbe>>();
 
 	constructor(
 		@InjectRepository(CashuWalletMint)
@@ -52,20 +58,21 @@ export class CashuWalletMintService {
 		private walletOperationRepository: Repository<CashuWalletOperation>,
 		private configService: ConfigService,
 		private fetchService: FetchService,
+		private cashuWalletMintCacheService: CashuWalletMintCacheService,
 	) {}
 
 	/* *******************************************************
 		Registry
 	******************************************************** */
 
-	/** List a user's wallet mints, adding the Orchard mint if it's missing */
+	/** List a user's wallet mints with their cached info, adding the Orchard mint if it's missing */
 	public async listMints(user_id: string): Promise<CashuWalletMintRecord[]> {
 		const identity = await this.getOrchardIdentity();
 		const mints = await this.walletMintRepository.find({where: {user_id}, order: {created_at: 'ASC'}});
 		if (identity && !mints.some((mint) => this.matchesIdentity(mint, identity.pubkey, identity.urls))) {
 			mints.push(await this.ensureOrchardMint(user_id, identity));
 		}
-		return mints.map((mint) => ({...mint, is_orchard: this.isOrchardMint(mint, identity)}));
+		return this.toRecords(mints, identity);
 	}
 
 	/** Add a mint to a user's wallet after looking it up; a known mint gains the URL instead */
@@ -73,7 +80,8 @@ export class CashuWalletMintService {
 		const mint_url = this.parseMintUrl(url);
 		const identity = await this.getOrchardIdentity();
 		if (identity && this.isOrchardUrl(mint_url, identity)) {
-			return {...(await this.ensureOrchardMint(user_id, identity)), is_orchard: true};
+			const [record] = await this.toRecords([await this.ensureOrchardMint(user_id, identity)], identity);
+			return record;
 		}
 
 		await this.assertPublicMintUrl(mint_url);
@@ -82,15 +90,21 @@ export class CashuWalletMintService {
 		if (identity?.pubkey && pubkey === identity.pubkey) {
 			throw walletError(`${mint_url} claims to be your Orchard mint but isn't one of the URLs it publishes`);
 		}
-		const now = DateTime.now().toUnixInteger();
+		await this.cashuWalletMintCacheService.saveInfo(mint_url, info);
 		const existing = await this.findByIdentity(user_id, pubkey, [mint_url]);
-		const mint = existing ?? this.walletMintRepository.create({user_id, pubkey, urls: [], created_at: now});
+		const mint = existing ?? this.walletMintRepository.create({user_id, pubkey, urls: [], created_at: DateTime.now().toUnixInteger()});
 		mint.urls = [...new Set([...mint.urls, mint_url])];
-		mint.name = info.name || mint.name || null;
-		mint.info = JSONInt.stringify(info.cache);
-		mint.info_updated_at = now;
-		const saved = await this.walletMintRepository.save(mint);
-		return {...saved, is_orchard: this.isOrchardMint(saved, identity)};
+		const [record] = await this.toRecords([await this.walletMintRepository.save(mint)], identity);
+		return record;
+	}
+
+	/** Wallet mints with the Orchard flag and the cached info of the URL each is reached at */
+	private async toRecords(mints: CashuWalletMint[], identity: OrchardMintIdentity | null): Promise<CashuWalletMintRecord[]> {
+		const infos = await this.cashuWalletMintCacheService.getInfos(mints.map((mint) => this.sourceUrl(mint, identity)));
+		return mints.map((mint) => {
+			const info = infos.get(this.sourceUrl(mint, identity));
+			return {...mint, is_orchard: this.isOrchardMint(mint, identity), name: info?.name ?? null, info: info?.info ?? null};
+		});
 	}
 
 	/** Remove a mint from a user's wallet; refused for the Orchard mint or while it holds funds */
@@ -113,30 +127,96 @@ export class CashuWalletMintService {
 
 	/** Loaded cashu-ts wallet for a mint and unit, cached briefly; cashu-ts repairs stale keysets itself */
 	public getWallet(mint_id: string, unit: string): Promise<Wallet> {
-		const key = `${mint_id}:${unit}`;
-		const cached = this.wallets.get(key);
-		if (cached && cached.expires_at > Date.now()) return cached.wallet;
-		const wallet = this.loadWallet(mint_id, unit).catch((error) => {
-			this.wallets.delete(key);
-			throw error;
-		});
-		this.wallets.set(key, {wallet, expires_at: Date.now() + WALLET_TTL_MS});
+		return this.memoize(this.wallets, `${mint_id}:${unit}`, WALLET_TTL_MS, () => this.loadWallet(mint_id, unit));
+	}
+
+	/** Save a wallet's keychain to the shared cache; cashu-ts leaves explicit loads to the caller, and a failed save is only logged */
+	public saveKeychain(cache: KeyChainCache): Promise<void> {
+		return this.cashuWalletMintCacheService
+			.saveKeychain(cache)
+			.catch((error) => this.logger.warn(`Keyset cache not saved: ${describeMintError(error)}`));
+	}
+
+	/** Build a cashu-ts wallet from the shared cache, loading from the mint only when nothing usable is cached for its unit */
+	private async loadWallet(mint_id: string, unit: string): Promise<Wallet> {
+		const wallet = new Wallet(await this.getMint(await this.walletMintRepository.findOneByOrFail({id: mint_id})), {unit});
+		if (!(await this.loadFromCache(wallet))) {
+			await wallet.loadMint(true);
+			await this.cashuWalletMintCacheService
+				.saveWallet(wallet)
+				.catch((error) => this.logger.warn(`Mint cache not saved: ${describeMintError(error)}`));
+		}
+		wallet.on.keychainUpdated(({cache}) => void this.saveKeychain(cache));
 		return wallet;
 	}
 
-	/** Build a cashu-ts wallet for a wallet mint and load its keysets */
-	private async loadWallet(mint_id: string, unit: string): Promise<Wallet> {
-		const mint = await this.walletMintRepository.findOneByOrFail({id: mint_id});
-		const wallet = new Wallet(await this.getMint(mint), {unit});
-		await wallet.loadMint();
-		return wallet;
+	/** Load a wallet from the shared cache; false when nothing usable is cached for its unit */
+	private async loadFromCache(wallet: Wallet): Promise<boolean> {
+		try {
+			const cache = await this.cashuWalletMintCacheService.getWalletCache(wallet.mint.mintUrl);
+			if (!cache) return false;
+			wallet.loadMintFromCache(cache.info, cache.keychain);
+			return wallet.getKeyset().hasKeys;
+		} catch {
+			return false;
+		}
+	}
+
+	/** Share one load per key for ttl_ms; a failed load is dropped so the next caller retries */
+	private memoize<T>(cache: Map<string, Memo<T>>, key: string, ttl_ms: number, load: () => Promise<T>): Promise<T> {
+		const cached = cache.get(key);
+		if (cached && cached.expires_at > Date.now()) return cached.value;
+		const value = load().catch((error) => {
+			cache.delete(key);
+			throw error;
+		});
+		cache.set(key, {value, expires_at: Date.now() + ttl_ms});
+		return value;
 	}
 
 	/** cashu-ts Mint client for a wallet mint: MINT_API for the Orchard mint, the guarded transport for the rest */
 	public async getMint(mint: CashuWalletMint): Promise<Mint> {
 		const identity = await this.getOrchardIdentity();
-		if (identity && this.isOrchardMint(mint, identity)) return new Mint(identity.api_url, {customRequest: this.request});
-		return new Mint(mint.urls[0], {customRequest: this.guarded_request});
+		const request = identity && this.isOrchardMint(mint, identity) ? this.request : this.guarded_request;
+		return new Mint(this.sourceUrl(mint, identity), {customRequest: request});
+	}
+
+	/** URL a wallet mint is reached at, which also keys its shared cache: MINT_API for the Orchard mint, else its first URL */
+	private sourceUrl(mint: CashuWalletMint, identity: OrchardMintIdentity | null): string {
+		return identity && this.isOrchardMint(mint, identity) ? identity.api_url : mint.urls[0];
+	}
+
+	/* *******************************************************
+		Status
+	******************************************************** */
+
+	/** Check every mint in a user's wallet in parallel; a mint is online when its /v1/info answers */
+	public async checkMints(user_id: string): Promise<CashuWalletMintStatus[]> {
+		const mints = await this.listMints(user_id);
+		return Promise.all(mints.map(async (mint) => ({mint_id: mint.id, ...(await this.checkMint(mint))})));
+	}
+
+	/** One mint URL's status, shared across users for STATUS_TTL_MS so strict mints aren't probed on every page load */
+	private async checkMint(mint: CashuWalletMint): Promise<CashuWalletMintProbe> {
+		const client = await this.getMint(mint);
+		return this.memoize(this.statuses, client.mintUrl, STATUS_TTL_MS, () => this.probeMint(client));
+	}
+
+	/** Time a mint's /v1/info, saving the fresh info and refreshing its keysets when they are due */
+	private async probeMint(mint: Mint): Promise<CashuWalletMintProbe> {
+		const started_at = Date.now();
+		let info: MintInfo;
+		try {
+			info = new MintInfo(await mint.getInfo());
+		} catch (error) {
+			return {online: false, latency_ms: null, error: describeMintError(error), checked_at: DateTime.now().toUnixInteger()};
+		}
+		const latency_ms = Date.now() - started_at;
+		await this.cashuWalletMintCacheService
+			.saveInfo(mint.mintUrl, info)
+			.then(() => this.cashuWalletMintCacheService.refreshKeysets(mint))
+			.catch((error) => this.logger.warn(`Cache of ${mint.mintUrl} not refreshed: ${describeMintError(error)}`));
+		return {online: true, latency_ms, error: null, checked_at: DateTime.now().toUnixInteger()};
 	}
 
 	/* *******************************************************
@@ -167,17 +247,13 @@ export class CashuWalletMintService {
 	private async ensureOrchardMint(user_id: string, identity: OrchardMintIdentity): Promise<CashuWalletMint> {
 		const existing = await this.findByIdentity(user_id, identity.pubkey, identity.urls);
 		if (existing) return existing;
-		const now = DateTime.now().toUnixInteger();
 		try {
 			return await this.walletMintRepository.save(
 				this.walletMintRepository.create({
 					user_id,
 					pubkey: identity.pubkey,
 					urls: identity.urls,
-					name: identity.info.name || null,
-					info: JSONInt.stringify(identity.info.cache),
-					info_updated_at: now,
-					created_at: now,
+					created_at: DateTime.now().toUnixInteger(),
 				}),
 			);
 		} catch (error) {
@@ -194,9 +270,12 @@ export class CashuWalletMintService {
 		try {
 			const api_mint_url = normalizeMintUrl(api_url);
 			const info = await this.fetchMintInfo(api_mint_url);
+			await this.cashuWalletMintCacheService
+				.saveInfo(api_mint_url, info)
+				.catch((error) => this.logger.warn(`Orchard mint info not cached: ${describeMintError(error)}`));
 			const urls = this.normalizeUrls(info.urls ?? []);
 			if (!info.pubkey) this.logger.warn('Orchard mint publishes no pubkey; wallets recognize it by URL only');
-			return {pubkey: info.pubkey || null, urls: urls.length > 0 ? urls : [api_mint_url], api_url: api_mint_url, info};
+			return {pubkey: info.pubkey || null, urls: urls.length > 0 ? urls : [api_mint_url], api_url: api_mint_url};
 		} catch (error) {
 			this.logger.warn(
 				`Orchard mint info unavailable; it joins wallets once it responds: ${error?.details ?? error?.message ?? error}`,
@@ -291,9 +370,12 @@ export class CashuWalletMintService {
 	}
 
 	/** cashu-ts RequestFn over FetchService (Tor proxy, timeout, size cap, no redirects), keeping its error contract */
-	private async requestMint<T>({endpoint, requestBody, headers, method, requestTimeout}: RequestOptions): Promise<T> {
+	private async requestMint<T>({endpoint, requestBody, headers, method, requestTimeout, signal}: RequestOptions): Promise<T> {
+		const timeout_ms = requestTimeout ?? MINT_TIMEOUT_MS;
+		const timeout = AbortSignal.timeout(timeout_ms);
 		const toNetworkError = (error: any): never => {
-			throw new NetworkError(`${endpoint}: ${error?.message ?? error}`, {cause: error});
+			const reason = timeout.aborted ? `timed out after ${timeout_ms}ms` : (error?.code ?? error?.message ?? error);
+			throw new NetworkError(`${endpoint}: ${reason}`, {cause: error});
 		};
 		const response = await this.fetchService
 			.fetchWithProxy(endpoint, {
@@ -301,7 +383,7 @@ export class CashuWalletMintService {
 				headers: {Accept: 'application/json', ...(requestBody && {'Content-Type': 'application/json'}), ...headers},
 				body: requestBody ? JSONInt.stringify(requestBody) : undefined,
 				redirect: 'error',
-				timeout: requestTimeout ?? MINT_TIMEOUT_MS,
+				signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
 				size: MINT_MAX_BYTES,
 			})
 			.catch(toNetworkError);

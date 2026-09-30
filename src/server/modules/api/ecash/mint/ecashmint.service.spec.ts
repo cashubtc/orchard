@@ -8,7 +8,7 @@ import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 /* Local Dependencies */
 import {EcashMintService} from './ecashmint.service.js';
-import {OrchardEcashMint} from './ecashmint.model.js';
+import {OrchardEcashMint, OrchardEcashMintStatus} from './ecashmint.model.js';
 
 describe('EcashMintService', () => {
 	let ecashMintService: EcashMintService;
@@ -34,7 +34,10 @@ describe('EcashMintService', () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				EcashMintService,
-				{provide: CashuWalletMintService, useValue: {listMints: jest.fn(), addMint: jest.fn(), removeMint: jest.fn()}},
+				{
+					provide: CashuWalletMintService,
+					useValue: {listMints: jest.fn(), checkMints: jest.fn(), addMint: jest.fn(), removeMint: jest.fn()},
+				},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
 			],
 		}).compile();
@@ -53,6 +56,14 @@ describe('EcashMintService', () => {
 		const [result] = await ecashMintService.getEcashMints('TAG', 'user-1');
 		expect(result).toBeInstanceOf(OrchardEcashMint);
 		expect(result).toMatchObject({icon_url: 'https://mint.orchard.example/icon.png', units: ['sat', 'usd'], is_orchard: true});
+	});
+
+	it('getEcashMintStatus maps each mint status', async () => {
+		const status = {mint_id: 'mint-1', online: false, latency_ms: null, error: 'socket hang up', checked_at: 5};
+		cashuWalletMintService.checkMints.mockResolvedValue([status]);
+		const [result] = await ecashMintService.getEcashMintStatus('TAG', 'user-1');
+		expect(result).toBeInstanceOf(OrchardEcashMintStatus);
+		expect(result).toMatchObject(status);
 	});
 
 	it('addEcashMint passes the URL through', async () => {
