@@ -13,7 +13,8 @@ export const assessMintQuote = (quote: CashuWalletMintQuote, amount: number, now
 	if (paid.greaterThanOrEqual(issued.add(amount))) return MintQuoteProgress.MINTABLE;
 	if (!issued.isZero() && paid.lessThanOrEqual(issued)) return MintQuoteProgress.ISSUED;
 	if (paid.greaterThan(issued)) return MintQuoteProgress.WAITING;
-	return quote.expiry != null && quote.expiry <= now ? MintQuoteProgress.EXPIRED : MintQuoteProgress.WAITING;
+	// cdk sends expiry 0 for bolt11 quotes whose backend set none; like null, it means no expiry
+	return quote.expiry && quote.expiry <= now ? MintQuoteProgress.EXPIRED : MintQuoteProgress.WAITING;
 };
 
 /** NUT-20 quote locking keypair (hex) for a counter, derived from the wallet seed */

@@ -25,6 +25,7 @@ describe('assessMintQuote', () => {
 		['onchain fully issued', totals(100, 100), MintQuoteProgress.ISSUED],
 		['bolt12 unpaid and expired', totals(0, 0, 50), MintQuoteProgress.EXPIRED],
 		['unpaid with no expiry', totals(0, 0), MintQuoteProgress.WAITING],
+		['bolt11 unpaid with expiry 0, meaning none', {...base, state: MintQuoteState.UNPAID, expiry: 0}, MintQuoteProgress.WAITING],
 	])('%s', (_label, quote, progress) => {
 		expect(assessMintQuote(quote, 100, 100)).toBe(progress);
 	});
