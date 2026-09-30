@@ -56,6 +56,14 @@ export enum CashuMintErrorCode {
 	BAT_RATE_LIMIT_EXCEEDED = 31004,
 }
 
+// How far a mint quote has progressed for a pending mint operation
+export enum MintQuoteProgress {
+	MINTABLE = 'MINTABLE',
+	ISSUED = 'ISSUED',
+	WAITING = 'WAITING',
+	EXPIRED = 'EXPIRED',
+}
+
 // What a journaled operation does after a mint call fails
 export enum WalletErrorAction {
 	RESTORE = 'RESTORE',

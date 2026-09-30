@@ -1,10 +1,11 @@
 /* Vendor Dependencies */
-import {HttpResponseError, RateLimitError, StaleKeysetError, isMintOperationError} from '@cashu/cashu-ts';
+import {Amount, HttpResponseError, MintQuoteState, RateLimitError, StaleKeysetError, isMintOperationError} from '@cashu/cashu-ts';
 import {HDKey} from '@scure/bip32';
 /* Application Dependencies */
 import {OrchardErrorCode, OrchardErrorMessages} from '#server/modules/error/error.types';
 /* Local Dependencies */
-import {CashuMintErrorCode, WalletErrorAction} from './cashuwallet.enums.js';
+import {CashuMintErrorCode, MintQuoteProgress, WalletErrorAction} from './cashuwallet.enums.js';
+import type {CashuWalletMintQuote} from './cashuwallet.types.js';
 
 const AUTH_CODES = new Set<number>([
 	CashuMintErrorCode.CLEAR_AUTH_REQUIRED,
@@ -43,6 +44,17 @@ export const classifyMintError = (error: unknown): WalletErrorAction => {
 	if (isMintOperationError(error)) return ACTION_BY_CODE[error.code] ?? WalletErrorAction.FAIL;
 	if (error instanceof HttpResponseError && !(error instanceof RateLimitError) && error.status < 500) return WalletErrorAction.FAIL;
 	return WalletErrorAction.WAIT;
+};
+
+/** How far any method's mint quote has progressed for an amount, from NUT-04 paid/issued totals or the legacy bolt11 state */
+export const assessMintQuote = (quote: CashuWalletMintQuote, amount: number, now: number): MintQuoteProgress => {
+	const legacy_paid = quote.state !== undefined && quote.state !== MintQuoteState.UNPAID;
+	const paid = quote.amount_paid ?? Amount.from(legacy_paid ? amount : 0);
+	const issued = quote.amount_issued ?? Amount.from(quote.state === MintQuoteState.ISSUED ? amount : 0);
+	if (paid.greaterThanOrEqual(issued.add(amount))) return MintQuoteProgress.MINTABLE;
+	if (!issued.isZero() && paid.lessThanOrEqual(issued)) return MintQuoteProgress.ISSUED;
+	if (paid.greaterThan(issued)) return MintQuoteProgress.WAITING;
+	return quote.expiry != null && quote.expiry <= now ? MintQuoteProgress.EXPIRED : MintQuoteProgress.WAITING;
 };
 
 /** NUT-20 quote locking keypair (hex) for a counter, derived from the wallet seed */

@@ -2,8 +2,10 @@
 import {expect} from '@jest/globals';
 /* Vendor Dependencies */
 import {
+	Amount,
 	HttpResponseError,
 	MintOperationError,
+	MintQuoteState,
 	NetworkError,
 	RateLimitError,
 	StaleKeysetError,
@@ -11,8 +13,8 @@ import {
 	mnemonicToSeedSync,
 } from '@cashu/cashu-ts';
 /* Local Dependencies */
-import {MintAddressError, classifyMintError, deriveQuoteKey, describeMintError} from './cashuwallet.helpers.js';
-import {CashuMintErrorCode, WalletErrorAction} from './cashuwallet.enums.js';
+import {MintAddressError, assessMintQuote, classifyMintError, deriveQuoteKey, describeMintError} from './cashuwallet.helpers.js';
+import {CashuMintErrorCode, MintQuoteProgress, WalletErrorAction} from './cashuwallet.enums.js';
 
 describe('classifyMintError', () => {
 	it.each([
@@ -49,6 +51,30 @@ describe('classifyMintError', () => {
 
 	it('fails on other client errors', () => {
 		expect(classifyMintError(new HttpResponseError('not found', 404))).toBe(WalletErrorAction.FAIL);
+	});
+});
+
+describe('assessMintQuote', () => {
+	const base = {quote: 'q', request: 'r', unit: 'sat'};
+	const totals = (paid: number, issued: number, expiry: number | null = null) => ({
+		...base,
+		amount_paid: Amount.from(paid),
+		amount_issued: Amount.from(issued),
+		expiry,
+	});
+
+	it.each([
+		['bolt11 paid', {...base, state: MintQuoteState.PAID, expiry: 10}, MintQuoteProgress.MINTABLE],
+		['bolt11 issued', {...base, state: MintQuoteState.ISSUED, expiry: 10}, MintQuoteProgress.ISSUED],
+		['bolt11 unpaid', {...base, state: MintQuoteState.UNPAID, expiry: 200}, MintQuoteProgress.WAITING],
+		['bolt11 unpaid and expired', {...base, state: MintQuoteState.UNPAID, expiry: 50}, MintQuoteProgress.EXPIRED],
+		['bolt12 paid enough', totals(150, 50, 50), MintQuoteProgress.MINTABLE],
+		['bolt12 partly paid, even when expired', totals(40, 0, 50), MintQuoteProgress.WAITING],
+		['onchain fully issued', totals(100, 100), MintQuoteProgress.ISSUED],
+		['bolt12 unpaid and expired', totals(0, 0, 50), MintQuoteProgress.EXPIRED],
+		['unpaid with no expiry', totals(0, 0), MintQuoteProgress.WAITING],
+	])('%s', (_label, quote, progress) => {
+		expect(assessMintQuote(quote, 100, 100)).toBe(progress);
 	});
 });
 

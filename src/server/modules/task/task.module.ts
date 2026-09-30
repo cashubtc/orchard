@@ -12,6 +12,7 @@ import {AgentModule} from '#server/modules/ai/agent/agent.module';
 import {ConversationModule} from '#server/modules/ai/conversation/conversation.module';
 import {SystemMetricsModule} from '#server/modules/system/metrics/sysmetrics.module';
 import {MintMetricsModule} from '#server/modules/cashu/mintmetrics/mintmetrics.module';
+import {CashuWalletModule} from '#server/modules/cashu/wallet/cashuwallet.module';
 /* Local Dependencies */
 import {TaskService} from './task.service.js';
 
@@ -28,6 +29,7 @@ import {TaskService} from './task.service.js';
 		ConversationModule,
 		SystemMetricsModule,
 		MintMetricsModule,
+		CashuWalletModule,
 	],
 	providers: [TaskService],
 })

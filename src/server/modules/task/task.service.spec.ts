@@ -15,6 +15,7 @@ import {AgentService} from '#server/modules/ai/agent/agent.service';
 import {ConversationService} from '#server/modules/ai/conversation/conversation.service';
 import {SystemMetricsService} from '#server/modules/system/metrics/sysmetrics.service';
 import {MintMetricsService} from '#server/modules/cashu/mintmetrics/mintmetrics.service';
+import {CashuWalletOperationService} from '#server/modules/cashu/wallet/cashuwalletoperation.service';
 /* Local Dependencies */
 import {TaskService} from './task.service.js';
 
@@ -22,6 +23,7 @@ describe('TaskService', () => {
 	let taskService: TaskService;
 	let authService: jest.Mocked<AuthService>;
 	let mintMetricsService: jest.Mocked<MintMetricsService>;
+	let cashuWalletOperationService: jest.Mocked<CashuWalletOperationService>;
 	let logger_spy: jest.SpyInstance;
 
 	beforeEach(async () => {
@@ -109,12 +111,19 @@ describe('TaskService', () => {
 						cleanupOldMetrics: jest.fn(),
 					},
 				},
+				{
+					provide: CashuWalletOperationService,
+					useValue: {
+						reconcileOperations: jest.fn(),
+					},
+				},
 			],
 		}).compile();
 
 		taskService = module.get<TaskService>(TaskService);
 		authService = module.get(AuthService);
 		mintMetricsService = module.get(MintMetricsService);
+		cashuWalletOperationService = module.get(CashuWalletOperationService);
 
 		// Spy on logger methods
 		logger_spy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
@@ -225,6 +234,23 @@ describe('TaskService', () => {
 
 			expect(mintMetricsService.cleanupOldMetrics).toHaveBeenCalledTimes(1);
 			expect(logger_spy).toHaveBeenCalledWith('Mint metrics cleanup complete');
+		});
+	});
+
+	describe('reconcileEcashWallet', () => {
+		it('should reconcile open wallet operations', async () => {
+			await taskService.reconcileEcashWallet();
+
+			expect(cashuWalletOperationService.reconcileOperations).toHaveBeenCalledTimes(1);
+		});
+
+		it('should log errors without throwing', async () => {
+			cashuWalletOperationService.reconcileOperations.mockRejectedValue(new Error('db locked'));
+			const error_spy = jest.spyOn(Logger.prototype, 'error');
+
+			await taskService.reconcileEcashWallet();
+
+			expect(error_spy).toHaveBeenCalledWith('Error reconciling ecash wallet operations: db locked');
 		});
 	});
 });

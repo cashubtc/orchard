@@ -24,7 +24,7 @@ import {walletError} from './cashuwallet.helpers.js';
 const createFakeMint = () => {
 	const keyset = createNewMintKeys(8, undefined, {unit: 'sat'});
 	const signed = new Map<string, {id: string; amount: number; C_: string}>();
-	const quotes = new Map<string, {pubkey?: string; state: string}>();
+	const quotes = new Map<string, {pubkey?: string; state: string; amount: number; expiry: number | null}>();
 	const failures: {code: number; detail: string}[] = [];
 	const info = {
 		name: 'Orchard Test Mint',
@@ -43,31 +43,29 @@ const createFakeMint = () => {
 		const signature = createBlindSignature(pointFromHex(output.B_), keyset.privKeys[output.amount], output.id);
 		return {id: output.id, amount: Number(output.amount), C_: signature.C_.toHex(true)};
 	};
+	const quoteResponse = (id: string) => {
+		const quote = quotes.get(id)!;
+		return {quote: id, request: `lnbc${quote.amount * 10}n1fake`, unit: 'sat', ...quote};
+	};
 	const handle = (path: string, body: any): [number, any] => {
 		if (path === '/v1/info') return [200, info];
 		if (path === '/v1/keysets') return [200, keysets];
 		if (path.startsWith('/v1/keys')) return [200, keys];
 		if (path === '/v1/mint/quote/bolt11') {
 			const quote = `quote-${quotes.size + 1}`;
-			quotes.set(quote, {pubkey: body.pubkey, state: 'UNPAID'});
-			return [
-				200,
-				{
-					quote,
-					request: `lnbc${body.amount * 10}n1fake`,
-					amount: body.amount,
-					unit: body.unit,
-					state: 'UNPAID',
-					expiry: null,
-					pubkey: body.pubkey,
-				},
-			];
+			quotes.set(quote, {pubkey: body.pubkey, state: 'UNPAID', amount: body.amount, expiry: null});
+			return [200, quoteResponse(quote)];
+		}
+		if (path.startsWith('/v1/mint/quote/bolt11/')) {
+			const quote = path.split('/').pop()!;
+			return quotes.has(quote) ? [200, quoteResponse(quote)] : [400, {code: 20004, detail: 'Unknown quote'}];
 		}
 		if (path === '/v1/mint/bolt11') {
 			const failure = failures.shift();
 			if (failure) return [400, failure];
 			const quote = quotes.get(body.quote);
 			if (quote?.state === 'UNPAID') return [400, {code: 20001, detail: 'Quote not paid'}];
+			if (quote?.state === 'ISSUED') return [400, {code: 20002, detail: 'Quote already issued'}];
 			if (quote?.pubkey && !verifyMintQuoteSignature(quote.pubkey, body.quote, body.outputs, body.signature ?? '')) {
 				return [400, {code: 20008, detail: 'Invalid signature'}];
 			}
@@ -77,6 +75,7 @@ const createFakeMint = () => {
 				signed.set(output.B_, signature);
 				return signature;
 			});
+			if (quote) quote.state = 'ISSUED';
 			return [200, {signatures}];
 		}
 		if (path === '/v1/restore') {
@@ -124,6 +123,7 @@ describe('CashuWalletOperationService', () => {
 	const proofs = () => data_source.getRepository(CashuWalletProof).find();
 	const counter = () =>
 		data_source.getRepository(CashuWalletCounter).findOneByOrFail({user_id: 'user-1', counter_key: mint.keyset.keysetId});
+	const reload = (id: string) => data_source.getRepository(CashuWalletOperation).findOneByOrFail({id});
 
 	beforeEach(async () => {
 		jest.clearAllMocks();
@@ -204,7 +204,12 @@ describe('CashuWalletOperationService', () => {
 	});
 
 	it.each([
-		['waits while the quote is unpaid', {code: 20001, detail: 'Quote not paid'}, WalletOperationState.EXECUTING, 'Mint error 20001'],
+		[
+			'returns to pending while the quote is unpaid',
+			{code: 20001, detail: 'Quote not paid'},
+			WalletOperationState.PENDING,
+			'Mint error 20001',
+		],
 		['fails when minting is disabled', {code: 20003, detail: 'Minting is disabled'}, WalletOperationState.FAILED, 'Mint error 20003'],
 	])('%s', async (_label, failure, state, error) => {
 		mint.failures.push(failure);
@@ -219,9 +224,8 @@ describe('CashuWalletOperationService', () => {
 		offline = true;
 		expect((await service.executeMintOperation(operation.id)).state).toBe(WalletOperationState.EXECUTING);
 		offline = false;
-		await service.recoverOperations();
-		const recovered = await data_source.getRepository(CashuWalletOperation).findOneByOrFail({id: operation.id});
-		expect(recovered).toMatchObject({state: WalletOperationState.FINALIZED, error: null});
+		await service.reconcileOperations();
+		expect(await reload(operation.id)).toMatchObject({state: WalletOperationState.FINALIZED, error: null});
 	});
 
 	it('rebuilds outputs on fresh counters after a stale keyset rejection', async () => {
@@ -236,7 +240,7 @@ describe('CashuWalletOperationService', () => {
 	it('issues on the Orchard mint through a NUT-20 locked quote forced paid over the mint RPC', async () => {
 		const result = await service.issueEcash({user_id: 'user-1', unit: 'sat', amount: 100, memo: 'Giveaway'});
 		expect(result).toMatchObject({state: WalletOperationState.FINALIZED, mint_id: mint_row.id, quote_counter: 0, memo: 'Giveaway'});
-		expect(mint.quotes.get(result.quote_id!)).toMatchObject({pubkey: expect.stringMatching(/^0[23][0-9a-f]{64}$/), state: 'PAID'});
+		expect(mint.quotes.get(result.quote_id!)).toMatchObject({pubkey: expect.stringMatching(/^0[23][0-9a-f]{64}$/), state: 'ISSUED'});
 		expect(mint_rpc.updateNut04Quote).toHaveBeenCalledWith({quote_id: result.quote_id, state: 'PAID'});
 		expect((await proofs()).reduce((sum, proof) => sum + proof.amount, 0)).toBe(100);
 	});
@@ -247,5 +251,65 @@ describe('CashuWalletOperationService', () => {
 		await expect(service.issueEcash({user_id: 'user-1', unit: 'sat', amount: 100, memo: null})).rejects.toEqual(walletError(reason));
 		expect(await operations()).toEqual([expect.objectContaining({state: WalletOperationState.FAILED, error: reason})]);
 		expect(await proofs()).toEqual([]);
+	});
+
+	describe('reconcileOperations', () => {
+		const pendingOn = (state: string) => {
+			mint.quotes.set('quote-9', {state, amount: 100, expiry: null});
+			return service.createMintOperation(request('quote-9'));
+		};
+
+		it('mints a pending operation whose quote was paid while Orchard was down', async () => {
+			const operation = await pendingOn('PAID');
+			await service.reconcileOperations();
+			expect(await reload(operation.id)).toMatchObject({state: WalletOperationState.FINALIZED, error: null});
+			expect((await proofs()).reduce((sum, proof) => sum + proof.amount, 0)).toBe(100);
+		});
+
+		it('leaves an unpaid quote pending until it expires, then fails it', async () => {
+			const waiting = await pendingOn('UNPAID');
+			await service.reconcileOperations();
+			expect(await reload(waiting.id)).toMatchObject({state: WalletOperationState.PENDING});
+
+			mint.quotes.get('quote-9')!.expiry = 1;
+			await service.reconcileOperations();
+			expect(await reload(waiting.id)).toMatchObject({state: WalletOperationState.FAILED, error: 'Mint quote expired unpaid'});
+		});
+
+		it('fails an operation whose quote was issued to outputs the mint never signed for it', async () => {
+			const operation = await pendingOn('ISSUED');
+			await service.reconcileOperations();
+			expect(await reload(operation.id)).toMatchObject({
+				state: WalletOperationState.FAILED,
+				error: 'Mint quote was issued to other outputs',
+			});
+		});
+
+		it('keeps a pending operation while the mint is unreachable, clearing the error once it answers', async () => {
+			const operation = await pendingOn('UNPAID');
+			offline = true;
+			await service.reconcileOperations();
+			expect(await reload(operation.id)).toMatchObject({
+				state: WalletOperationState.PENDING,
+				error: expect.stringContaining('socket hang up'),
+			});
+
+			offline = false;
+			await service.reconcileOperations();
+			expect(await reload(operation.id)).toMatchObject({state: WalletOperationState.PENDING, error: null});
+		});
+
+		it('fails a pending operation when the mint no longer knows its quote', async () => {
+			const operation = await pendingOn('UNPAID');
+			mint.quotes.delete('quote-9');
+			await service.reconcileOperations();
+			expect(await reload(operation.id)).toMatchObject({state: WalletOperationState.FAILED, error: expect.stringContaining('20004')});
+		});
+
+		it('runs one pass at a time', async () => {
+			const [first, second] = [service.reconcileOperations(), service.reconcileOperations()];
+			expect(first).toBe(second);
+			await first;
+		});
 	});
 });

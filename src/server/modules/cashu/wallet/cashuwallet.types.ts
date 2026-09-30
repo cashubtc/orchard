@@ -1,5 +1,5 @@
 /* Vendor Dependencies */
-import type {MintInfo} from '@cashu/cashu-ts';
+import type {MintInfo, MintQuoteBaseResponse, MintQuoteState} from '@cashu/cashu-ts';
 /* Local Dependencies */
 import type {CashuWalletMint} from './cashuwalletmint.entity.js';
 import type {CashuWalletSeed} from './cashuwalletseed.entity.js';
@@ -8,6 +8,11 @@ export type CashuWalletBalance = {
 	mint_id: string;
 	unit: string;
 	balance: number;
+};
+
+export type CashuWalletMintQuote = MintQuoteBaseResponse & {
+	state?: MintQuoteState;
+	expiry?: number | null;
 };
 
 export type CashuWalletSeedStatus = Pick<CashuWalletSeed, 'created_at' | 'backed_up_at'>;

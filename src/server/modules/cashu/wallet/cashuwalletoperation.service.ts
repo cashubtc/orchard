@@ -2,7 +2,7 @@
 import {Injectable, Logger, type OnApplicationBootstrap} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 /* Vendor Dependencies */
-import {Repository} from 'typeorm';
+import {In, Repository} from 'typeorm';
 import {DateTime} from 'luxon';
 import {
 	Amount,
@@ -10,6 +10,7 @@ import {
 	MintQuoteState,
 	OutputData,
 	StaleKeysetError,
+	isMintOperationError,
 	splitAmount,
 	type Proof,
 	type SerializedOutputData,
@@ -23,15 +24,25 @@ import {CashuWalletProof} from './cashuwalletproof.entity.js';
 import {CashuWalletCounter} from './cashuwalletcounter.entity.js';
 import {CashuWalletService} from './cashuwallet.service.js';
 import {CashuWalletMintService} from './cashuwalletmint.service.js';
-import {WalletErrorAction, WalletOperationState, WalletOperationType, WalletProofState} from './cashuwallet.enums.js';
-import {classifyMintError, deriveQuoteKey, describeMintError, walletError} from './cashuwallet.helpers.js';
-import type {CashuWalletIssueRequest, CashuWalletMintRequest} from './cashuwallet.types.js';
+import {
+	CashuMintErrorCode,
+	MintQuoteProgress,
+	WalletErrorAction,
+	WalletOperationState,
+	WalletOperationType,
+	WalletProofState,
+} from './cashuwallet.enums.js';
+import {assessMintQuote, classifyMintError, deriveQuoteKey, describeMintError, walletError} from './cashuwallet.helpers.js';
+import type {CashuWalletIssueRequest, CashuWalletMintQuote, CashuWalletMintRequest} from './cashuwallet.types.js';
 
 const QUOTE_KEY_COUNTER = 'nut20';
+
+const hasMintCode = (error: unknown, code: CashuMintErrorCode): boolean => isMintOperationError(error) && error.code === code;
 
 @Injectable()
 export class CashuWalletOperationService implements OnApplicationBootstrap {
 	private readonly logger = new Logger(CashuWalletOperationService.name);
+	private reconciling: Promise<void> | null = null;
 
 	constructor(
 		@InjectRepository(CashuWalletOperation)
@@ -45,10 +56,10 @@ export class CashuWalletOperationService implements OnApplicationBootstrap {
 		private cashuMintRpcService: CashuMintRpcService,
 	) {}
 
-	/** Resume operations interrupted by a restart, without blocking startup */
+	/** Catch up on operations interrupted by a restart, without blocking startup */
 	onApplicationBootstrap(): void {
 		if (process.env.SCHEMA_ONLY) return;
-		void this.recoverOperations();
+		void this.reconcileOperations();
 	}
 
 	/* *******************************************************
@@ -84,13 +95,61 @@ export class CashuWalletOperationService implements OnApplicationBootstrap {
 		);
 	}
 
-	/** Re-run every operation left executing when the process stopped */
-	public async recoverOperations(): Promise<void> {
-		const interrupted = await this.walletOperationRepository.find({where: {state: WalletOperationState.EXECUTING}});
-		for (const operation of interrupted) {
-			const recovered = await this.executeMintOperation(operation.id);
-			this.logger.log(`Wallet operation ${operation.id} resumed after restart: ${recovered.state}`);
+	/* *******************************************************
+		Reconciliation
+	******************************************************** */
+
+	/** Settle every open mint operation against its mint; concurrent callers share one pass */
+	public reconcileOperations(): Promise<void> {
+		this.reconciling ??= this.runReconciliation().finally(() => (this.reconciling = null));
+		return this.reconciling;
+	}
+
+	/** One pass: pending operations settle against their quote, executing ones replay or restore */
+	private async runReconciliation(): Promise<void> {
+		const open_states = In([WalletOperationState.PENDING, WalletOperationState.EXECUTING]);
+		const operations = await this.walletOperationRepository.find({
+			where: {type: WalletOperationType.MINT, state: open_states},
+			order: {created_at: 'ASC'},
+		});
+		let finalized = 0;
+		let failed = 0;
+		for (const operation of operations) {
+			try {
+				const {state} =
+					operation.state === WalletOperationState.PENDING
+						? await this.settlePending(operation)
+						: await this.executeMintOperation(operation.id);
+				if (state === WalletOperationState.FINALIZED) finalized++;
+				if (state === WalletOperationState.FAILED) failed++;
+			} catch (error) {
+				this.logger.warn(`Wallet operation ${operation.id} could not be reconciled: ${describeMintError(error)}`);
+			}
 		}
+		if (finalized + failed === 0) return;
+		this.logger.log(
+			`Wallet reconciliation: ${finalized} finalized, ${failed} failed, ${operations.length - finalized - failed} still open`,
+		);
+	}
+
+	/** Mint once the quote is paid; fail once it expires with nothing paid or the mint rejects it outright */
+	private async settlePending(operation: CashuWalletOperation): Promise<CashuWalletOperation> {
+		let quote: CashuWalletMintQuote;
+		try {
+			const wallet = await this.cashuWalletMintService.getWallet(operation.mint_id, operation.unit);
+			quote = await wallet.checkMintQuote<CashuWalletMintQuote>(operation.method!, operation.quote_id!);
+		} catch (error) {
+			const state = classifyMintError(error) === WalletErrorAction.FAIL ? WalletOperationState.FAILED : WalletOperationState.PENDING;
+			return this.transition(operation, state, {error: describeMintError(error)});
+		}
+		const progress = assessMintQuote(quote, operation.amount, DateTime.now().toUnixInteger());
+		if (progress === MintQuoteProgress.MINTABLE || progress === MintQuoteProgress.ISSUED) {
+			return this.executeMintOperation(operation.id);
+		}
+		if (progress === MintQuoteProgress.EXPIRED) {
+			return this.transition(operation, WalletOperationState.FAILED, {error: 'Mint quote expired unpaid'});
+		}
+		return operation.error ? this.transition(operation, WalletOperationState.PENDING, {error: null}) : operation;
 	}
 
 	/* *******************************************************
@@ -160,16 +219,29 @@ export class CashuWalletOperationService implements OnApplicationBootstrap {
 			return this.transition(operation, WalletOperationState.FAILED, {error: describeMintError(error)});
 		}
 		if (action === WalletErrorAction.RESTORE) {
-			return this.restore(operation, wallet).catch((restore_error) => this.wait(operation, restore_error));
+			return this.restore(operation, wallet).then(
+				(proofs) => (proofs.length > 0 ? this.finalize(operation, proofs) : this.settleUnrestored(operation, error)),
+				(restore_error) => this.wait(operation, restore_error),
+			);
 		}
 		if (action === WalletErrorAction.REBUILD && allow_rebuild) return this.rebuild(operation, wallet, error);
+		if (hasMintCode(error, CashuMintErrorCode.QUOTE_NOT_PAID)) {
+			return this.transition(operation, WalletOperationState.PENDING, {error: describeMintError(error)});
+		}
 		return this.wait(operation, error);
 	}
 
-	/** NUT-09: rebuild proofs from the signatures the mint already issued on the saved outputs */
-	private async restore(operation: CashuWalletOperation, wallet: Wallet): Promise<CashuWalletOperation> {
+	/** Nothing to restore: a quote issued to other outputs is final, anything else is retried */
+	private settleUnrestored(operation: CashuWalletOperation, error: unknown): Promise<CashuWalletOperation> {
+		if (!hasMintCode(error, CashuMintErrorCode.QUOTE_ALREADY_ISSUED)) return this.wait(operation, error);
+		return this.transition(operation, WalletOperationState.FAILED, {error: 'Mint quote was issued to other outputs'});
+	}
+
+	/** NUT-09: rebuild proofs from the signatures the mint already issued on the saved outputs; none when it signed nothing */
+	private async restore(operation: CashuWalletOperation, wallet: Wallet): Promise<Proof[]> {
 		const outputs = this.deserializeOutputs(operation.outputs);
 		const restored = await wallet.mint.restore({outputs: outputs.map((output) => output.blindedMessage)});
+		if (restored.signatures.length === 0) return [];
 		const signatures = new Map(restored.outputs.map((output, index) => [output.B_, restored.signatures[index]]));
 		await wallet.ensureOperableKeysets(restored.signatures.map((signature) => signature.id));
 		const proofs = outputs.flatMap((output) => {
@@ -178,7 +250,7 @@ export class CashuWalletOperationService implements OnApplicationBootstrap {
 			return [output.toProof(signature, wallet.getKeyset(signature.id))];
 		});
 		if (proofs.length !== outputs.length) throw new Error(`Mint restored ${proofs.length} of ${outputs.length} outputs`);
-		return this.finalize(operation, proofs);
+		return proofs;
 	}
 
 	/** The mint signed nothing on a stale keyset: rebuild outputs on fresh counters and try once more */
@@ -189,7 +261,7 @@ export class CashuWalletOperationService implements OnApplicationBootstrap {
 		return this.attemptMint(rebuilt, wallet, false);
 	}
 
-	/** Keep the operation executing with the failure recorded; recovery retries it */
+	/** Keep the operation executing with the failure recorded; reconciliation retries it */
 	private wait(operation: CashuWalletOperation, error: unknown): Promise<CashuWalletOperation> {
 		return this.transition(operation, WalletOperationState.EXECUTING, {error: describeMintError(error)});
 	}
