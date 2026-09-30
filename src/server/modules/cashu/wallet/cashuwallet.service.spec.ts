@@ -9,8 +9,8 @@ import {mnemonicToSeedSync} from '@scure/bip39';
 import {deriveEncryptionKeyFromHex, encryptValue, decryptValue} from '#server/modules/setting/setting.helpers';
 /* Local Dependencies */
 import {CashuWalletService} from './cashuwallet.service.js';
-import {CashuWalletSeed} from './cashuwalletseed.entity.js';
-import {CashuWalletProof} from './cashuwalletproof.entity.js';
+import {CashuWalletSeed} from './seed/cashuwalletseed.entity.js';
+import {CashuWalletProof} from './proof/cashuwalletproof.entity.js';
 import {WalletProofState} from './cashuwallet.enums.js';
 
 describe('CashuWalletService', () => {

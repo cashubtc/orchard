@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {CashuWalletOperationService} from '#server/modules/cashu/wallet/cashuwalletoperation.service';
+import {CashuWalletOperationService} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {ErrorService} from '#server/modules/error/error.service';

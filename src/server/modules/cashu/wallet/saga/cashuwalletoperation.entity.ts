@@ -1,7 +1,7 @@
 /* Vendor Dependencies */
 import {Entity, Column, PrimaryGeneratedColumn, Index} from 'typeorm';
 /* Local Dependencies */
-import {WalletOperationType, WalletOperationState} from './cashuwallet.enums.js';
+import {WalletOperationType, WalletOperationState} from '../cashuwallet.enums.js';
 
 /**
  * Journal of wallet operations. The exact mint request is persisted before it is sent,

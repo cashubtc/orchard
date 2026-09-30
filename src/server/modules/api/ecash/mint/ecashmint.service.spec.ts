@@ -2,7 +2,7 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {CashuWalletMintService} from '#server/modules/cashu/wallet/cashuwalletmint.service';
+import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwalletmint.service';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';

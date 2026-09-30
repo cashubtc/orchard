@@ -11,8 +11,8 @@ import {wordlist} from '@scure/bip39/wordlists/english.js';
 /* Application Dependencies */
 import {deriveEncryptionKeyFromHex, encryptValue, decryptValue} from '#server/modules/setting/setting.helpers';
 /* Local Dependencies */
-import {CashuWalletSeed} from './cashuwalletseed.entity.js';
-import {CashuWalletProof} from './cashuwalletproof.entity.js';
+import {CashuWalletSeed} from './seed/cashuwalletseed.entity.js';
+import {CashuWalletProof} from './proof/cashuwalletproof.entity.js';
 import {WalletProofState} from './cashuwallet.enums.js';
 import {walletError} from './cashuwallet.helpers.js';
 import type {CashuWalletBalance, CashuWalletSeedStatus} from './cashuwallet.types.js';

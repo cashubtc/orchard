@@ -16,7 +16,7 @@ import {AgentService} from '#server/modules/ai/agent/agent.service';
 import {ConversationService} from '#server/modules/ai/conversation/conversation.service';
 import {SystemMetricsService} from '#server/modules/system/metrics/sysmetrics.service';
 import {MintMetricsService} from '#server/modules/cashu/mintmetrics/mintmetrics.service';
-import {CashuWalletOperationService} from '#server/modules/cashu/wallet/cashuwalletoperation.service';
+import {CashuWalletOperationService} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.service';
 import {BitcoinType} from '#server/modules/bitcoin/bitcoin.enums';
 import {SettingKey} from '#server/modules/setting/setting.enums';
 

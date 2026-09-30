@@ -1,8 +1,8 @@
 /* Vendor Dependencies */
 import type {MintQuoteBaseResponse, MintQuoteState} from '@cashu/cashu-ts';
 /* Local Dependencies */
-import type {CashuWalletMint} from './cashuwalletmint.entity.js';
-import type {CashuWalletSeed} from './cashuwalletseed.entity.js';
+import type {CashuWalletMint} from './mint/cashuwalletmint.entity.js';
+import type {CashuWalletSeed} from './seed/cashuwalletseed.entity.js';
 import type {WalletOperationState, WalletOperationType} from './cashuwallet.enums.js';
 
 export type CashuWalletBalance = {

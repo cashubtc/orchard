@@ -11,18 +11,18 @@ import {FetchService} from '#server/modules/fetch/fetch.service';
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
 /* Local Dependencies */
 import {CashuWalletOperationService} from './cashuwalletoperation.service.js';
-import {CashuWalletMintService} from './cashuwalletmint.service.js';
-import {CashuWalletService} from './cashuwallet.service.js';
+import {CashuWalletMintService} from '../mint/cashuwalletmint.service.js';
+import {CashuWalletService} from '../cashuwallet.service.js';
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
-import {CashuWalletProof} from './cashuwalletproof.entity.js';
+import {CashuWalletProof} from '../proof/cashuwalletproof.entity.js';
 import {CashuWalletCounter} from './cashuwalletcounter.entity.js';
-import {CashuWalletMint} from './cashuwalletmint.entity.js';
-import {CashuWalletMintInfo} from './cashuwalletmintinfo.entity.js';
-import {CashuWalletMintKeyset} from './cashuwalletmintkeyset.entity.js';
-import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
-import {WalletOperationState, WalletOperationType, WalletProofState} from './cashuwallet.enums.js';
-import {walletError} from './cashuwallet.helpers.js';
-import type {CashuWalletOperationFilters} from './cashuwallet.types.js';
+import {CashuWalletMint} from '../mint/cashuwalletmint.entity.js';
+import {CashuWalletMintInfo} from '../mint/cashuwalletmintinfo.entity.js';
+import {CashuWalletMintKeyset} from '../mint/cashuwalletmintkeyset.entity.js';
+import {CashuWalletMintCacheService} from '../mint/cashuwalletmintcache.service.js';
+import {WalletOperationState, WalletOperationType, WalletProofState} from '../cashuwallet.enums.js';
+import {walletError} from '../cashuwallet.helpers.js';
+import type {CashuWalletOperationFilters} from '../cashuwallet.types.js';
 
 /** Minimal mint that signs outputs for real with cashu-ts crypto; `failures` queues NUT errors for /v1/mint */
 const createFakeMint = () => {

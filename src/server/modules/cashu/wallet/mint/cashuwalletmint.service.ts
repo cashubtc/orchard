@@ -25,11 +25,11 @@ import {assertPublicHost} from '#server/modules/fetch/network-guard';
 /* Local Dependencies */
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
 import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
-import {CashuWalletProof} from './cashuwalletproof.entity.js';
-import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
-import {WalletProofState, WalletOperationState} from './cashuwallet.enums.js';
-import {MintAddressError, describeMintError, walletError} from './cashuwallet.helpers.js';
-import type {CashuWalletMintProbe, CashuWalletMintRecord, CashuWalletMintStatus, OrchardMintIdentity} from './cashuwallet.types.js';
+import {CashuWalletProof} from '../proof/cashuwalletproof.entity.js';
+import {CashuWalletOperation} from '../saga/cashuwalletoperation.entity.js';
+import {WalletProofState, WalletOperationState} from '../cashuwallet.enums.js';
+import {MintAddressError, describeMintError, walletError} from '../cashuwallet.helpers.js';
+import type {CashuWalletMintProbe, CashuWalletMintRecord, CashuWalletMintStatus, OrchardMintIdentity} from '../cashuwallet.types.js';
 
 const MINT_TIMEOUT_MS = 10_000;
 const MINT_MAX_BYTES = 256 * 1024;

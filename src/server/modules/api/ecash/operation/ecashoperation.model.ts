@@ -3,7 +3,7 @@ import {Field, ID, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 import {WalletOperationType, WalletOperationState} from '#server/modules/cashu/wallet/cashuwallet.enums';
-import type {CashuWalletOperation} from '#server/modules/cashu/wallet/cashuwalletoperation.entity';
+import type {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.entity';
 
 @ObjectType({description: "An operation in the current user's ecash wallet"})
 export class OrchardEcashOperation {

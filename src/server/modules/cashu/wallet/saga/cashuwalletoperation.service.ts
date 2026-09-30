@@ -20,10 +20,10 @@ import {
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
 /* Local Dependencies */
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
-import {CashuWalletProof} from './cashuwalletproof.entity.js';
+import {CashuWalletProof} from '../proof/cashuwalletproof.entity.js';
 import {CashuWalletCounter} from './cashuwalletcounter.entity.js';
-import {CashuWalletService} from './cashuwallet.service.js';
-import {CashuWalletMintService} from './cashuwalletmint.service.js';
+import {CashuWalletService} from '../cashuwallet.service.js';
+import {CashuWalletMintService} from '../mint/cashuwalletmint.service.js';
 import {
 	CashuMintErrorCode,
 	MintQuoteProgress,
@@ -31,14 +31,14 @@ import {
 	WalletOperationState,
 	WalletOperationType,
 	WalletProofState,
-} from './cashuwallet.enums.js';
-import {assessMintQuote, classifyMintError, deriveQuoteKey, describeMintError, walletError} from './cashuwallet.helpers.js';
+} from '../cashuwallet.enums.js';
+import {assessMintQuote, classifyMintError, deriveQuoteKey, describeMintError, walletError} from '../cashuwallet.helpers.js';
 import type {
 	CashuWalletIssueRequest,
 	CashuWalletMintQuote,
 	CashuWalletMintRequest,
 	CashuWalletOperationFilters,
-} from './cashuwallet.types.js';
+} from '../cashuwallet.types.js';
 
 const QUOTE_KEY_COUNTER = 'nut20';
 

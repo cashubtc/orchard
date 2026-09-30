@@ -9,8 +9,8 @@ import {FetchService} from '#server/modules/fetch/fetch.service';
 import {CashuWalletMintService} from './cashuwalletmint.service.js';
 import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
-import {CashuWalletProof} from './cashuwalletproof.entity.js';
-import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
+import {CashuWalletProof} from '../proof/cashuwalletproof.entity.js';
+import {CashuWalletOperation} from '../saga/cashuwalletoperation.entity.js';
 
 describe('CashuWalletMintService', () => {
 	let service: CashuWalletMintService;

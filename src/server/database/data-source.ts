@@ -17,13 +17,13 @@ import {Conversation} from '../modules/ai/conversation/conversation.entity.js';
 import {BitcoinAnalytics} from '../modules/bitcoin/analytics/btcanalytics.entity.js';
 import {SystemMetrics} from '../modules/system/metrics/sysmetrics.entity.js';
 import {MintMetrics} from '../modules/cashu/mintmetrics/mintmetrics.entity.js';
-import {CashuWalletSeed} from '../modules/cashu/wallet/cashuwalletseed.entity.js';
-import {CashuWalletCounter} from '../modules/cashu/wallet/cashuwalletcounter.entity.js';
-import {CashuWalletProof} from '../modules/cashu/wallet/cashuwalletproof.entity.js';
-import {CashuWalletOperation} from '../modules/cashu/wallet/cashuwalletoperation.entity.js';
-import {CashuWalletMint} from '../modules/cashu/wallet/cashuwalletmint.entity.js';
-import {CashuWalletMintInfo} from '../modules/cashu/wallet/cashuwalletmintinfo.entity.js';
-import {CashuWalletMintKeyset} from '../modules/cashu/wallet/cashuwalletmintkeyset.entity.js';
+import {CashuWalletSeed} from '../modules/cashu/wallet/seed/cashuwalletseed.entity.js';
+import {CashuWalletCounter} from '../modules/cashu/wallet/saga/cashuwalletcounter.entity.js';
+import {CashuWalletProof} from '../modules/cashu/wallet/proof/cashuwalletproof.entity.js';
+import {CashuWalletOperation} from '../modules/cashu/wallet/saga/cashuwalletoperation.entity.js';
+import {CashuWalletMint} from '../modules/cashu/wallet/mint/cashuwalletmint.entity.js';
+import {CashuWalletMintInfo} from '../modules/cashu/wallet/mint/cashuwalletmintinfo.entity.js';
+import {CashuWalletMintKeyset} from '../modules/cashu/wallet/mint/cashuwalletmintkeyset.entity.js';
 /* Local Dependencies */
 import * as migrations from './migrations/index.js';
 

@@ -1,7 +1,7 @@
 /* Vendor Dependencies */
 import {Entity, Column, PrimaryColumn, Index} from 'typeorm';
 /* Local Dependencies */
-import {WalletProofState} from './cashuwallet.enums.js';
+import {WalletProofState} from '../cashuwallet.enums.js';
 
 /**
  * Ecash proofs held by users' wallets.

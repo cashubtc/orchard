@@ -5,17 +5,17 @@ import {TypeOrmModule} from '@nestjs/typeorm';
 import {FetchModule} from '#server/modules/fetch/fetch.module';
 import {CashuMintRpcModule} from '#server/modules/cashu/mintrpc/cashumintrpc.module';
 /* Local Dependencies */
-import {CashuWalletSeed} from './cashuwalletseed.entity.js';
-import {CashuWalletCounter} from './cashuwalletcounter.entity.js';
-import {CashuWalletProof} from './cashuwalletproof.entity.js';
-import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
-import {CashuWalletMint} from './cashuwalletmint.entity.js';
-import {CashuWalletMintInfo} from './cashuwalletmintinfo.entity.js';
-import {CashuWalletMintKeyset} from './cashuwalletmintkeyset.entity.js';
+import {CashuWalletSeed} from './seed/cashuwalletseed.entity.js';
+import {CashuWalletCounter} from './saga/cashuwalletcounter.entity.js';
+import {CashuWalletProof} from './proof/cashuwalletproof.entity.js';
+import {CashuWalletOperation} from './saga/cashuwalletoperation.entity.js';
+import {CashuWalletMint} from './mint/cashuwalletmint.entity.js';
+import {CashuWalletMintInfo} from './mint/cashuwalletmintinfo.entity.js';
+import {CashuWalletMintKeyset} from './mint/cashuwalletmintkeyset.entity.js';
 import {CashuWalletService} from './cashuwallet.service.js';
-import {CashuWalletMintService} from './cashuwalletmint.service.js';
-import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
-import {CashuWalletOperationService} from './cashuwalletoperation.service.js';
+import {CashuWalletMintService} from './mint/cashuwalletmint.service.js';
+import {CashuWalletMintCacheService} from './mint/cashuwalletmintcache.service.js';
+import {CashuWalletOperationService} from './saga/cashuwalletoperation.service.js';
 
 @Module({
 	imports: [
