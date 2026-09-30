@@ -78,9 +78,9 @@ export class NavService {
 		],
 		ecash: [
 			{
-				name: 'Dashboard',
+				name: 'Wallet',
 				navroute: 'ecash',
-				subsection: 'dashboard',
+				subsection: 'wallet',
 			},
 		],
 		settings: [

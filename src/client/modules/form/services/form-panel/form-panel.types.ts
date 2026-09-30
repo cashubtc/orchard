@@ -8,6 +8,8 @@ export const FORM_PANEL_DATA = new InjectionToken<any>('FORM_PANEL_DATA');
 export interface FormPanelConfig<D = any> {
 	/** Data to inject into the component via FORM_PANEL_DATA */
 	data?: D;
+	/** On phones, open in a bottom sheet instead of the section's sidenav */
+	mobile_sheet?: boolean;
 }
 
 /** Internal state representing an active panel */

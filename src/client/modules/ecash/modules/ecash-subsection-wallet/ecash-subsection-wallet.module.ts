@@ -4,19 +4,19 @@ import {RouterModule as CoreRouterModule} from '@angular/router';
 /* Vendor Dependencies */
 import {MatIconModule} from '@angular/material/icon';
 /* Local Dependencies */
-import {EcashSubsectionDashboardComponent} from './components/ecash-subsection-dashboard/ecash-subsection-dashboard.component';
+import {EcashSubsectionWalletComponent} from './components/ecash-subsection-wallet/ecash-subsection-wallet.component';
 
 @NgModule({
-	declarations: [EcashSubsectionDashboardComponent],
+	declarations: [EcashSubsectionWalletComponent],
 	imports: [
 		CoreRouterModule.forChild([
 			{
 				path: '',
-				component: EcashSubsectionDashboardComponent,
+				component: EcashSubsectionWalletComponent,
 			},
 		]),
 		MatIconModule,
 	],
 	exports: [],
 })
-export class OrcEcashSubsectionDashboardModule {}
+export class OrcEcashSubsectionWalletModule {}

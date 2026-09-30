@@ -1,4 +1,25 @@
 <section class="section-container">
+	<orc-nav-secondary>
+		<div nav-secondary-header class="nav-secondary-header">
+			<div class="flex flex-items-center flex-gap-1">
+				<mat-icon class="mat-symbol-outline">payments</mat-icon>
+				<div class="text-nowrap">Ecash wallet</div>
+			</div>
+		</div>
+		<div nav-secondary-items>
+			@for (item of menu_items; track item.navroute) {
+				<orc-nav-secondary-item
+					[name]="item.name"
+					[navroute]="item.navroute"
+					[active]="active_sub_section() === item.subsection"
+				></orc-nav-secondary-item>
+			}
+		</div>
+		<div nav-secondary-toolbar class="nav-secondary-toolbar">
+			<div class="section-implementation">{{ version() }}</div>
+			<orc-nav-secondary-more></orc-nav-secondary-more>
+		</div>
+	</orc-nav-secondary>
 	<div class="subsection-container">
 		<router-outlet></router-outlet>
 	</div>
