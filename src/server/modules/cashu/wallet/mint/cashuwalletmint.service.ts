@@ -5,34 +5,17 @@ import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {In, Repository} from 'typeorm';
 import {DateTime} from 'luxon';
-import {
-	HttpResponseError,
-	JSONInt,
-	Mint,
-	MintInfo,
-	MintOperationError,
-	NetworkError,
-	RateLimitError,
-	Wallet,
-	normalizeMintUrl,
-	type KeyChainCache,
-	type RequestFn,
-	type RequestOptions,
-} from '@cashu/cashu-ts';
-/* Application Dependencies */
-import {FetchService} from '#server/modules/fetch/fetch.service';
-import {assertPublicHost} from '#server/modules/fetch/network-guard';
+import {HttpResponseError, Mint, MintInfo, Wallet, normalizeMintUrl, type KeyChainCache} from '@cashu/cashu-ts';
 /* Local Dependencies */
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
 import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
+import {CashuWalletMintTransportService} from './cashuwalletminttransport.service.js';
 import {CashuWalletProof} from '../proof/cashuwalletproof.entity.js';
 import {CashuWalletOperation} from '../saga/cashuwalletoperation.entity.js';
 import {WalletProofState, WalletOperationState} from '../cashuwallet.enums.js';
-import {MintAddressError, describeMintError, walletError} from '../cashuwallet.helpers.js';
+import {describeMintError, walletError} from '../cashuwallet.helpers.js';
 import type {CashuWalletMintProbe, CashuWalletMintRecord, CashuWalletMintStatus, OrchardMintIdentity} from '../cashuwallet.types.js';
 
-const MINT_TIMEOUT_MS = 10_000;
-const MINT_MAX_BYTES = 256 * 1024;
 const ORCHARD_RETRY_MS = 30_000;
 const WALLET_TTL_MS = 5 * 60_000;
 const STATUS_TTL_MS = 60_000;
@@ -42,8 +25,6 @@ type Memo<T> = {value: Promise<T>; expires_at: number};
 @Injectable()
 export class CashuWalletMintService {
 	private readonly logger = new Logger(CashuWalletMintService.name);
-	private readonly request: RequestFn = (options) => this.requestMint(options);
-	private readonly guarded_request: RequestFn = (options) => this.requestPublicMint(options);
 	private orchard_identity: Promise<OrchardMintIdentity | null> | null = null;
 	private orchard_failed_at = 0;
 	private wallets = new Map<string, Memo<Wallet>>();
@@ -57,8 +38,8 @@ export class CashuWalletMintService {
 		@InjectRepository(CashuWalletOperation)
 		private walletOperationRepository: Repository<CashuWalletOperation>,
 		private configService: ConfigService,
-		private fetchService: FetchService,
 		private cashuWalletMintCacheService: CashuWalletMintCacheService,
+		private cashuWalletMintTransportService: CashuWalletMintTransportService,
 	) {}
 
 	/* *******************************************************
@@ -84,7 +65,7 @@ export class CashuWalletMintService {
 			return record;
 		}
 
-		await this.assertPublicMintUrl(mint_url);
+		await this.cashuWalletMintTransportService.assertPublicMintUrl(mint_url);
 		const info = await this.fetchMintInfo(mint_url);
 		const pubkey = info.pubkey || null;
 		if (identity?.pubkey && pubkey === identity.pubkey) {
@@ -177,7 +158,8 @@ export class CashuWalletMintService {
 	/** cashu-ts Mint client for a wallet mint: MINT_API for the Orchard mint, the guarded transport for the rest */
 	public async getMint(mint: CashuWalletMint): Promise<Mint> {
 		const identity = await this.getOrchardIdentity();
-		const request = identity && this.isOrchardMint(mint, identity) ? this.request : this.guarded_request;
+		const transport = this.cashuWalletMintTransportService;
+		const request = identity && this.isOrchardMint(mint, identity) ? transport.request : transport.guarded_request;
 		return new Mint(this.sourceUrl(mint, identity), {customRequest: request});
 	}
 
@@ -314,7 +296,7 @@ export class CashuWalletMintService {
 	/** Fetch and validate a mint's /v1/info through cashu-ts */
 	private async fetchMintInfo(mint_url: string): Promise<MintInfo> {
 		try {
-			return await new Mint(mint_url, {customRequest: this.request}).getLazyMintInfo();
+			return await new Mint(mint_url, {customRequest: this.cashuWalletMintTransportService.request}).getLazyMintInfo();
 		} catch (error) {
 			const status = error instanceof HttpResponseError ? ` (HTTP ${error.status})` : '';
 			throw walletError(`Mint at ${mint_url} could not be looked up: ${error?.message ?? error}${status}`);
@@ -340,79 +322,5 @@ export class CashuWalletMintService {
 			}
 		});
 		return [...new Set(normalized)];
-	}
-
-	/** Refuse mint URLs that aren't https (onion via Tor excepted) or that reach a private network */
-	private async assertPublicMintUrl(mint_url: string): Promise<void> {
-		const {protocol, hostname} = new URL(mint_url);
-		const host = hostname.replace(/^\[|\]$/g, '');
-		if (host.endsWith('.onion')) {
-			if (this.configService.get<string>('server.proxy')) return;
-			throw walletError('Onion mints need a Tor proxy; set TOR_PROXY_SERVER');
-		}
-		if (protocol !== 'https:') throw walletError('Mint URLs must use https (http is only allowed for .onion mints)');
-		const resolved = await assertPublicHost(host).catch((error) => {
-			throw walletError(`${error?.message ?? error}; only public mints can be added`);
-		});
-		if (!resolved) throw walletError(`Could not resolve mint host ${host}`);
-	}
-
-	/* *******************************************************
-		Transport
-	******************************************************** */
-
-	/** Transport for user-added mints: re-checks the address on every request before sending it */
-	private async requestPublicMint<T>(options: RequestOptions): Promise<T> {
-		await this.assertPublicMintUrl(options.endpoint).catch((error) => {
-			throw new MintAddressError(error?.details ?? error?.message ?? String(error));
-		});
-		return this.requestMint<T>(options);
-	}
-
-	/** cashu-ts RequestFn over FetchService (Tor proxy, timeout, size cap, no redirects), keeping its error contract */
-	private async requestMint<T>({endpoint, requestBody, headers, method, requestTimeout, signal}: RequestOptions): Promise<T> {
-		const timeout_ms = requestTimeout ?? MINT_TIMEOUT_MS;
-		const timeout = AbortSignal.timeout(timeout_ms);
-		const toNetworkError = (error: any): never => {
-			const reason = timeout.aborted ? `timed out after ${timeout_ms}ms` : (error?.code ?? error?.message ?? error);
-			throw new NetworkError(`${endpoint}: ${reason}`, {cause: error});
-		};
-		const response = await this.fetchService
-			.fetchWithProxy(endpoint, {
-				method: method ?? (requestBody ? 'POST' : 'GET'),
-				headers: {Accept: 'application/json', ...(requestBody && {'Content-Type': 'application/json'}), ...headers},
-				body: requestBody ? JSONInt.stringify(requestBody) : undefined,
-				redirect: 'error',
-				signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-				size: MINT_MAX_BYTES,
-			})
-			.catch(toNetworkError);
-		const text = await response.text().catch(toNetworkError);
-		if (response.status === 429)
-			throw new RateLimitError('429 Too Many Requests', this.parseRetryAfter(response.headers.get('Retry-After')));
-		const body = this.parseBody(text);
-		if (response.ok && body) return body as T;
-		if (response.status === 400 && typeof body?.code === 'number' && typeof body?.detail === 'string') {
-			throw new MintOperationError(body.code, body.detail);
-		}
-		throw new HttpResponseError(body?.error ?? body?.detail ?? 'HTTP request failed', response.status);
-	}
-
-	/** Parse a mint response body with cashu-ts JSONInt, null when it isn't JSON */
-	private parseBody(text: string): any {
-		try {
-			return JSONInt.parse(text);
-		} catch {
-			return null;
-		}
-	}
-
-	/** Retry-After header (seconds or HTTP date) in milliseconds */
-	private parseRetryAfter(header: string | null): number | undefined {
-		if (!header) return undefined;
-		const seconds = Number(header);
-		if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
-		const date = Date.parse(header);
-		return Number.isNaN(date) ? undefined : Math.max(0, date - Date.now());
 	}
 }

@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {CashuWalletService} from '#server/modules/cashu/wallet/cashuwallet.service';
+import {CashuWalletSeedService} from '#server/modules/cashu/wallet/seed/cashuwalletseed.service';
 import {UserService} from '#server/modules/user/user.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
@@ -14,7 +14,7 @@ export class EcashSeedService {
 	private readonly logger = new Logger(EcashSeedService.name);
 
 	constructor(
-		private cashuWalletService: CashuWalletService,
+		private cashuWalletSeedService: CashuWalletSeedService,
 		private userService: UserService,
 		private errorService: ErrorService,
 	) {}
@@ -22,7 +22,7 @@ export class EcashSeedService {
 	/** Backup status of a user's wallet seed, null before the wallet is first used */
 	async getEcashSeed(tag: string, user_id: string): Promise<OrchardEcashSeed | null> {
 		try {
-			const seed = await this.cashuWalletService.getSeedStatus(user_id);
+			const seed = await this.cashuWalletSeedService.getSeedStatus(user_id);
 			return seed ? new OrchardEcashSeed(seed) : null;
 		} catch (error) {
 			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
@@ -38,7 +38,7 @@ export class EcashSeedService {
 			const user = await this.userService.getUserById(user_id);
 			if (!user) throw OrchardErrorCode.UserError;
 			if (!(await this.userService.validatePassword(user, password))) throw OrchardErrorCode.InvalidPasswordError;
-			return await this.cashuWalletService.getMnemonic(user_id);
+			return await this.cashuWalletSeedService.getMnemonic(user_id);
 		} catch (error) {
 			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
 				errord: OrchardErrorCode.EcashWalletError,
@@ -50,7 +50,7 @@ export class EcashSeedService {
 	/** Record that a user backed up their mnemonic */
 	async backupEcashSeed(tag: string, user_id: string): Promise<OrchardEcashSeed> {
 		try {
-			return new OrchardEcashSeed(await this.cashuWalletService.markBackedUp(user_id));
+			return new OrchardEcashSeed(await this.cashuWalletSeedService.markBackedUp(user_id));
 		} catch (error) {
 			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
 				errord: OrchardErrorCode.EcashWalletError,

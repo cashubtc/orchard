@@ -11,22 +11,18 @@ import {wordlist} from '@scure/bip39/wordlists/english.js';
 /* Application Dependencies */
 import {deriveEncryptionKeyFromHex, encryptValue, decryptValue} from '#server/modules/setting/setting.helpers';
 /* Local Dependencies */
-import {CashuWalletSeed} from './seed/cashuwalletseed.entity.js';
-import {CashuWalletProof} from './proof/cashuwalletproof.entity.js';
-import {WalletProofState} from './cashuwallet.enums.js';
-import {walletError} from './cashuwallet.helpers.js';
-import type {CashuWalletBalance, CashuWalletSeedStatus} from './cashuwallet.types.js';
+import {CashuWalletSeed} from './cashuwalletseed.entity.js';
+import {walletError} from '../cashuwallet.helpers.js';
+import type {CashuWalletSeedStatus} from '../cashuwallet.types.js';
 
 @Injectable()
-export class CashuWalletService {
-	private readonly logger = new Logger(CashuWalletService.name);
+export class CashuWalletSeedService {
+	private readonly logger = new Logger(CashuWalletSeedService.name);
 	private seeds = new Map<string, Promise<Uint8Array>>();
 
 	constructor(
 		@InjectRepository(CashuWalletSeed)
 		private walletSeedRepository: Repository<CashuWalletSeed>,
-		@InjectRepository(CashuWalletProof)
-		private walletProofRepository: Repository<CashuWalletProof>,
 		private configService: ConfigService,
 	) {}
 
@@ -96,24 +92,5 @@ export class CashuWalletService {
 		} catch {
 			throw new Error('Ecash wallet seed could not be decrypted; crypto.key or CRYPTO_KEY changed since the wallet was created');
 		}
-	}
-
-	/* *******************************************************
-		Balances
-	******************************************************** */
-
-	/** Sum a user's ready proofs by mint and unit */
-	public async getBalances(user_id: string): Promise<CashuWalletBalance[]> {
-		const rows = await this.walletProofRepository
-			.createQueryBuilder('proof')
-			.select('proof.mint_id', 'mint_id')
-			.addSelect('proof.unit', 'unit')
-			.addSelect('SUM(proof.amount)', 'balance')
-			.where('proof.user_id = :user_id', {user_id})
-			.andWhere('proof.state = :state', {state: WalletProofState.READY})
-			.groupBy('proof.mint_id')
-			.addGroupBy('proof.unit')
-			.getRawMany<CashuWalletBalance>();
-		return rows.map((row) => ({...row, balance: Number(row.balance)}));
 	}
 }

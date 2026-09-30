@@ -1,11 +1,9 @@
 /* Vendor Dependencies */
-import {Amount, HttpResponseError, MintQuoteState, RateLimitError, StaleKeysetError, isMintOperationError} from '@cashu/cashu-ts';
-import {HDKey} from '@scure/bip32';
+import {HttpResponseError, StaleKeysetError, isMintOperationError} from '@cashu/cashu-ts';
 /* Application Dependencies */
 import {OrchardErrorCode, OrchardErrorMessages} from '#server/modules/error/error.types';
 /* Local Dependencies */
-import {CashuMintErrorCode, MintQuoteProgress, WalletErrorAction} from './cashuwallet.enums.js';
-import type {CashuWalletMintQuote} from './cashuwallet.types.js';
+import {CashuMintErrorCode} from './cashuwallet.enums.js';
 
 const AUTH_CODES = new Set<number>([
 	CashuMintErrorCode.CLEAR_AUTH_REQUIRED,
@@ -16,19 +14,6 @@ const AUTH_CODES = new Set<number>([
 	CashuMintErrorCode.BAT_RATE_LIMIT_EXCEEDED,
 ]);
 
-const ACTION_BY_CODE: Partial<Record<number, WalletErrorAction>> = {
-	[CashuMintErrorCode.OUTPUTS_ALREADY_SIGNED]: WalletErrorAction.RESTORE,
-	[CashuMintErrorCode.QUOTE_ALREADY_ISSUED]: WalletErrorAction.RESTORE,
-	[CashuMintErrorCode.PROOFS_ALREADY_SPENT]: WalletErrorAction.CHECK_STATE,
-	[CashuMintErrorCode.PROOFS_PENDING]: WalletErrorAction.WAIT,
-	[CashuMintErrorCode.OUTPUTS_PENDING]: WalletErrorAction.WAIT,
-	[CashuMintErrorCode.QUOTE_PENDING]: WalletErrorAction.WAIT,
-	[CashuMintErrorCode.QUOTE_NOT_PAID]: WalletErrorAction.WAIT,
-	[CashuMintErrorCode.KEYSET_UNKNOWN]: WalletErrorAction.REBUILD,
-	[CashuMintErrorCode.KEYSET_INACTIVE]: WalletErrorAction.REBUILD,
-	[CashuMintErrorCode.KEYSET_EXPIRED]: WalletErrorAction.REBUILD,
-};
-
 /** Operator-facing wallet error, resolved to EcashWalletError with its details */
 export const walletError = (details: string) => ({code: OrchardErrorCode.EcashWalletError, details});
 
@@ -36,33 +21,6 @@ export const walletError = (details: string) => ({code: OrchardErrorCode.EcashWa
 export class MintAddressError extends Error {
 	name = 'MintAddressError';
 }
-
-/** Decide what a journaled operation does after a mint call fails; unknown outcomes wait, only definitive rejections fail */
-export const classifyMintError = (error: unknown): WalletErrorAction => {
-	if (error instanceof MintAddressError) return WalletErrorAction.FAIL;
-	if (error instanceof StaleKeysetError) return WalletErrorAction.REBUILD;
-	if (isMintOperationError(error)) return ACTION_BY_CODE[error.code] ?? WalletErrorAction.FAIL;
-	if (error instanceof HttpResponseError && !(error instanceof RateLimitError) && error.status < 500) return WalletErrorAction.FAIL;
-	return WalletErrorAction.WAIT;
-};
-
-/** How far any method's mint quote has progressed for an amount, from NUT-04 paid/issued totals or the legacy bolt11 state */
-export const assessMintQuote = (quote: CashuWalletMintQuote, amount: number, now: number): MintQuoteProgress => {
-	const legacy_paid = quote.state !== undefined && quote.state !== MintQuoteState.UNPAID;
-	const paid = quote.amount_paid ?? Amount.from(legacy_paid ? amount : 0);
-	const issued = quote.amount_issued ?? Amount.from(quote.state === MintQuoteState.ISSUED ? amount : 0);
-	if (paid.greaterThanOrEqual(issued.add(amount))) return MintQuoteProgress.MINTABLE;
-	if (!issued.isZero() && paid.lessThanOrEqual(issued)) return MintQuoteProgress.ISSUED;
-	if (paid.greaterThan(issued)) return MintQuoteProgress.WAITING;
-	return quote.expiry != null && quote.expiry <= now ? MintQuoteProgress.EXPIRED : MintQuoteProgress.WAITING;
-};
-
-/** NUT-20 quote locking keypair (hex) for a counter, derived from the wallet seed */
-export const deriveQuoteKey = (seed: Uint8Array, counter: number): {privkey: string; pubkey: string} => {
-	const node = HDKey.fromMasterSeed(seed).derive(`m/129373'/20'/0'/0'/${counter}`);
-	if (!node.privateKey || !node.publicKey) throw new Error(`No quote key at counter ${counter}`);
-	return {privkey: Buffer.from(node.privateKey).toString('hex'), pubkey: Buffer.from(node.publicKey).toString('hex')};
-};
 
 /** Operator-readable description of a failed mint or mint RPC call, naming the NUT error code when the mint sent one */
 export const describeMintError = (error: unknown): string => {

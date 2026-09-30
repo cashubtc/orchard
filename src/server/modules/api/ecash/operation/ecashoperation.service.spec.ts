@@ -3,6 +3,7 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
 import {CashuWalletOperationService} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.service';
+import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
@@ -15,6 +16,7 @@ import {OrchardEcashOperation} from './ecashoperation.model.js';
 describe('EcashOperationService', () => {
 	let ecashOperationService: EcashOperationService;
 	let cashuWalletOperationService: jest.Mocked<CashuWalletOperationService>;
+	let cashuWalletIssueService: jest.Mocked<CashuWalletIssueService>;
 	let errorService: jest.Mocked<ErrorService>;
 
 	const operation: any = {
@@ -37,16 +39,15 @@ describe('EcashOperationService', () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				EcashOperationService,
-				{
-					provide: CashuWalletOperationService,
-					useValue: {issueEcash: jest.fn(), listOperations: jest.fn(), countOperations: jest.fn()},
-				},
+				{provide: CashuWalletOperationService, useValue: {listOperations: jest.fn(), countOperations: jest.fn()}},
+				{provide: CashuWalletIssueService, useValue: {issueEcash: jest.fn()}},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
 			],
 		}).compile();
 
 		ecashOperationService = module.get<EcashOperationService>(EcashOperationService);
 		cashuWalletOperationService = module.get(CashuWalletOperationService);
+		cashuWalletIssueService = module.get(CashuWalletIssueService);
 		errorService = module.get(ErrorService);
 	});
 
@@ -69,9 +70,9 @@ describe('EcashOperationService', () => {
 	});
 
 	it('issueEcash returns the operation without its internals', async () => {
-		cashuWalletOperationService.issueEcash.mockResolvedValue(operation);
+		cashuWalletIssueService.issueEcash.mockResolvedValue(operation);
 		const result = await ecashOperationService.issueEcash('TAG', 'user-1', 'sat', 100, 'Giveaway');
-		expect(cashuWalletOperationService.issueEcash).toHaveBeenCalledWith({
+		expect(cashuWalletIssueService.issueEcash).toHaveBeenCalledWith({
 			user_id: 'user-1',
 			unit: 'sat',
 			amount: 100,
@@ -83,7 +84,7 @@ describe('EcashOperationService', () => {
 
 	it('wraps issue errors as OrchardApiError', async () => {
 		const wallet_error = {code: OrchardErrorCode.EcashWalletError, details: 'Mint error 11006: Amount out of limit range'};
-		cashuWalletOperationService.issueEcash.mockRejectedValue(wallet_error);
+		cashuWalletIssueService.issueEcash.mockRejectedValue(wallet_error);
 		errorService.resolveError.mockReturnValue(wallet_error);
 		await expect(ecashOperationService.issueEcash('TAG', 'user-1', 'sat', 1, null)).rejects.toBeInstanceOf(OrchardApiError);
 	});

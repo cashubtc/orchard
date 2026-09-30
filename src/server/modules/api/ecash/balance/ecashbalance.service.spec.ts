@@ -2,7 +2,7 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
-import {CashuWalletService} from '#server/modules/cashu/wallet/cashuwallet.service';
+import {CashuWalletProofService} from '#server/modules/cashu/wallet/proof/cashuwalletproof.service';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
@@ -12,20 +12,20 @@ import {OrchardEcashBalance} from './ecashbalance.model.js';
 
 describe('EcashBalanceService', () => {
 	let ecashBalanceService: EcashBalanceService;
-	let cashuWalletService: jest.Mocked<CashuWalletService>;
+	let cashuWalletProofService: jest.Mocked<CashuWalletProofService>;
 	let errorService: jest.Mocked<ErrorService>;
 
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				EcashBalanceService,
-				{provide: CashuWalletService, useValue: {getBalances: jest.fn()}},
+				{provide: CashuWalletProofService, useValue: {getBalances: jest.fn()}},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
 			],
 		}).compile();
 
 		ecashBalanceService = module.get<EcashBalanceService>(EcashBalanceService);
-		cashuWalletService = module.get(CashuWalletService);
+		cashuWalletProofService = module.get(CashuWalletProofService);
 		errorService = module.get(ErrorService);
 	});
 
@@ -34,14 +34,14 @@ describe('EcashBalanceService', () => {
 	});
 
 	it("getEcashBalances maps the user's balances to OrchardEcashBalance[]", async () => {
-		cashuWalletService.getBalances.mockResolvedValue([{mint_id: 'mint-1', unit: 'sat', balance: 1}]);
+		cashuWalletProofService.getBalances.mockResolvedValue([{mint_id: 'mint-1', unit: 'sat', balance: 1}]);
 		const result = await ecashBalanceService.getEcashBalances('TAG', 'user-1');
-		expect(cashuWalletService.getBalances).toHaveBeenCalledWith('user-1');
+		expect(cashuWalletProofService.getBalances).toHaveBeenCalledWith('user-1');
 		expect(result[0]).toBeInstanceOf(OrchardEcashBalance);
 	});
 
 	it('wraps errors via resolveError and throws OrchardApiError', async () => {
-		cashuWalletService.getBalances.mockRejectedValue(new Error('boom'));
+		cashuWalletProofService.getBalances.mockRejectedValue(new Error('boom'));
 		errorService.resolveError.mockReturnValue({code: OrchardErrorCode.EcashWalletError} as any);
 		await expect(ecashBalanceService.getEcashBalances('TAG', 'user-1')).rejects.toBeInstanceOf(OrchardApiError);
 		expect(errorService.resolveError).toHaveBeenCalledWith(expect.anything(), expect.any(Error), 'TAG', {

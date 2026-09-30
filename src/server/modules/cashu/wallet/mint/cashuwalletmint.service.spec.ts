@@ -8,6 +8,7 @@ import {FetchService} from '#server/modules/fetch/fetch.service';
 /* Local Dependencies */
 import {CashuWalletMintService} from './cashuwalletmint.service.js';
 import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
+import {CashuWalletMintTransportService} from './cashuwalletminttransport.service.js';
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
 import {CashuWalletProof} from '../proof/cashuwalletproof.entity.js';
 import {CashuWalletOperation} from '../saga/cashuwalletoperation.entity.js';
@@ -83,6 +84,7 @@ describe('CashuWalletMintService', () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				CashuWalletMintService,
+				CashuWalletMintTransportService,
 				{provide: getRepositoryToken(CashuWalletMint), useValue: mint_repository},
 				{provide: getRepositoryToken(CashuWalletProof), useValue: proof_repository},
 				{provide: getRepositoryToken(CashuWalletOperation), useValue: operation_repository},
@@ -262,19 +264,6 @@ describe('CashuWalletMintService', () => {
 			await service.checkMints('user-1');
 			expect(cedarChecks()).toBe(2);
 			now.mockRestore();
-		});
-	});
-
-	describe('transport', () => {
-		it('aborts a mint that never answers once the request timeout passes', async () => {
-			const aborted = () => Object.assign(new Error('The operation was aborted.'), {name: 'AbortError'});
-			route(
-				'https://203.0.113.12',
-				({signal}) => new Promise((_, reject) => signal.addEventListener('abort', () => reject(aborted()))),
-			);
-			await expect(service['requestMint']({endpoint: 'https://203.0.113.12/v1/info', requestTimeout: 20})).rejects.toThrow(
-				'https://203.0.113.12/v1/info: timed out after 20ms',
-			);
 		});
 	});
 

@@ -8,28 +8,16 @@ import {mnemonicToSeedSync} from '@scure/bip39';
 /* Application Dependencies */
 import {deriveEncryptionKeyFromHex, encryptValue, decryptValue} from '#server/modules/setting/setting.helpers';
 /* Local Dependencies */
-import {CashuWalletService} from './cashuwallet.service.js';
-import {CashuWalletSeed} from './seed/cashuwalletseed.entity.js';
-import {CashuWalletProof} from './proof/cashuwalletproof.entity.js';
-import {WalletProofState} from './cashuwallet.enums.js';
+import {CashuWalletSeedService} from './cashuwalletseed.service.js';
+import {CashuWalletSeed} from './cashuwalletseed.entity.js';
 
-describe('CashuWalletService', () => {
-	let service: CashuWalletService;
+describe('CashuWalletSeedService', () => {
+	let service: CashuWalletSeedService;
 
 	const test_crypto_key = 'ab'.repeat(32);
 	const test_mnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 
 	const mock_seed_repository = {findOne: jest.fn(), findOneByOrFail: jest.fn(), insert: jest.fn(), update: jest.fn()};
-	const mock_query_builder: any = {
-		select: jest.fn().mockReturnThis(),
-		addSelect: jest.fn().mockReturnThis(),
-		where: jest.fn().mockReturnThis(),
-		andWhere: jest.fn().mockReturnThis(),
-		groupBy: jest.fn().mockReturnThis(),
-		addGroupBy: jest.fn().mockReturnThis(),
-		getRawMany: jest.fn(),
-	};
-	const mock_proof_repository = {createQueryBuilder: jest.fn(() => mock_query_builder)};
 	const mock_config_service = {get: jest.fn()};
 
 	beforeEach(async () => {
@@ -38,14 +26,13 @@ describe('CashuWalletService', () => {
 
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
-				CashuWalletService,
+				CashuWalletSeedService,
 				{provide: getRepositoryToken(CashuWalletSeed), useValue: mock_seed_repository},
-				{provide: getRepositoryToken(CashuWalletProof), useValue: mock_proof_repository},
 				{provide: ConfigService, useValue: mock_config_service},
 			],
 		}).compile();
 
-		service = module.get<CashuWalletService>(CashuWalletService);
+		service = module.get<CashuWalletSeedService>(CashuWalletSeedService);
 	});
 
 	it('should be defined', () => {
@@ -117,16 +104,6 @@ describe('CashuWalletService', () => {
 			mock_seed_repository.update.mockResolvedValue({affected: 0});
 			await expect(service.markBackedUp('user-1')).rejects.toMatchObject({details: expect.stringContaining('no seed yet')});
 			expect(mock_seed_repository.insert).not.toHaveBeenCalled();
-		});
-	});
-
-	describe('getBalances', () => {
-		it("sums the user's ready proofs by mint and unit", async () => {
-			mock_query_builder.getRawMany.mockResolvedValue([{mint_id: 'mint-1', unit: 'sat', balance: '42'}]);
-			const balances = await service.getBalances('user-1');
-			expect(mock_query_builder.where).toHaveBeenCalledWith('proof.user_id = :user_id', {user_id: 'user-1'});
-			expect(mock_query_builder.andWhere).toHaveBeenCalledWith('proof.state = :state', {state: WalletProofState.READY});
-			expect(balances).toEqual([{mint_id: 'mint-1', unit: 'sat', balance: 42}]);
 		});
 	});
 });

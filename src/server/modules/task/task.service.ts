@@ -16,7 +16,7 @@ import {AgentService} from '#server/modules/ai/agent/agent.service';
 import {ConversationService} from '#server/modules/ai/conversation/conversation.service';
 import {SystemMetricsService} from '#server/modules/system/metrics/sysmetrics.service';
 import {MintMetricsService} from '#server/modules/cashu/mintmetrics/mintmetrics.service';
-import {CashuWalletOperationService} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.service';
+import {CashuWalletRecoveryService} from '#server/modules/cashu/wallet/saga/cashuwalletrecovery.service';
 import {BitcoinType} from '#server/modules/bitcoin/bitcoin.enums';
 import {SettingKey} from '#server/modules/setting/setting.enums';
 
@@ -37,7 +37,7 @@ export class TaskService {
 		private conversationService: ConversationService,
 		private systemMetricsService: SystemMetricsService,
 		private mintMetricsService: MintMetricsService,
-		private cashuWalletOperationService: CashuWalletOperationService,
+		private cashuWalletRecoveryService: CashuWalletRecoveryService,
 	) {}
 
 	/**
@@ -369,7 +369,7 @@ export class TaskService {
 	})
 	async reconcileEcashWallet() {
 		try {
-			await this.cashuWalletOperationService.reconcileOperations();
+			await this.cashuWalletRecoveryService.reconcileOperations();
 		} catch (error) {
 			this.logger.error(`Error reconciling ecash wallet operations: ${error.message}`);
 		}

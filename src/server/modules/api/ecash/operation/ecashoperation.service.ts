@@ -2,6 +2,7 @@
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
 import {CashuWalletOperationService} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.service';
+import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {ErrorService} from '#server/modules/error/error.service';
@@ -16,6 +17,7 @@ export class EcashOperationService {
 
 	constructor(
 		private cashuWalletOperationService: CashuWalletOperationService,
+		private cashuWalletIssueService: CashuWalletIssueService,
 		private errorService: ErrorService,
 	) {}
 
@@ -47,7 +49,7 @@ export class EcashOperationService {
 	/** Issue ecash on the Orchard mint into a user's wallet */
 	async issueEcash(tag: string, user_id: string, unit: string, amount: number, memo: string | null): Promise<OrchardEcashOperation> {
 		try {
-			const operation = await this.cashuWalletOperationService.issueEcash({user_id, unit, amount, memo});
+			const operation = await this.cashuWalletIssueService.issueEcash({user_id, unit, amount, memo});
 			return new OrchardEcashOperation(operation);
 		} catch (error) {
 			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
