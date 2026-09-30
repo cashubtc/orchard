@@ -17,8 +17,9 @@ import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
 import {CashuWalletProof} from './cashuwalletproof.entity.js';
 import {CashuWalletCounter} from './cashuwalletcounter.entity.js';
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
-import {WalletOperationState, WalletProofState} from './cashuwallet.enums.js';
+import {WalletOperationState, WalletOperationType, WalletProofState} from './cashuwallet.enums.js';
 import {walletError} from './cashuwallet.helpers.js';
+import type {CashuWalletOperationFilters} from './cashuwallet.types.js';
 
 /** Minimal mint that signs outputs for real with cashu-ts crypto; `failures` queues NUT errors for /v1/mint */
 const createFakeMint = () => {
@@ -251,6 +252,42 @@ describe('CashuWalletOperationService', () => {
 		await expect(service.issueEcash({user_id: 'user-1', unit: 'sat', amount: 100, memo: null})).rejects.toEqual(walletError(reason));
 		expect(await operations()).toEqual([expect.objectContaining({state: WalletOperationState.FAILED, error: reason})]);
 		expect(await proofs()).toEqual([]);
+	});
+
+	describe('listOperations and countOperations', () => {
+		const ids = async (filters?: CashuWalletOperationFilters) =>
+			(await service.listOperations('user-1', filters)).map((operation) => operation.id);
+		const seedOperations = async () => {
+			const operations = await Promise.all(
+				['quote-a', 'quote-b', 'quote-c'].map((quote_id) => service.createMintOperation(request(quote_id))),
+			);
+			const repository = data_source.getRepository(CashuWalletOperation);
+			await repository.update({id: operations[0].id}, {created_at: 100, state: WalletOperationState.FINALIZED});
+			await repository.update({id: operations[1].id}, {created_at: 200, state: WalletOperationState.FAILED});
+			await repository.update({id: operations[2].id}, {created_at: 300});
+			await repository.save({...operations[0], id: undefined, user_id: 'user-2', created_at: 400});
+			return operations;
+		};
+
+		it("lists a user's operations newest first, never another user's", async () => {
+			const [first, second, third] = await seedOperations();
+			expect(await ids()).toEqual([third.id, second.id, first.id]);
+		});
+
+		it('filters by state and date range, and counts without paging', async () => {
+			const [first, second] = await seedOperations();
+			const filters = {states: [WalletOperationState.FINALIZED, WalletOperationState.FAILED], date_start: 50, date_end: 250};
+			expect(await ids(filters)).toEqual([second.id, first.id]);
+			expect(await ids({...filters, page: 1, page_size: 1})).toEqual([first.id]);
+			expect(await service.countOperations('user-1', {...filters, page: 1, page_size: 1})).toBe(2);
+		});
+
+		it('filters by unit, mint, method and type', async () => {
+			await seedOperations();
+			const filters = {units: ['sat'], mint_ids: [mint_row.id], methods: ['bolt11'], types: [WalletOperationType.MINT]};
+			expect(await service.countOperations('user-1', filters)).toBe(3);
+			expect(await service.countOperations('user-1', {methods: ['bolt12']})).toBe(0);
+		});
 	});
 
 	describe('reconcileOperations', () => {

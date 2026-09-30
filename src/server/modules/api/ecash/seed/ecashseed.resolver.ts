@@ -3,14 +3,10 @@ import {Logger} from '@nestjs/common';
 import {Resolver, Query, Mutation, Args, Context} from '@nestjs/graphql';
 /* Vendor Dependencies */
 import {Throttle, seconds} from '@nestjs/throttler';
-/* Application Dependencies */
-import {Roles} from '#server/modules/auth/decorators/auth.decorator';
-import {UserRole} from '#server/modules/user/user.enums';
 /* Local Dependencies */
 import {EcashSeedService} from './ecashseed.service.js';
 import {OrchardEcashSeed} from './ecashseed.model.js';
 
-@Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.READER)
 @Resolver()
 export class EcashSeedResolver {
 	private readonly logger = new Logger(EcashSeedResolver.name);

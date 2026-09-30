@@ -9,7 +9,7 @@ import {WalletOperationType, WalletOperationState} from './cashuwallet.enums.js'
  */
 @Entity('cashu_wallet_operations')
 @Index(['state'])
-@Index(['user_id'])
+@Index(['user_id', 'created_at'])
 export class CashuWalletOperation {
 	@PrimaryGeneratedColumn('uuid')
 	id: string;

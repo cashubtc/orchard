@@ -1,14 +1,10 @@
 /* Core Dependencies */
 import {Logger} from '@nestjs/common';
 import {Resolver, Query, Context} from '@nestjs/graphql';
-/* Application Dependencies */
-import {Roles} from '#server/modules/auth/decorators/auth.decorator';
-import {UserRole} from '#server/modules/user/user.enums';
 /* Local Dependencies */
 import {EcashBalanceService} from './ecashbalance.service.js';
 import {OrchardEcashBalance} from './ecashbalance.model.js';
 
-@Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.READER)
 @Resolver(() => [OrchardEcashBalance])
 export class EcashBalanceResolver {
 	private readonly logger = new Logger(EcashBalanceResolver.name);

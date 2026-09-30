@@ -6,6 +6,8 @@ import {CashuWalletOperationService} from '#server/modules/cashu/wallet/cashuwal
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {OrchardCommonCount} from '#server/modules/api/common/entity-count.model';
+import {WalletOperationState} from '#server/modules/cashu/wallet/cashuwallet.enums';
 /* Local Dependencies */
 import {EcashOperationService} from './ecashoperation.service.js';
 import {OrchardEcashOperation} from './ecashoperation.model.js';
@@ -21,6 +23,7 @@ describe('EcashOperationService', () => {
 		mint_id: 'mint-1',
 		type: 'MINT',
 		state: 'FINALIZED',
+		method: 'bolt11',
 		unit: 'sat',
 		amount: 100,
 		memo: 'Giveaway',
@@ -34,7 +37,10 @@ describe('EcashOperationService', () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				EcashOperationService,
-				{provide: CashuWalletOperationService, useValue: {issueEcash: jest.fn()}},
+				{
+					provide: CashuWalletOperationService,
+					useValue: {issueEcash: jest.fn(), listOperations: jest.fn(), countOperations: jest.fn()},
+				},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
 			],
 		}).compile();
@@ -46,6 +52,20 @@ describe('EcashOperationService', () => {
 
 	it('should be defined', () => {
 		expect(ecashOperationService).toBeDefined();
+	});
+
+	it('getEcashOperations passes the filters through and maps each operation', async () => {
+		cashuWalletOperationService.listOperations.mockResolvedValue([operation]);
+		const filters = {states: [WalletOperationState.FINALIZED], page: 0, page_size: 5};
+		const [result] = await ecashOperationService.getEcashOperations('TAG', 'user-1', filters);
+		expect(cashuWalletOperationService.listOperations).toHaveBeenCalledWith('user-1', filters);
+		expect(result).toBeInstanceOf(OrchardEcashOperation);
+		expect(result.method).toBe('bolt11');
+	});
+
+	it('getEcashOperationCount wraps the count', async () => {
+		cashuWalletOperationService.countOperations.mockResolvedValue(7);
+		await expect(ecashOperationService.getEcashOperationCount('TAG', 'user-1', {})).resolves.toEqual(new OrchardCommonCount(7));
 	});
 
 	it('issueEcash returns the operation without its internals', async () => {

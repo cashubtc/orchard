@@ -19,6 +19,9 @@ export class OrchardEcashOperation {
 	@Field(() => WalletOperationState, {description: 'Operation state'})
 	state: WalletOperationState;
 
+	@Field(() => String, {nullable: true, description: 'Payment method (bolt11, bolt12, onchain or custom); null for swaps'})
+	method: string | null;
+
 	@Field({description: 'Unit of the amount'})
 	unit: string;
 
@@ -42,6 +45,7 @@ export class OrchardEcashOperation {
 		this.mint_id = operation.mint_id;
 		this.type = operation.type;
 		this.state = operation.state;
+		this.method = operation.method;
 		this.unit = operation.unit;
 		this.amount = operation.amount;
 		this.memo = operation.memo;

@@ -3,11 +3,24 @@ import type {MintInfo, MintQuoteBaseResponse, MintQuoteState} from '@cashu/cashu
 /* Local Dependencies */
 import type {CashuWalletMint} from './cashuwalletmint.entity.js';
 import type {CashuWalletSeed} from './cashuwalletseed.entity.js';
+import type {WalletOperationState, WalletOperationType} from './cashuwallet.enums.js';
 
 export type CashuWalletBalance = {
 	mint_id: string;
 	unit: string;
 	balance: number;
+};
+
+export type CashuWalletOperationFilters = {
+	date_start?: number;
+	date_end?: number;
+	units?: string[];
+	mint_ids?: string[];
+	methods?: string[];
+	states?: WalletOperationState[];
+	types?: WalletOperationType[];
+	page?: number;
+	page_size?: number;
 };
 
 export type CashuWalletMintQuote = MintQuoteBaseResponse & {
