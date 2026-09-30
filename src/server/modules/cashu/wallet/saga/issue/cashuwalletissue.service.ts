@@ -20,7 +20,7 @@ import {
 	WalletOperationType,
 } from '../../cashuwallet.enums.js';
 import {describeMintError, walletError} from '../../cashuwallet.helpers.js';
-import {classifyMintError} from '../cashuwalletsaga.helpers.js';
+import {classifyMintError, classifyMintRpcError} from '../cashuwalletsaga.helpers.js';
 import {assessMintQuote, deriveQuoteKey} from './cashuwalletissue.helpers.js';
 import type {CashuWalletIssueRequest, CashuWalletMintQuote, CashuWalletMintRequest} from '../../cashuwallet.types.js';
 
@@ -114,8 +114,16 @@ export class CashuWalletIssueService {
 		try {
 			await this.cashuMintRpcService.updateNut04Quote({quote_id: operation.quote_id!, state: MintQuoteState.PAID});
 		} catch (error) {
-			const reason = `Mint RPC could not mark the quote paid: ${describeMintError(error)}`;
-			await this.cashuWalletJournalService.transition(operation, WalletOperationState.FAILED, {error: reason});
+			// A refusal is final; any other failure may have applied, so reconciliation settles it against the quote
+			const refused = classifyMintRpcError(error) === WalletErrorAction.FAIL;
+			const reason = `Mint RPC could not mark the quote paid: ${describeMintError(error)}${refused ? '' : '; the issue completes on its own if the mint applied it'}`;
+			await this.cashuWalletJournalService.transition(
+				operation,
+				refused ? WalletOperationState.FAILED : WalletOperationState.PENDING,
+				{
+					error: reason,
+				},
+			);
 			throw walletError(reason);
 		}
 		return this.executeMintOperation(operation.id);

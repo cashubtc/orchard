@@ -5,6 +5,7 @@ import {getRepositoryToken} from '@nestjs/typeorm';
 import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {DataSource} from 'typeorm';
+import {status} from '@grpc/grpc-js';
 import {createBlindSignature, createNewMintKeys, pointFromHex, serializeMintKeys, verifyMintQuoteSignature} from '@cashu/cashu-ts';
 /* Application Dependencies */
 import {FetchService} from '#server/modules/fetch/fetch.service';
@@ -329,12 +330,31 @@ describe('CashuWalletIssueService', () => {
 		expect(await total()).toBe(100);
 	});
 
-	it('fails the issue when the mint RPC cannot mark the quote paid', async () => {
-		mint_rpc.updateNut04Quote.mockRejectedValueOnce({code: 40007, details: 'quote not found'});
-		const reason = 'Mint RPC could not mark the quote paid: quote not found';
+	it('fails the issue when the mint RPC refuses to mark the quote paid', async () => {
+		const refused = Object.assign(new Error('7 PERMISSION_DENIED: Mint quote state override is disabled'), {
+			code: status.PERMISSION_DENIED,
+		});
+		mint_rpc.updateNut04Quote.mockRejectedValueOnce(refused);
+		const reason = 'Mint RPC could not mark the quote paid: 7 PERMISSION_DENIED: Mint quote state override is disabled';
 		await expect(service.issueEcash({user_id: 'user-1', unit: 'sat', amount: 100, memo: null})).rejects.toEqual(walletError(reason));
 		expect(await operations()).toEqual([expect.objectContaining({state: WalletOperationState.FAILED, error: reason})]);
 		expect(await proofs()).toEqual([]);
+	});
+
+	it('keeps the issue pending when the mint RPC response is lost, finishing it once reconciliation finds the quote paid', async () => {
+		mint_rpc.updateNut04Quote.mockImplementationOnce(async ({quote_id}: {quote_id: string}) => {
+			mint.quotes.get(quote_id)!.state = 'PAID';
+			throw {code: 40005, details: 'Connection dropped'};
+		});
+		await expect(service.issueEcash({user_id: 'user-1', unit: 'sat', amount: 100, memo: null})).rejects.toMatchObject({
+			details: expect.stringContaining('completes on its own'),
+		});
+		const [operation] = await operations();
+		expect(operation).toMatchObject({state: WalletOperationState.PENDING, error: expect.stringContaining('Connection dropped')});
+
+		await recovery.reconcileOperations();
+		expect(await reload(operation.id)).toMatchObject({state: WalletOperationState.FINALIZED, error: null});
+		expect(await total()).toBe(100);
 	});
 
 	describe('reconcileOperations', () => {

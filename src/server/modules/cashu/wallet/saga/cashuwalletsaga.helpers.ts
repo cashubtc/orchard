@@ -1,5 +1,8 @@
 /* Vendor Dependencies */
 import {HttpResponseError, RateLimitError, StaleKeysetError, isMintOperationError} from '@cashu/cashu-ts';
+import {status} from '@grpc/grpc-js';
+/* Application Dependencies */
+import {OrchardErrorCode} from '#server/modules/error/error.types';
 /* Local Dependencies */
 import {CashuMintErrorCode, WalletErrorAction} from '../cashuwallet.enums.js';
 import {MintAddressError} from '../cashuwallet.helpers.js';
@@ -17,6 +20,14 @@ const ACTION_BY_CODE: Partial<Record<number, WalletErrorAction>> = {
 	[CashuMintErrorCode.KEYSET_EXPIRED]: WalletErrorAction.REBUILD,
 };
 
+/** Mint RPC refusals, which leave the mint untouched: Orchard's codes for mapped gRPC statuses, and statuses it passes through raw */
+const RPC_REFUSALS = new Set<number>([
+	OrchardErrorCode.MintSupportError,
+	OrchardErrorCode.MintRpcInvalidArgumentError,
+	status.PERMISSION_DENIED,
+	status.FAILED_PRECONDITION,
+]);
+
 /** Decide what a journaled operation does after a mint call fails; unknown outcomes wait, only definitive rejections fail */
 export const classifyMintError = (error: unknown): WalletErrorAction => {
 	if (error instanceof MintAddressError) return WalletErrorAction.FAIL;
@@ -24,4 +35,11 @@ export const classifyMintError = (error: unknown): WalletErrorAction => {
 	if (isMintOperationError(error)) return ACTION_BY_CODE[error.code] ?? WalletErrorAction.FAIL;
 	if (error instanceof HttpResponseError && !(error instanceof RateLimitError) && error.status < 500) return WalletErrorAction.FAIL;
 	return WalletErrorAction.WAIT;
+};
+
+/** Decide what a journaled operation does after a mint RPC call fails: refusals fail, anything that may have applied waits */
+export const classifyMintRpcError = (error: unknown): WalletErrorAction => {
+	if (typeof error === 'number') return WalletErrorAction.FAIL; // CashuMintRpcService throws bare codes only before sending
+	const code = (error as {code?: unknown} | null)?.code;
+	return typeof code === 'number' && RPC_REFUSALS.has(code) ? WalletErrorAction.FAIL : WalletErrorAction.WAIT;
 };

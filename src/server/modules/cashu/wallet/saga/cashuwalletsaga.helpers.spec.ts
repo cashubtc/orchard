@@ -2,8 +2,11 @@
 import {expect} from '@jest/globals';
 /* Vendor Dependencies */
 import {HttpResponseError, MintOperationError, NetworkError, RateLimitError, StaleKeysetError} from '@cashu/cashu-ts';
+import {status} from '@grpc/grpc-js';
+/* Application Dependencies */
+import {OrchardErrorCode} from '#server/modules/error/error.types';
 /* Local Dependencies */
-import {classifyMintError} from './cashuwalletsaga.helpers.js';
+import {classifyMintError, classifyMintRpcError} from './cashuwalletsaga.helpers.js';
 import {MintAddressError} from '../cashuwallet.helpers.js';
 import {CashuMintErrorCode, WalletErrorAction} from '../cashuwallet.enums.js';
 
@@ -42,5 +45,22 @@ describe('classifyMintError', () => {
 
 	it('fails on other client errors', () => {
 		expect(classifyMintError(new HttpResponseError('not found', 404))).toBe(WalletErrorAction.FAIL);
+	});
+});
+
+describe('classifyMintRpcError', () => {
+	it.each([
+		['the RPC client failing before sending', OrchardErrorCode.MintRpcConnectionError, WalletErrorAction.FAIL],
+		[
+			'an invalid argument',
+			{code: OrchardErrorCode.MintRpcInvalidArgumentError, details: 'Could not find quote'},
+			WalletErrorAction.FAIL,
+		],
+		['a disabled override', Object.assign(new Error('override is disabled'), {code: status.PERMISSION_DENIED}), WalletErrorAction.FAIL],
+		['a dropped connection', {code: OrchardErrorCode.MintRpcConnectionError, details: 'Connection dropped'}, WalletErrorAction.WAIT],
+		['a deadline', Object.assign(new Error('deadline exceeded'), {code: status.DEADLINE_EXCEEDED}), WalletErrorAction.WAIT],
+		['an unexpected error', new Error('boom'), WalletErrorAction.WAIT],
+	])('%s: %s', (_label, error, action) => {
+		expect(classifyMintRpcError(error)).toBe(action);
 	});
 });
