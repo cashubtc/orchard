@@ -26,12 +26,13 @@ import {CashuWalletMintTransportService} from '../../mint/cashuwalletminttranspo
 import {WalletOperationState, WalletProofState} from '../../cashuwallet.enums.js';
 import {walletError} from '../../cashuwallet.helpers.js';
 
-/** Minimal mint that signs outputs for real with cashu-ts crypto; `failures` queues NUT errors for /v1/mint */
+/** Minimal mint that signs outputs for real with cashu-ts crypto; `failures` queues NUT errors for /v1/mint, `outages` fails whole paths */
 const createFakeMint = () => {
 	const keyset = createNewMintKeys(8, undefined, {unit: 'sat'});
 	const signed = new Map<string, {id: string; amount: number; C_: string}>();
 	const quotes = new Map<string, {pubkey?: string; state: string; amount: number; expiry: number | null}>();
 	const failures: {code: number; detail: string}[] = [];
+	const outages = new Set<string>();
 	const info = {
 		name: 'Orchard Test Mint',
 		pubkey: '02orchard',
@@ -54,6 +55,7 @@ const createFakeMint = () => {
 		return {quote: id, request: `lnbc${quote.amount * 10}n1fake`, unit: 'sat', ...quote};
 	};
 	const handle = (path: string, body: any): [number, any] => {
+		if (outages.has(path)) return [503, {detail: 'Service unavailable'}];
 		if (path === '/v1/info') return [200, info];
 		if (path === '/v1/keysets') return [200, keysets];
 		if (path.startsWith('/v1/keys')) return [200, keys];
@@ -90,7 +92,7 @@ const createFakeMint = () => {
 		}
 		return [404, {detail: 'not found'}];
 	};
-	return {keyset, quotes, failures, handle};
+	return {keyset, quotes, failures, outages, handle};
 };
 
 describe('CashuWalletIssueService', () => {
@@ -131,6 +133,18 @@ describe('CashuWalletIssueService', () => {
 	const counter = () =>
 		data_source.getRepository(CashuWalletCounter).findOneByOrFail({user_id: 'user-1', counter_key: mint.keyset.keysetId});
 	const reload = (id: string) => data_source.getRepository(CashuWalletOperation).findOneByOrFail({id});
+	const secrets = async () => (await proofs()).map((proof) => proof.secret).sort();
+	const total = async () => (await proofs()).reduce((sum, proof) => sum + proof.amount, 0);
+	const requests = (path: RegExp) => fetch_service.fetchWithProxy.mock.calls.filter(([url]) => path.test(url)).length;
+	/** An operation the mint signed whose response never arrived, so it is still executing; returns it with the signed secrets */
+	const signedUnconfirmed = async () => {
+		const operation = await service.createMintOperation(request());
+		await service.executeMintOperation(operation.id);
+		const signed = await secrets();
+		await data_source.getRepository(CashuWalletProof).clear();
+		await data_source.getRepository(CashuWalletOperation).update({id: operation.id}, {state: WalletOperationState.EXECUTING});
+		return {operation, signed};
+	};
 
 	const entities = [
 		CashuWalletOperation,
@@ -200,7 +214,7 @@ describe('CashuWalletIssueService', () => {
 		expect(result.state).toBe(WalletOperationState.FINALIZED);
 		expect(stored.map((proof) => proof.amount).sort((a, b) => a - b)).toEqual([4, 32, 64]);
 		expect(stored.every((proof) => proof.state === WalletProofState.READY && proof.created_by_op_id === operation.id)).toBe(true);
-		expect(fetch_service.fetchWithProxy.mock.calls.filter(([url]) => url.endsWith('/v1/keysets'))).toHaveLength(1);
+		expect(requests(/\/v1\/keysets$/)).toBe(1);
 	});
 
 	it('loads from the mint when the cached keyset has no keys, and caches what it loaded', async () => {
@@ -222,13 +236,13 @@ describe('CashuWalletIssueService', () => {
 	it('builds the wallet from the shared cache after a restart, without fetching keysets or keys again', async () => {
 		const first = await service.createMintOperation(request('quote-1'));
 		await service.executeMintOperation(first.id);
-		const keyset_calls = () => fetch_service.fetchWithProxy.mock.calls.filter(([url]) => /\/v1\/keys(ets)?(\/|$)/.test(url)).length;
-		const before = keyset_calls();
+		const keysets = /\/v1\/keys(ets)?(\/|$)/;
+		const before = requests(keysets);
 
 		const restarted = (await createModule()).get<CashuWalletIssueService>(CashuWalletIssueService);
 		const second = await restarted.createMintOperation(request('quote-2'));
 		expect((await restarted.executeMintOperation(second.id)).state).toBe(WalletOperationState.FINALIZED);
-		expect(keyset_calls()).toBe(before);
+		expect(requests(keysets)).toBe(before);
 		expect(await data_source.getRepository(CashuWalletMintKeyset).findOneByOrFail({id: mint.keyset.keysetId})).toMatchObject({
 			mint_url: 'http://localhost:3338',
 			active: true,
@@ -237,15 +251,10 @@ describe('CashuWalletIssueService', () => {
 	});
 
 	it('restores through NUT-09 when a replay finds its outputs already signed', async () => {
-		const operation = await service.createMintOperation(request());
-		await service.executeMintOperation(operation.id);
-		const secrets = (await proofs()).map((proof) => proof.secret).sort();
-		await data_source.getRepository(CashuWalletProof).clear();
-		await data_source.getRepository(CashuWalletOperation).update({id: operation.id}, {state: WalletOperationState.EXECUTING});
-
+		const {operation, signed} = await signedUnconfirmed();
 		const result = await service.executeMintOperation(operation.id);
 		expect(result.state).toBe(WalletOperationState.FINALIZED);
-		expect((await proofs()).map((proof) => proof.secret).sort()).toEqual(secrets);
+		expect(await secrets()).toEqual(signed);
 	});
 
 	it.each([
@@ -273,13 +282,43 @@ describe('CashuWalletIssueService', () => {
 		expect(await reload(operation.id)).toMatchObject({state: WalletOperationState.FINALIZED, error: null});
 	});
 
-	it('rebuilds outputs on fresh counters after a stale keyset rejection', async () => {
-		mint.failures.push({code: 12002, detail: 'Keyset inactive'});
-		const operation = await service.createMintOperation(request());
-		const result = await service.executeMintOperation(operation.id);
-		expect(result.state).toBe(WalletOperationState.FINALIZED);
-		expect((await counter()).next).toBe(6);
-		expect(JSON.parse(result.outputs!)[0].secret).not.toBe(JSON.parse(operation.outputs!)[0].secret);
+	describe('stale keyset rejections', () => {
+		const keyset_inactive = {code: 12002, detail: 'Keyset inactive'};
+
+		it('rebuilds on fresh counters once a restore shows the mint signed nothing', async () => {
+			mint.failures.push(keyset_inactive);
+			const operation = await service.createMintOperation(request());
+			const result = await service.executeMintOperation(operation.id);
+			expect(result.state).toBe(WalletOperationState.FINALIZED);
+			expect(requests(/\/v1\/restore$/)).toBe(1);
+			expect((await counter()).next).toBe(6);
+			expect(JSON.parse(result.outputs!)[0].secret).not.toBe(JSON.parse(operation.outputs!)[0].secret);
+		});
+
+		it('restores outputs the mint already signed instead of rebuilding them', async () => {
+			const {operation, signed} = await signedUnconfirmed();
+			mint.failures.push(keyset_inactive);
+			const result = await service.executeMintOperation(operation.id);
+			expect(result).toMatchObject({state: WalletOperationState.FINALIZED, outputs: operation.outputs});
+			expect(await secrets()).toEqual(signed);
+		});
+
+		it('keeps the saved outputs while the restore cannot be made, finishing on recovery', async () => {
+			const {operation, signed} = await signedUnconfirmed();
+			mint.failures.push(keyset_inactive);
+			mint.outages.add('/v1/restore');
+			const result = await service.executeMintOperation(operation.id);
+			expect(result).toMatchObject({
+				state: WalletOperationState.EXECUTING,
+				outputs: operation.outputs,
+				error: expect.stringContaining('HTTP 503'),
+			});
+
+			mint.outages.clear();
+			await recovery.reconcileOperations();
+			expect(await reload(operation.id)).toMatchObject({state: WalletOperationState.FINALIZED, outputs: operation.outputs});
+			expect(await secrets()).toEqual(signed);
+		});
 	});
 
 	it('issues on the Orchard mint through a NUT-20 locked quote forced paid over the mint RPC', async () => {
@@ -287,7 +326,7 @@ describe('CashuWalletIssueService', () => {
 		expect(result).toMatchObject({state: WalletOperationState.FINALIZED, mint_id: mint_row.id, quote_counter: 0, memo: 'Giveaway'});
 		expect(mint.quotes.get(result.quote_id!)).toMatchObject({pubkey: expect.stringMatching(/^0[23][0-9a-f]{64}$/), state: 'ISSUED'});
 		expect(mint_rpc.updateNut04Quote).toHaveBeenCalledWith({quote_id: result.quote_id, state: 'PAID'});
-		expect((await proofs()).reduce((sum, proof) => sum + proof.amount, 0)).toBe(100);
+		expect(await total()).toBe(100);
 	});
 
 	it('fails the issue when the mint RPC cannot mark the quote paid', async () => {
@@ -308,7 +347,7 @@ describe('CashuWalletIssueService', () => {
 			const operation = await pendingOn('PAID');
 			await recovery.reconcileOperations();
 			expect(await reload(operation.id)).toMatchObject({state: WalletOperationState.FINALIZED, error: null});
-			expect((await proofs()).reduce((sum, proof) => sum + proof.amount, 0)).toBe(100);
+			expect(await total()).toBe(100);
 		});
 
 		it('leaves an unpaid quote pending until it expires, then fails it', async () => {

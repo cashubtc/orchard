@@ -167,20 +167,26 @@ export class CashuWalletIssueService {
 		if (action === WalletErrorAction.FAIL) {
 			return this.cashuWalletJournalService.transition(operation, WalletOperationState.FAILED, {error: describeMintError(error)});
 		}
-		if (action === WalletErrorAction.RESTORE) {
-			return this.cashuWalletJournalService.restore(operation, wallet).then(
-				(proofs) =>
-					proofs.length > 0
-						? this.cashuWalletJournalService.finalize(operation, proofs)
-						: this.settleUnrestored(operation, error),
-				(restore_error) => this.wait(operation, restore_error),
-			);
+		if (action === WalletErrorAction.RESTORE) return this.restoreOr(operation, wallet, () => this.settleUnrestored(operation, error));
+		if (action === WalletErrorAction.REBUILD && allow_rebuild) {
+			return this.restoreOr(operation, wallet, () => this.rebuild(operation, wallet, error));
 		}
-		if (action === WalletErrorAction.REBUILD && allow_rebuild) return this.rebuild(operation, wallet, error);
 		if (hasMintCode(error, CashuMintErrorCode.QUOTE_NOT_PAID)) {
 			return this.cashuWalletJournalService.transition(operation, WalletOperationState.PENDING, {error: describeMintError(error)});
 		}
 		return this.wait(operation, error);
+	}
+
+	/** NUT-09 restore of the saved outputs, finalizing what the mint signed; `fallback` runs when it signed none, and a failed restore waits */
+	private restoreOr(
+		operation: CashuWalletOperation,
+		wallet: Wallet,
+		fallback: () => Promise<CashuWalletOperation>,
+	): Promise<CashuWalletOperation> {
+		return this.cashuWalletJournalService.restore(operation, wallet).then(
+			(proofs) => (proofs.length > 0 ? this.cashuWalletJournalService.finalize(operation, proofs) : fallback()),
+			(restore_error) => this.wait(operation, restore_error),
+		);
 	}
 
 	/** Nothing to restore: a quote issued to other outputs is final, anything else is retried */
@@ -191,7 +197,7 @@ export class CashuWalletIssueService {
 		});
 	}
 
-	/** The mint signed nothing on a stale keyset: rebuild outputs on fresh counters and try once more */
+	/** A restore showed the mint signed nothing on a stale keyset: rebuild outputs on fresh counters and try once more */
 	private async rebuild(operation: CashuWalletOperation, wallet: Wallet, error: unknown): Promise<CashuWalletOperation> {
 		if (!(error instanceof StaleKeysetError && error.repaired)) {
 			await wallet.loadMint(true).finally(() => this.cashuWalletMintService.saveKeychain(wallet.keyChain.cache));
