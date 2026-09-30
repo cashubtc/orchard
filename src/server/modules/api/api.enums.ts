@@ -397,9 +397,9 @@ registerEnumType(WalletOperationState, {
 	name: 'WalletOperationState',
 	description: 'State of an ecash wallet operation',
 	valuesMap: {
-		PENDING: {description: 'Journaled; the mint has not been asked yet'},
+		PENDING: {description: 'Waiting on its mint quote; checked until the quote is paid, issued or expires'},
 		EXECUTING: {description: 'Sent to the mint; retried until it settles'},
 		FINALIZED: {description: 'Completed'},
-		FAILED: {description: 'Rejected definitively; nothing was issued'},
+		FAILED: {description: 'Ended without ecash reaching the wallet'},
 	},
 });

@@ -260,19 +260,25 @@ describe('CashuWalletIssueService', () => {
 	});
 
 	it.each([
-		[
-			'returns to pending while the quote is unpaid',
-			{code: 20001, detail: 'Quote not paid'},
-			WalletOperationState.PENDING,
-			'Mint error 20001',
-		],
-		['fails when minting is disabled', {code: 20003, detail: 'Minting is disabled'}, WalletOperationState.FAILED, 'Mint error 20003'],
-	])('%s', async (_label, failure, state, error) => {
+		['while the quote is unpaid', {code: 20001, detail: 'Quote not paid'}],
+		['when the mint refuses the request', {code: 20003, detail: 'Minting is disabled'}],
+	])('returns to pending %s', async (_label, failure) => {
 		mint.failures.push(failure);
 		const operation = await service.createMintOperation(request());
 		const result = await service.executeMintOperation(operation.id);
-		expect(result).toMatchObject({state, error: expect.stringContaining(error)});
+		expect(result).toMatchObject({state: WalletOperationState.PENDING, error: expect.stringContaining(`Mint error ${failure.code}`)});
 		expect(await proofs()).toEqual([]);
+	});
+
+	it('mints a paid quote once the mint accepts the request again', async () => {
+		mint.quotes.set('quote-9', {state: 'PAID', amount: 100, expiry: null});
+		mint.failures.push({code: 20003, detail: 'Minting is disabled'});
+		const operation = await service.createMintOperation(request('quote-9'));
+		expect((await service.executeMintOperation(operation.id)).state).toBe(WalletOperationState.PENDING);
+
+		await recovery.reconcileOperations();
+		expect(await reload(operation.id)).toMatchObject({state: WalletOperationState.FINALIZED, error: null});
+		expect(await total()).toBe(100);
 	});
 
 	it.each([

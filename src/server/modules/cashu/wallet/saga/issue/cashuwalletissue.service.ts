@@ -164,7 +164,7 @@ export class CashuWalletIssueService {
 		}
 	}
 
-	/** Route a failed mint call to fail, restore, rebuild or wait */
+	/** Route a failed mint call to restore, rebuild, settle against its quote, or wait */
 	private handleFailure(
 		operation: CashuWalletOperation,
 		wallet: Wallet,
@@ -172,14 +172,12 @@ export class CashuWalletIssueService {
 		allow_rebuild: boolean,
 	): Promise<CashuWalletOperation> {
 		const action = classifyMintError(error);
-		if (action === WalletErrorAction.FAIL) {
-			return this.cashuWalletJournalService.transition(operation, WalletOperationState.FAILED, {error: describeMintError(error)});
-		}
 		if (action === WalletErrorAction.RESTORE) return this.restoreOr(operation, wallet, () => this.settleUnrestored(operation, error));
 		if (action === WalletErrorAction.REBUILD && allow_rebuild) {
 			return this.restoreOr(operation, wallet, () => this.rebuild(operation, wallet, error));
 		}
-		if (hasMintCode(error, CashuMintErrorCode.QUOTE_NOT_PAID)) {
+		// The mint refused this request, not the quote; the quote's own state decides when the operation ends
+		if (action === WalletErrorAction.FAIL || hasMintCode(error, CashuMintErrorCode.QUOTE_NOT_PAID)) {
 			return this.cashuWalletJournalService.transition(operation, WalletOperationState.PENDING, {error: describeMintError(error)});
 		}
 		return this.wait(operation, error);
