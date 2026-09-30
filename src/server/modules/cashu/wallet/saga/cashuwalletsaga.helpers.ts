@@ -1,11 +1,10 @@
 /* Vendor Dependencies */
-import {HttpResponseError, RateLimitError, StaleKeysetError, isMintOperationError} from '@cashu/cashu-ts';
+import {StaleKeysetError, isMintOperationError} from '@cashu/cashu-ts';
 import {status} from '@grpc/grpc-js';
 /* Application Dependencies */
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 /* Local Dependencies */
 import {CashuMintErrorCode, WalletErrorAction} from '../cashuwallet.enums.js';
-import {MintAddressError} from '../cashuwallet.helpers.js';
 
 const ACTION_BY_CODE: Partial<Record<number, WalletErrorAction>> = {
 	[CashuMintErrorCode.OUTPUTS_ALREADY_SIGNED]: WalletErrorAction.RESTORE,
@@ -28,12 +27,10 @@ const RPC_REFUSALS = new Set<number>([
 	status.FAILED_PRECONDITION,
 ]);
 
-/** Decide what a journaled operation does after a mint call fails; unknown outcomes wait, only definitive rejections fail */
+/** Decide what a journaled operation does after a mint call fails; only the mint's own NUT errors are definitive, transport failures wait */
 export const classifyMintError = (error: unknown): WalletErrorAction => {
-	if (error instanceof MintAddressError) return WalletErrorAction.FAIL;
 	if (error instanceof StaleKeysetError) return WalletErrorAction.REBUILD;
 	if (isMintOperationError(error)) return ACTION_BY_CODE[error.code] ?? WalletErrorAction.FAIL;
-	if (error instanceof HttpResponseError && !(error instanceof RateLimitError) && error.status < 500) return WalletErrorAction.FAIL;
 	return WalletErrorAction.WAIT;
 };
 

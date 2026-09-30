@@ -1,13 +1,12 @@
 /* Core Dependencies */
 import {expect} from '@jest/globals';
 /* Vendor Dependencies */
-import {HttpResponseError, MintOperationError, NetworkError, RateLimitError, StaleKeysetError} from '@cashu/cashu-ts';
+import {HttpResponseError, MintOperationError, NetworkError, StaleKeysetError} from '@cashu/cashu-ts';
 import {status} from '@grpc/grpc-js';
 /* Application Dependencies */
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 /* Local Dependencies */
 import {classifyMintError, classifyMintRpcError} from './cashuwalletsaga.helpers.js';
-import {MintAddressError} from '../cashuwallet.helpers.js';
 import {CashuMintErrorCode, WalletErrorAction} from '../cashuwallet.enums.js';
 
 describe('classifyMintError', () => {
@@ -32,19 +31,12 @@ describe('classifyMintError', () => {
 		expect(classifyMintError(new StaleKeysetError(true))).toBe(WalletErrorAction.REBUILD);
 	});
 
-	it('waits when the outcome is unknown', () => {
-		expect(classifyMintError(new NetworkError('socket hang up'))).toBe(WalletErrorAction.WAIT);
-		expect(classifyMintError(new RateLimitError('429 Too Many Requests', 5000))).toBe(WalletErrorAction.WAIT);
-		expect(classifyMintError(new HttpResponseError('bad gateway', 502))).toBe(WalletErrorAction.WAIT);
-		expect(classifyMintError(new Error('unexpected'))).toBe(WalletErrorAction.WAIT);
-	});
-
-	it('fails when the guarded transport refuses the address', () => {
-		expect(classifyMintError(new MintAddressError('resolves to a private address'))).toBe(WalletErrorAction.FAIL);
-	});
-
-	it('fails on other client errors', () => {
-		expect(classifyMintError(new HttpResponseError('not found', 404))).toBe(WalletErrorAction.FAIL);
+	it.each([
+		['a network failure', new NetworkError('socket hang up')],
+		['an HTTP error without a NUT code', new HttpResponseError('request timeout', 408)],
+		['an unexpected error', new Error('unexpected')],
+	])('waits on %s, which never proves the mint refused', (_label, error) => {
+		expect(classifyMintError(error)).toBe(WalletErrorAction.WAIT);
 	});
 });
 

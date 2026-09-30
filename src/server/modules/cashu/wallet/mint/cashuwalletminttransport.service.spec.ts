@@ -3,12 +3,11 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
-import {HttpResponseError, MintOperationError, RateLimitError} from '@cashu/cashu-ts';
+import {HttpResponseError, MintOperationError, NetworkError, RateLimitError} from '@cashu/cashu-ts';
 /* Application Dependencies */
 import {FetchService} from '#server/modules/fetch/fetch.service';
 /* Local Dependencies */
 import {CashuWalletMintTransportService} from './cashuwalletminttransport.service.js';
-import {MintAddressError} from '../cashuwallet.helpers.js';
 
 describe('CashuWalletMintTransportService', () => {
 	let service: CashuWalletMintTransportService;
@@ -55,7 +54,7 @@ describe('CashuWalletMintTransportService', () => {
 	});
 
 	it('refuses a private address on the guarded transport without sending the request', async () => {
-		await expect(service.guarded_request({endpoint: 'https://10.0.0.9/v1/info'})).rejects.toBeInstanceOf(MintAddressError);
+		await expect(service.guarded_request({endpoint: 'https://10.0.0.9/v1/info'})).rejects.toBeInstanceOf(NetworkError);
 		expect(fetch_service.fetchWithProxy).not.toHaveBeenCalled();
 	});
 });

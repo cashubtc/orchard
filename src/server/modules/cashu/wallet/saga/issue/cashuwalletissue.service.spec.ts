@@ -27,13 +27,13 @@ import {CashuWalletMintTransportService} from '../../mint/cashuwalletminttranspo
 import {WalletOperationState, WalletProofState} from '../../cashuwallet.enums.js';
 import {walletError} from '../../cashuwallet.helpers.js';
 
-/** Minimal mint that signs outputs for real with cashu-ts crypto; `failures` queues NUT errors for /v1/mint, `outages` fails whole paths */
+/** Minimal mint that signs outputs for real with cashu-ts crypto; `failures` queues NUT errors for /v1/mint, `outages` answers whole paths with an HTTP status */
 const createFakeMint = () => {
 	const keyset = createNewMintKeys(8, undefined, {unit: 'sat'});
 	const signed = new Map<string, {id: string; amount: number; C_: string}>();
 	const quotes = new Map<string, {pubkey?: string; state: string; amount: number; expiry: number | null}>();
 	const failures: {code: number; detail: string}[] = [];
-	const outages = new Set<string>();
+	const outages = new Map<string, number>();
 	const info = {
 		name: 'Orchard Test Mint',
 		pubkey: '02orchard',
@@ -56,7 +56,8 @@ const createFakeMint = () => {
 		return {quote: id, request: `lnbc${quote.amount * 10}n1fake`, unit: 'sat', ...quote};
 	};
 	const handle = (path: string, body: any): [number, any] => {
-		if (outages.has(path)) return [503, {detail: 'Service unavailable'}];
+		const outage = outages.get(path);
+		if (outage) return [outage, {detail: 'Unavailable'}];
 		if (path === '/v1/info') return [200, info];
 		if (path === '/v1/keysets') return [200, keysets];
 		if (path.startsWith('/v1/keys')) return [200, keys];
@@ -274,11 +275,18 @@ describe('CashuWalletIssueService', () => {
 		expect(await proofs()).toEqual([]);
 	});
 
-	it('stays executing when the mint is unreachable, and finishes on recovery', async () => {
+	it.each([
+		['unreachable', () => void (offline = true), 'socket hang up'],
+		['timing out behind a proxy', () => void mint.outages.set('/v1/mint/bolt11', 408), 'HTTP 408'],
+	])('stays executing when the mint is %s, and finishes on recovery', async (_label, break_mint, error) => {
 		const operation = await service.createMintOperation(request());
-		offline = true;
-		expect((await service.executeMintOperation(operation.id)).state).toBe(WalletOperationState.EXECUTING);
+		break_mint();
+		expect(await service.executeMintOperation(operation.id)).toMatchObject({
+			state: WalletOperationState.EXECUTING,
+			error: expect.stringContaining(error),
+		});
 		offline = false;
+		mint.outages.clear();
 		await recovery.reconcileOperations();
 		expect(await reload(operation.id)).toMatchObject({state: WalletOperationState.FINALIZED, error: null});
 	});
@@ -307,7 +315,7 @@ describe('CashuWalletIssueService', () => {
 		it('keeps the saved outputs while the restore cannot be made, finishing on recovery', async () => {
 			const {operation, signed} = await signedUnconfirmed();
 			mint.failures.push(keyset_inactive);
-			mint.outages.add('/v1/restore');
+			mint.outages.set('/v1/restore', 503);
 			const result = await service.executeMintOperation(operation.id);
 			expect(result).toMatchObject({
 				state: WalletOperationState.EXECUTING,
@@ -389,16 +397,17 @@ describe('CashuWalletIssueService', () => {
 			});
 		});
 
-		it('keeps a pending operation while the mint is unreachable, clearing the error once it answers', async () => {
+		it.each([
+			['unreachable', () => void (offline = true), 'socket hang up'],
+			['behind a proxy error page', () => void mint.outages.set('/v1/mint/quote/bolt11/quote-9', 404), 'HTTP 404'],
+		])('keeps a pending operation while the mint is %s, clearing the error once it answers', async (_label, break_mint, error) => {
 			const operation = await pendingOn('UNPAID');
-			offline = true;
+			break_mint();
 			await recovery.reconcileOperations();
-			expect(await reload(operation.id)).toMatchObject({
-				state: WalletOperationState.PENDING,
-				error: expect.stringContaining('socket hang up'),
-			});
+			expect(await reload(operation.id)).toMatchObject({state: WalletOperationState.PENDING, error: expect.stringContaining(error)});
 
 			offline = false;
+			mint.outages.clear();
 			await recovery.reconcileOperations();
 			expect(await reload(operation.id)).toMatchObject({state: WalletOperationState.PENDING, error: null});
 		});

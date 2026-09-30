@@ -15,7 +15,7 @@ import {
 import {FetchService} from '#server/modules/fetch/fetch.service';
 import {assertPublicHost} from '#server/modules/fetch/network-guard';
 /* Local Dependencies */
-import {MintAddressError, walletError} from '../cashuwallet.helpers.js';
+import {walletError} from '../cashuwallet.helpers.js';
 
 const MINT_TIMEOUT_MS = 10_000;
 const MINT_MAX_BYTES = 256 * 1024;
@@ -58,7 +58,7 @@ export class CashuWalletMintTransportService {
 	/** Transport for user-added mints: re-checks the address on every request before sending it */
 	private async requestPublicMint<T>(options: RequestOptions): Promise<T> {
 		await this.assertPublicMintUrl(options.endpoint).catch((error) => {
-			throw new MintAddressError(error?.details ?? error?.message ?? String(error));
+			throw new NetworkError(error?.details ?? error?.message ?? String(error), {cause: error});
 		});
 		return this.requestMint<T>(options);
 	}
