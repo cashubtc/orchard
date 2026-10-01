@@ -38,7 +38,7 @@ describe('FormPanelService', () => {
 		service.registerContainer(container);
 	});
 
-	it('opens panels in the section sidenav by default', () => {
+	it('keeps panels in the section sidenav off phones, even when a sheet is asked for', () => {
 		const opened = jasmine.createSpy('opened');
 		service.afterOpened().subscribe(opened);
 		service.open(TestPanelComponent, {data: {amount: 21}, mobile_sheet: true});

@@ -1,0 +1,11 @@
+@use 'molecule/molecule';
+
+:host {
+	@extend %block;
+}
+
+.ecash-mint-row + .ecash-mint-row {
+	@extend %border-top;
+	@extend %border-top-solid;
+	@extend %orc-outline-variant-border;
+}

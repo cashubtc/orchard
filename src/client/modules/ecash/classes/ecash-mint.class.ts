@@ -10,6 +10,21 @@ export class EcashMint implements OrchardEcashMint {
 	is_orchard: boolean;
 	created_at: number;
 
+	/** The host of the mint's first url, port included */
+	public get host(): string {
+		const url = this.urls[0] ?? '';
+		try {
+			return new URL(url).host;
+		} catch {
+			return url;
+		}
+	}
+
+	/** The mint's own name, falling back to its host */
+	public get display_name(): string {
+		return this.name ?? this.host;
+	}
+
 	constructor(oem: OrchardEcashMint) {
 		this.id = oem.id;
 		this.urls = oem.urls;

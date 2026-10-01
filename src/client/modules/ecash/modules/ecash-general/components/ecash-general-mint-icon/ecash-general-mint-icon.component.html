@@ -1,0 +1,5 @@
+@if (icon_url() && !icon_failed()) {
+	<img class="w-full h-full" [src]="icon_url()" [alt]="name()" (error)="onIconError()" />
+} @else {
+	<span class="font-size-s font-weight-semi-bold">{{ initials() }}</span>
+}

@@ -57,6 +57,7 @@ export class EcashSectionComponent implements OnInit, OnDestroy {
 		while (route.firstChild) {
 			route = route.firstChild;
 		}
+		if (route.snapshot.data['sub_section'] === 'error') return route.snapshot.data['origin'] || '';
 		return route.snapshot.data['sub_section'] || '';
 	}
 

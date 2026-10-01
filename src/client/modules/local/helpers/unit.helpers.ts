@@ -1,5 +1,5 @@
 /* Native Dependencies */
-import {UnitMeta} from '@client/modules/local/types/unit.types';
+import {UnitFamily, UnitMeta} from '@client/modules/local/types/unit.types';
 
 const KNOWN_UNITS: Record<string, UnitMeta> = {
 	sat: {code: 'sat', decimals: 0, divisor: 1, family: 'btc', asset: 'btc', icon: 'currency_bitcoin', glyph: '₿'},
@@ -8,6 +8,8 @@ const KNOWN_UNITS: Record<string, UnitMeta> = {
 	usd: {code: 'USD', decimals: 2, divisor: 100, family: 'fiat', asset: 'usd', icon: 'attach_money', glyph: '$'},
 	eur: {code: 'EUR', decimals: 2, divisor: 100, family: 'fiat', asset: 'eur', icon: 'euro', glyph: '€'},
 };
+
+const UNIT_FAMILY_ORDER: UnitFamily[] = ['btc', 'fiat', 'custom'];
 
 /**
  * Looks up display metadata for a Cashu unit.
@@ -59,4 +61,15 @@ export function toDisplayAmountFor(meta: UnitMeta, amount: number): number {
  */
 export function toDisplayAmount(unit: string, amount: number): number {
 	return toDisplayAmountFor(getUnitMeta(unit), amount);
+}
+
+/**
+ * Sorts units bitcoin first, then fiat, then custom, alphabetically within a family.
+ * @param {string} a - The first unit
+ * @param {string} b - The second unit
+ * @returns {number} Negative when a sorts first, positive when b does
+ */
+export function compareUnits(a: string, b: string): number {
+	const rank = (unit: string) => UNIT_FAMILY_ORDER.indexOf(getUnitMeta(unit).family);
+	return rank(a) - rank(b) || a.localeCompare(b);
 }

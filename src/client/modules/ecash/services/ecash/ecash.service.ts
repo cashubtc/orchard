@@ -74,10 +74,12 @@ export class EcashService {
 		Cache
 	******************************************************** */
 
+	/** Drops the cached mints, so the next load refetches them */
 	public clearMintsCache(): void {
 		this.cache.clearCache(this.CACHE_KEYS.MINTS);
 	}
 
+	/** Drops the cached balances, so the next load refetches them */
 	public clearBalancesCache(): void {
 		this.cache.clearCache(this.CACHE_KEYS.BALANCES);
 	}

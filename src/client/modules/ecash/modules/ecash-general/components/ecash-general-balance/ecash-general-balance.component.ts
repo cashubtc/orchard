@@ -3,7 +3,7 @@ import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core
 /* Application Dependencies */
 import {BitcoinOraclePrice} from '@client/modules/bitcoin/classes/bitcoin-oracle-price.class';
 import {oracleConvertToUSDCents} from '@client/modules/bitcoin/helpers/oracle.helpers';
-import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
+import {compareUnits} from '@client/modules/local/helpers/unit.helpers';
 /* Native Dependencies */
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 
@@ -30,22 +30,22 @@ export class EcashGeneralBalanceComponent {
 	/** One row per unit the wallet holds, summed across mints; bitcoin units first */
 	public readonly rows = computed<EcashBalanceRow[]>(() => {
 		const oracle_price = this.bitcoin_oracle_enabled() ? (this.bitcoin_oracle_price()?.price ?? null) : null;
-		const rows_by_unit = new Map<string, EcashBalanceRow>();
+		const totals_by_unit = new Map<string, {balance: number; mints: number}>();
 		for (const {unit, balance} of this.balances()) {
 			if (balance <= 0) continue;
 			const key = unit.toLowerCase();
-			const row = rows_by_unit.get(key) ?? {unit: key, balance: 0, balance_oracle: null, mints: 0};
-			row.balance += balance;
-			row.mints += 1;
-			rows_by_unit.set(key, row);
+			const total = totals_by_unit.get(key) ?? {balance: 0, mints: 0};
+			total.balance += balance;
+			total.mints += 1;
+			totals_by_unit.set(key, total);
 		}
-		return [...rows_by_unit.values()]
-			.map((row) => ({...row, balance_oracle: oracleConvertToUSDCents(row.balance, oracle_price, row.unit)}))
-			.sort((a, b) => this.unitRank(a.unit) - this.unitRank(b.unit) || a.unit.localeCompare(b.unit));
+		return [...totals_by_unit]
+			.map(([unit, {balance, mints}]) => ({
+				unit,
+				balance,
+				mints,
+				balance_oracle: oracleConvertToUSDCents(balance, oracle_price, unit),
+			}))
+			.sort((a, b) => compareUnits(a.unit, b.unit));
 	});
-
-	/** Bitcoin units sort before fiat, fiat before custom */
-	private unitRank(unit: string): number {
-		return ['btc', 'fiat', 'custom'].indexOf(getUnitMeta(unit).family);
-	}
 }

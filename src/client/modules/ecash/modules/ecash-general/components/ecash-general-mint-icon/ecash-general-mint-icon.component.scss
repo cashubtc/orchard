@@ -1,0 +1,22 @@
+@use 'molecule/molecule';
+
+:host {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+	@extend %flex-shrink-0;
+	@extend %overflow-hidden;
+	@extend %orc-corner-full;
+	@extend %orc-surface-container-high-bg;
+	@extend %orc-primary-color;
+	width: var(--size);
+	height: var(--size);
+
+	&.orchard {
+		box-shadow: 0 0 0 2px var(--orc-sys-brand-medium);
+	}
+}
+
+img {
+	object-fit: cover;
+}

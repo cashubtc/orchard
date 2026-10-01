@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {getUnitMeta, toDisplayAmount} from './unit.helpers';
+import {compareUnits, getUnitMeta, toDisplayAmount} from './unit.helpers';
 
 describe('UnitHelpers', () => {
 	describe('getUnitMeta', () => {
@@ -64,6 +64,12 @@ describe('UnitHelpers', () => {
 
 		it('should pass a custom unit through unchanged', () => {
 			expect(toDisplayAmount('ora', 3776)).toBe(3776);
+		});
+	});
+
+	describe('compareUnits', () => {
+		it('should sort bitcoin units before fiat, and fiat before custom', () => {
+			expect(['ora', 'usd', 'sat', 'eur', 'msat'].sort(compareUnits)).toEqual(['msat', 'sat', 'eur', 'usd', 'ora']);
 		});
 	});
 });

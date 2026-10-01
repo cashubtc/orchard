@@ -1,0 +1,47 @@
+<div>
+	<div class="title-l p-b-1">Mints</div>
+
+	<mat-card appearance="outlined" class="relative overflow-hidden">
+		<mat-card-content class="flex flex-column orc-surface-container-low-bg">
+			@if (!loading()) {
+				@for (row of rows(); track row.id) {
+					<div class="ecash-mint-row flex flex-items-center flex-wrap flex-gap-1 p-v-1" animate.enter="orc-animation-fadein">
+						<orc-ecash-general-mint-icon
+							[name]="row.name"
+							[icon_url]="row.icon_url"
+							[is_orchard]="row.is_orchard"
+						></orc-ecash-general-mint-icon>
+
+						<div class="flex flex-column flex-grow w-min-10">
+							<span class="font-weight-semi-bold text-nowrap text-ellipsis">{{ row.name }}</span>
+							<span class="font-size-xs orc-outline-color text-nowrap text-ellipsis">{{ row.host }}</span>
+						</div>
+
+						<div class="flex flex-wrap flex-gap-0-5">
+							@for (balance of row.balances; track balance.unit) {
+								<div
+									class="orc-high-card p-0-5 p-h-1 font-weight-semi-bold text-nowrap"
+									[innerHTML]="balance.balance | localAmount: balance.unit : 'mint'"
+								></div>
+							} @empty {
+								<div class="orc-high-card p-0-5 p-h-1 orc-outline-color">0</div>
+							}
+						</div>
+
+						<div class="flex flex-column w-min-10 w-max-10">
+							<div class="flex flex-items-center flex-gap-0-5 font-size-s">
+								<orc-graphic-status class="flex-shrink-0" [status]="row.status" size="0.5rem"></orc-graphic-status>
+								<span class="text-nowrap">{{ row.status_text }}</span>
+							</div>
+							@if (row.status_error) {
+								<span class="font-size-xs orc-outline-color text-nowrap text-ellipsis" [title]="row.status_error">
+									{{ row.status_error }}
+								</span>
+							}
+						</div>
+					</div>
+				}
+			}
+		</mat-card-content>
+	</mat-card>
+</div>
