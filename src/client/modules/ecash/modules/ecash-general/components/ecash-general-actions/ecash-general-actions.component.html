@@ -1,0 +1,32 @@
+<div>
+	<div class="title-l p-b-1">Actions</div>
+
+	<mat-card appearance="outlined" class="relative overflow-hidden">
+		<mat-card-content class="ecash-actions orc-surface-container-low-bg" [class.tiles]="tiles()">
+			@if (is_admin()) {
+				<button type="button" class="ecash-action orc-primary-card orc-on-primary-container-color" matRipple (click)="issue.emit()">
+					<mat-icon class="mat-symbol-fill">add_circle</mat-icon>
+					<div class="flex flex-column flex-grow">
+						<span class="font-weight-semi-bold">{{ tiles() ? 'Issue' : 'Issue ecash' }}</span>
+						<span class="ecash-action-detail font-size-xs">From your Orchard mint, no payment needed</span>
+					</div>
+					<span class="ecash-action-detail ecash-action-badge font-size-xs font-weight-semi-bold">ADMIN</span>
+				</button>
+			}
+			<button type="button" class="ecash-action orc-high-card" disabled>
+				<mat-icon>call_made</mat-icon>
+				<div class="flex flex-column flex-grow">
+					<span class="font-weight-semi-bold">Send</span>
+					<span class="ecash-action-detail font-size-xs orc-outline-color">Create a token or a public link</span>
+				</div>
+			</button>
+			<button type="button" class="ecash-action orc-high-card" disabled>
+				<mat-icon>call_received</mat-icon>
+				<div class="flex flex-column flex-grow">
+					<span class="font-weight-semi-bold">Receive</span>
+					<span class="ecash-action-detail font-size-xs orc-outline-color">Paste or scan a token</span>
+				</div>
+			</button>
+		</mat-card-content>
+	</mat-card>
+</div>

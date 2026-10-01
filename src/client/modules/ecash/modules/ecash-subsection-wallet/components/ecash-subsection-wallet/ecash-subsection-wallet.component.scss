@@ -7,8 +7,26 @@
 }
 
 .ecash-wallet-container {
-	@extend %flex;
-	@extend %flex-column;
+	@extend %grid;
 	@extend %flex-gap-2;
 	@extend %p-1;
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-areas: 'balance' 'actions' 'mints';
+	align-content: start;
+
+	&.desktop {
+		grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+		grid-template-areas: 'balance actions' 'mints actions';
+		align-items: start;
+	}
+}
+
+.ecash-wallet-balance {
+	grid-area: balance;
+}
+.ecash-wallet-actions {
+	grid-area: actions;
+}
+.ecash-wallet-mints {
+	grid-area: mints;
 }

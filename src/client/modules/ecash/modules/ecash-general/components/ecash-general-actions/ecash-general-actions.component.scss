@@ -1,0 +1,55 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+:host {
+	@extend %block;
+}
+
+.ecash-actions {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-1;
+
+	&.tiles {
+		@extend %grid;
+		grid-auto-flow: column;
+		grid-auto-columns: minmax(0, 1fr);
+	}
+}
+
+.ecash-action {
+	@extend %relative;
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-1;
+	@extend %p-1;
+	@extend %text-left;
+	@extend %cursor-pointer;
+	@extend %border-none;
+	margin: 0;
+	font: inherit;
+
+	.tiles & {
+		@extend %flex-column;
+		@extend %flex-justify-center;
+		@extend %flex-gap-0-5;
+		@extend %text-center;
+	}
+
+	&:disabled {
+		cursor: default;
+		opacity: 0.38;
+	}
+}
+
+.tiles .ecash-action-detail {
+	@extend %hidden;
+}
+
+.ecash-action-badge {
+	@extend %border;
+	@extend %border-solid;
+	@extend %orc-corner-extra-small;
+	@extend %p-h-0-5;
+	border-color: currentColor;
+}

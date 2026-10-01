@@ -1,11 +1,18 @@
-<div class="ecash-wallet-container">
+<div class="ecash-wallet-container" [class.desktop]="device_type() === 'desktop'">
 	<orc-ecash-general-balance
+		class="ecash-wallet-balance"
 		[balances]="balances()"
 		[loading]="loading_balances()"
 		[bitcoin_oracle_enabled]="bitcoin_oracle_enabled"
 		[bitcoin_oracle_price]="bitcoin_oracle_price()"
 	></orc-ecash-general-balance>
+	<orc-ecash-general-actions
+		class="ecash-wallet-actions"
+		[is_admin]="is_admin()"
+		[device_type]="device_type()"
+	></orc-ecash-general-actions>
 	<orc-ecash-general-mints
+		class="ecash-wallet-mints"
 		[mints]="mints()"
 		[statuses]="mint_statuses()"
 		[balances]="balances()"

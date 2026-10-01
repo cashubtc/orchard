@@ -6,11 +6,15 @@ import {of} from 'rxjs';
 import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 import {BitcoinService} from '@client/modules/bitcoin/services/bitcoin/bitcoin.service';
 import {BitcoinOraclePrice} from '@client/modules/bitcoin/classes/bitcoin-oracle-price.class';
+import {CrewService} from '@client/modules/crew/services/crew/crew.service';
+import {User} from '@client/modules/crew/classes/user.class';
 /* Native Dependencies */
 import {OrcEcashSubsectionWalletModule} from '@client/modules/ecash/modules/ecash-subsection-wallet/ecash-subsection-wallet.module';
 import {EcashService} from '@client/modules/ecash/services/ecash/ecash.service';
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
+/* Shared Dependencies */
+import {UserRole} from '@shared/generated.types';
 /* Local Dependencies */
 import {EcashSubsectionWalletComponent} from './ecash-subsection-wallet.component';
 
@@ -18,6 +22,7 @@ describe('EcashSubsectionWalletComponent', () => {
 	let component: EcashSubsectionWalletComponent;
 	let fixture: ComponentFixture<EcashSubsectionWalletComponent>;
 	let oracle_enabled: boolean;
+	let role: UserRole;
 
 	const balances = [new EcashBalance({mint_id: 'mint-1', unit: 'sat', balance: 2100})];
 	const mints = [
@@ -45,6 +50,10 @@ describe('EcashSubsectionWalletComponent', () => {
 				{provide: EcashService, useValue: ecash_service},
 				{provide: BitcoinService, useValue: bitcoin_service},
 				{
+					provide: CrewService,
+					useValue: {user$: of(new User({id: 'user-1', name: 'satoshi', role, active: true, created_at: 0}))},
+				},
+				{
 					provide: SettingAppService,
 					useValue: {getSetting: jasmine.createSpy('getSetting').and.callFake(() => ({value: oracle_enabled}))},
 				},
@@ -58,6 +67,7 @@ describe('EcashSubsectionWalletComponent', () => {
 
 	beforeEach(() => {
 		oracle_enabled = false;
+		role = UserRole.Reader;
 		bitcoin_service.loadBitcoinOraclePrice.calls.reset();
 	});
 
@@ -78,6 +88,17 @@ describe('EcashSubsectionWalletComponent', () => {
 		expect(component.loading_mints()).toBeFalse();
 		expect(component.mint_statuses()).toEqual([]);
 		expect(component.loading_mint_statuses()).toBeFalse();
+	});
+
+	it('hides issuing from non-admins', async () => {
+		await create();
+		expect(component.is_admin()).toBeFalse();
+	});
+
+	it('offers issuing to admins', async () => {
+		role = UserRole.Admin;
+		await create();
+		expect(component.is_admin()).toBeTrue();
 	});
 
 	it('skips the oracle price while the oracle is disabled', async () => {

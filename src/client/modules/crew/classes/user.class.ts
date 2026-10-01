@@ -9,6 +9,11 @@ export class User implements OrchardCrewUser {
 	telegram_chat_id: string | null;
 	created_at: number;
 
+	/** Whether the user has full administrative access */
+	public get is_admin(): boolean {
+		return this.role === UserRole.Admin;
+	}
+
 	constructor(ou: OrchardCrewUser) {
 		this.id = ou.id;
 		this.name = ou.name;

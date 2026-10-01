@@ -111,7 +111,9 @@ const ICONS = [
   'merge',
   'home',
   'money_bag',
-  'zoom_in'
+  'zoom_in',
+  'call_made',
+  'call_received'
 ];
 
 // Sort alphabetically and remove duplicates
