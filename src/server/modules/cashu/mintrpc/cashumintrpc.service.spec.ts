@@ -182,6 +182,15 @@ describe('CashuMintRpcService', () => {
 		expect(wallet_client.GetBalance).toHaveBeenCalledWith({}, expect.any(Object), expect.any(Function));
 	});
 
+	it('isConfigured reflects whether a management client was built', async () => {
+		configService.get.mockReturnValue('cdk');
+		await cashuMintRpcService.onModuleInit();
+		expect(cashuMintRpcService.isConfigured()).toBe(false);
+		(cdkService.initializeGrpcClient as jest.Mock).mockReturnValue({});
+		await cashuMintRpcService.onModuleInit();
+		expect(cashuMintRpcService.isConfigured()).toBe(true);
+	});
+
 	it('getMintWalletBalance is unsupported on nutshell', async () => {
 		configService.get.mockReturnValue('nutshell');
 		await cashuMintRpcService.onModuleInit();

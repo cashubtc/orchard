@@ -46,6 +46,11 @@ export class LightningWalletKitService implements OnModuleInit {
 		});
 	}
 
+	/** Whether a wallet kit client was built for the configured lightning backend */
+	isConfigured(): boolean {
+		return this.type != null && this.grpc_client != null;
+	}
+
 	async getLightningAddresses(): Promise<LightningAddresses> {
 		if (this.type === 'lnd') return this.makeGrpcRequest('ListAddresses', {});
 		if (this.type === 'cln') {

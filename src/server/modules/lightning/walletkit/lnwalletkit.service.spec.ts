@@ -49,6 +49,15 @@ describe('LightningWalletKitService', () => {
 		await expect(lightningWalletKitService.getLightningAddresses()).resolves.toEqual({account_with_addresses: []});
 	});
 
+	it('isConfigured reflects whether a wallet kit client was built', async () => {
+		configService.get.mockReturnValue('lnd');
+		await lightningWalletKitService.onModuleInit();
+		expect(lightningWalletKitService.isConfigured()).toBe(false);
+		(lndService.initializeWalletKitClient as jest.Mock).mockReturnValue({});
+		await lightningWalletKitService.onModuleInit();
+		expect(lightningWalletKitService.isConfigured()).toBe(true);
+	});
+
 	it('delegates to CLN and maps addresses', async () => {
 		const client = {
 			ListAddresses: jest.fn((req: any, cb: any) => cb(null, {addresses: []})),

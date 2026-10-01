@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {expect} from '@jest/globals';
 /* Local Dependencies */
-import {normalizeMintUnit, normalizeMintUnits} from './cashu.helpers.js';
+import {isBitcoinUnit, normalizeMintUnit, normalizeMintUnits} from './cashu.helpers.js';
 
 /**
  * Test suite for cashu helpers
@@ -57,6 +57,20 @@ describe('Cashu Helpers', () => {
 
 		it('should throw when any unit is invalid', () => {
 			expect(() => normalizeMintUnits(['sat', 'not a unit'])).toThrow();
+		});
+	});
+
+	/* *******************************************************
+		isBitcoinUnit
+	******************************************************** */
+
+	describe('isBitcoinUnit', () => {
+		it('should accept bitcoin units in any case', () => {
+			expect(['sat', 'MSAT', 'btc'].every(isBitcoinUnit)).toBe(true);
+		});
+
+		it('should reject fiat, custom and missing units', () => {
+			expect(['usd', 'ora', null].some(isBitcoinUnit)).toBe(false);
 		});
 	});
 });

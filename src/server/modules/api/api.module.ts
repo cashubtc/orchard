@@ -28,6 +28,7 @@ import {TaprootAssetsAssetModule} from './tapass/asset/tapasset.module.js';
 // Cashu Mint Endpoints
 import {MintInfoModule} from './mint/info/mintinfo.module.js';
 import {MintBalanceModule} from './mint/balance/mintbalance.module.js';
+import {MintReserveModule} from './mint/reserve/mintreserve.module.js';
 import {MintKeysetModule} from './mint/keyset/mintkeyset.module.js';
 import {MintDatabaseModule} from './mint/database/mintdatabase.module.js';
 import {MintQuoteModule} from './mint/quote/mintquote.module.js';
@@ -93,6 +94,7 @@ import './api.enums.js';
 		TaprootAssetsAssetModule,
 		MintInfoModule,
 		MintBalanceModule,
+		MintReserveModule,
 		MintKeysetModule,
 		MintDatabaseModule,
 		MintQuoteModule,

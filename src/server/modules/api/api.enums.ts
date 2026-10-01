@@ -13,7 +13,7 @@ import {AnalyticsInterval} from '#server/modules/analytics/analytics.enums';
 import {MintAnalyticsMetric} from '#server/modules/cashu/mintanalytics/mintanalytics.enums';
 import {LightningAnalyticsMetric} from '#server/modules/lightning/analytics/lnanalytics.enums';
 import {BitcoinAnalyticsMetric} from '#server/modules/bitcoin/analytics/btcanalytics.enums';
-import {MintQuoteState, MeltQuoteState, MintProofState} from '#server/modules/cashu/cashu.enums';
+import {MintQuoteState, MeltQuoteState, MintProofState, MintReserveSource, MintReserveStatus} from '#server/modules/cashu/cashu.enums';
 import {AiMessageRole} from '#server/modules/ai/ai.enums';
 import {AssistantToolName, AiAssistant} from '#server/modules/ai/assistant/ai.assistant.enums';
 import {AgentKey, AgentRunStatus, AgentScheduleKind} from '#server/modules/ai/agent/agent.enums';
@@ -56,6 +56,26 @@ registerEnumType(MintProofState, {
 	description: 'State of a Cashu proof',
 	valuesMap: {
 		SPENT: {description: 'Proof has been spent'},
+	},
+});
+registerEnumType(MintReserveSource, {
+	name: 'MintReserveSource',
+	description: 'A balance that can back mint liabilities',
+	valuesMap: {
+		LIGHTNING_ACTIVE: {description: 'Outbound liquidity in active lightning channels'},
+		LIGHTNING_INACTIVE: {description: 'Outbound liquidity in inactive lightning channels'},
+		LIGHTNING_WALLET: {description: "The lightning node's on-chain wallet"},
+		MINT_WALLET: {description: "The mint's own on-chain wallet"},
+	},
+});
+registerEnumType(MintReserveStatus, {
+	name: 'MintReserveStatus',
+	description: 'Whether a reserve source could be read',
+	valuesMap: {
+		AVAILABLE: {description: 'Read successfully'},
+		UNCONFIGURED: {description: 'The backend it comes from is not configured'},
+		UNSUPPORTED: {description: 'The configured backend cannot report it'},
+		UNAVAILABLE: {description: 'The backend returned an error; see the error details'},
 	},
 });
 registerEnumType(AnalyticsInterval, {

@@ -40,6 +40,11 @@ export class CashuMintRpcService implements OnModuleInit {
 		if (this.type === 'nutshell') this.grpc_client = this.nutshellService.initializeGrpcClient();
 	}
 
+	/** Whether a management client was built for the configured mint */
+	isConfigured(): boolean {
+		return this.type != null && this.grpc_client != null;
+	}
+
 	private makeGrpcRequest(method: string, request: any, client: any = this.grpc_client): Promise<any> {
 		if (!client) throw OrchardErrorCode.MintRpcConnectionError;
 

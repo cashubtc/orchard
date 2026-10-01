@@ -5,6 +5,18 @@ import {OrchardErrorCode} from '#server/modules/error/error.types';
 /** Cashu units are free-form strings; mints conventionally use lowercase slugs */
 const MINT_UNIT_PATTERN = /^[a-z0-9_-]{1,32}$/;
 
+/** Units denominated in bitcoin */
+const BITCOIN_UNITS = new Set(['sat', 'msat', 'btc']);
+
+/**
+ * Whether a mint unit is denominated in bitcoin.
+ * @param {string | null} unit - The unit as stored by the mint
+ * @returns {boolean} True for sat, msat and btc, in any case
+ */
+export function isBitcoinUnit(unit: string | null): boolean {
+	return BITCOIN_UNITS.has(unit?.toLowerCase() ?? '');
+}
+
 /**
  * Normalizes a client-supplied mint unit to its lowercase slug form.
  * @param {string} unit - The unit as supplied by the caller
