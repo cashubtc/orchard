@@ -1,8 +1,8 @@
 /* Core Dependencies */
 import {NgModule} from '@angular/core';
 import {RouterModule as CoreRouterModule} from '@angular/router';
-/* Vendor Dependencies */
-import {MatIconModule} from '@angular/material/icon';
+/* Native Dependencies */
+import {OrcEcashGeneralModule} from '@client/modules/ecash/modules/ecash-general/ecash-general.module';
 /* Local Dependencies */
 import {EcashSubsectionWalletComponent} from './components/ecash-subsection-wallet/ecash-subsection-wallet.component';
 
@@ -15,7 +15,7 @@ import {EcashSubsectionWalletComponent} from './components/ecash-subsection-wall
 				component: EcashSubsectionWalletComponent,
 			},
 		]),
-		MatIconModule,
+		OrcEcashGeneralModule,
 	],
 	exports: [],
 })

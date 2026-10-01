@@ -1,4 +1,8 @@
-<div class="ecash-wallet-container p-1">
-	<mat-icon class="icon-lg">payments</mat-icon>
-	<div>Ecash Dashboard Coming Soon!</div>
+<div class="ecash-wallet-container">
+	<orc-ecash-general-balance
+		[balances]="balances()"
+		[loading]="loading_balances()"
+		[bitcoin_oracle_enabled]="bitcoin_oracle_enabled"
+		[bitcoin_oracle_price]="bitcoin_oracle_price()"
+	></orc-ecash-general-balance>
 </div>

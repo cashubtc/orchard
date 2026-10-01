@@ -1,0 +1,30 @@
+<div>
+	<div class="title-l p-b-1">Balance</div>
+
+	<mat-card appearance="outlined" class="relative overflow-hidden">
+		<mat-card-content class="flex flex-column flex-gap-1-5 orc-surface-container-low-bg">
+			@if (!loading()) {
+				@for (row of rows(); track row.unit) {
+					<div class="flex flex-items-center flex-gap-2" animate.enter="orc-animation-fadein">
+						<orc-graphic-asset class="low-bg" [unit]="row.unit" [height]="'2.5rem'" [custody]="'ecash'"></orc-graphic-asset>
+						<div class="flex flex-column">
+							<span
+								class="font-size-xl font-weight-semi-bold text-nowrap"
+								[innerHTML]="row.balance | localAmount: row.unit : 'mint'"
+							></span>
+							<div class="font-size-xs orc-outline-color text-nowrap">
+								@if (row.balance_oracle !== null) {
+									<span [innerHTML]="row.balance_oracle | localAmount: 'usd'"></span>
+									&nbsp;&nbsp;●&nbsp;&nbsp;
+								}
+								Across {{ row.mints }} {{ row.mints === 1 ? 'mint' : 'mints' }}
+							</div>
+						</div>
+					</div>
+				} @empty {
+					<div class="ecash-balance-empty font-size-3 font-weight-semi-bold" animate.enter="orc-animation-fadein">0</div>
+				}
+			}
+		</mat-card-content>
+	</mat-card>
+</div>

@@ -1,0 +1,5 @@
+@use 'molecule/molecule';
+
+:host {
+	@extend %block;
+}
