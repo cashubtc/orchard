@@ -1,7 +1,6 @@
 /* Core Dependencies */
-import {Component, Injector, ViewContainerRef} from '@angular/core';
+import {Component, EnvironmentInjector, Injector, ViewContainerRef, WritableSignal, createEnvironmentInjector, signal} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
-import {BreakpointObserver} from '@angular/cdk/layout';
 /* Vendor Dependencies */
 import {Subject} from 'rxjs';
 import {MatBottomSheet} from '@angular/material/bottom-sheet';
@@ -19,39 +18,36 @@ describe('FormPanelService', () => {
 	let bottom_sheet: jasmine.SpyObj<MatBottomSheet>;
 	let sheet_dismissed: Subject<void>;
 	let sheet_ref: {afterDismissed: () => Subject<void>; dismiss: jasmine.Spy};
-	let phone: boolean;
+	let sheet: WritableSignal<boolean>;
 
 	beforeEach(() => {
-		phone = false;
+		sheet = signal<boolean>(false);
 		sheet_dismissed = new Subject<void>();
 		sheet_ref = {afterDismissed: () => sheet_dismissed, dismiss: jasmine.createSpy('dismiss')};
 		bottom_sheet = jasmine.createSpyObj('MatBottomSheet', ['open']);
 		bottom_sheet.open.and.returnValue(sheet_ref as any);
 		TestBed.configureTestingModule({
-			providers: [
-				{provide: MatBottomSheet, useValue: bottom_sheet},
-				{provide: BreakpointObserver, useValue: {isMatched: () => phone}},
-			],
+			providers: [{provide: MatBottomSheet, useValue: bottom_sheet}],
 		});
 		service = TestBed.inject(FormPanelService);
 		container = jasmine.createSpyObj('ViewContainerRef', ['clear', 'createComponent'], {injector: TestBed.inject(Injector)});
-		service.registerContainer(container);
+		service.registerContainer(container, {sheet});
 	});
 
-	it('keeps panels in the section sidenav off phones, even when a sheet is asked for', () => {
+	it('opens panels in the section sidenav while the host wants no sheet', () => {
 		const opened = jasmine.createSpy('opened');
 		service.afterOpened().subscribe(opened);
-		service.open(TestPanelComponent, {data: {amount: 21}, mobile_sheet: true});
+		service.open(TestPanelComponent, {data: {amount: 21}});
 		expect(container.createComponent).toHaveBeenCalled();
 		expect(opened).toHaveBeenCalled();
 		expect(bottom_sheet.open).not.toHaveBeenCalled();
 	});
 
-	it('opens in a bottom sheet on phones when asked, with the same data and ref', () => {
-		phone = true;
+	it('opens in a bottom sheet while the host wants one, with the same data and ref', () => {
+		sheet.set(true);
 		const opened = jasmine.createSpy('opened');
 		service.afterOpened().subscribe(opened);
-		const ref = service.open(TestPanelComponent, {data: {amount: 21}, mobile_sheet: true});
+		const ref = service.open(TestPanelComponent, {data: {amount: 21}});
 		const {injector} = bottom_sheet.open.calls.mostRecent().args[1]!;
 		expect(injector!.get(FORM_PANEL_DATA)).toEqual({amount: 21});
 		expect(injector!.get(FormPanelRef)).toBe(ref);
@@ -61,20 +57,28 @@ describe('FormPanelService', () => {
 	});
 
 	it('dismisses the sheet when the panel closes, and closes the panel when the sheet is dismissed', () => {
-		phone = true;
-		service.open(TestPanelComponent, {mobile_sheet: true}).close('done');
+		sheet.set(true);
+		service.open(TestPanelComponent).close('done');
 		expect(sheet_ref.dismiss).toHaveBeenCalled();
 		expect(service.opened()).toBeFalse();
 
 		const closed = jasmine.createSpy('closed');
-		service.open(TestPanelComponent, {mobile_sheet: true}).afterClosed().subscribe(closed);
+		service.open(TestPanelComponent).afterClosed().subscribe(closed);
 		sheet_dismissed.next();
 		expect(closed).toHaveBeenCalledWith(undefined);
 		expect(service.opened()).toBeFalse();
 	});
 
-	it('keeps the sidenav on phones unless the sheet is asked for', () => {
-		phone = true;
+	it('forgets the host once it is destroyed', () => {
+		const host_injector = createEnvironmentInjector([], TestBed.inject(EnvironmentInjector));
+		service.registerContainer(jasmine.createSpyObj('ViewContainerRef', ['clear'], {injector: host_injector}), {sheet});
+		host_injector.destroy();
+		expect(() => service.open(TestPanelComponent)).toThrowError(/No container registered/);
+	});
+
+	it('always uses the sidenav for hosts registered without options', () => {
+		sheet.set(true);
+		service.registerContainer(container);
 		service.open(TestPanelComponent, {data: {}});
 		expect(container.createComponent).toHaveBeenCalled();
 		expect(bottom_sheet.open).not.toHaveBeenCalled();

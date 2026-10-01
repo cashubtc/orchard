@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {InjectionToken, Type} from '@angular/core';
+import {InjectionToken, Signal, Type} from '@angular/core';
 
 /** Injection token for passing data into form panel components (like MAT_DIALOG_DATA) */
 export const FORM_PANEL_DATA = new InjectionToken<any>('FORM_PANEL_DATA');
@@ -8,8 +8,12 @@ export const FORM_PANEL_DATA = new InjectionToken<any>('FORM_PANEL_DATA');
 export interface FormPanelConfig<D = any> {
 	/** Data to inject into the component via FORM_PANEL_DATA */
 	data?: D;
-	/** On phones, open in a bottom sheet instead of the section's sidenav */
-	mobile_sheet?: boolean;
+}
+
+/** Options a section sets when it registers its panel host */
+export interface FormPanelHostOptions {
+	/** While true, panels open in a bottom sheet instead of the section's sidenav */
+	sheet?: Signal<boolean>;
 }
 
 /** Internal state representing an active panel */

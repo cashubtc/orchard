@@ -5,3 +5,14 @@
 	@extend %flex-column;
 	@extend %flex-grow;
 }
+
+.form-sidenav {
+	&.device-desktop {
+		width: 50%;
+	}
+
+	&.device-tablet,
+	&.device-mobile {
+		@extend %w-full;
+	}
+}

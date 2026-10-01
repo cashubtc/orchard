@@ -4,6 +4,7 @@ import {CommonModule as CoreCommonModule} from '@angular/common';
 import {RouterModule as CoreRouterModule} from '@angular/router';
 /* Vendor Dependencies */
 import {MatIconModule} from '@angular/material/icon';
+import {MatSidenavModule} from '@angular/material/sidenav';
 /* Application Dependencies */
 import {OrcNavModule} from '@client/modules/nav/nav.module';
 /* Local Dependencies */
@@ -37,6 +38,7 @@ import {EcashSectionComponent} from './components/ecash-section/ecash-section.co
 		]),
 		CoreCommonModule,
 		MatIconModule,
+		MatSidenavModule,
 		OrcNavModule,
 	],
 })

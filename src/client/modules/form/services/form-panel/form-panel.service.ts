@@ -1,22 +1,20 @@
 /* Core Dependencies */
-import {Injectable, Injector, Type, ViewContainerRef, inject, signal} from '@angular/core';
-import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
+import {DestroyRef, Injectable, Injector, Type, ViewContainerRef, inject, signal} from '@angular/core';
 /* Vendor Dependencies */
 import {Subject, Observable} from 'rxjs';
 import {MatBottomSheet} from '@angular/material/bottom-sheet';
 /* Native Dependencies */
 import {FormPanelRef} from '@client/modules/form/services/form-panel/form-panel-ref';
-import {FORM_PANEL_DATA, FormPanelConfig} from '@client/modules/form/services/form-panel/form-panel.types';
+import {FORM_PANEL_DATA, FormPanelConfig, FormPanelHostOptions} from '@client/modules/form/services/form-panel/form-panel.types';
 
 /**
- * Service for opening form panels in a sidenav drawer, or a bottom sheet on phones when asked.
+ * Service for opening form panels in a sidenav drawer, or a bottom sheet while the host asks for one.
  * Works like MatDialog — call open() with a component and config,
  * get back a FormPanelRef to listen for close events.
  */
 @Injectable({providedIn: 'root'})
 export class FormPanelService {
 	private readonly bottomSheet = inject(MatBottomSheet);
-	private readonly breakpointObserver = inject(BreakpointObserver);
 
 	/** Whether the panel is currently open */
 	public readonly opened = signal<boolean>(false);
@@ -33,6 +31,9 @@ export class FormPanelService {
 	/** The ViewContainerRef provided by the host component */
 	private _container: ViewContainerRef | null = null;
 
+	/** How the host wants panels shown */
+	private _host_options: FormPanelHostOptions = {};
+
 	/** Observable that emits when the panel opens in the sidenav, so the host can show it */
 	public afterOpened(): Observable<void> {
 		return this._after_opened.asObservable();
@@ -43,9 +44,15 @@ export class FormPanelService {
 		return this._after_closed.asObservable();
 	}
 
-	/** Register the host container where panel components will be rendered */
-	public registerContainer(container: ViewContainerRef): void {
+	/** Register the host container where panel components will be rendered; it unregisters itself when the host is destroyed */
+	public registerContainer(container: ViewContainerRef, options: FormPanelHostOptions = {}): void {
 		this._container = container;
+		this._host_options = options;
+		container.injector.get(DestroyRef).onDestroy(() => {
+			if (this._container !== container) return;
+			this._container = null;
+			this._host_options = {};
+		});
 	}
 
 	/**
@@ -78,7 +85,7 @@ export class FormPanelService {
 		});
 
 		this.opened.set(true);
-		if (config?.mobile_sheet && this.breakpointObserver.isMatched(Breakpoints.XSmall)) {
+		if (this._host_options.sheet?.()) {
 			this.openSheet(component, injector, panel_ref);
 		} else {
 			this._container.createComponent(component, {injector});
