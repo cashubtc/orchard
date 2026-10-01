@@ -9,12 +9,13 @@ import {NutshellService} from '#server/modules/cashu/nutshell/nutshell.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {MintType} from '#server/modules/cashu/cashu.enums';
 /* Local Dependencies */
-import type {CashuMintInfoRpc} from './cashumintrpc.types.js';
+import type {CashuMintInfoRpc, CashuMintWalletBalanceRpc} from './cashumintrpc.types.js';
 
 @Injectable()
 export class CashuMintRpcService implements OnModuleInit {
 	private readonly logger = new Logger(CashuMintRpcService.name);
 	private grpc_client: any = null;
+	private grpc_wallet_client: any = null;
 	private grpc_metadata: Metadata = new Metadata();
 	private type: MintType;
 
@@ -33,17 +34,18 @@ export class CashuMintRpcService implements OnModuleInit {
 	private initializeGrpcClient() {
 		if (this.type === 'cdk') {
 			this.grpc_client = this.cdkService.initializeGrpcClient();
+			this.grpc_wallet_client = this.cdkService.initializeWalletClient();
 			this.grpc_metadata.set('x-cdk-protocol-version', '1.0.0');
 		}
 		if (this.type === 'nutshell') this.grpc_client = this.nutshellService.initializeGrpcClient();
 	}
 
-	private makeGrpcRequest(method: string, request: any): Promise<any> {
-		if (!this.grpc_client) throw OrchardErrorCode.MintRpcConnectionError;
+	private makeGrpcRequest(method: string, request: any, client: any = this.grpc_client): Promise<any> {
+		if (!client) throw OrchardErrorCode.MintRpcConnectionError;
 
 		return new Promise((resolve, reject) => {
-			if (!(method in this.grpc_client)) reject(OrchardErrorCode.MintSupportError);
-			this.grpc_client[method](request, this.grpc_metadata, (error: ServiceError | null, response: any) => {
+			if (!(method in client)) reject(OrchardErrorCode.MintSupportError);
+			client[method](request, this.grpc_metadata, (error: ServiceError | null, response: any) => {
 				if (error) {
 					this.logger.debug(`gRPC error: ${error.message}`);
 
@@ -204,5 +206,12 @@ export class CashuMintRpcService implements OnModuleInit {
 		// Nullish, not undefined-only: an explicit null would encode as proto3 0 (epoch), stamping a bogus expiry.
 		if (final_expiry != null) request.final_expiry = final_expiry;
 		return this.makeGrpcRequest('RotateNextKeyset', request);
+	}
+
+	/** Balance of the mint's own on-chain wallet; cdk only */
+	async getMintWalletBalance(): Promise<CashuMintWalletBalanceRpc> {
+		if (this.type !== 'cdk')
+			throw {code: OrchardErrorCode.MintSupportError, details: 'On-chain wallets are only supported in CDK mints'};
+		return this.makeGrpcRequest('GetBalance', {}, this.grpc_wallet_client);
 	}
 }

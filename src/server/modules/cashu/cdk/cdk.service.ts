@@ -39,7 +39,7 @@ import {
 } from '#server/modules/cashu/mintdb/cashumintdb.helpers';
 import {MintDatabaseType} from '#server/modules/cashu/mintdb/cashumintdb.enums';
 /* Local Dependencies */
-import type {CdkMintProof} from './cdk.types.js';
+import type {CdkGrpcCredentials, CdkMintProof} from './cdk.types.js';
 
 @Injectable()
 export class CdkService {
@@ -50,22 +50,65 @@ export class CdkService {
 		private credentialService: CredentialService,
 	) {}
 
+	/** Built once so every cdk client shares one connection and credential problems are logged once */
+	private grpc_credentials: CdkGrpcCredentials | null | undefined = undefined;
+
+	/** Client for the mint management service */
 	public initializeGrpcClient(): grpc.Client {
+		return this.buildGrpcClient('cdk-mint-rpc.proto', 'cdk_mint_management_v1', 'CdkMint');
+	}
+
+	/** Client for the mint's on-chain wallet service, served on the same RPC port since cdk 0.18 */
+	public initializeWalletClient(): grpc.Client {
+		return this.buildGrpcClient('wallet.proto', 'cdk_mint_wallet_v1', 'WalletService');
+	}
+
+	/** Target, channel credentials and options for the mint RPC, or null when they can't be loaded */
+	private createGrpcCredentials(): CdkGrpcCredentials | null {
 		const rpc_key = this.configService.get('cashu.rpc_key');
 		const rpc_cert = this.configService.get('cashu.rpc_cert');
 		const rpc_mtls = this.configService.get('cashu.rpc_mtls');
 		const rpc_ca = this.configService.get('cashu.rpc_ca');
 		const rpc_host = this.configService.get('cashu.rpc_host');
 		const rpc_port = this.configService.get('cashu.rpc_port');
-		const rpc_url = `${rpc_host}:${rpc_port}`;
 
 		if (!rpc_host || !rpc_port) {
 			this.logger.warn('Missing RPC host or port, connection cannot be established');
-			return;
+			return null;
 		}
 
+		const rpc_url = `${rpc_host}:${rpc_port}`;
+		if (!rpc_mtls)
+			return {rpc_url, credentials: grpc.credentials.createInsecure(), channel_options: undefined, auth: 'INSECURE connection'};
+
+		const key_content = this.credentialService.loadPemOrPath(rpc_key);
+		const cert_content = this.credentialService.loadPemOrPath(rpc_cert);
+		const ca_content = this.credentialService.loadPemOrPath(rpc_ca);
+
+		if (!key_content || !cert_content || !ca_content) {
+			const missing = [!ca_content && 'CA certificate', !cert_content && 'client certificate', !key_content && 'client key']
+				.filter(Boolean)
+				.join(', ');
+			this.logger.error(`Failed to load CDK mTLS credential(s): ${missing} — check that the file paths exist and are readable`);
+			return null;
+		}
+
+		const credentials = grpc.credentials.createSsl(ca_content, key_content, cert_content);
+		// When running in Docker, we connect to host.docker.internal but need to verify against localhost
+		const channel_options = rpc_host.includes('host.docker.internal')
+			? {'grpc.ssl_target_name_override': 'localhost', 'grpc.default_authority': 'localhost'}
+			: undefined;
+		return {rpc_url, credentials, channel_options, auth: 'TLS certificate authentication'};
+	}
+
+	/** Builds a client for one service of the mint RPC from its proto file */
+	private buildGrpcClient(proto_file: string, package_namespace: string, client_class: string): grpc.Client {
+		if (this.grpc_credentials === undefined) this.grpc_credentials = this.createGrpcCredentials();
+		const credentials = this.grpc_credentials;
+		if (!credentials) return;
+
 		try {
-			const proto_path = path.join(process.cwd(), 'proto/cdk/cdk-mint-rpc.proto');
+			const proto_path = path.join(process.cwd(), 'proto/cdk', proto_file);
 			const package_definition = protoLoader.loadSync(proto_path, {
 				keepCase: true,
 				longs: String,
@@ -73,41 +116,11 @@ export class CdkService {
 				defaults: true,
 				oneofs: true,
 			});
-			const mint_proto: any = grpc.loadPackageDefinition(package_definition).cdk_mint_management_v1;
-			let credentials: grpc.ChannelCredentials;
-			let channel_options: Record<string, any> | undefined = undefined;
-
-			if (rpc_mtls) {
-				const key_content = this.credentialService.loadPemOrPath(rpc_key);
-				const cert_content = this.credentialService.loadPemOrPath(rpc_cert);
-				const ca_content = this.credentialService.loadPemOrPath(rpc_ca);
-
-				if (!key_content || !cert_content || !ca_content) {
-					const missing = [!ca_content && 'CA certificate', !cert_content && 'client certificate', !key_content && 'client key']
-						.filter(Boolean)
-						.join(', ');
-					this.logger.error(
-						`Failed to load CDK mTLS credential(s): ${missing} — check that the file paths exist and are readable`,
-					);
-					return undefined;
-				}
-
-				credentials = grpc.credentials.createSsl(ca_content, key_content, cert_content);
-				if (rpc_host?.includes('host.docker.internal')) {
-					channel_options = {
-						'grpc.ssl_target_name_override': 'localhost',
-						'grpc.default_authority': 'localhost',
-					};
-				}
-				this.logger.log('Mint gRPC client initialized with TLS certificate authentication');
-			} else {
-				credentials = grpc.credentials.createInsecure();
-				this.logger.log('Mint gRPC client initialized with INSECURE connection');
-			}
-
-			return new mint_proto.CdkMint(rpc_url, credentials, channel_options);
+			const grpc_package: any = grpc.loadPackageDefinition(package_definition)[package_namespace];
+			this.logger.log(`${client_class} gRPC client initialized with ${credentials.auth}`);
+			return new grpc_package[client_class](credentials.rpc_url, credentials.credentials, credentials.channel_options);
 		} catch (error) {
-			this.logger.error(`Failed to initialize gRPC client: ${error.message}`);
+			this.logger.error(`Failed to initialize ${client_class} gRPC client: ${error.message}`);
 		}
 	}
 

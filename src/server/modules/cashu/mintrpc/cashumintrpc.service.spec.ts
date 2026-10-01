@@ -23,7 +23,7 @@ describe('CashuMintRpcService', () => {
 			providers: [
 				CashuMintRpcService,
 				{provide: ConfigService, useValue: {get: jest.fn()}},
-				{provide: CdkService, useValue: {initializeGrpcClient: jest.fn()}},
+				{provide: CdkService, useValue: {initializeGrpcClient: jest.fn(), initializeWalletClient: jest.fn()}},
 				{provide: NutshellService, useValue: {initializeGrpcClient: jest.fn()}},
 			],
 		}).compile();
@@ -170,6 +170,25 @@ describe('CashuMintRpcService', () => {
 		await cashuMintRpcService.onModuleInit();
 		await cashuMintRpcService.getQuoteTtl();
 		expect(client.GetQuoteTtl).toHaveBeenCalledWith({}, expect.any(Object), expect.any(Function));
+	});
+
+	it('getMintWalletBalance asks the cdk wallet service', async () => {
+		const balance = {trusted_spendable_sat: '21000', total_sat: '21000'};
+		const wallet_client: any = {GetBalance: jest.fn((_req: any, _metadata: any, cb: any) => cb(null, balance))};
+		(cdkService.initializeWalletClient as jest.Mock).mockReturnValue(wallet_client);
+		configService.get.mockReturnValue('cdk');
+		await cashuMintRpcService.onModuleInit();
+		await expect(cashuMintRpcService.getMintWalletBalance()).resolves.toBe(balance);
+		expect(wallet_client.GetBalance).toHaveBeenCalledWith({}, expect.any(Object), expect.any(Function));
+	});
+
+	it('getMintWalletBalance is unsupported on nutshell', async () => {
+		configService.get.mockReturnValue('nutshell');
+		await cashuMintRpcService.onModuleInit();
+		await expect(cashuMintRpcService.getMintWalletBalance()).rejects.toEqual({
+			code: OrchardErrorCode.MintSupportError,
+			details: 'On-chain wallets are only supported in CDK mints',
+		});
 	});
 
 	it('updateName sends name including null', async () => {

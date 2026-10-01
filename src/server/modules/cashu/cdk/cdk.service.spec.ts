@@ -139,7 +139,36 @@ describe('CdkService', () => {
 		expect(createInsecure).toHaveBeenCalled();
 		expect(createSsl).not.toHaveBeenCalled();
 		expect(credentialService.loadPemOrPath).not.toHaveBeenCalled();
-		expect(log_spy).toHaveBeenCalledWith('Mint gRPC client initialized with INSECURE connection');
+		expect(log_spy).toHaveBeenCalledWith('CdkMint gRPC client initialized with INSECURE connection');
+	});
+
+	it('initializes the wallet client from the wallet proto, sharing the mint client credentials', () => {
+		const CdkMintMock = jest.fn();
+		const WalletServiceMock = jest.fn();
+		configService.get.mockImplementation((key: string) => {
+			switch (key) {
+				case 'cashu.rpc_mtls':
+					return false;
+				case 'cashu.rpc_host':
+					return 'localhost';
+				case 'cashu.rpc_port':
+					return 3333;
+				default:
+					return undefined as any;
+			}
+		});
+		const createInsecure = jest.spyOn(grpc.credentials, 'createInsecure').mockReturnValue({} as any);
+		proto_loader.loadSync.mockReturnValue({});
+		grpc.loadPackageDefinition.mockReturnValue({
+			cdk_mint_management_v1: {CdkMint: CdkMintMock},
+			cdk_mint_wallet_v1: {WalletService: WalletServiceMock},
+		});
+		cdkService.initializeGrpcClient();
+		const client = cdkService.initializeWalletClient();
+		expect(client).toBeDefined();
+		expect(proto_loader.loadSync.mock.calls[1][0]).toMatch(/proto\/cdk\/wallet\.proto$/);
+		expect(createInsecure).toHaveBeenCalledTimes(1);
+		expect(WalletServiceMock.mock.calls[0]).toEqual(CdkMintMock.mock.calls[0]);
 	});
 
 	it('logs error and returns undefined if proto load fails', () => {
