@@ -1,5 +1,6 @@
 import {
 	OrchardMintBalance,
+	OrchardMintReserves,
 	OrchardMintInfo,
 	OrchardMintQuoteTtls,
 	OrchardMintKeyset,
@@ -55,6 +56,10 @@ export type MintQuoteTtlsResponse = {
 export type MintBalancesResponse = {
 	mint_balances: OrchardMintBalance[];
 	errors?: string[];
+};
+
+export type MintReservesResponse = {
+	mint_reserves: OrchardMintReserves;
 };
 
 export type MintKeysetsResponse = {

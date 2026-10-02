@@ -11,6 +11,7 @@ import {
 	MintInfoResponse,
 	MintQuoteTtlsResponse,
 	MintBalancesResponse,
+	MintReservesResponse,
 	MintKeysetsResponse,
 	MintMintQuotesResponse,
 	MintMeltQuotesResponse,
@@ -59,6 +60,7 @@ import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
 import {MintQuoteTtls} from '@client/modules/mint/classes/mint-quote-ttls.class';
 import {MintInfoRpc} from '@client/modules/mint/classes/mint-info-rpc.class';
 import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
+import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 import {MintMintQuote} from '@client/modules/mint/classes/mint-mint-quote.class';
 import {MintMeltQuote} from '@client/modules/mint/classes/mint-melt-quote.class';
@@ -78,6 +80,7 @@ import {
 	MINT_INFO_RPC_QUERY,
 	MINT_QUOTE_TTLS_QUERY,
 	MINT_BALANCES_QUERY,
+	MINT_RESERVES_QUERY,
 	MINT_KEYSETS_QUERY,
 	MINT_ANALYTICS_BALANCES_QUERY,
 	MINT_ANALYTICS_MINTS_QUERY,
@@ -131,6 +134,7 @@ export class MintService {
 	public readonly CACHE_KEYS = {
 		MINT_INFO: 'mint-info',
 		MINT_BALANCES: 'mint-balances',
+		MINT_RESERVES: 'mint-reserves',
 		MINT_KEYSETS: 'mint-keysets',
 		MINT_ANALYTICS_BALANCES: 'mint-analytics-balances',
 		MINT_ANALYTICS_PRE_BALANCES: 'mint-analytics-pre-balances',
@@ -160,6 +164,7 @@ export class MintService {
 	private readonly CACHE_DURATIONS = {
 		[this.CACHE_KEYS.MINT_INFO]: 30 * 60 * 1000, // 30 minutes
 		[this.CACHE_KEYS.MINT_BALANCES]: 5 * 60 * 1000, // 5 minutes
+		[this.CACHE_KEYS.MINT_RESERVES]: 5 * 60 * 1000, // 5 minutes
 		[this.CACHE_KEYS.MINT_KEYSETS]: 30 * 60 * 1000, // 30 minutes
 		[this.CACHE_KEYS.MINT_ANALYTICS_BALANCES]: 5 * 60 * 1000, // 5 minutes
 		[this.CACHE_KEYS.MINT_ANALYTICS_PRE_BALANCES]: 5 * 60 * 1000, // 5 minutes
@@ -189,6 +194,7 @@ export class MintService {
 	/* Subjects for caching */
 	private readonly mint_info_subject: BehaviorSubject<MintInfo | null>;
 	private readonly mint_balances_subject: BehaviorSubject<MintBalance[] | null>;
+	private readonly mint_reserves_subject: BehaviorSubject<MintReserves | null>;
 	private readonly mint_keysets_subject: BehaviorSubject<MintKeyset[] | null>;
 	private readonly mint_analytics_balances_subject: BehaviorSubject<MintAnalytic[] | null>;
 	private readonly mint_analytics_pre_balances_subject: BehaviorSubject<MintAnalytic[] | null>;
@@ -232,6 +238,10 @@ export class MintService {
 		this.mint_balances_subject = this.cache.createCache<MintBalance[]>(
 			this.CACHE_KEYS.MINT_BALANCES,
 			this.CACHE_DURATIONS[this.CACHE_KEYS.MINT_BALANCES],
+		);
+		this.mint_reserves_subject = this.cache.createCache<MintReserves>(
+			this.CACHE_KEYS.MINT_RESERVES,
+			this.CACHE_DURATIONS[this.CACHE_KEYS.MINT_RESERVES],
 		);
 		this.mint_keysets_subject = this.cache.createCache<MintKeyset[]>(
 			this.CACHE_KEYS.MINT_KEYSETS,
@@ -364,6 +374,12 @@ export class MintService {
 		this.cache.clearCache(this.CACHE_KEYS.MINT_METRICS);
 	}
 
+	/** Drops the cached liabilities and reserves, so the next loads reflect newly issued or redeemed ecash */
+	public clearSolvencyCache(): void {
+		this.cache.clearCache(this.CACHE_KEYS.MINT_BALANCES);
+		this.cache.clearCache(this.CACHE_KEYS.MINT_RESERVES);
+	}
+
 	public clearKeysetsCache() {
 		this.cache.clearCache(this.CACHE_KEYS.MINT_KEYSETS);
 		this.cache.clearCache(this.CACHE_KEYS.MINT_ANALYTICS_KEYSETS);
@@ -465,6 +481,30 @@ export class MintService {
 			}),
 			catchError((error) => {
 				console.error('Error loading mint balances:', error);
+				return throwError(() => error);
+			}),
+		);
+	}
+
+	/** Bitcoin liabilities and every reserve source that can back them */
+	public loadMintReserves(): Observable<MintReserves> {
+		if (this.mint_reserves_subject.value && this.cache.isCacheValid(this.CACHE_KEYS.MINT_RESERVES)) {
+			return of(this.mint_reserves_subject.value);
+		}
+
+		const query = getApiQuery(MINT_RESERVES_QUERY);
+
+		return this.http.post<OrchardRes<MintReservesResponse>>(this.apiService.api, query).pipe(
+			map((response) => {
+				if (response.errors) throw new OrchardErrors(response.errors);
+				return response.data.mint_reserves;
+			}),
+			map((mint_reserves) => new MintReserves(mint_reserves)),
+			tap((mint_reserves) => {
+				this.cache.updateCache(this.CACHE_KEYS.MINT_RESERVES, mint_reserves);
+			}),
+			catchError((error) => {
+				console.error('Error loading mint reserves:', error);
 				return throwError(() => error);
 			}),
 		);

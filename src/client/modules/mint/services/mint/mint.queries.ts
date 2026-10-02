@@ -136,6 +136,22 @@ query MintBalances($keyset_id: String) {
     }
 }`;
 
+export const MINT_RESERVES_QUERY = `{
+	mint_reserves {
+		liabilities {
+			unit
+			amount
+		}
+		sources {
+			source
+			status
+			amount
+			error_code
+			error_details
+		}
+	}
+}`;
+
 export const MINT_KEYSETS_QUERY = `{
     mint_keysets{
         active

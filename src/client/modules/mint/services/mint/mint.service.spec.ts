@@ -3,6 +3,8 @@ import {TestBed} from '@angular/core/testing';
 import {HttpClientTestingModule, HttpTestingController} from '@angular/common/http/testing';
 /* Application Dependencies */
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
+/* Shared Dependencies */
+import {MintReserveSource, MintReserveStatus} from '@shared/generated.types';
 /* Local Dependencies */
 import {MintService} from './mint.service';
 
@@ -69,6 +71,35 @@ describe('MintService', () => {
 				},
 			});
 			http_mock.expectOne(() => true).flush({errors: [{message: 'unreachable', extensions: {code: 40013}}]});
+		});
+	});
+
+	describe('loadMintReserves', () => {
+		const mint_reserves = {
+			liabilities: [{unit: 'sat', amount: 29112}],
+			sources: [{source: MintReserveSource.MintWallet, status: MintReserveStatus.Unavailable, error_details: 'No on-chain wallet'}],
+		};
+
+		it('maps the reserves, leaving missing fields null', (done) => {
+			service.loadMintReserves().subscribe((reserves) => {
+				expect(reserves.liabilities[0].amount).toBe(29112);
+				expect(reserves.sources[0].amount).toBeNull();
+				expect(reserves.sources[0].error_details).toBe('No on-chain wallet');
+				done();
+			});
+			http_mock.expectOne(() => true).flush({data: {mint_reserves}});
+		});
+
+		it('serves the reserves from cache until the solvency cache is cleared', () => {
+			service.loadMintReserves().subscribe();
+			http_mock.expectOne(() => true).flush({data: {mint_reserves}});
+
+			service.loadMintReserves().subscribe();
+			http_mock.expectNone(() => true);
+
+			service.clearSolvencyCache();
+			service.loadMintReserves().subscribe();
+			http_mock.expectOne(() => true).flush({data: {mint_reserves}});
 		});
 	});
 });
