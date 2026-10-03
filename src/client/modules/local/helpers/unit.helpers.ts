@@ -64,6 +64,18 @@ export function toDisplayAmount(unit: string, amount: number): number {
 }
 
 /**
+ * Converts an amount in a bitcoin unit's stored base units to sats.
+ * @param {string} unit - The unit the amount is denominated in
+ * @param {number} amount - The amount in base units
+ * @returns {number | null} The amount in whole sats (msat rounds up), or null for units that are not bitcoin
+ */
+export function toSats(unit: string, amount: number): number | null {
+	const meta = getUnitMeta(unit);
+	if (meta.family !== 'btc') return null;
+	return Math.round(toDisplayAmountFor(meta, amount) * 10 ** meta.decimals);
+}
+
+/**
  * Sorts units bitcoin first, then fiat, then custom, alphabetically within a family.
  * @param {string} a - The first unit
  * @param {string} b - The second unit

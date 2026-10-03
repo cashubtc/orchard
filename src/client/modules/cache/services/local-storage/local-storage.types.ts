@@ -3,7 +3,7 @@ import {ChartType} from '@client/modules/mint/enums/chart-type.enum';
 import {MintDataType} from '@client/modules/mint/enums/data-type.enum';
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 /* Shared Dependencies */
-import {AnalyticsInterval, SystemMetricsInterval} from '@shared/generated.types';
+import {AnalyticsInterval, MintReserveSource, SystemMetricsInterval} from '@shared/generated.types';
 
 export type Timezone = {
 	tz: string | null;
@@ -24,6 +24,10 @@ export type Model = {
 export type Currency = {
 	type_btc: CurrencyType;
 	type_fiat: CurrencyType;
+};
+
+export type MintSolvency = {
+	sources: MintReserveSource[] | null;
 };
 
 export enum ThemeType {

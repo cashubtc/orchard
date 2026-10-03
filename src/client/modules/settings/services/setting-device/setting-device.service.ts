@@ -17,6 +17,9 @@ import {
 	AllSettingsAppSettings,
 	AllEventLogSettings,
 } from '@client/modules/settings/types/setting.types';
+import {DEFAULT_SOLVENCY_SOURCES} from '@client/modules/mint/constants/mint.constants';
+/* Shared Dependencies */
+import {MintReserveSource} from '@shared/generated.types';
 
 @Injectable({
 	providedIn: 'root',
@@ -119,6 +122,16 @@ export class SettingDeviceService {
 	}
 	public setAiFavorites(favorites: AiFavorites): void {
 		this.localStorageService.setAiFavorites(favorites);
+	}
+
+	/* Mint Solvency */
+	/** Reserve sources the operator counts toward solvency; the defaults until they choose */
+	public getMintSolvencySources(): readonly MintReserveSource[] {
+		return this.localStorageService.getMintSolvency().sources ?? DEFAULT_SOLVENCY_SOURCES;
+	}
+	/** Saves the operator's choice of reserve sources, including none */
+	public setMintSolvencySources(sources: MintReserveSource[]): void {
+		this.localStorageService.setMintSolvency({sources});
 	}
 
 	/* Currency */

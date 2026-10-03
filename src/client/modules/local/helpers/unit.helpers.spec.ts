@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {compareUnits, getUnitMeta, toDisplayAmount} from './unit.helpers';
+import {compareUnits, getUnitMeta, toDisplayAmount, toSats} from './unit.helpers';
 
 describe('UnitHelpers', () => {
 	describe('getUnitMeta', () => {
@@ -64,6 +64,19 @@ describe('UnitHelpers', () => {
 
 		it('should pass a custom unit through unchanged', () => {
 			expect(toDisplayAmount('ora', 3776)).toBe(3776);
+		});
+	});
+
+	describe('toSats', () => {
+		it('should convert each bitcoin unit to whole sats, rounding msat up', () => {
+			expect(toSats('sat', 2100)).toBe(2100);
+			expect(toSats('MSAT', 1500)).toBe(2);
+			expect(toSats('btc', 0.0005)).toBe(50000);
+		});
+
+		it('should have no sats for fiat or custom units', () => {
+			expect(toSats('usd', 100)).toBeNull();
+			expect(toSats('ora', 100)).toBeNull();
 		});
 	});
 
