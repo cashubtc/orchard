@@ -3,6 +3,10 @@ import {ComponentFixture, TestBed} from '@angular/core/testing';
 /* Native Dependencies */
 import {OrcMintGeneralModule} from '@client/modules/mint/modules/mint-general/mint-general.module';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
+import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
+import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
+/* Shared Dependencies */
+import {MintReserveSource, MintReserveStatus, OrchardMintReserveSource, OrchardMintReserves} from '@shared/generated.types';
 /* Local Dependencies */
 import {MintGeneralBalanceSheetComponent} from './mint-general-balance-sheet.component';
 
@@ -24,6 +28,16 @@ function buildKeyset(overrides: Partial<MintKeyset> = {}): MintKeyset {
 	} as MintKeyset;
 }
 
+/** Builds a mock reserve source with overridable fields. */
+function buildSource(overrides: Partial<OrchardMintReserveSource> = {}): OrchardMintReserveSource {
+	return {source: MintReserveSource.LightningActive, status: MintReserveStatus.Available, amount: 0, selected: true, ...overrides};
+}
+
+/** Builds mock reserves with overridable fields. */
+function buildReserves(overrides: Partial<OrchardMintReserves> = {}): MintReserves {
+	return new MintReserves({liabilities: [], sources: [], reserves: null, partial: false, ...overrides});
+}
+
 describe('MintGeneralBalanceSheetComponent', () => {
 	let component: MintGeneralBalanceSheetComponent;
 	let fixture: ComponentFixture<MintGeneralBalanceSheetComponent>;
@@ -37,9 +51,8 @@ describe('MintGeneralBalanceSheetComponent', () => {
 		component = fixture.componentInstance;
 		fixture.componentRef.setInput('balances', []);
 		fixture.componentRef.setInput('keysets', []);
-		fixture.componentRef.setInput('lightning_balance', null);
-		fixture.componentRef.setInput('lightning_enabled', false);
-		fixture.componentRef.setInput('lightning_loading', false);
+		fixture.componentRef.setInput('reserves', null);
+		fixture.componentRef.setInput('reserves_loading', false);
 		fixture.componentRef.setInput('bitcoin_oracle_enabled', false);
 		fixture.componentRef.setInput('bitcoin_oracle_price', null);
 		fixture.componentRef.setInput('loading', true);
@@ -52,11 +65,9 @@ describe('MintGeneralBalanceSheetComponent', () => {
 	});
 
 	describe('asset balances', () => {
-		const lightning_balance = {open: {local_balance: 50000}} as any;
-
-		it('should back a sat row with the lightning balance', () => {
+		it('should back a sat row with the reserves', () => {
 			fixture.componentRef.setInput('keysets', [buildKeyset({unit: 'sat'})]);
-			fixture.componentRef.setInput('lightning_balance', lightning_balance);
+			fixture.componentRef.setInput('reserves', buildReserves({reserves: 50000}));
 			fixture.componentRef.setInput('loading', false);
 			fixture.detectChanges();
 
@@ -64,9 +75,19 @@ describe('MintGeneralBalanceSheetComponent', () => {
 			expect(component.rows()[0].is_bitcoin).toBe(true);
 		});
 
-		it('should not back a custom unit row with the lightning balance', () => {
+		it('should show how many times the reserves cover the liabilities', () => {
+			fixture.componentRef.setInput('keysets', [buildKeyset({unit: 'sat'})]);
+			fixture.componentRef.setInput('balances', [new MintBalance({keyset: 'ks_001', balance: 12000})]);
+			fixture.componentRef.setInput('reserves', buildReserves({reserves: 50000}));
+			fixture.componentRef.setInput('loading', false);
+			fixture.detectChanges();
+
+			expect(component.rows()[0].solvency).toBe(4.2);
+		});
+
+		it('should not back a custom unit row with the reserves', () => {
 			fixture.componentRef.setInput('keysets', [buildKeyset({unit: 'ora'})]);
-			fixture.componentRef.setInput('lightning_balance', lightning_balance);
+			fixture.componentRef.setInput('reserves', buildReserves({reserves: 50000}));
 			fixture.componentRef.setInput('loading', false);
 			fixture.detectChanges();
 
@@ -74,13 +95,62 @@ describe('MintGeneralBalanceSheetComponent', () => {
 			expect(component.rows()[0].is_bitcoin).toBe(false);
 		});
 
-		it('should not back a fiat row with the lightning balance', () => {
+		it('should not back a fiat row with the reserves', () => {
 			fixture.componentRef.setInput('keysets', [buildKeyset({unit: 'usd'})]);
-			fixture.componentRef.setInput('lightning_balance', lightning_balance);
+			fixture.componentRef.setInput('reserves', buildReserves({reserves: 50000}));
 			fixture.componentRef.setInput('loading', false);
 			fixture.detectChanges();
 
 			expect(component.rows()[0].assets).toBeNull();
+		});
+	});
+
+	describe('reserve sources', () => {
+		it('should caption every channel as lightning local capacity in lightning custody', () => {
+			fixture.componentRef.setInput(
+				'reserves',
+				buildReserves({
+					sources: [buildSource(), buildSource({source: MintReserveSource.LightningInactive})],
+				}),
+			);
+			expect(component.reserves_label()).toBe('Lightning local capacity');
+			expect(component.reserves_custody()).toBe('lightning');
+		});
+
+		it('should show hot custody once an on-chain wallet counts', () => {
+			fixture.componentRef.setInput(
+				'reserves',
+				buildReserves({sources: [buildSource(), buildSource({source: MintReserveSource.MintWallet})]}),
+			);
+			expect(component.reserves_label()).toBe('2 reserve sources');
+			expect(component.reserves_custody()).toBe('hot');
+		});
+
+		it("should explain missing reserves with a selected source's own error, once per error", () => {
+			const failed = {status: MintReserveStatus.Unavailable, error_code: 30002, error_details: 'lightning node unreachable'};
+			fixture.componentRef.setInput(
+				'reserves',
+				buildReserves({
+					sources: [buildSource(failed), buildSource({...failed, source: MintReserveSource.LightningInactive})],
+				}),
+			);
+			expect(component.reserves_failures()).toEqual([
+				{code: 30002, message: 'lightning node unreachable', details: 'lightning node unreachable'},
+			]);
+		});
+
+		it('should point at lightning configuration only when a selected channel source is not set up', () => {
+			const unconfigured = {status: MintReserveStatus.Unconfigured};
+			fixture.componentRef.setInput('reserves', buildReserves({sources: [buildSource(unconfigured)]}));
+			expect(component.reserves()?.lightning_unconfigured).toBe(true);
+
+			fixture.componentRef.setInput(
+				'reserves',
+				buildReserves({
+					sources: [buildSource({...unconfigured, selected: false}), buildSource({source: MintReserveSource.MintWallet})],
+				}),
+			);
+			expect(component.reserves()?.lightning_unconfigured).toBe(false);
 		});
 	});
 });

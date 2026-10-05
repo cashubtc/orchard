@@ -1,7 +1,6 @@
 /* Core Dependencies */
 import {ChangeDetectionStrategy, Component, computed, input, output, signal} from '@angular/core';
 /* Application Dependencies */
-import {LightningBalance} from '@client/modules/lightning/classes/lightning-balance.class';
 import {OrchardError} from '@client/modules/error/types/error.types';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 import {BitcoinOraclePrice} from '@client/modules/bitcoin/classes/bitcoin-oracle-price.class';
@@ -9,6 +8,8 @@ import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
 /* Native Module Dependencies */
 import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
+import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
+import {getReserveSourcesLabel} from '@client/modules/mint/helpers/mint-solvency.helpers';
 /* Local Dependencies */
 import {MintGeneralBalanceRow} from './mint-general-balance-row.class';
 
@@ -24,10 +25,9 @@ export class MintGeneralBalanceSheetComponent {
 
 	public balances = input.required<MintBalance[]>();
 	public keysets = input.required<MintKeyset[]>();
-	public lightning_balance = input.required<LightningBalance | null>();
-	public lightning_enabled = input.required<boolean>();
-	public lightning_errors = input<OrchardError[]>([]);
-	public lightning_loading = input.required<boolean>();
+	public reserves = input.required<MintReserves | null>();
+	public reserves_errors = input<OrchardError[]>([]);
+	public reserves_loading = input.required<boolean>();
 	public bitcoin_oracle_enabled = input.required<boolean>();
 	public bitcoin_oracle_price = input.required<BitcoinOraclePrice | null>();
 	public loading = input.required<boolean>();
@@ -40,10 +40,21 @@ export class MintGeneralBalanceSheetComponent {
 		return this.computeRows();
 	});
 
-	/** Lightning is the only asset Orchard can see, so it backs bitcoin-denominated liabilities only */
+	/** Names the reserves the operator counts, for the assets caption */
+	public readonly reserves_label = computed(() => getReserveSourcesLabel(this.reserves()?.selected_sources ?? []));
+
+	/** Lightning custody while only channels back the mint, hot otherwise */
+	public readonly reserves_custody = computed(() => ((this.reserves()?.channels_only ?? true) ? 'lightning' : 'hot'));
+
+	/** Why reserves may be missing: the query failed, or selected sources could not be read */
+	public readonly reserves_failures = computed<OrchardError[]>(() =>
+		this.reserves_errors().length > 0 ? this.reserves_errors() : (this.reserves()?.failures ?? []),
+	);
+
+	/** The operator's reserves back bitcoin-denominated liabilities only */
 	private getAssetBalances(unit: string): number | null {
 		if (getUnitMeta(unit).family !== 'btc') return null;
-		return this.lightning_balance()?.open.local_balance ?? null;
+		return this.reserves()?.reserves ?? null;
 	}
 
 	private computeRows(): MintGeneralBalanceRow[] {

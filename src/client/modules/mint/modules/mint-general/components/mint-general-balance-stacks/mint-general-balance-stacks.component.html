@@ -1,10 +1,10 @@
 <div class="mint-balance-stacks-container">
-	<ng-container *ngTemplateOutlet="stackTpl; context: {rows: asset_rows(), showReserve: true}" />
+	<ng-container *ngTemplateOutlet="stackTpl; context: {rows: asset_rows(), showSolvency: true}" />
 	<div class="divider"></div>
-	<ng-container *ngTemplateOutlet="stackTpl; context: {rows: liability_rows(), showReserve: false}" />
+	<ng-container *ngTemplateOutlet="stackTpl; context: {rows: liability_rows(), showSolvency: false}" />
 </div>
 
-<ng-template #stackTpl let-rows="rows" let-showReserve="showReserve">
+<ng-template #stackTpl let-rows="rows" let-showSolvency="showSolvency">
 	<div class="stack-container">
 		<div class="stack" [class]="unit_class()">
 			@for (groups of rows; track $index) {
@@ -21,9 +21,13 @@
 				}
 			}
 		</div>
-		@if (reserve() !== null) {
-			<div class="orc-outline-color text-nowrap" [class.invisible]="!showReserve" [class.orc-status-inactive-color]="reserve()! < 1">
-				{{ reserve() }}x
+		@if (solvency() !== null) {
+			<div
+				class="orc-outline-color text-nowrap"
+				[class.invisible]="!showSolvency"
+				[class.orc-status-inactive-color]="solvency()! < 1"
+			>
+				{{ solvency() }}x
 			</div>
 		}
 	</div>

@@ -24,10 +24,9 @@ describe('IndexSubsectionDashboardMintEnabledComponent', () => {
 		fixture.componentRef.setInput('keysets', []);
 		fixture.componentRef.setInput('balances', []);
 		fixture.componentRef.setInput('icon_data', null);
-		fixture.componentRef.setInput('lightning_balance', null);
-		fixture.componentRef.setInput('lightning_enabled', false);
-		fixture.componentRef.setInput('lightning_errors', []);
-		fixture.componentRef.setInput('lightning_loading', false);
+		fixture.componentRef.setInput('reserves', null);
+		fixture.componentRef.setInput('reserves_errors', []);
+		fixture.componentRef.setInput('reserves_loading', false);
 		fixture.componentRef.setInput('bitcoin_oracle_enabled', false);
 		fixture.componentRef.setInput('bitcoin_oracle_price', null);
 		fixture.componentRef.setInput('mint_errors', []);

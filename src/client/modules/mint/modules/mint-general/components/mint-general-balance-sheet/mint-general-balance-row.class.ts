@@ -1,13 +1,13 @@
 /* Application Dependencies */
-import {toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
 import {oracleConvertToUSDCents, eligibleForOracleConversion} from '@client/modules/bitcoin/helpers/oracle.helpers';
 /* Native Dependencies */
 import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
+import {getSolvencyMultiple, roundSolvencyMultiple} from '@client/modules/mint/helpers/mint-solvency.helpers';
 
 export class MintGeneralBalanceRow {
 	is_bitcoin: boolean;
-	unit_lightning: string;
+	unit_reserves: string;
 	unit_mint: string;
 	liabilities: number;
 	liabilities_oracle: number | null;
@@ -20,17 +20,14 @@ export class MintGeneralBalanceRow {
 	fees: number | null;
 	fees_oracle: number | null;
 
-	public get reserve(): number | null {
-		if (this.assets === null) return null;
-		const liabilities = toDisplayAmount(this.unit_mint, this.liabilities);
-		if (liabilities === 0) return null;
-		const multiple = Math.ceil(this.assets) / liabilities;
-		if (multiple < 5) return Math.round(multiple * 10) / 10;
-		return Math.round(multiple);
+	/** How many times the reserves cover this unit's liabilities, rounded for display */
+	public get solvency(): number | null {
+		const multiple = getSolvencyMultiple(this.assets, this.liabilities, this.unit_mint);
+		return multiple === null ? null : roundSolvencyMultiple(multiple);
 	}
 
 	constructor(balance: MintBalance | undefined, assets: number | null, keyset: MintKeyset, oracle_price: number | null) {
-		this.unit_lightning = 'sat';
+		this.unit_reserves = 'sat';
 		this.unit_mint = keyset.unit;
 		this.is_bitcoin = eligibleForOracleConversion(this.unit_mint);
 		this.liabilities = balance?.balance ?? 0;
@@ -40,7 +37,7 @@ export class MintGeneralBalanceRow {
 		this.input_fee_ppk = keyset.input_fee_ppk;
 		this.active = keyset.active;
 		this.assets = assets;
-		this.assets_oracle = oracleConvertToUSDCents(this.assets, oracle_price, this.unit_lightning);
+		this.assets_oracle = oracleConvertToUSDCents(this.assets, oracle_price, this.unit_reserves);
 		this.derivation_path_index = keyset.derivation_path_index;
 		this.first_seen = keyset.valid_from;
 	}

@@ -45,6 +45,7 @@ import {resolveDateRangePreset} from '@client/modules/form/helpers/form-daterang
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
+import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
 import {MintWatchdogStatus} from '@client/modules/mint/classes/mint-watchdog-status.class';
 import {MintKeysetCount} from '@client/modules/mint/classes/mint-keyset-count.class';
@@ -121,7 +122,6 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 	public mint_type!: string;
 	public loading_static_data: boolean = true;
 
-	public errors_lightning: OrchardError[] = [];
 	// charts
 	public page_settings: WritableSignal<NonNullableMintDashboardSettings>;
 	public summary_nav_items: Record<NavSummary, NavTertiaryItem> = {
@@ -150,10 +150,12 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 	public loading_mint = signal<boolean>(true);
 	public loading_mint_icon = signal<boolean>(true);
 	public loading_bitcoin = signal<boolean>(false);
-	public loading_lightning = signal<boolean>(false);
+	public loading_mint_reserves = signal<boolean>(true);
+	public errors_mint_reserves = signal<OrchardError[]>([]);
 	public bitcoin_oracle_price = signal<BitcoinOraclePrice | null>(null);
 	public bitcoin_oracle_price_map = signal<Map<number, number> | null>(null);
 	public mint_icon_data = signal<string | null>(null);
+	public mint_reserves = signal<MintReserves | null>(null);
 	public activity_summary = signal<MintActivitySummary | null>(null);
 	public loading_activity = signal<boolean>(true);
 	public error_activity = signal<boolean>(false);
@@ -208,6 +210,7 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 	async ngOnInit(): Promise<void> {
 		this.initMintConnections();
 		this.setMintIcon();
+		this.subscriptions.add(this.getMintReservesSubscription());
 		this.orchardOptionalInit();
 		if (this.mint_type === 'nutshell') this.getMintWatchdogStatus();
 		this.loadActivitySummary(MintActivityPeriod.Day);
@@ -227,7 +230,6 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 			this.subscriptions.add(this.getBitcoinOraclePriceMapSubscription());
 		}
 		if (this.lightning_enabled) {
-			this.loading_lightning.set(true);
 			this.subscriptions.add(this.getLightningBalanceSubscription());
 		}
 	}
@@ -317,6 +319,21 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 		});
 	}
 
+	/** Loads the reserves backing the mint for the balance sheet */
+	private getMintReservesSubscription(): Subscription {
+		return this.mintService
+			.loadMintReserves()
+			.pipe(
+				tap((reserves) => this.mint_reserves.set(reserves)),
+				catchError((error) => {
+					this.errors_mint_reserves.set(error.errors);
+					return EMPTY;
+				}),
+				finalize(() => this.loading_mint_reserves.set(false)),
+			)
+			.subscribe();
+	}
+
 	private getLightningBalanceSubscription(): Subscription {
 		return this.lightningService
 			.loadLightningBalance()
@@ -325,14 +342,7 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 					this.lightning_balance = balance;
 					this.cdr.detectChanges();
 				}),
-				catchError((error) => {
-					this.errors_lightning = error.errors;
-					this.cdr.detectChanges();
-					return EMPTY;
-				}),
-				finalize(() => {
-					this.loading_lightning.set(false);
-				}),
+				catchError(() => EMPTY),
 			)
 			.subscribe();
 	}

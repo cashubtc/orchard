@@ -23,7 +23,6 @@ import {BitcoinBlockTemplate} from '@client/modules/bitcoin/classes/bitcoin-bloc
 import {BitcoinTransactionFeeEstimate} from '@client/modules/bitcoin/classes/bitcoin-transaction-fee-estimate.class';
 import {BitcoinOraclePrice} from '@client/modules/bitcoin/classes/bitcoin-oracle-price.class';
 import {LightningInfo} from '@client/modules/lightning/classes/lightning-info.class';
-import {LightningBalance} from '@client/modules/lightning/classes/lightning-balance.class';
 import {LightningAccount} from '@client/modules/lightning/classes/lightning-account.class';
 import {LightningChannel, LightningClosedChannel} from '@client/modules/lightning/classes/lightning-channel.class';
 import {TaprootAssetInfo} from '@client/modules/tapass/classes/taproot-asset-info.class';
@@ -31,6 +30,7 @@ import {TaprootAssets} from '@client/modules/tapass/classes/taproot-assets.class
 import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
 import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
+import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 import {MintActivitySummary} from '@client/modules/mint/classes/mint-activity-summary.class';
 import {OrchardError} from '@client/modules/error/types/error.types';
 import {DeviceType} from '@client/modules/layout/types/device.types';
@@ -62,12 +62,14 @@ export class IndexSubsectionDashboardComponent implements OnInit, OnDestroy {
 	public loading_taproot_assets: boolean = true;
 	public loading_mint: boolean = true;
 	public loading_mint_icon: boolean = true;
+	public loading_mint_reserves: boolean = true;
 	public loading_mint_activity = signal<boolean>(true);
 
 	public errors_bitcoin: OrchardError[] = [];
 	public errors_lightning: OrchardError[] = [];
 	public errors_taproot_assets: OrchardError[] = [];
 	public errors_mint: OrchardError[] = [];
+	public errors_mint_reserves: OrchardError[] = [];
 	public error_mint_activity = signal<boolean>(false);
 
 	public bitcoin_blockchain_info!: BitcoinBlockchainInfo | null;
@@ -79,7 +81,6 @@ export class IndexSubsectionDashboardComponent implements OnInit, OnDestroy {
 	public bitcoin_txfee_estimate!: BitcoinTransactionFeeEstimate | null;
 	public bitcoin_connections = signal<PublicPort[]>([]);
 	public lightning_info!: LightningInfo | null;
-	public lightning_balance!: LightningBalance | null;
 	public lightning_accounts!: LightningAccount[] | null;
 	public lightning_channels!: LightningChannel[] | null;
 	public lightning_closed_channels!: LightningClosedChannel[] | null;
@@ -89,6 +90,7 @@ export class IndexSubsectionDashboardComponent implements OnInit, OnDestroy {
 	public mint_info!: MintInfo | null;
 	public mint_balances!: MintBalance[] | null;
 	public mint_keysets!: MintKeyset[] | null;
+	public mint_reserves: MintReserves | null = null;
 	public mint_activity_summary = signal<MintActivitySummary | null>(null);
 	public mint_icon_data!: string | null;
 	public mint_connections = signal<PublicUrl[]>([]);
@@ -175,8 +177,10 @@ export class IndexSubsectionDashboardComponent implements OnInit, OnDestroy {
 	private initMint(): void {
 		this.loading_mint = this.enabled_mint ? true : false;
 		this.loading_mint_icon = this.enabled_mint ? true : false;
+		this.loading_mint_reserves = this.enabled_mint ? true : false;
 		if (this.enabled_mint) {
 			this.getMint();
+			this.getMintReserves();
 			this.loadMintActivitySummary(MintActivityPeriod.Day);
 		}
 		this.cdr.detectChanges();
@@ -320,15 +324,13 @@ export class IndexSubsectionDashboardComponent implements OnInit, OnDestroy {
 	private getLightning(): void {
 		forkJoin({
 			info: this.lightningService.loadLightningInfo(),
-			balance: this.lightningService.loadLightningBalance(),
 			accounts: this.lightningService.loadLightningAccounts(),
 			channels: this.lightningService.loadLightningChannels(),
 			closed_channels: this.lightningService.loadLightningClosedChannels(),
 		})
 			.pipe(
-				tap(({info, balance, accounts, channels, closed_channels}) => {
+				tap(({info, accounts, channels, closed_channels}) => {
 					this.lightning_info = info;
-					this.lightning_balance = balance;
 					this.lightning_accounts = accounts;
 					this.lightning_channels = channels;
 					this.lightning_closed_channels = closed_channels;
@@ -390,6 +392,26 @@ export class IndexSubsectionDashboardComponent implements OnInit, OnDestroy {
 					this.loading_mint = false;
 					this.setMintIcon();
 					this.setMintConnections();
+					this.cdr.detectChanges();
+				}),
+			)
+			.subscribe();
+	}
+
+	/** Loads the reserves backing the mint, apart from the mint itself so a failure here never hides it */
+	private getMintReserves(): void {
+		this.mintService
+			.loadMintReserves()
+			.pipe(
+				tap((reserves) => {
+					this.mint_reserves = reserves;
+				}),
+				catchError((error) => {
+					this.errors_mint_reserves = error.errors;
+					return EMPTY;
+				}),
+				finalize(() => {
+					this.loading_mint_reserves = false;
 					this.cdr.detectChanges();
 				}),
 			)

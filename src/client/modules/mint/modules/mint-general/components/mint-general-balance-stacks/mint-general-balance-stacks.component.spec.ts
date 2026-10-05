@@ -19,7 +19,7 @@ describe('MintGeneralBalanceStacksComponent', () => {
 		fixture.componentRef.setInput('assets', 0);
 		fixture.componentRef.setInput('liabilities', 0);
 		fixture.componentRef.setInput('unit', 'sat');
-		fixture.componentRef.setInput('reserve', null);
+		fixture.componentRef.setInput('solvency', null);
 		fixture.detectChanges();
 	});
 

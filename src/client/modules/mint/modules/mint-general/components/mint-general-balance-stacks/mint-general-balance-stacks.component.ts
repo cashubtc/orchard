@@ -14,7 +14,7 @@ export class MintGeneralBalanceStacksComponent {
 	public assets = input.required<number>();
 	public liabilities = input.required<number>();
 	public unit = input.required<string>();
-	public reserve = input.required<number | null>();
+	public solvency = input.required<number | null>();
 
 	public unit_class = computed(() => {
 		return `coin-${getUnitMeta(this.unit()).asset}`;

@@ -21,40 +21,41 @@
 									Assets &nbsp;&nbsp;●&nbsp;&nbsp; Backing collateral
 								</div>
 							</div>
-						} @else if (lightning_enabled()) {
-							@if (!lightning_loading()) {
-								@if (lightning_errors() && lightning_errors().length > 0) {
-									<div animate.enter="orc-animation-fadein-fast">
-										@for (error of lightning_errors(); track error.code) {
-											<orc-error-resolve [error]="error" mode="small"></orc-error-resolve>
-										}
-									</div>
-								} @else {
-									<orc-graphic-asset
-										class="low-bg"
-										[unit]="row.unit_mint"
-										[height]="'2.5rem'"
-										[custody]="'lightning'"
-									></orc-graphic-asset>
+						} @else if (!reserves_loading()) {
+							@if (row.assets === null && reserves_failures().length > 0) {
+								<div animate.enter="orc-animation-fadein-fast">
+									@for (error of reserves_failures(); track error.code) {
+										<orc-error-resolve [error]="error" mode="small"></orc-error-resolve>
+									}
+								</div>
+							} @else if (row.assets === null && reserves()?.lightning_unconfigured) {
+								<button mat-stroked-button (click)="navigate.emit()">Lightning Configuration</button>
+							} @else {
+								<orc-graphic-asset
+									class="low-bg"
+									[unit]="row.unit_mint"
+									[height]="'2.5rem'"
+									[custody]="reserves_custody()"
+								></orc-graphic-asset>
+								<div class="flex flex-column">
 									@if (row.assets !== null) {
-										<div class="flex flex-column">
-											<span
-												class="font-size-xl font-weight-semi-bold text-nowrap"
-												[innerHTML]="row.assets | localAmount: row.unit_lightning : 'lightning'"
-											></span>
-											<div class="font-size-xs orc-outline-color text-nowrap">
-												Assets &nbsp;&nbsp;●&nbsp;&nbsp; Lightning local capacity
-											</div>
-										</div>
+										<span
+											class="font-size-xl font-weight-semi-bold text-nowrap"
+											[innerHTML]="row.assets | localAmount: row.unit_reserves : 'lightning'"
+										></span>
 									} @else {
 										<span class="font-size-m orc-outline-color">
 											<mat-icon>check_indeterminate_small</mat-icon>
 										</span>
 									}
-								}
+									<div class="font-size-xs orc-outline-color text-nowrap">
+										Assets &nbsp;&nbsp;●&nbsp;&nbsp; {{ reserves_label() }}
+										@if (reserves()?.partial) {
+											<span class="orc-status-warning-color">(partial)</span>
+										}
+									</div>
+								</div>
 							}
-						} @else {
-							<button mat-stroked-button (click)="navigate.emit()">Lightning Configuration</button>
 						}
 					</div>
 
@@ -65,7 +66,7 @@
 								[unit]="row.unit_mint"
 								[assets]="row.assets"
 								[liabilities]="row.liabilities"
-								[reserve]="row.reserve"
+								[solvency]="row.solvency"
 							></orc-mint-general-balance-stacks>
 						} @else {
 							<div></div>
@@ -134,10 +135,10 @@
 										<div class="font-size-xs orc-outline-color text-nowrap">Mint unit</div>
 									</div>
 								</div>
-								@if (row.assets !== null) {
+								@if (row.solvency !== null) {
 									<div class="orc-high-card p-1 flex-1">
 										<div>
-											<div class="font-size-l text-nowrap font-weight-semi-bold">{{ row.reserve }}x</div>
+											<div class="font-size-l text-nowrap font-weight-semi-bold">{{ row.solvency }}x</div>
 											<div class="font-size-xs orc-outline-color text-nowrap">Liability coverage</div>
 										</div>
 									</div>
@@ -174,7 +175,7 @@
 														[innerHTML]="row.assets_oracle | localAmount: 'usd'"
 													></div>
 													<div class="font-size-xs orc-outline-color text-nowrap">
-														Assets &nbsp;&nbsp;●&nbsp;&nbsp; Lightning local capacity
+														Assets &nbsp;&nbsp;●&nbsp;&nbsp; {{ reserves_label() }}
 													</div>
 												</div>
 											</div>

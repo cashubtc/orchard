@@ -44,10 +44,9 @@
 					<orc-mint-general-balance-sheet
 						[balances]="mint_balances"
 						[keysets]="mint_keysets"
-						[lightning_balance]="lightning_balance ? lightning_balance : null"
-						[lightning_enabled]="lightning_enabled"
-						[lightning_errors]="errors_lightning"
-						[lightning_loading]="loading_lightning()"
+						[reserves]="mint_reserves()"
+						[reserves_errors]="errors_mint_reserves()"
+						[reserves_loading]="loading_mint_reserves()"
 						[bitcoin_oracle_enabled]="bitcoin_oracle_enabled"
 						[bitcoin_oracle_price]="bitcoin_oracle_price()"
 						[loading]="loading_static_data"
