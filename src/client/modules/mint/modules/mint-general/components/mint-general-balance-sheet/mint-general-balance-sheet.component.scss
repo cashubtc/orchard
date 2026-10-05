@@ -71,19 +71,26 @@
 	padding-bottom: 1.5rem;
 }
 
-.reserve-source-group {
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
+// One label column and one value column shared by every group and the total
+.reserve-sources-menu {
+	@extend %grid;
+	grid-template-columns: 1fr auto;
+	column-gap: 2.5rem;
+
+	> * {
+		grid-column: 1 / -1;
+	}
 }
 
-.reserve-source-option {
-	@extend %flex;
-	@extend %flex-justify-between;
+.reserve-sources-columns {
+	@extend %grid;
 	@extend %flex-items-center;
-	@extend %flex-gap-1;
+	grid-column: 1 / -1;
+	grid-template-columns: subgrid;
+}
 
-	> span {
-		max-width: 12rem;
-		text-align: right;
-	}
+.reserve-source-group {
+	grid-column: 1 / -1;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
 }

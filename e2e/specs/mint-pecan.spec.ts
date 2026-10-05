@@ -86,7 +86,7 @@ test.describe('Pecan — ora/branch compatibility', {tag: '@pecan'}, () => {
 			const detail = page.locator(`orc-mint-subsection-database-table-${kind}`);
 			await expect(detail.getByText('Payment Request', {exact: true})).toBeVisible();
 			await expect(detail.locator('.w-max-36 .mega-string')).toHaveText(fixture.request);
-			await expect(detail.locator('.qrcode-static svg')).toBeVisible();
+			await expect(detail.locator('orc-graphic-qr svg')).toBeVisible();
 			await context.grantPermissions(['clipboard-read', 'clipboard-write'], {origin: config.orchardUrl});
 			await detail.locator('.w-max-36 .button-copy-action').click();
 			await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(fixture.request);

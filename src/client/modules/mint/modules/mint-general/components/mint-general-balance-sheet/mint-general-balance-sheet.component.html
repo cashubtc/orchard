@@ -227,18 +227,18 @@
 	</div>
 </div>
 
-<mat-menu #reserve_sources_menu="matMenu" yPosition="below" xPosition="before" class="orc-filter-menu">
-	<div (click)="$event.stopPropagation()">
+<mat-menu #reserve_sources_menu="matMenu" yPosition="below" xPosition="before" class="orc-filter-menu orc-wide-menu">
+	<div class="reserve-sources-menu" (click)="$event.stopPropagation()">
 		<div class="font-size-xs orc-outline-color p-h-1 p-t-1">Asset sources</div>
 		@for (group of source_groups(); track group.label; let first = $first) {
 			@if (!first) {
 				<div class="orc-filter-menu-rule"></div>
 			}
-			<div class="orc-filter-menu-section">
+			<div class="orc-filter-menu-section reserve-sources-columns">
 				<div class="reserve-source-group font-size-xs orc-outline-color">{{ group.label }}</div>
 				@for (source of group.sources; track source.source) {
 					@let drafted = draft_sources().includes(source.source);
-					<div class="reserve-source-option">
+					<div class="reserve-sources-columns">
 						<mat-checkbox
 							[checked]="drafted"
 							[disabled]="!source.readable && !drafted"
@@ -248,16 +248,16 @@
 						</mat-checkbox>
 						@switch (source.status) {
 							@case (source_status.Available) {
-								<span class="font-size-s text-nowrap" [innerHTML]="source.amount | localAmount: 'sat'"></span>
+								<span class="font-size-s text-nowrap text-right" [innerHTML]="source.amount | localAmount: 'sat'"></span>
 							}
 							@case (source_status.Unavailable) {
-								<span class="font-size-xs orc-status-warning-color">{{ source.error_details }}</span>
+								<span class="font-size-xs orc-status-warning-color text-right w-max-10">{{ source.error_details }}</span>
 							}
 							@case (source_status.Unconfigured) {
-								<span class="font-size-xs orc-outline-color">Not configured</span>
+								<span class="font-size-xs orc-outline-color text-right">Not configured</span>
 							}
 							@case (source_status.Unsupported) {
-								<span class="font-size-xs orc-outline-color">Not supported by this mint</span>
+								<span class="font-size-xs orc-outline-color text-right">Unsupported</span>
 							}
 						}
 					</div>
@@ -265,9 +265,9 @@
 			</div>
 		}
 		<div class="orc-filter-menu-rule"></div>
-		<div class="orc-filter-menu-section flex flex-justify-between flex-items-center flex-gap-2">
+		<div class="orc-filter-menu-section reserve-sources-columns">
 			<span class="font-size-xs orc-outline-color">Total assets</span>
-			<span class="font-weight-semi-bold text-nowrap" [innerHTML]="draft_reserves() | localAmount: 'sat'"></span>
+			<span class="font-weight-semi-bold text-nowrap text-right" [innerHTML]="draft_reserves() | localAmount: 'sat'"></span>
 		</div>
 	</div>
 </mat-menu>

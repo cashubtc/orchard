@@ -397,6 +397,9 @@
             padding: 0;
         }
     }
+    .orc-wide-menu{
+        max-width: min(28rem, calc(100vw - 2rem));
+    }
 }
 
 /* Specific Chip Overrides */

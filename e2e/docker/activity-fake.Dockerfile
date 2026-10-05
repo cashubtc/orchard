@@ -10,15 +10,13 @@
 # Slim Debian base so secp256k1 prebuilt binaries resolve cleanly (alpine's
 # musl libc would force a source compile).
 FROM node:22-slim
-ARG DOCKER_CLI_VERSION=27.5.1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl jq ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Static docker binary — only `docker exec` is needed, not a full daemon.
-RUN curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz \
-        | tar xz -C /usr/local/bin --strip-components=1 docker/docker
+COPY --from=docker:27.5.1-cli /usr/local/bin/docker /usr/local/bin/docker
 
 # Install bolt11 in a shared prefix so /scripts/gen-one-bolt11.js can require
 # it without a package.json in /scripts.

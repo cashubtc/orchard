@@ -341,7 +341,8 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 		// "Minting/Melting enabled" pills — the pill state was redundant
 		// with the NUT-04/05 chip dot palette asserted above.
 		const config = getConfig(testInfo.project.name);
-		const info = mint.getInfo(config);
+		// fresh: the mutation spec's saves re-append methods, so a cached order goes stale
+		const info = mint.getInfo(config, {fresh: true});
 		const methods = [...(nutBlock(info.nuts, 4)?.methods ?? []), ...(nutBlock(info.nuts, 5)?.methods ?? [])];
 		const expected = [...new Set(methods.map((m) => m.method))];
 		test.skip(expected.length === 0, 'daemon publishes no nut4/nut5 methods — chip set collapses');
