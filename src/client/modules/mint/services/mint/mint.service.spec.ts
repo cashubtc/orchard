@@ -77,14 +77,25 @@ describe('MintService', () => {
 	describe('loadMintReserves', () => {
 		const mint_reserves = {
 			liabilities: [{unit: 'sat', amount: 29112}],
-			sources: [{source: MintReserveSource.MintWallet, status: MintReserveStatus.Unavailable, error_details: 'No on-chain wallet'}],
+			sources: [
+				{source: MintReserveSource.LightningActive, status: MintReserveStatus.Available, amount: 50000, selected: true},
+				{
+					source: MintReserveSource.MintWallet,
+					status: MintReserveStatus.Unavailable,
+					error_details: 'No on-chain wallet',
+					selected: false,
+				},
+			],
+			reserves: 50000,
+			partial: false,
 		};
 
 		it('maps the reserves, leaving missing fields null', (done) => {
 			service.loadMintReserves().subscribe((reserves) => {
 				expect(reserves.liabilities[0].amount).toBe(29112);
-				expect(reserves.sources[0].amount).toBeNull();
-				expect(reserves.sources[0].error_details).toBe('No on-chain wallet');
+				expect(reserves.sources[1].amount).toBeNull();
+				expect(reserves.sources[1].error_details).toBe('No on-chain wallet');
+				expect(reserves.selected_sources).toEqual([MintReserveSource.LightningActive]);
 				done();
 			});
 			http_mock.expectOne(() => true).flush({data: {mint_reserves}});

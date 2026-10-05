@@ -7,7 +7,6 @@ import {
 	Theme,
 	Model,
 	Currency,
-	MintSolvency,
 	ThemeType,
 	CurrencyType,
 	BitcoinOracleSettings,
@@ -37,8 +36,7 @@ export class LocalStorageService {
 		THEME_KEY: 'v0.setting.theme',
 		MODEL_KEY: 'v0.setting.model',
 		CURRENCY_KEY: 'v0.setting.currency',
-		MINT_SOLVENCY_KEY: 'v0.setting.mint_solvency',
-        AI_FAVORITES_KEY: 'v0.setting.ai_favorites',
+		AI_FAVORITES_KEY: 'v0.setting.ai_favorites',
 		/* Bitcoin Oracle Settings */
 		BITCOIN_ORACLE_KEY: 'v0.bitcoin.oracle.settings',
 		/* Mint Settings */
@@ -118,11 +116,6 @@ export class LocalStorageService {
 		const currency = this.getItem<Currency>(this.STORAGE_KEYS.CURRENCY_KEY);
 		if (!currency) return {type_btc: CurrencyType.GLYPH, type_fiat: CurrencyType.GLYPH};
 		return currency;
-	}
-	getMintSolvency(): MintSolvency {
-		const mint_solvency = this.getItem<MintSolvency>(this.STORAGE_KEYS.MINT_SOLVENCY_KEY);
-		if (!mint_solvency) return {sources: null};
-		return mint_solvency;
 	}
 	getBitcoinOracleSettings(): BitcoinOracleSettings {
 		const settings = this.getItem<BitcoinOracleSettings>(this.STORAGE_KEYS.BITCOIN_ORACLE_KEY);
@@ -210,9 +203,6 @@ export class LocalStorageService {
 	}
 	setCurrency(currency: Currency): void {
 		this.setItem(this.STORAGE_KEYS.CURRENCY_KEY, currency);
-	}
-	setMintSolvency(mint_solvency: MintSolvency): void {
-		this.setItem(this.STORAGE_KEYS.MINT_SOLVENCY_KEY, mint_solvency);
 	}
 	setBitcoinOracleSettings(settings: BitcoinOracleSettings): void {
 		this.setItem(this.STORAGE_KEYS.BITCOIN_ORACLE_KEY, settings);

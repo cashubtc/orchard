@@ -41,6 +41,11 @@ export class MintReserves implements OrchardMintReserves {
 	public reserves: number | null;
 	public partial: boolean;
 
+	/** The sources the operator counts as reserves */
+	public get selected_sources(): MintReserveSource[] {
+		return this.sources.filter((source) => source.selected).map((source) => source.source);
+	}
+
 	constructor(omr: OrchardMintReserves) {
 		this.liabilities = omr.liabilities.map((liability) => new MintReserveLiability(liability));
 		this.sources = omr.sources.map((source) => new MintReserveSourceBalance(source));

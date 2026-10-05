@@ -1,51 +1,13 @@
 /* Native Dependencies */
 import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 /* Shared Dependencies */
-import {MintReserveSource, MintReserveStatus} from '@shared/generated.types';
+import {MintReserveSource} from '@shared/generated.types';
 /* Local Dependencies */
-import {getSolvencyMultiple, getSolvencyRatio, getSolvencyReserves, roundSolvencyMultiple} from './mint-solvency.helpers';
-
-const source = (name: MintReserveSource, amount: number | null, status = MintReserveStatus.Available) => ({
-	source: name,
-	status,
-	amount,
-	selected: false,
-});
-const channels = [MintReserveSource.LightningActive, MintReserveSource.LightningInactive];
+import {getReserveSourcesLabel, getSolvencyMultiple, getSolvencyRatio, roundSolvencyMultiple} from './mint-solvency.helpers';
 
 describe('mint-solvency.helpers', () => {
-	describe('getSolvencyReserves', () => {
-		it('sums the selected sources that could be read', () => {
-			const reserves = new MintReserves({
-				liabilities: [],
-				sources: [
-					source(MintReserveSource.LightningActive, 600),
-					source(MintReserveSource.LightningInactive, 400),
-					source(MintReserveSource.MintWallet, 21000),
-				],
-				reserves: null,
-				partial: false,
-			});
-			expect(getSolvencyReserves(reserves, channels)).toEqual({amount: 1000, partial: false});
-		});
-
-		it('flags a selected source that failed, and has no amount when none could be read', () => {
-			const reserves = new MintReserves({
-				liabilities: [],
-				sources: [
-					source(MintReserveSource.LightningActive, null, MintReserveStatus.Unavailable),
-					source(MintReserveSource.MintWallet, null, MintReserveStatus.Unconfigured),
-				],
-				reserves: null,
-				partial: false,
-			});
-			expect(getSolvencyReserves(reserves, [MintReserveSource.LightningActive])).toEqual({amount: null, partial: true});
-			expect(getSolvencyReserves(reserves, [MintReserveSource.MintWallet])).toEqual({amount: null, partial: false});
-		});
-	});
-
 	describe('getSolvencyMultiple', () => {
-		it('divides sats held by liabilities converted to sats', () => {
+		it('divides reserves in sats by liabilities converted to sats', () => {
 			expect(getSolvencyMultiple(50000, 12000, 'sat')).toBeCloseTo(4.1667);
 			expect(getSolvencyMultiple(50000, 12_000_000, 'msat')).toBeCloseTo(4.1667);
 			expect(getSolvencyMultiple(50000, 0.0005, 'btc')).toBe(1);
@@ -59,20 +21,16 @@ describe('mint-solvency.helpers', () => {
 	});
 
 	describe('getSolvencyRatio', () => {
-		const reserves = new MintReserves({
-			liabilities: [{unit: 'sat', amount: 12000}],
-			sources: [source(MintReserveSource.LightningActive, 50000), source(MintReserveSource.LightningInactive, 0)],
-			reserves: null,
-			partial: false,
-		});
+		const reserves = (reserves_sats: number | null) =>
+			new MintReserves({liabilities: [{unit: 'sat', amount: 12000}], sources: [], reserves: reserves_sats, partial: false});
 
-		it("covers the unit's liabilities with the selected reserves", () => {
-			expect(getSolvencyRatio(reserves, channels, 'SAT')).toBeCloseTo(4.1667);
+		it("covers the unit's liabilities with the operator's reserves", () => {
+			expect(getSolvencyRatio(reserves(50000), 'SAT')).toBeCloseTo(4.1667);
 		});
 
 		it('has no ratio for a unit without liabilities or without readable reserves', () => {
-			expect(getSolvencyRatio(reserves, channels, 'msat')).toBeNull();
-			expect(getSolvencyRatio(reserves, [MintReserveSource.MintWallet], 'sat')).toBeNull();
+			expect(getSolvencyRatio(reserves(50000), 'msat')).toBeNull();
+			expect(getSolvencyRatio(reserves(null), 'sat')).toBeNull();
 		});
 	});
 
@@ -81,6 +39,20 @@ describe('mint-solvency.helpers', () => {
 			expect(roundSolvencyMultiple(0.96)).toBe(1);
 			expect(roundSolvencyMultiple(4.1667)).toBe(4.2);
 			expect(roundSolvencyMultiple(6.25)).toBe(6);
+		});
+	});
+
+	describe('getReserveSourcesLabel', () => {
+		it('keeps the long-standing caption for every channel, in any order', () => {
+			expect(getReserveSourcesLabel([MintReserveSource.LightningInactive, MintReserveSource.LightningActive])).toBe(
+				'Lightning local capacity',
+			);
+		});
+
+		it('names a lone source, counts several, and says when none are selected', () => {
+			expect(getReserveSourcesLabel([MintReserveSource.MintWallet])).toBe('Mint on-chain wallet');
+			expect(getReserveSourcesLabel([MintReserveSource.LightningActive, MintReserveSource.MintWallet])).toBe('2 reserve sources');
+			expect(getReserveSourcesLabel([])).toBe('No reserves selected');
 		});
 	});
 });
