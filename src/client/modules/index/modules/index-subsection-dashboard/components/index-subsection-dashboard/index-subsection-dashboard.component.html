@@ -127,6 +127,7 @@
 				[device_type]="device_type()"
 				(navigate)="onNavigate($event)"
 				(period_change)="onMintActivityPeriodChange($event)"
+				(reserve_sources_change)="onReserveSourcesChange($event)"
 			></orc-index-subsection-dashboard-mint-enabled>
 		} @else {
 			<orc-index-subsection-dashboard-mint-disabled (navigate)="onNavigate('mint')"></orc-index-subsection-dashboard-mint-disabled>

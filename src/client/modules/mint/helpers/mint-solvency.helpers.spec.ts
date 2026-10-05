@@ -51,8 +51,8 @@ describe('mint-solvency.helpers', () => {
 
 		it('names a lone source, counts several, and says when none are selected', () => {
 			expect(getReserveSourcesLabel([MintReserveSource.MintWallet])).toBe('Mint on-chain wallet');
-			expect(getReserveSourcesLabel([MintReserveSource.LightningActive, MintReserveSource.MintWallet])).toBe('2 reserve sources');
-			expect(getReserveSourcesLabel([])).toBe('No reserves selected');
+			expect(getReserveSourcesLabel([MintReserveSource.LightningActive, MintReserveSource.MintWallet])).toBe('2 asset sources');
+			expect(getReserveSourcesLabel([])).toBe('No assets selected');
 		});
 	});
 });

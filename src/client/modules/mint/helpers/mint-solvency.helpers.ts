@@ -50,7 +50,7 @@ export function getReserveSourcesLabel(selected: readonly MintReserveSource[]): 
 	const every_channel =
 		selected.length === CHANNEL_RESERVE_SOURCES.length && CHANNEL_RESERVE_SOURCES.every((source) => selected.includes(source));
 	if (every_channel) return 'Lightning local capacity';
-	if (selected.length === 0) return 'No reserves selected';
+	if (selected.length === 0) return 'No assets selected';
 	if (selected.length === 1) return RESERVE_SOURCE_LABELS[selected[0]];
-	return `${selected.length} reserve sources`;
+	return `${selected.length} asset sources`;
 }

@@ -64,3 +64,26 @@
 		grid-column: 1 / -1;
 	}
 }
+
+.reserve-sources-selector {
+	@extend %z-index-0;
+	@extend %h-0;
+	padding-bottom: 1.5rem;
+}
+
+.reserve-source-group {
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+
+.reserve-source-option {
+	@extend %flex;
+	@extend %flex-justify-between;
+	@extend %flex-items-center;
+	@extend %flex-gap-1;
+
+	> span {
+		max-width: 12rem;
+		text-align: right;
+	}
+}

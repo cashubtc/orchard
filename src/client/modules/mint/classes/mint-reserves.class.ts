@@ -30,6 +30,11 @@ export class MintReserveSourceBalance implements OrchardMintReserveSource {
 	public error_details: string | null;
 	public selected: boolean;
 
+	/** Whether this mint has the source set up, even if reading it failed */
+	public get readable(): boolean {
+		return this.status === MintReserveStatus.Available || this.status === MintReserveStatus.Unavailable;
+	}
+
 	/** The backend's own error, when this source could not be read */
 	public get error(): OrchardError | null {
 		if (this.status !== MintReserveStatus.Unavailable || this.error_code === null) return null;

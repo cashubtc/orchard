@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, OnInit, ChangeDetectorRef, OnDestroy, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnInit, ChangeDetectorRef, OnDestroy, signal, inject} from '@angular/core';
 import {Router} from '@angular/router';
 import {FormGroup, FormControl} from '@angular/forms';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
@@ -36,8 +36,11 @@ import {OrchardError} from '@client/modules/error/types/error.types';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 import {PublicPort} from '@client/modules/public/classes/public-port.class';
 import {PublicUrl} from '@client/modules/public/classes/public-url.class';
+import {EventService} from '@client/modules/event/services/event/event.service';
+import {EventData} from '@client/modules/event/classes/event-data.class';
+import {OrchardErrors} from '@client/modules/error/classes/error.class';
 /* Shared Dependencies */
-import {MintActivityPeriod} from '@shared/generated.types';
+import {MintActivityPeriod, MintReserveSource, SettingKey} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-index-subsection-dashboard',
@@ -47,6 +50,8 @@ import {MintActivityPeriod} from '@shared/generated.types';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IndexSubsectionDashboardComponent implements OnInit, OnDestroy {
+	private readonly eventService = inject(EventService);
+
 	public enabled_bitcoin: boolean;
 	public enabled_bitcoin_oracle: boolean;
 	public enabled_lightning: boolean;
@@ -400,6 +405,8 @@ export class IndexSubsectionDashboardComponent implements OnInit, OnDestroy {
 
 	/** Loads the reserves backing the mint, apart from the mint itself so a failure here never hides it */
 	private getMintReserves(): void {
+		this.loading_mint_reserves = true;
+		this.errors_mint_reserves = [];
 		this.mintService
 			.loadMintReserves()
 			.pipe(
@@ -502,6 +509,19 @@ export class IndexSubsectionDashboardComponent implements OnInit, OnDestroy {
 	public onMintActivityPeriodChange(period: MintActivityPeriod): void {
 		this.mintService.clearActivityCache();
 		this.loadMintActivitySummary(period);
+	}
+
+	/** Saves the reserve sources, then reloads reserves */
+	public onReserveSourcesChange(sources: MintReserveSource[]): void {
+		this.settingAppService.updateSettings([SettingKey.MintReserveSources], [JSON.stringify(sources)]).subscribe({
+			next: () => {
+				this.mintService.clearSolvencyCache();
+				this.getMintReserves();
+			},
+			error: (errors: OrchardErrors) => {
+				this.eventService.registerEvent(new EventData({type: 'ERROR', message: errors.errors[0].getFullError()}));
+			},
+		});
 	}
 
 	/* *******************************************************

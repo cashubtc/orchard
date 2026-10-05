@@ -12,6 +12,7 @@ import {
 	signal,
 	computed,
 	WritableSignal,
+	inject,
 } from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
@@ -41,6 +42,9 @@ import {DeviceType} from '@client/modules/layout/types/device.types';
 import {BitcoinOraclePrice} from '@client/modules/bitcoin/classes/bitcoin-oracle-price.class';
 import {DateRangePreset} from '@client/modules/form/types/form-daterange.types';
 import {resolveDateRangePreset} from '@client/modules/form/helpers/form-daterange.helpers';
+import {EventService} from '@client/modules/event/services/event/event.service';
+import {EventData} from '@client/modules/event/classes/event-data.class';
+import {OrchardErrors} from '@client/modules/error/classes/error.class';
 /* Native Dependencies */
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
@@ -54,7 +58,7 @@ import {MintAnalytic} from '@client/modules/mint/classes/mint-analytic.class';
 import {MintActivitySummary} from '@client/modules/mint/classes/mint-activity-summary.class';
 import {ChartType} from '@client/modules/mint/enums/chart-type.enum';
 /* Shared Dependencies */
-import {AssistantToolName, AnalyticsInterval, MintActivityPeriod} from '@shared/generated.types';
+import {AssistantToolName, AnalyticsInterval, MintActivityPeriod, MintReserveSource, SettingKey} from '@shared/generated.types';
 
 enum NavSummary {
 	Mint = 'summary1',
@@ -82,6 +86,8 @@ type ChartKey = 'balance_sheet' | 'mints' | 'melts' | 'swaps' | 'fee_revenue' | 
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
+	private readonly eventService = inject(EventService);
+
 	@ViewChildren('summary1,summary2,nav1,nav2,nav3,nav4,nav5,nav6') nav_elements!: QueryList<ElementRef>;
 	@ViewChild('summary_container', {static: false}) summary_container!: ElementRef;
 	@ViewChild('chart_container', {static: false}) chart_container!: ElementRef;
@@ -321,6 +327,8 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 
 	/** Loads the reserves backing the mint for the balance sheet */
 	private getMintReservesSubscription(): Subscription {
+		this.loading_mint_reserves.set(true);
+		this.errors_mint_reserves.set([]);
 		return this.mintService
 			.loadMintReserves()
 			.pipe(
@@ -640,6 +648,19 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 
 	public onNavigate(route: string): void {
 		this.router.navigate([`/${route}`]);
+	}
+
+	/** Saves the reserve sources, then reloads reserves */
+	public onReserveSourcesChange(sources: MintReserveSource[]): void {
+		this.settingAppService.updateSettings([SettingKey.MintReserveSources], [JSON.stringify(sources)]).subscribe({
+			next: () => {
+				this.mintService.clearSolvencyCache();
+				this.subscriptions.add(this.getMintReservesSubscription());
+			},
+			error: (errors: OrchardErrors) => {
+				this.eventService.registerEvent(new EventData({type: 'ERROR', message: errors.errors[0].getFullError()}));
+			},
+		});
 	}
 
 	/* *******************************************************

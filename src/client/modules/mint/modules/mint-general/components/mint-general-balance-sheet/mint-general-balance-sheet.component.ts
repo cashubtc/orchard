@@ -10,8 +10,11 @@ import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 import {getReserveSourcesLabel} from '@client/modules/mint/helpers/mint-solvency.helpers';
+import {RESERVE_SOURCE_GROUPS, RESERVE_SOURCE_LABELS} from '@client/modules/mint/constants/mint.constants';
 /* Local Dependencies */
 import {MintGeneralBalanceRow} from './mint-general-balance-row.class';
+/* Shared Dependencies */
+import {MintReserveSource, MintReserveStatus} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-mint-general-balance-sheet',
@@ -22,6 +25,7 @@ import {MintGeneralBalanceRow} from './mint-general-balance-row.class';
 })
 export class MintGeneralBalanceSheetComponent {
 	public navigate = output<void>();
+	public reserve_sources_change = output<MintReserveSource[]>();
 
 	public balances = input.required<MintBalance[]>();
 	public keysets = input.required<MintKeyset[]>();
@@ -33,7 +37,11 @@ export class MintGeneralBalanceSheetComponent {
 	public loading = input.required<boolean>();
 	public device_type = input.required<DeviceType>();
 
+	public readonly source_labels = RESERVE_SOURCE_LABELS;
+	public readonly source_status = MintReserveStatus;
+
 	public expanded = signal<Record<string, boolean>>({});
+	public draft_sources = signal<MintReserveSource[]>([]);
 
 	public readonly rows = computed<MintGeneralBalanceRow[]>(() => {
 		if (this.loading()) return [];
@@ -50,6 +58,22 @@ export class MintGeneralBalanceSheetComponent {
 	public readonly reserves_failures = computed<OrchardError[]>(() =>
 		this.reserves_errors().length > 0 ? this.reserves_errors() : (this.reserves()?.failures ?? []),
 	);
+
+	/** The reported sources, grouped by the backend that holds them */
+	public readonly source_groups = computed(() => {
+		const sources = this.reserves()?.sources ?? [];
+		return RESERVE_SOURCE_GROUPS.map((group) => ({
+			label: group.label,
+			sources: sources.filter((source) => group.sources.includes(source.source)),
+		})).filter((group) => group.sources.length > 0);
+	});
+
+	/** Sats the drafted sources would count as reserves */
+	public readonly draft_reserves = computed(() => {
+		const draft = this.draft_sources();
+		const sources = this.reserves()?.sources ?? [];
+		return sources.filter((source) => draft.includes(source.source)).reduce((total, source) => total + (source.amount ?? 0), 0);
+	});
 
 	/** The operator's reserves back bitcoin-denominated liabilities only */
 	private getAssetBalances(unit: string): number | null {
@@ -97,5 +121,28 @@ export class MintGeneralBalanceSheetComponent {
 	/** Toggles the expanded state for a given unit row */
 	public toggleExpanded(unit: string): void {
 		this.expanded.update((state) => ({...state, [unit]: !state[unit]}));
+	}
+
+	/* *******************************************************
+		Reserve Sources
+	******************************************************** */
+
+	/** Starts a draft from the saved selection */
+	public onReserveMenuOpened(): void {
+		this.draft_sources.set(this.reserves()?.selected_sources ?? []);
+	}
+
+	/** Ticks or unticks a source in the draft */
+	public toggleReserveSource(source: MintReserveSource): void {
+		this.draft_sources.update((draft) => (draft.includes(source) ? draft.filter((s) => s !== source) : [...draft, source]));
+	}
+
+	/** Emits the draft, in source order, when it differs from the saved selection */
+	public onReserveMenuClosed(): void {
+		const draft = this.draft_sources();
+		const sources = this.reserves()?.sources.map((source) => source.source) ?? [];
+		const next = sources.filter((source) => draft.includes(source));
+		if (next.join() === (this.reserves()?.selected_sources ?? []).join()) return;
+		this.reserve_sources_change.emit(next);
 	}
 }

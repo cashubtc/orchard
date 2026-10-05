@@ -122,7 +122,7 @@ describe('MintGeneralBalanceSheetComponent', () => {
 				'reserves',
 				buildReserves({sources: [buildSource(), buildSource({source: MintReserveSource.MintWallet})]}),
 			);
-			expect(component.reserves_label()).toBe('2 reserve sources');
+			expect(component.reserves_label()).toBe('2 asset sources');
 			expect(component.reserves_custody()).toBe('hot');
 		});
 
@@ -151,6 +151,64 @@ describe('MintGeneralBalanceSheetComponent', () => {
 				}),
 			);
 			expect(component.reserves()?.lightning_unconfigured).toBe(false);
+		});
+	});
+
+	describe('reserve source menu', () => {
+		let emitted: MintReserveSource[][];
+
+		beforeEach(() => {
+			emitted = [];
+			component.reserve_sources_change.subscribe((sources) => emitted.push(sources));
+			fixture.componentRef.setInput(
+				'reserves',
+				buildReserves({
+					sources: [
+						buildSource({amount: 1000}),
+						buildSource({source: MintReserveSource.LightningInactive, amount: 200}),
+						buildSource({source: MintReserveSource.MintWallet, amount: 30, selected: false}),
+					],
+				}),
+			);
+			component.onReserveMenuOpened();
+		});
+
+		it('should draft from the saved selection and total the drafted sources', () => {
+			expect(component.draft_sources()).toEqual([MintReserveSource.LightningActive, MintReserveSource.LightningInactive]);
+			component.toggleReserveSource(MintReserveSource.MintWallet);
+			expect(component.draft_reserves()).toBe(1230);
+		});
+
+		it('should let only sources this mint has set up be ticked', () => {
+			const statuses = [
+				MintReserveStatus.Available,
+				MintReserveStatus.Unavailable,
+				MintReserveStatus.Unconfigured,
+				MintReserveStatus.Unsupported,
+			];
+			const reserves = buildReserves({sources: statuses.map((status) => buildSource({status}))});
+			expect(reserves.sources.map((source) => source.readable)).toEqual([true, true, false, false]);
+		});
+
+		it('should not save when the menu closes unchanged', () => {
+			component.toggleReserveSource(MintReserveSource.LightningActive);
+			component.toggleReserveSource(MintReserveSource.LightningActive);
+			component.onReserveMenuClosed();
+			expect(emitted).toEqual([]);
+		});
+
+		it('should save the changed selection in source order when the menu closes', () => {
+			component.toggleReserveSource(MintReserveSource.MintWallet);
+			component.toggleReserveSource(MintReserveSource.LightningActive);
+			component.onReserveMenuClosed();
+			expect(emitted).toEqual([[MintReserveSource.LightningInactive, MintReserveSource.MintWallet]]);
+		});
+
+		it('should save an empty selection', () => {
+			component.toggleReserveSource(MintReserveSource.LightningActive);
+			component.toggleReserveSource(MintReserveSource.LightningInactive);
+			component.onReserveMenuClosed();
+			expect(emitted).toEqual([[]]);
 		});
 	});
 });

@@ -52,6 +52,7 @@
 						[loading]="loading_static_data"
 						[device_type]="device_type()"
 						(navigate)="onNavigate('lightning')"
+						(reserve_sources_change)="onReserveSourcesChange($event)"
 					></orc-mint-general-balance-sheet>
 				</div>
 			</div>

@@ -46,6 +46,7 @@
 					[bitcoin_oracle_enabled]="bitcoin_oracle_enabled()"
 					[bitcoin_oracle_price]="bitcoin_oracle_price()"
 					(navigate)="navigate.emit('lightning')"
+					(reserve_sources_change)="reserve_sources_change.emit($event)"
 				></orc-mint-general-balance-sheet>
 			</div>
 		</div>

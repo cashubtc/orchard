@@ -16,7 +16,7 @@ import {BitcoinOraclePrice} from '@client/modules/bitcoin/classes/bitcoin-oracle
 import {NavService} from '@client/modules/nav/services/nav/nav.service';
 import {NavSecondaryItem} from '@client/modules/nav/types/nav-secondary-item.type';
 /* Shared Dependencies */
-import {MintActivityPeriod} from '@shared/generated.types';
+import {MintActivityPeriod, MintReserveSource} from '@shared/generated.types';
 /* Components */
 import {NavMobileSheetMenuSubsectionComponent} from '@client/modules/nav/components/nav-mobile-sheet-menu-subsection/nav-mobile-sheet-menu-subsection.component';
 
@@ -58,6 +58,7 @@ export class IndexSubsectionDashboardMintEnabledComponent {
 
 	public navigate = output<string>();
 	public period_change = output<MintActivityPeriod>();
+	public reserve_sources_change = output<MintReserveSource[]>();
 
 	public items = signal<NavSecondaryItem[]>([]);
 	public liabilities = signal<Liabilities[] | null>(null);

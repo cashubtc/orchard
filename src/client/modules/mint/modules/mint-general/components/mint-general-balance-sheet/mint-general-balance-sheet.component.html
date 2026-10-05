@@ -1,5 +1,21 @@
 <div>
-	<div class="title-l p-b-1">Balance Sheet</div>
+	<div class="flex flex-justify-between flex-items-center p-b-1">
+		<div class="title-l">Balance Sheet</div>
+		@if (reserves()) {
+			<div class="reserve-sources-selector">
+				<button
+					matButton
+					type="button"
+					[matMenuTriggerFor]="reserve_sources_menu"
+					(menuOpened)="onReserveMenuOpened()"
+					(menuClosed)="onReserveMenuClosed()"
+				>
+					<mat-icon>tune</mat-icon>
+					<span class="text-nowrap font-size-s">{{ reserves_label() }}</span>
+				</button>
+			</div>
+		}
+	</div>
 
 	<div class="balance-sheet-list" [class.tablet]="device_type() === 'tablet'" [class.mobile]="device_type() === 'mobile'">
 		@for (row of rows(); track row.unit_mint) {
@@ -210,3 +226,48 @@
 		}
 	</div>
 </div>
+
+<mat-menu #reserve_sources_menu="matMenu" yPosition="below" xPosition="before" class="orc-filter-menu">
+	<div (click)="$event.stopPropagation()">
+		<div class="font-size-xs orc-outline-color p-h-1 p-t-1">Asset sources</div>
+		@for (group of source_groups(); track group.label; let first = $first) {
+			@if (!first) {
+				<div class="orc-filter-menu-rule"></div>
+			}
+			<div class="orc-filter-menu-section">
+				<div class="reserve-source-group font-size-xs orc-outline-color">{{ group.label }}</div>
+				@for (source of group.sources; track source.source) {
+					@let drafted = draft_sources().includes(source.source);
+					<div class="reserve-source-option">
+						<mat-checkbox
+							[checked]="drafted"
+							[disabled]="!source.readable && !drafted"
+							(change)="toggleReserveSource(source.source)"
+						>
+							{{ source_labels[source.source] }}
+						</mat-checkbox>
+						@switch (source.status) {
+							@case (source_status.Available) {
+								<span class="font-size-s text-nowrap" [innerHTML]="source.amount | localAmount: 'sat'"></span>
+							}
+							@case (source_status.Unavailable) {
+								<span class="font-size-xs orc-status-warning-color">{{ source.error_details }}</span>
+							}
+							@case (source_status.Unconfigured) {
+								<span class="font-size-xs orc-outline-color">Not configured</span>
+							}
+							@case (source_status.Unsupported) {
+								<span class="font-size-xs orc-outline-color">Not supported by this mint</span>
+							}
+						}
+					</div>
+				}
+			</div>
+		}
+		<div class="orc-filter-menu-rule"></div>
+		<div class="orc-filter-menu-section flex flex-justify-between flex-items-center flex-gap-2">
+			<span class="font-size-xs orc-outline-color">Total assets</span>
+			<span class="font-weight-semi-bold text-nowrap" [innerHTML]="draft_reserves() | localAmount: 'sat'"></span>
+		</div>
+	</div>
+</mat-menu>
