@@ -1,5 +1,7 @@
 /* Core Dependencies */
 import {createHash, hkdfSync, randomBytes, createCipheriv, createDecipheriv} from 'crypto';
+/* Application Dependencies */
+import {MintReserveSource} from '#server/modules/cashu/cashu.enums';
 /* Local Dependencies */
 import {Setting} from './setting.entity.js';
 import {SettingKey, SettingSensitivity, SettingValue} from './setting.enums.js';
@@ -57,6 +59,42 @@ export const maskSensitiveValue = (value: string): string => {
 	if (!value) return '';
 	if (value.length <= 4) return '\u2022\u2022\u2022\u2022';
 	return '\u2022\u2022\u2022\u2022' + value.slice(-4);
+};
+
+/* *******************************************************
+	Validation
+******************************************************** */
+
+/**
+ * Checks a reserve sources value: a JSON array of known sources.
+ * @param {string} value - The value as stored or submitted
+ * @returns {string | null} What is wrong with it, or null when it is valid
+ */
+const validateReserveSources = (value: string): string | null => {
+	let sources: unknown = null;
+	try {
+		sources = JSON.parse(value);
+	} catch {}
+	if (!Array.isArray(sources)) return 'Reserve sources must be a JSON array';
+	const known: string[] = Object.values(MintReserveSource);
+	const unknown = sources.filter((source) => !known.includes(source));
+	if (unknown.length > 0) return `Unknown reserve sources: ${unknown.join(', ')}. Expected any of ${known.join(', ')}`;
+	return null;
+};
+
+/** Settings whose values need checking when they are saved or read */
+const SETTING_VALIDATORS: Partial<Record<SettingKey, (value: string) => string | null>> = {
+	[SettingKey.MINT_RESERVE_SOURCES]: validateReserveSources,
+};
+
+/**
+ * Checks a submitted setting value.
+ * @param {SettingKey} key - The setting key
+ * @param {string} value - The value as submitted
+ * @returns {string | null} What is wrong with the value, or null when it is valid or the key has no check
+ */
+export const validateSettingValue = (key: SettingKey, value: string): string | null => {
+	return SETTING_VALIDATORS[key]?.(value) ?? null;
 };
 
 /* *******************************************************

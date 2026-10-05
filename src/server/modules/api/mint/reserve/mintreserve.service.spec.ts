@@ -13,6 +13,7 @@ import {MintService} from '#server/modules/api/mint/mint.service';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {SettingService} from '#server/modules/setting/setting.service';
 /* Local Dependencies */
 import {MintReserveService} from './mintreserve.service.js';
 import type {OrchardMintReserveSource} from './mintreserve.model.js';
@@ -23,10 +24,12 @@ describe('MintReserveService', () => {
 	let mintRpcService: jest.Mocked<CashuMintRpcService>;
 	let lightningService: jest.Mocked<LightningService>;
 	let walletKitService: jest.Mocked<LightningWalletKitService>;
+	let settingService: jest.Mocked<SettingService>;
 
 	const channel = (local_balance: string, active: boolean, asset: object | null = null) => ({local_balance, active, asset});
 	const addresses = (...balances: number[]) => ({account_with_addresses: [{addresses: balances.map((balance) => ({balance}))}]});
 	const source = (sources: OrchardMintReserveSource[], name: MintReserveSource) => sources.find((item) => item.source === name);
+	const store = (value: string) => settingService.getSetting.mockResolvedValue({value} as any);
 
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
@@ -38,6 +41,7 @@ describe('MintReserveService', () => {
 				{provide: LightningService, useValue: {isConfigured: jest.fn(), getChannels: jest.fn()}},
 				{provide: LightningWalletKitService, useValue: {isConfigured: jest.fn(), getLightningAddresses: jest.fn()}},
 				{provide: MintService, useValue: {withDbClient: jest.fn((fn) => fn({}))}},
+				{provide: SettingService, useValue: {getSetting: jest.fn()}},
 			],
 		}).compile();
 
@@ -46,6 +50,7 @@ describe('MintReserveService', () => {
 		mintRpcService = module.get(CashuMintRpcService);
 		lightningService = module.get(LightningService);
 		walletKitService = module.get(LightningWalletKitService);
+		settingService = module.get(SettingService);
 
 		mintDbService.getBalances.mockResolvedValue([]);
 		lightningService.isConfigured.mockReturnValue(true);
@@ -54,6 +59,7 @@ describe('MintReserveService', () => {
 		lightningService.getChannels.mockResolvedValue([] as any);
 		walletKitService.getLightningAddresses.mockResolvedValue(addresses() as any);
 		mintRpcService.getMintWalletBalance.mockResolvedValue({trusted_spendable_sat: '0'} as any);
+		settingService.getSetting.mockResolvedValue(null);
 	});
 
 	it('should be defined', () => {
@@ -137,5 +143,38 @@ describe('MintReserveService', () => {
 	it('fails the whole query when liabilities cannot be read', async () => {
 		mintDbService.getBalances.mockRejectedValue(new Error('boom'));
 		await expect(mintReserveService.getMintReserves('TAG')).rejects.toBeInstanceOf(OrchardApiError);
+	});
+
+	it('counts every channel as reserves until the operator chooses otherwise', async () => {
+		lightningService.getChannels.mockResolvedValue([channel('600', true), channel('400', false)] as any);
+		mintRpcService.getMintWalletBalance.mockResolvedValue({trusted_spendable_sat: '21000'} as any);
+		const reserves = await mintReserveService.getMintReserves('TAG');
+		expect(reserves.reserves).toBe(1000);
+		expect(reserves.partial).toBe(false);
+		expect(reserves.sources.filter((item) => item.selected).map((item) => item.source)).toEqual([
+			MintReserveSource.LIGHTNING_ACTIVE,
+			MintReserveSource.LIGHTNING_INACTIVE,
+		]);
+	});
+
+	it('sums only the sources the operator selected', async () => {
+		store('["LIGHTNING_ACTIVE","MINT_WALLET"]');
+		lightningService.getChannels.mockResolvedValue([channel('600', true), channel('400', false)] as any);
+		mintRpcService.getMintWalletBalance.mockResolvedValue({trusted_spendable_sat: '21000'} as any);
+		expect((await mintReserveService.getMintReserves('TAG')).reserves).toBe(21600);
+	});
+
+	it('flags the reserves partial when a selected source fails, and has none when nothing selected can be read', async () => {
+		store('["MINT_WALLET"]');
+		mintRpcService.getMintWalletBalance.mockRejectedValue({code: status.FAILED_PRECONDITION, details: 'No on-chain wallet'});
+		const reserves = await mintReserveService.getMintReserves('TAG');
+		expect(reserves.reserves).toBeNull();
+		expect(reserves.partial).toBe(true);
+	});
+
+	it('counts every channel when the stored selection is invalid', async () => {
+		store('{"sources":"MINT_WALLET"}');
+		lightningService.getChannels.mockResolvedValue([channel('600', true), channel('400', false)] as any);
+		expect((await mintReserveService.getMintReserves('TAG')).reserves).toBe(1000);
 	});
 });

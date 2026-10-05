@@ -1,6 +1,11 @@
+/* Application Dependencies */
+import {MintReserveSource} from '#server/modules/cashu/cashu.enums';
 /* local Dependencies */
 import {Setting} from './setting.entity.js';
 import {SettingKey, SettingValue} from './setting.enums.js';
+
+/** Every channel's outbound, active or not: the reserves Orchard has always counted */
+export const DEFAULT_MINT_RESERVE_SOURCES: MintReserveSource[] = [MintReserveSource.LIGHTNING_ACTIVE, MintReserveSource.LIGHTNING_INACTIVE];
 
 export const DEFAULT_SETTINGS: Setting[] = [
 	{
@@ -56,5 +61,11 @@ export const DEFAULT_SETTINGS: Setting[] = [
 		value: 'true',
 		value_type: SettingValue.BOOLEAN,
 		description: 'Whether system metrics collection is enabled',
+	},
+	{
+		key: SettingKey.MINT_RESERVE_SOURCES,
+		value: JSON.stringify(DEFAULT_MINT_RESERVE_SOURCES),
+		value_type: SettingValue.JSON,
+		description: 'Balances counted as mint reserves',
 	},
 ];

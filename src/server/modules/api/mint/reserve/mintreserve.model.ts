@@ -35,16 +35,21 @@ export class OrchardMintReserveSource {
 	@Field(() => String, {nullable: true, description: "The backend's own error message, when the balance could not be read"})
 	error_details: string | null;
 
+	@Field({description: 'Whether the operator counts this balance as reserves'})
+	selected: boolean;
+
 	constructor(
 		source: MintReserveSource,
 		reading: Pick<OrchardMintReserveSource, 'status' | 'error_code' | 'error_details'>,
 		amount: number | null,
+		selected: boolean,
 	) {
 		this.source = source;
 		this.status = reading.status;
 		this.amount = amount;
 		this.error_code = reading.error_code;
 		this.error_details = reading.error_details;
+		this.selected = selected;
 	}
 }
 
@@ -56,8 +61,18 @@ export class OrchardMintReserves {
 	@Field(() => [OrchardMintReserveSource], {description: 'Every reserve source, whether or not it could be read'})
 	sources: OrchardMintReserveSource[];
 
+	@Field(() => Float, {nullable: true, description: 'Sats held in the selected sources that could be read; null when none could'})
+	reserves: number | null;
+
+	@Field({description: 'Whether a selected source could not be read, leaving the reserves short'})
+	partial: boolean;
+
 	constructor(liabilities: OrchardMintReserveLiability[], sources: OrchardMintReserveSource[]) {
+		const selected_sources = sources.filter((source) => source.selected);
+		const readable_sources = selected_sources.filter((source) => source.status === MintReserveStatus.AVAILABLE);
 		this.liabilities = liabilities;
 		this.sources = sources;
+		this.reserves = readable_sources.length > 0 ? readable_sources.reduce((sum, source) => sum + (source.amount ?? 0), 0) : null;
+		this.partial = selected_sources.some((source) => source.status === MintReserveStatus.UNAVAILABLE);
 	}
 }

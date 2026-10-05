@@ -28,4 +28,5 @@ export enum SettingKey {
 	MESSAGES_VENDOR = 'messages.vendor',
 	MESSAGES_TELEGRAM_BOT_TOKEN = 'messages.telegram.bot.token',
 	SYSTEM_METRICS = 'system.metrics',
+	MINT_RESERVE_SOURCES = 'mint.reserve.sources',
 }

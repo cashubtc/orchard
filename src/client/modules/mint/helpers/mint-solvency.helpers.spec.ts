@@ -5,7 +5,12 @@ import {MintReserveSource, MintReserveStatus} from '@shared/generated.types';
 /* Local Dependencies */
 import {getSolvencyMultiple, getSolvencyRatio, getSolvencyReserves, roundSolvencyMultiple} from './mint-solvency.helpers';
 
-const source = (name: MintReserveSource, amount: number | null, status = MintReserveStatus.Available) => ({source: name, status, amount});
+const source = (name: MintReserveSource, amount: number | null, status = MintReserveStatus.Available) => ({
+	source: name,
+	status,
+	amount,
+	selected: false,
+});
 const channels = [MintReserveSource.LightningActive, MintReserveSource.LightningInactive];
 
 describe('mint-solvency.helpers', () => {
@@ -18,6 +23,8 @@ describe('mint-solvency.helpers', () => {
 					source(MintReserveSource.LightningInactive, 400),
 					source(MintReserveSource.MintWallet, 21000),
 				],
+				reserves: null,
+				partial: false,
 			});
 			expect(getSolvencyReserves(reserves, channels)).toEqual({amount: 1000, partial: false});
 		});
@@ -29,6 +36,8 @@ describe('mint-solvency.helpers', () => {
 					source(MintReserveSource.LightningActive, null, MintReserveStatus.Unavailable),
 					source(MintReserveSource.MintWallet, null, MintReserveStatus.Unconfigured),
 				],
+				reserves: null,
+				partial: false,
 			});
 			expect(getSolvencyReserves(reserves, [MintReserveSource.LightningActive])).toEqual({amount: null, partial: true});
 			expect(getSolvencyReserves(reserves, [MintReserveSource.MintWallet])).toEqual({amount: null, partial: false});
@@ -53,6 +62,8 @@ describe('mint-solvency.helpers', () => {
 		const reserves = new MintReserves({
 			liabilities: [{unit: 'sat', amount: 12000}],
 			sources: [source(MintReserveSource.LightningActive, 50000), source(MintReserveSource.LightningInactive, 0)],
+			reserves: null,
+			partial: false,
 		});
 
 		it("covers the unit's liabilities with the selected reserves", () => {

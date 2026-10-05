@@ -150,6 +150,23 @@ describe('ApiSettingService', () => {
 			});
 		});
 
+		it('should reject an invalid value with the reason, without saving', async () => {
+			// arrange
+			errorService.resolveError.mockReturnValue({code: OrchardErrorCode.SettingError});
+
+			// act & assert
+			await expect(
+				apiSettingService.updateSettings('ERROR_TAG', [SettingKey.MINT_RESERVE_SOURCES], ['["COLD_STORAGE"]']),
+			).rejects.toBeInstanceOf(OrchardApiError);
+			expect(settingService.updateSettings).not.toHaveBeenCalled();
+			expect(errorService.resolveError).toHaveBeenCalledWith(
+				expect.anything(),
+				expect.objectContaining({code: OrchardErrorCode.SettingError, details: expect.stringMatching(/^Unknown reserve sources/)}),
+				'ERROR_TAG',
+				{errord: OrchardErrorCode.SettingError},
+			);
+		});
+
 		it('should reinitialize message service when message keys are updated', async () => {
 			// arrange
 			settingService.updateSettings.mockResolvedValue([mock_setting] as any);

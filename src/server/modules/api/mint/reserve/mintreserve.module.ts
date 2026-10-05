@@ -6,13 +6,14 @@ import {CashuMintRpcModule} from '#server/modules/cashu/mintrpc/cashumintrpc.mod
 import {LightningModule} from '#server/modules/lightning/lightning/lightning.module';
 import {LightningWalletKitModule} from '#server/modules/lightning/walletkit/lnwalletkit.module';
 import {ErrorModule} from '#server/modules/error/error.module';
+import {SettingModule} from '#server/modules/setting/setting.module';
 import {MintService} from '#server/modules/api/mint/mint.service';
 /* Local Dependencies */
 import {MintReserveResolver} from './mintreserve.resolver.js';
 import {MintReserveService} from './mintreserve.service.js';
 
 @Module({
-	imports: [CashuMintDatabaseModule, CashuMintRpcModule, LightningModule, LightningWalletKitModule, ErrorModule],
+	imports: [CashuMintDatabaseModule, CashuMintRpcModule, LightningModule, LightningWalletKitModule, SettingModule, ErrorModule],
 	providers: [MintReserveResolver, MintReserveService, MintService],
 })
 export class MintReserveModule {}

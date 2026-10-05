@@ -187,7 +187,6 @@ export class SettingService implements OnModuleInit {
 		const parsed = parseSettingValue(setting);
 		return typeof parsed === 'number' && !isNaN(parsed) ? parsed : null;
 	}
-
 	/* *******************************************************
 		Write
 	******************************************************** */

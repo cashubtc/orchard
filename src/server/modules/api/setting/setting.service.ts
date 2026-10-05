@@ -7,7 +7,7 @@ import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {SettingKey} from '#server/modules/setting/setting.enums';
 import {Setting} from '#server/modules/setting/setting.entity';
-import {isSettingSensitive, maskSensitiveValue} from '#server/modules/setting/setting.helpers';
+import {isSettingSensitive, maskSensitiveValue, validateSettingValue} from '#server/modules/setting/setting.helpers';
 import {MessageService} from '#server/modules/message/message.service';
 /* Local Dependencies */
 import {OrchardSetting} from './setting.model.js';
@@ -40,6 +40,8 @@ export class ApiSettingService {
 	async updateSettings(tag: string, keys: SettingKey[], values: string[]): Promise<OrchardSetting[]> {
 		try {
 			if (keys.length !== values.length) throw OrchardErrorCode.SettingError;
+			const problem = keys.map((key, index) => validateSettingValue(key, values[index])).find(Boolean);
+			if (problem) throw {code: OrchardErrorCode.SettingError, details: problem};
 			const settings = await this.settingService.updateSettings(keys, values);
 			if (keys.some((key) => MESSAGE_KEYS.has(key))) {
 				await this.messageService.reinitialize();

@@ -8,6 +8,7 @@ import {
 	getSettingSensitivity,
 	isSettingSensitive,
 	maskSensitiveValue,
+	validateSettingValue,
 	parseSettingValue,
 	deriveEncryptionKey,
 	deriveEncryptionKeyFromHex,
@@ -110,6 +111,31 @@ describe('Setting Helpers', () => {
 		it('should show last 4 characters for longer values', () => {
 			expect(maskSensitiveValue('sk-or-v1-abc123')).toBe('\u2022\u2022\u2022\u2022c123');
 			expect(maskSensitiveValue('12345')).toBe('\u2022\u2022\u2022\u20222345');
+		});
+	});
+
+	/* *******************************************************
+		Validation
+	******************************************************** */
+
+	describe('validateSettingValue', () => {
+		it('should accept reserve sources as an array of known sources, including none', () => {
+			expect(validateSettingValue(SettingKey.MINT_RESERVE_SOURCES, '["LIGHTNING_ACTIVE","MINT_WALLET"]')).toBeNull();
+			expect(validateSettingValue(SettingKey.MINT_RESERVE_SOURCES, '[]')).toBeNull();
+		});
+
+		it('should explain what is wrong with invalid reserve sources', () => {
+			expect(validateSettingValue(SettingKey.MINT_RESERVE_SOURCES, 'LIGHTNING_ACTIVE')).toBe('Reserve sources must be a JSON array');
+			expect(validateSettingValue(SettingKey.MINT_RESERVE_SOURCES, '"LIGHTNING_ACTIVE"')).toBe(
+				'Reserve sources must be a JSON array',
+			);
+			expect(validateSettingValue(SettingKey.MINT_RESERVE_SOURCES, '["COLD_STORAGE"]')).toMatch(
+				/^Unknown reserve sources: COLD_STORAGE/,
+			);
+		});
+
+		it('should accept any value for settings without a check', () => {
+			expect(validateSettingValue(SettingKey.AI_VENDOR, 'anything')).toBeNull();
 		});
 	});
 

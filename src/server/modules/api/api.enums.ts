@@ -283,6 +283,7 @@ registerEnumType(SettingKey, {
 		MESSAGES_VENDOR: {description: 'Messaging vendor selection'},
 		MESSAGES_TELEGRAM_BOT_TOKEN: {description: 'Telegram bot token'},
 		SYSTEM_METRICS: {description: 'System metrics collection toggle'},
+		MINT_RESERVE_SOURCES: {description: 'Balances counted as mint reserves'},
 	},
 });
 registerEnumType(SettingValue, {

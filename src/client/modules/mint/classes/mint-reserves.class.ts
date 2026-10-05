@@ -23,6 +23,7 @@ export class MintReserveSourceBalance implements OrchardMintReserveSource {
 	public amount: number | null;
 	public error_code: number | null;
 	public error_details: string | null;
+	public selected: boolean;
 
 	constructor(omrs: OrchardMintReserveSource) {
 		this.source = omrs.source;
@@ -30,15 +31,20 @@ export class MintReserveSourceBalance implements OrchardMintReserveSource {
 		this.amount = omrs.amount ?? null;
 		this.error_code = omrs.error_code ?? null;
 		this.error_details = omrs.error_details ?? null;
+		this.selected = omrs.selected;
 	}
 }
 
 export class MintReserves implements OrchardMintReserves {
 	public liabilities: MintReserveLiability[];
 	public sources: MintReserveSourceBalance[];
+	public reserves: number | null;
+	public partial: boolean;
 
 	constructor(omr: OrchardMintReserves) {
 		this.liabilities = omr.liabilities.map((liability) => new MintReserveLiability(liability));
 		this.sources = omr.sources.map((source) => new MintReserveSourceBalance(source));
+		this.reserves = omr.reserves ?? null;
+		this.partial = omr.partial;
 	}
 }

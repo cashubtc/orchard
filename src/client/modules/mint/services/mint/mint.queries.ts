@@ -148,7 +148,10 @@ export const MINT_RESERVES_QUERY = `{
 			amount
 			error_code
 			error_details
+			selected
 		}
+		reserves
+		partial
 	}
 }`;
 

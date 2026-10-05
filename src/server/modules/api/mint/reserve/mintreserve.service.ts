@@ -13,6 +13,10 @@ import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {MintService} from '#server/modules/api/mint/mint.service';
 import {ErrorService} from '#server/modules/error/error.service';
+import {SettingService} from '#server/modules/setting/setting.service';
+import {SettingKey} from '#server/modules/setting/setting.enums';
+import {DEFAULT_MINT_RESERVE_SOURCES} from '#server/modules/setting/setting.config';
+import {validateSettingValue} from '#server/modules/setting/setting.helpers';
 /* Local Dependencies */
 import {OrchardMintReserves, OrchardMintReserveLiability, OrchardMintReserveSource} from './mintreserve.model.js';
 
@@ -34,13 +38,15 @@ export class MintReserveService {
 		private lightningService: LightningService,
 		private lightningWalletKitService: LightningWalletKitService,
 		private mintService: MintService,
+		private settingService: SettingService,
 		private errorService: ErrorService,
 	) {}
 
-	/** Bitcoin liabilities and every reserve source; a source that can't be read never fails the others */
+	/** Bitcoin liabilities, every reserve source, and the total of the ones the operator selected; a source that can't be read never fails the others */
 	async getMintReserves(tag: string): Promise<OrchardMintReserves> {
-		const [liabilities, channels, lightning_wallet, mint_wallet] = await Promise.all([
+		const [liabilities, selected, channels, lightning_wallet, mint_wallet] = await Promise.all([
 			this.getLiabilities(tag),
+			this.getSelectedSources(tag),
 			this.readSource(
 				tag,
 				OrchardErrorCode.LightningRpcActionError,
@@ -58,28 +64,29 @@ export class MintReserveService {
 			),
 		]);
 
-		return new OrchardMintReserves(liabilities, [
-			new OrchardMintReserveSource(
-				MintReserveSource.LIGHTNING_ACTIVE,
-				channels,
-				channels.value && this.sumChannelOutbound(channels.value, true),
-			),
-			new OrchardMintReserveSource(
-				MintReserveSource.LIGHTNING_INACTIVE,
-				channels,
-				channels.value && this.sumChannelOutbound(channels.value, false),
-			),
-			new OrchardMintReserveSource(
+		const toSource = (source: MintReserveSource, reading: MintReserveReading<unknown>, amount: number | null) =>
+			new OrchardMintReserveSource(source, reading, amount, selected.includes(source));
+		const sources = [
+			toSource(MintReserveSource.LIGHTNING_ACTIVE, channels, channels.value && this.sumChannelOutbound(channels.value, true)),
+			toSource(MintReserveSource.LIGHTNING_INACTIVE, channels, channels.value && this.sumChannelOutbound(channels.value, false)),
+			toSource(
 				MintReserveSource.LIGHTNING_WALLET,
 				lightning_wallet,
 				lightning_wallet.value && this.sumWalletBalance(lightning_wallet.value),
 			),
-			new OrchardMintReserveSource(
-				MintReserveSource.MINT_WALLET,
-				mint_wallet,
-				mint_wallet.value && parseFloat(mint_wallet.value.trusted_spendable_sat),
-			),
-		]);
+			toSource(MintReserveSource.MINT_WALLET, mint_wallet, mint_wallet.value && parseFloat(mint_wallet.value.trusted_spendable_sat)),
+		];
+		return new OrchardMintReserves(liabilities, sources);
+	}
+
+	/** The sources the operator counts as reserves; the defaults when none is stored or the stored value is invalid */
+	private async getSelectedSources(tag: string): Promise<MintReserveSource[]> {
+		const setting = await this.settingService.getSetting(SettingKey.MINT_RESERVE_SOURCES);
+		if (!setting?.value) return DEFAULT_MINT_RESERVE_SOURCES;
+		const problem = validateSettingValue(SettingKey.MINT_RESERVE_SOURCES, setting.value);
+		if (!problem) return JSON.parse(setting.value);
+		this.logger.warn(`${tag}: ignoring the stored reserve sources and counting the defaults: ${problem}`);
+		return DEFAULT_MINT_RESERVE_SOURCES;
 	}
 
 	/** Unspent ecash per bitcoin unit; without liabilities there is nothing to cover, so this fails the query */
