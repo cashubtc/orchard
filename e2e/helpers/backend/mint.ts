@@ -4,12 +4,17 @@
  * nutshell: postgres or sqlite). Differential oracle for the bs spec.
  */
 
+/* Core Dependencies */
+import path from 'node:path';
+/* Vendor Dependencies */
+import * as grpc from '@grpc/grpc-js';
+import * as protoLoader from '@grpc/proto-loader';
 /* Native Dependencies */
 import {dockerExec} from './docker-cli';
 import {cached, recache} from './_cache';
 import {mintDbQuery, parseSqlBoolean} from './_sql';
 import type {ConfigInfo, MintUnit} from '@e2e/types/config';
-import type {MintNutInfo} from '@e2e/types/mint';
+import type {MintNutInfo, MintWalletBalance} from '@e2e/types/mint';
 
 export const mint = {
 	/** Read mint state straight from the daemon. Both nutshell and cdk
@@ -616,5 +621,38 @@ export const mint = {
 			melt_completed_pct,
 			window: {start_hour, effective_end},
 		};
+	},
+
+	/** The mint's on-chain wallet straight from cdk's management RPC
+	 *  (`WalletService.GetBalance`, the same call Orchard makes) over the
+	 *  stack's published port. A gRPC refusal comes back as the mint's own
+	 *  message. cdk only. NOT cached: deposits and melts move it mid-run. */
+	walletBalance(config: ConfigInfo): Promise<MintWalletBalance> {
+		if (config.mint !== 'cdk' || !config.mintRpcPort) throw new Error(`no cdk management RPC on ${config.name}`);
+		const definition = protoLoader.loadSync(path.resolve(process.cwd(), 'proto', 'cdk', 'wallet.proto'), {
+			keepCase: true,
+			longs: String,
+			defaults: true,
+		});
+		const wallet_package = grpc.loadPackageDefinition(definition).cdk_mint_wallet_v1 as grpc.GrpcObject;
+		const WalletService = wallet_package.WalletService as grpc.ServiceClientConstructor;
+		const client = new WalletService(`localhost:${config.mintRpcPort}`, grpc.credentials.createInsecure());
+		const metadata = new grpc.Metadata();
+		metadata.set('x-cdk-protocol-version', '1.0.0');
+		return new Promise((resolve, reject) => {
+			client.GetBalance(
+				{},
+				metadata,
+				{deadline: Date.now() + 10_000},
+				(error: grpc.ServiceError | null, response: {trusted_spendable_sat: string}) => {
+					client.close();
+					if (error?.code === grpc.status.FAILED_PRECONDITION || error?.code === grpc.status.UNIMPLEMENTED) {
+						return resolve({sat: null, error: error.details});
+					}
+					if (error) return reject(new Error(`cdk GetBalance on ${config.name}: ${error.message}`));
+					resolve({sat: parseInt(response.trusted_spendable_sat, 10), error: null});
+				},
+			);
+		});
 	},
 };

@@ -62,6 +62,9 @@ interface BaseConfigInfo {
 	 *  exporter — enables the `/mint/system` metrics page and the
 	 *  collect-mint-metrics cron. cdk-only (nutshell has no exporter). */
 	mintMetrics: boolean;
+	/** Host port of cdk-mintd's management RPC (cdk only) — the oracle for
+	 *  the mint's on-chain wallet balance via `WalletService.GetBalance`. */
+	mintRpcPort?: number;
 	/** Stack ships a `compose.mainchain.yml` overlay. The overlay is always
 	 *  loaded when present, and `@mainchain` is always in this stack's grep. */
 	mainchain: boolean;

@@ -44,3 +44,7 @@ export type MintNutsBlock = {
 	nut5: MintNutLimitBlock;
 	[key: string]: unknown;
 };
+
+/** cdk `WalletService.GetBalance` outcome: the spendable sats, or the mint's
+ *  own refusal (e.g. no on-chain wallet configured) verbatim. */
+export type MintWalletBalance = {sat: number; error: null} | {sat: null; error: string};

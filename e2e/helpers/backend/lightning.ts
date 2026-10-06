@@ -106,14 +106,19 @@ export const ln = {
 	 *  summary card sums those already-truncated sat values. Summing in msat
 	 *  first and truncating once at the end over-counts by up to 1 sat per
 	 *  channel with non-msat-aligned balances, which is enough to push the
-	 *  oracle USD-cents differential off by 1 cent on multi-channel fixtures. */
-	localChannelBalance(config: ConfigInfo): number {
+	 *  oracle USD-cents differential off by 1 cent on multi-channel fixtures.
+	 *
+	 *  `activeOnly` narrows to the channels Orchard maps as active — LND
+	 *  `--active_only`, CLN `peer_connected` (as `mapClnChannels` does). */
+	localChannelBalance(config: ConfigInfo, opts: {activeOnly?: boolean} = {}): number {
 		if (config.ln === false) throw new Error(`no LN on ${config.name}`);
 		const container = config.containers.lnOrchard;
 		if (config.ln === 'lnd') {
+			const args = ['listchannels'];
+			if (opts.activeOnly) args.push('--active_only');
 			const lc = lndCliJson<{channels: Array<{local_balance?: string; custom_channel_data?: string}>}>(
 				container,
-				['listchannels'],
+				args,
 				lndDirForNode(config, 'orchard'),
 			);
 			return lc.channels
@@ -121,9 +126,11 @@ export const ln = {
 				.reduce((sum, c) => sum + parseInt(c.local_balance ?? '0', 10), 0);
 		}
 		// cln — truncate per channel to match `mapClnChannels`' BigInt division.
-		const lpc = clnCliJson<{channels: Array<{state: string; to_us_msat: number}>}>(container, ['listpeerchannels']);
+		const lpc = clnCliJson<{channels: Array<{state: string; to_us_msat: number; peer_connected?: boolean}>}>(container, [
+			'listpeerchannels',
+		]);
 		return lpc.channels
-			.filter((c) => c.state === 'CHANNELD_NORMAL')
+			.filter((c) => c.state === 'CHANNELD_NORMAL' && (!opts.activeOnly || !!c.peer_connected))
 			.reduce((sum, c) => sum + Math.floor(Number(c.to_us_msat ?? 0) / 1000), 0);
 	},
 

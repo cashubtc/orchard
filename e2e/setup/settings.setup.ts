@@ -7,10 +7,17 @@
  */
 
 import {test as setup} from '@playwright/test';
-import {applySettings} from '@e2e/helpers/ui/settings';
+import {applyReserveSources, applySettings, DEFAULT_RESERVE_SOURCES} from '@e2e/helpers/ui/settings';
 import {projectConfig, projectStatePath} from '@e2e/helpers/ui/setup';
 
 setup('apply app + device settings', {tag: '@all'}, async ({page}, testInfo) => {
 	await applySettings(page, projectConfig(testInfo, 'settings'));
 	await page.context().storageState({path: projectStatePath(testInfo, 'settings')});
+});
+
+// Balance-sheet specs read assets off the default sources; a selection left
+// over from manual QA or an aborted mutation spec would skew them.
+setup('reset mint reserve sources to the defaults', {tag: '@all'}, async ({page}) => {
+	await page.goto('/');
+	await applyReserveSources(page, DEFAULT_RESERVE_SOURCES);
 });

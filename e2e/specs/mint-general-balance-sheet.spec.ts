@@ -19,6 +19,10 @@
  *     navigates to /lightning via the parent's `(navigate)` handler.
  *   - `@oracle`: only cln-nutshell-postgres — the expanded bitcoin row
  *     surfaces the `.orc-primary-card` Oracle subcard with header text.
+ *   - Reserve sources picker (read-only): grouping, the default selection,
+ *     the draft total, per-source values against the LN node (`@lightning`)
+ *     and cdk's wallet RPC (`@cdk`), and the Unsupported / Not configured
+ *     states (`@nutshell` / `@no-lightning`). Real saves run last in this file.
  *   - Multi-unit fiat rows are exercised opportunistically — tests that
  *     read the USD or EUR row `test.skip` when `mintUnitsFor(config)`
  *     doesn't include them.
@@ -38,6 +42,7 @@ import {test, expect, type Locator, type Page} from '@playwright/test';
 import {getConfig, mintUnitsFor} from '@e2e/helpers/config';
 import {ln, mint, orchard} from '@e2e/helpers/backend';
 import {oracleHasRecentData, requireReady} from '@e2e/helpers/ui/readiness';
+import {applyReserveSources, DEFAULT_RESERVE_SOURCES} from '@e2e/helpers/ui/settings';
 
 async function openSheet(page: Page): Promise<Locator> {
 	// Both `/` (dashboard tile) and `/mint` (subsection dashboard) host one
@@ -559,5 +564,265 @@ test.describe('mint-general-balance-sheet — oracle subcard', {tag: '@oracle'},
 		const fees_panel = oracle_card.locator('.flex-1').filter({hasText: 'Fee revenue'});
 		const ui_text = await fees_panel.locator('.orc-amount').first().textContent();
 		expect(amountFromText(ui_text), 'Oracle subcard Fee revenue should equal round(sat_fees * price * 100 / 1e8)').toBe(expected_cents);
+	});
+});
+
+/* *******************************************************
+	Reserve sources picker — read-only
+******************************************************** */
+
+/** Open the asset-source picker; the trigger renders once reserves load */
+async function openReservePicker(page: Page): Promise<Locator> {
+	const trigger = (await openSheet(page)).locator('.reserve-sources-selector button');
+	await expect(trigger).toBeVisible({timeout: 30_000});
+	await trigger.click();
+	const menu = page.locator('.reserve-sources-menu');
+	await expect(menu).toBeVisible();
+	return menu;
+}
+
+/** One source row in the picker, found by its exact checkbox label ("Active…" is a substring of "Inactive…") */
+function sourceRow(menu: Locator, label: string): Locator {
+	return menu.locator('mat-checkbox', {hasText: new RegExp(`^\\s*${label}\\s*$`)}).locator('..');
+}
+
+/** The right-hand value cell of a source row: its amount or its status */
+function sourceValue(menu: Locator, label: string): Locator {
+	return sourceRow(menu, label).locator('.text-right');
+}
+
+/** The "Total assets" figure at the foot of the picker */
+function draftTotal(menu: Locator): Locator {
+	return menu.locator('.orc-filter-menu-section', {hasText: 'Total assets'}).locator('.text-right');
+}
+
+test.describe('mint-general-balance-sheet — reserve sources picker', {tag: '@mint'}, () => {
+	test.beforeEach(async ({page}) => {
+		await page.goto('/');
+	});
+
+	test('groups the four sources under Lightning and Mint', async ({page}) => {
+		const menu = await openReservePicker(page);
+		await expect(menu.locator('.reserve-source-group')).toHaveText(['Lightning', 'Mint']);
+		await expect(menu.locator('mat-checkbox')).toHaveText([
+			'Active channel outbound',
+			'Inactive channel outbound',
+			'Lightning hot wallet',
+			'Mint on-chain wallet',
+		]);
+	});
+
+	test('ticks only the default channel sources and names them on the trigger', async ({page}) => {
+		// The settings setup phase resets every stack to the server defaults.
+		const sheet = await openSheet(page);
+		await expect(sheet.locator('.reserve-sources-selector button')).toContainText('Lightning local capacity', {timeout: 30_000});
+		const menu = await openReservePicker(page);
+		for (const label of ['Active channel outbound', 'Inactive channel outbound']) {
+			await expect(sourceRow(menu, label).locator('input')).toBeChecked();
+		}
+		for (const label of ['Lightning hot wallet', 'Mint on-chain wallet']) {
+			await expect(sourceRow(menu, label).locator('input')).not.toBeChecked();
+		}
+	});
+
+	test('Total assets equals the sum of the ticked sources that could be read', async ({page}) => {
+		const menu = await openReservePicker(page);
+		let expected = 0;
+		for (const checkbox of await menu.locator('mat-checkbox').all()) {
+			if (!(await checkbox.locator('input').isChecked())) continue;
+			const value = sourceValue(menu, (await checkbox.innerText()).trim());
+			// Unreadable sources show a status instead of an amount and add nothing
+			if ((await value.locator('.orc-amount').count()) > 0) expected += amountFromText(await value.textContent());
+		}
+		expect(amountFromText(await draftTotal(menu).textContent())).toBe(expected);
+	});
+});
+
+test.describe('mint-general-balance-sheet — reserve sources picker values', {tag: '@lightning'}, () => {
+	test.beforeEach(async ({page}) => {
+		await page.goto('/');
+	});
+
+	test('channel rows split the LN node local balance by active and inactive channels', async ({page}, testInfo) => {
+		const config = getConfig(testInfo.project.name);
+		const menu = await openReservePicker(page);
+		const active = ln.localChannelBalance(config, {activeOnly: true});
+		const inactive = ln.localChannelBalance(config) - active;
+		expect(amountFromText(await sourceValue(menu, 'Active channel outbound').textContent())).toBe(active);
+		expect(amountFromText(await sourceValue(menu, 'Inactive channel outbound').textContent())).toBe(inactive);
+	});
+
+	test('Lightning hot wallet row equals the LN node on-chain balance', async ({page}, testInfo) => {
+		const config = getConfig(testInfo.project.name);
+		const menu = await openReservePicker(page);
+		expect(amountFromText(await sourceValue(menu, 'Lightning hot wallet').textContent())).toBe(ln.onchainSats(config));
+	});
+
+	test('ticking a source moves the draft total but not the card, and an unchanged close saves nothing', async ({page}) => {
+		const sheet = await openSheet(page);
+		await waitForRows(sheet);
+		const row = bitcoinRow(sheet);
+		await waitForBitcoinAssetsSettled(row);
+		const card_before = await row.locator('.assets-cell .orc-amount').first().textContent();
+		const saves: string[] = [];
+		page.on('request', (request) => {
+			if ((request.postData() ?? '').includes('SettingsUpdate')) saves.push(request.url());
+		});
+
+		const menu = await openReservePicker(page);
+		const total_before = amountFromText(await draftTotal(menu).textContent());
+		const hot_wallet = amountFromText(await sourceValue(menu, 'Lightning hot wallet').textContent());
+		const hot_wallet_box = sourceRow(menu, 'Lightning hot wallet').locator('input');
+		await hot_wallet_box.check();
+		await expect.poll(async () => amountFromText(await draftTotal(menu).textContent())).toBe(total_before + hot_wallet);
+		await expect(row.locator('.assets-cell .orc-amount').first()).toHaveText(card_before ?? '');
+
+		await hot_wallet_box.uncheck();
+		await page.keyboard.press('Escape');
+		await expect(menu).toBeHidden();
+		// Give a stray save time to leave before asserting none did
+		await page.waitForLoadState('networkidle');
+		expect(saves, 'closing with the saved selection must not save').toHaveLength(0);
+	});
+});
+
+test.describe('mint-general-balance-sheet — reserve sources picker on cdk', {tag: '@cdk'}, () => {
+	test('Mint on-chain wallet row shows the cdk wallet balance, or "Not configured" when the mint has no wallet', async ({
+		page,
+	}, testInfo) => {
+		const config = getConfig(testInfo.project.name);
+		await page.goto('/');
+		const menu = await openReservePicker(page);
+		const wallet = await mint.walletBalance(config);
+		const value = sourceValue(menu, 'Mint on-chain wallet');
+		if (wallet.error === null) {
+			expect(amountFromText(await value.textContent())).toBe(wallet.sat);
+			return;
+		}
+		await expect(value).toHaveText('Not configured');
+		await expect(sourceRow(menu, 'Mint on-chain wallet').locator('input')).toBeDisabled();
+	});
+});
+
+test.describe('mint-general-balance-sheet — reserve sources picker on nutshell', {tag: '@nutshell'}, () => {
+	test('Mint on-chain wallet is unsupported and cannot be ticked', async ({page}) => {
+		await page.goto('/');
+		const menu = await openReservePicker(page);
+		await expect(sourceValue(menu, 'Mint on-chain wallet')).toHaveText('Unsupported');
+		await expect(sourceRow(menu, 'Mint on-chain wallet').locator('input')).toBeDisabled();
+	});
+});
+
+test.describe('mint-general-balance-sheet — reserve sources picker without lightning', {tag: '@no-lightning'}, () => {
+	test('lightning sources read "Not configured"; only the ticked ones stay clickable', async ({page}) => {
+		await page.goto('/');
+		const menu = await openReservePicker(page);
+		for (const label of ['Active channel outbound', 'Inactive channel outbound', 'Lightning hot wallet']) {
+			await expect(sourceValue(menu, label)).toHaveText('Not configured');
+		}
+		// Ticked by default, so they can still be unticked; the unticked one can't be added
+		await expect(sourceRow(menu, 'Active channel outbound').locator('input')).toBeEnabled();
+		await expect(sourceRow(menu, 'Inactive channel outbound').locator('input')).toBeEnabled();
+		await expect(sourceRow(menu, 'Lightning hot wallet').locator('input')).toBeDisabled();
+	});
+});
+
+/* *******************************************************
+	Reserve sources picker — REAL saves. Kept last in this
+	file, not in a sibling -mutation spec: files run on
+	parallel workers, and every bitcoin-row test above
+	reads the saved selection. Same file ⇒ same worker,
+	in order, so no read ever overlaps a save.
+******************************************************** */
+
+const HOT_WALLET = 'Lightning hot wallet';
+
+/** Desktop rail item for a section */
+function railItem(page: Page, label: string): Locator {
+	return page.locator('.primary-nav-item-container', {hasText: label});
+}
+
+/** The display multiple the row renders, mirroring `roundSolvencyMultiple` */
+function displayMultiple(assets: number, liabilities: number): number {
+	const multiple = assets / liabilities;
+	return multiple < 5 ? Math.round(multiple * 10) / 10 : Math.round(multiple);
+}
+
+test.describe('mint-general-balance-sheet — reserve sources saves', {tag: '@lightning'}, () => {
+	test.describe.configure({mode: 'serial'});
+
+	test.beforeEach(async ({page}) => {
+		await page.goto('/');
+	});
+
+	// Leave the defaults behind even when a test fails mid-way
+	test.afterEach(async ({page}) => {
+		await page.goto('/');
+		await applyReserveSources(page, DEFAULT_RESERVE_SOURCES);
+	});
+
+	test('adding the hot wallet saves, survives a reload, and recounts assets, caption and coverage', async ({page}, testInfo) => {
+		const config = getConfig(testInfo.project.name);
+		await applyReserveSources(page, [...DEFAULT_RESERVE_SOURCES, HOT_WALLET]);
+
+		// Saved in source order, whatever order they were ticked in
+		expect(JSON.parse(orchard.setting(config, 'mint.reserve.sources') ?? 'null')).toEqual([
+			'LIGHTNING_ACTIVE',
+			'LIGHTNING_INACTIVE',
+			'LIGHTNING_WALLET',
+		]);
+
+		const sheet = await openSheet(page);
+		const row = bitcoinRow(sheet);
+		const expected_assets = ln.localChannelBalance(config) + ln.onchainSats(config);
+		await expect(sheet.locator('.reserve-sources-selector button')).toContainText('3 asset sources');
+		await expect(row.locator('.assets-cell')).toContainText('3 asset sources');
+		await expect
+			.poll(async () => amountFromText(await row.locator('.assets-cell .orc-amount').first().textContent()))
+			.toBe(expected_assets);
+
+		const liabilities = mint.balance(config, 'sat');
+		if (liabilities > 0) {
+			await row.locator('.balance-sheet-row').click();
+			const coverage = row.locator('.balance-sheet-details .orc-high-card').filter({hasText: 'Liability coverage'});
+			await expect(coverage.locator('.font-size-l').first()).toHaveText(`${displayMultiple(expected_assets, liabilities)}x`);
+		}
+
+		await page.reload();
+		await expect((await openSheet(page)).locator('.reserve-sources-selector button')).toContainText('3 asset sources', {
+			timeout: 30_000,
+		});
+	});
+
+	test('a lone source is named on its own and carries over to /mint without a reload', async ({page}, testInfo) => {
+		const config = getConfig(testInfo.project.name);
+		await applyReserveSources(page, [HOT_WALLET]);
+		await expect((await openSheet(page)).locator('.reserve-sources-selector button')).toContainText(HOT_WALLET);
+
+		// In-app navigation: the mint page must not serve the reserves cached before the save
+		await railItem(page, 'Mint').click();
+		await expect(page).toHaveURL(/\/mint$/, {timeout: 15_000});
+		const sheet = await openSheet(page);
+		const row = bitcoinRow(sheet);
+		await expect(sheet.locator('.reserve-sources-selector button')).toContainText(HOT_WALLET, {timeout: 30_000});
+		await expect(row.locator('.assets-cell')).toContainText(HOT_WALLET);
+		await expect
+			.poll(async () => amountFromText(await row.locator('.assets-cell .orc-amount').first().textContent()))
+			.toBe(ln.onchainSats(config));
+	});
+
+	test('with no source selected the assets cell shows a dash and the coverage figures drop out', async ({page}) => {
+		await applyReserveSources(page, []);
+		const sheet = await openSheet(page);
+		const row = bitcoinRow(sheet);
+		await expect(sheet.locator('.reserve-sources-selector button')).toContainText('No assets selected');
+		await expect(row.locator('.assets-cell')).toContainText('No assets selected');
+		await expect(row.locator('.assets-cell .orc-amount')).toHaveCount(0);
+		await expect(row.locator('orc-mint-general-balance-stacks')).toHaveCount(0);
+
+		await row.locator('.balance-sheet-row').click();
+		const details = row.locator('.balance-sheet-details');
+		await expect(details).toHaveClass(/\banimation-expanded\b/);
+		await expect(details.locator('.orc-high-card').filter({hasText: 'Liability coverage'})).toHaveCount(0);
 	});
 });

@@ -9,7 +9,11 @@
  */
 
 import {expect, type Locator, type Page} from '@playwright/test';
+import {matchGql} from '@e2e/helpers/ui/gql-intercept';
 import type {AppSettingValues, ConfigInfo, DeviceSettingValues} from '@e2e/types/config';
+
+/** Picker labels of the reserve sources the server counts by default — every channel's outbound */
+export const DEFAULT_RESERVE_SOURCES: readonly string[] = ['Active channel outbound', 'Inactive channel outbound'];
 
 /** Click the form-toggle inside `card` whose visible label matches. Sibling
  *  toggles render identical templates — scoping to the card is enough. */
@@ -153,6 +157,42 @@ async function applyDeviceSettings(page: Page, device: DeviceSettingValues): Pro
 	if (device.currency_btc) await applyCurrency(page, 'btc', device.currency_btc);
 	if (device.currency_fiat) await applyCurrency(page, 'fiat', device.currency_fiat);
 	if (device.ai_model) await applyAiModel(page, device.ai_model);
+}
+
+/** Drive the balance-sheet asset-source picker on the current page to tick
+ *  exactly `sources` (picker labels), then close it so the draft saves. Waits
+ *  for the save and the reserves reload when anything changed. A source whose
+ *  backend isn't configured can be unticked but never re-ticked — that
+ *  loud-fails rather than silently keeping the wrong selection. */
+export async function applyReserveSources(page: Page, sources: readonly string[]): Promise<void> {
+	const trigger = page.locator('orc-mint-general-balance-sheet').first().locator('.reserve-sources-selector button');
+	await expect(trigger).toBeVisible({timeout: 30_000});
+	await trigger.click();
+	const menu = page.locator('.reserve-sources-menu');
+	await expect(menu).toBeVisible();
+	let changed = false;
+	for (const checkbox of await menu.locator('mat-checkbox').all()) {
+		const label = (await checkbox.innerText()).trim();
+		const input = checkbox.locator('input');
+		const wanted = sources.includes(label);
+		if ((await input.isChecked()) === wanted) continue;
+		await expect(input, `"${label}" can't be ticked — its backend isn't configured on this stack`).toBeEnabled();
+		await input.setChecked(wanted);
+		changed = true;
+	}
+	if (!changed) {
+		await page.keyboard.press('Escape');
+		await expect(menu).toBeHidden();
+		return;
+	}
+	const saved = page.waitForResponse(matchGql('SettingsUpdate'));
+	const reloaded = page.waitForResponse(matchGql('mint_reserves'));
+	await page.keyboard.press('Escape');
+	await expect(menu).toBeHidden();
+	const body = await (await saved).json();
+	if (body.errors?.length)
+		throw new Error(`Saving reserve sources failed: ${body.errors[0].extensions?.details ?? body.errors[0].message}`);
+	await reloaded;
 }
 
 /** Drive `/settings/app` then `/settings/device` per the config's matrix.

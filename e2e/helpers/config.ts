@@ -128,6 +128,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 			mint: 'lnd-cdk-sqlite-cdk-mintd',
 		},
 		mintPort: 3339,
+		mintRpcPort: 8096,
 		deviceSettings: {
 			theme: 'light-mode',
 			locale: 'en-GB',
@@ -157,6 +158,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 			mint: 'cln-cdk-postgres-cdk-mintd',
 		},
 		mintPort: 3339,
+		mintRpcPort: 8086,
 		appSettings: {
 			ai_enabled: true,
 			ai_vendor: 'ollama',
@@ -215,6 +217,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		...BASE,
 		containers: {mint: 'fake-cdk-postgres-cdk-mintd'},
 		mintPort: 3341,
+		mintRpcPort: 8087,
 		deviceSettings: {
 			theme: 'dark-mode',
 			locale: 'de-DE',
@@ -241,6 +244,7 @@ export const CONFIGS: Record<ConfigName, ConfigInfo> = {
 		...BASE,
 		containers: {mint: 'pecan-cdk-sqlite-cdk-mintd'},
 		mintPort: 3342,
+		mintRpcPort: 8088,
 		pecan: {url: 'http://localhost:9091', container: 'pecan-cdk-sqlite-pecan'},
 	},
 };
