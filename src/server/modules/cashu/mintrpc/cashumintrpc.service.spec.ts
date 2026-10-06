@@ -191,6 +191,27 @@ describe('CashuMintRpcService', () => {
 		expect(cashuMintRpcService.isConfigured()).toBe(true);
 	});
 
+	it('getMintWalletBalance returns null when the cdk mint has no on-chain wallet', async () => {
+		const failure = {code: status.FAILED_PRECONDITION, details: 'No on-chain wallet information provider is configured'};
+		const wallet_client: any = {GetBalance: jest.fn((_req: any, _metadata: any, cb: any) => cb(failure, null))};
+		(cdkService.initializeWalletClient as jest.Mock).mockReturnValue(wallet_client);
+		configService.get.mockReturnValue('cdk');
+		await cashuMintRpcService.onModuleInit();
+		await expect(cashuMintRpcService.getMintWalletBalance()).resolves.toBeNull();
+	});
+
+	it('getMintWalletBalance rethrows any other wallet failure', async () => {
+		const failure = {code: status.INTERNAL, details: 'wallet sync failed'};
+		const wallet_client: any = {GetBalance: jest.fn((_req: any, _metadata: any, cb: any) => cb(failure, null))};
+		(cdkService.initializeWalletClient as jest.Mock).mockReturnValue(wallet_client);
+		configService.get.mockReturnValue('cdk');
+		await cashuMintRpcService.onModuleInit();
+		await expect(cashuMintRpcService.getMintWalletBalance()).rejects.toEqual({
+			code: OrchardErrorCode.MintRpcInternalError,
+			details: 'wallet sync failed',
+		});
+	});
+
 	it('getMintWalletBalance is unsupported on nutshell', async () => {
 		configService.get.mockReturnValue('nutshell');
 		await cashuMintRpcService.onModuleInit();

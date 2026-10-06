@@ -110,11 +110,18 @@ export class MintReserveService {
 		});
 	}
 
-	/** Reads one backend, turning any failure into a status the client can show; a null read means it isn't configured */
-	private async readSource<T>(tag: string, errord: OrchardErrorCode, read: (() => Promise<T>) | null): Promise<MintReserveReading<T>> {
-		if (!read) return {status: MintReserveStatus.UNCONFIGURED, value: null, error_code: null, error_details: null};
+	/** Reads one backend, turning any failure into a status the client can show; no read, or a null result, means it isn't configured */
+	private async readSource<T>(
+		tag: string,
+		errord: OrchardErrorCode,
+		read: (() => Promise<T | null>) | null,
+	): Promise<MintReserveReading<T>> {
+		const unconfigured = {status: MintReserveStatus.UNCONFIGURED, value: null, error_code: null, error_details: null};
+		if (!read) return unconfigured;
 		try {
-			return {status: MintReserveStatus.AVAILABLE, value: await read(), error_code: null, error_details: null};
+			const value = await read();
+			if (value === null) return unconfigured;
+			return {status: MintReserveStatus.AVAILABLE, value, error_code: null, error_details: null};
 		} catch (error) {
 			const {code, details} = this.errorService.resolveError(this.logger, error, tag, {errord});
 			const unsupported = code === OrchardErrorCode.MintSupportError || code === OrchardErrorCode.LightningSupportError;

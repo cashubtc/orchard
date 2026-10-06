@@ -213,10 +213,16 @@ export class CashuMintRpcService implements OnModuleInit {
 		return this.makeGrpcRequest('RotateNextKeyset', request);
 	}
 
-	/** Balance of the mint's own on-chain wallet; cdk only */
-	async getMintWalletBalance(): Promise<CashuMintWalletBalanceRpc> {
+	/** Balance of the mint's own on-chain wallet, or null when the mint has none configured; cdk only */
+	async getMintWalletBalance(): Promise<CashuMintWalletBalanceRpc | null> {
 		if (this.type !== 'cdk')
 			throw {code: OrchardErrorCode.MintSupportError, details: 'On-chain wallets are only supported in CDK mints'};
-		return this.makeGrpcRequest('GetBalance', {}, this.grpc_wallet_client);
+		try {
+			return await this.makeGrpcRequest('GetBalance', {}, this.grpc_wallet_client);
+		} catch (error) {
+			// cdk's wallet service fails this precondition only when no on-chain wallet is configured
+			if ((error as ServiceError)?.code === status.FAILED_PRECONDITION) return null;
+			throw error;
+		}
 	}
 }

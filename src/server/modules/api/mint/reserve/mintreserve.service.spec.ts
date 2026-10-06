@@ -1,8 +1,6 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
-/* Vendor Dependencies */
-import {status} from '@grpc/grpc-js';
 /* Application Dependencies */
 import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
@@ -125,15 +123,23 @@ describe('MintReserveService', () => {
 		);
 	});
 
+	it('marks the mint wallet unconfigured, without an error, when the mint has no on-chain wallet', async () => {
+		mintRpcService.getMintWalletBalance.mockResolvedValue(null);
+		const {sources} = await mintReserveService.getMintReserves('TAG');
+		expect(source(sources, MintReserveSource.MINT_WALLET)).toEqual(
+			expect.objectContaining({status: MintReserveStatus.UNCONFIGURED, amount: null, error_code: null, error_details: null}),
+		);
+	});
+
 	it("keeps the mint's own message when its wallet can't be read, and leaves the other sources alone", async () => {
-		const details = 'No on-chain wallet information provider is configured';
-		mintRpcService.getMintWalletBalance.mockRejectedValue({code: status.FAILED_PRECONDITION, details});
+		const details = 'wallet sync failed: electrum backend unreachable';
+		mintRpcService.getMintWalletBalance.mockRejectedValue({code: OrchardErrorCode.MintRpcInternalError, details});
 		lightningService.getChannels.mockResolvedValue([channel('600', true)] as any);
 		const {sources} = await mintReserveService.getMintReserves('TAG');
 		expect(source(sources, MintReserveSource.MINT_WALLET)).toEqual(
 			expect.objectContaining({
 				status: MintReserveStatus.UNAVAILABLE,
-				error_code: OrchardErrorCode.MintRpcActionError,
+				error_code: OrchardErrorCode.MintRpcInternalError,
 				error_details: details,
 			}),
 		);
@@ -166,7 +172,7 @@ describe('MintReserveService', () => {
 
 	it('flags the reserves partial when a selected source fails, and has none when nothing selected can be read', async () => {
 		store('["MINT_WALLET"]');
-		mintRpcService.getMintWalletBalance.mockRejectedValue({code: status.FAILED_PRECONDITION, details: 'No on-chain wallet'});
+		mintRpcService.getMintWalletBalance.mockRejectedValue({code: OrchardErrorCode.MintRpcInternalError, details: 'wallet sync failed'});
 		const reserves = await mintReserveService.getMintReserves('TAG');
 		expect(reserves.reserves).toBeNull();
 		expect(reserves.partial).toBe(true);
