@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {compareUnits, fromDisplayAmountFor, getUnitMeta, toDisplayAmount, toSats} from './unit.helpers';
+import {compareUnits, fromDisplayAmount, fromDisplayAmountFor, getUnitMeta, toDisplayAmount, toSats} from './unit.helpers';
 
 describe('UnitHelpers', () => {
 	describe('getUnitMeta', () => {
@@ -74,6 +74,10 @@ describe('UnitHelpers', () => {
 			expect(fromDisplayAmountFor(getUnitMeta('msat'), 2)).toBe(2000);
 			expect(fromDisplayAmountFor(getUnitMeta('btc'), 0.00012345)).toBe(12345);
 			expect(fromDisplayAmountFor(getUnitMeta('usd'), 2.15)).toBe(215);
+		});
+
+		it('should take the unit by name', () => {
+			expect(fromDisplayAmount('USD', 20.5)).toBe(2050);
 		});
 
 		it('should pass a custom unit through unchanged', () => {

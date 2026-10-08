@@ -32,7 +32,7 @@ import {ComponentCanDeactivate} from '@client/modules/routing/interfaces/routing
 import {NonNullableMintConfigSettings} from '@client/modules/settings/types/setting.types';
 import {NavTertiaryItem} from '@client/modules/nav/types/nav-tertiary-item.type';
 import {NavTertiaryItemStatus} from '@client/modules/nav/enums/nav-tertiary-item-status.enum';
-import {getUnitMeta, toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
+import {fromDisplayAmount, getUnitMeta, toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 /* Native Dependencies */
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
@@ -343,14 +343,14 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 					const min_validators = [Validators.required, Validators.min(0), precision_validator];
 					const max_validators = [Validators.required, OrchardValidators.minGreaterThan('min_amount'), precision_validator];
 
-					const formatted_min = this.getFormattedAmount(method.unit, method.min_amount);
-					const formatted_max = this.getFormattedAmount(method.unit, method.max_amount);
+					const display_min = this.getDisplayAmount(method.unit, method.min_amount);
+					const display_max = this.getDisplayAmount(method.unit, method.max_amount);
 
 					(this.form_minting.get(unit) as FormGroup).addControl(
 						method.method,
 						new FormGroup({
-							min_amount: new FormControl(formatted_min, min_validators),
-							max_amount: new FormControl(formatted_max, max_validators),
+							min_amount: new FormControl(display_min, min_validators),
+							max_amount: new FormControl(display_max, max_validators),
 							description: new FormControl(method.description),
 							confirmations: new FormControl({value: method.options?.confirmations ?? null, disabled: true}),
 						}),
@@ -367,14 +367,14 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 					const min_validators = [Validators.required, Validators.min(0), precision_validator];
 					const max_validators = [Validators.required, OrchardValidators.minGreaterThan('min_amount'), precision_validator];
 
-					const formatted_min = this.getFormattedAmount(method.unit, method.min_amount);
-					const formatted_max = this.getFormattedAmount(method.unit, method.max_amount);
+					const display_min = this.getDisplayAmount(method.unit, method.min_amount);
+					const display_max = this.getDisplayAmount(method.unit, method.max_amount);
 
 					(this.form_melting.get(unit) as FormGroup).addControl(
 						method.method,
 						new FormGroup({
-							min_amount: new FormControl(formatted_min, min_validators),
-							max_amount: new FormControl(formatted_max, max_validators),
+							min_amount: new FormControl(display_min, min_validators),
+							max_amount: new FormControl(display_max, max_validators),
 							amountless: new FormControl({value: method.amountless, disabled: true}),
 						}),
 					);
@@ -382,12 +382,10 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 		});
 	}
 
-	/** Converts a stored method limit to the display precision of its unit */
-	private getFormattedAmount(unit: string, amount: number | null | undefined): number | string | null | undefined {
+	/** A stored method limit in its unit's display units, as the limit fields take it */
+	private getDisplayAmount(unit: string, amount: number | null | undefined): number | null | undefined {
 		if (amount === null || amount === undefined) return amount;
-		const {decimals} = getUnitMeta(unit);
-		const display_amount = toDisplayAmount(unit, amount);
-		return decimals === 0 ? display_amount : display_amount.toFixed(decimals);
+		return toDisplayAmount(unit, amount);
 	}
 
 	/* *******************************************************
@@ -617,7 +615,9 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 		if (!control_name) return;
 		if (form_group.get(unit)?.get(method)?.get(control_name)?.invalid) return;
 		form_group.get(unit)?.get(method)?.get(control_name)?.markAsPristine();
-		const control_value = form_group.get(unit)?.get(method)?.get(control_name)?.value;
+		const form_value = form_group.get(unit)?.get(method)?.get(control_name)?.value;
+		const is_limit = control_name === 'min_amount' || control_name === 'max_amount';
+		const control_value = is_limit ? fromDisplayAmount(unit, form_value) : form_value;
 		this.eventService.registerEvent(new EventData({type: 'SAVING'}));
 		if (nut === 'nut4') this.updateMintNut04(unit, method, control_name as keyof OrchardNut4Method, control_value);
 		if (nut === 'nut5') this.updateMintNut05(unit, method, control_name as keyof OrchardNut5Method, control_value);
@@ -642,7 +642,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 			nut === 'nut4'
 				? (nut_method as OrchardNut4Method)?.[control_name as keyof OrchardNut4Method]
 				: (nut_method as OrchardNut5Method)?.[control_name as keyof OrchardNut5Method];
-		const formatted_val = typeof raw_val === 'number' ? this.getFormattedAmount(unit, raw_val) : raw_val;
+		const formatted_val = typeof raw_val === 'number' ? this.getDisplayAmount(unit, raw_val) : raw_val;
 		form_group.get(unit)?.get(method)?.get(control_name)?.setValue(formatted_val);
 	}
 
@@ -731,8 +731,10 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 				const method_update: Record<string, any> = {unit, method};
 				if (this.form_minting.get('enabled')?.dirty)
 					method_update['disabled'] = this.translateDisabled(this.form_minting.get('enabled')?.value);
-				if (method_group.get('min_amount')?.dirty) method_update['min_amount'] = method_group.get('min_amount')?.value;
-				if (method_group.get('max_amount')?.dirty) method_update['max_amount'] = method_group.get('max_amount')?.value;
+				if (method_group.get('min_amount')?.dirty)
+					method_update['min_amount'] = fromDisplayAmount(unit, method_group.get('min_amount')?.value);
+				if (method_group.get('max_amount')?.dirty)
+					method_update['max_amount'] = fromDisplayAmount(unit, method_group.get('max_amount')?.value);
 				if (method_group.get('description')?.dirty) method_update['description'] = method_group.get('description')?.value;
 				if (Object.keys(method_update).length > 2) {
 					const var_prefix = `nut04_${unit}_${method}`;
@@ -774,8 +776,10 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 				const method_update: Record<string, any> = {unit, method};
 				if (this.form_melting.get('enabled')?.dirty)
 					method_update['disabled'] = this.translateDisabled(this.form_melting.get('enabled')?.value);
-				if (method_group.get('min_amount')?.dirty) method_update['min_amount'] = method_group.get('min_amount')?.value;
-				if (method_group.get('max_amount')?.dirty) method_update['max_amount'] = method_group.get('max_amount')?.value;
+				if (method_group.get('min_amount')?.dirty)
+					method_update['min_amount'] = fromDisplayAmount(unit, method_group.get('min_amount')?.value);
+				if (method_group.get('max_amount')?.dirty)
+					method_update['max_amount'] = fromDisplayAmount(unit, method_group.get('max_amount')?.value);
 				if (Object.keys(method_update).length > 2) {
 					const var_prefix = `nut05_${unit}_${method}`;
 					const field_type_map: Record<string, string> = {

@@ -15,10 +15,9 @@ describe('decimals validator', () => {
 		for (const value of ['5.', '5.0', '0.5', 5.5]) expect(validate(0, value)).toEqual({orchardDecimals: {decimals: 0}});
 	});
 
-	it('should require exactly the given number of decimal places', () => {
-		expect(validate(2, '2.15')).toBeNull();
-		expect(validate(2, '0.00')).toBeNull();
-		for (const value of ['2', '2.', '2.1', '2.155']) expect(validate(2, value)).toEqual({orchardDecimals: {decimals: 2}});
+	it('should allow up to the given number of decimal places', () => {
+		for (const value of ['2.15', '0.00', '2.1', '2', 2.5, 5000]) expect(validate(2, value)).toBeNull();
+		for (const value of ['2.', '2.155', 2.155]) expect(validate(2, value)).toEqual({orchardDecimals: {decimals: 2}});
 	});
 
 	it('should reject negative and non-numeric values', () => {

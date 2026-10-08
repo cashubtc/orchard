@@ -9,12 +9,13 @@ import {NgControl} from '@angular/forms';
 })
 export class FormNumberSeparatorDirective {
 	private static readonly DIGIT_RE = /\d/;
-	private static readonly DEFAULT_GROUP_SEPARATOR = ',';
-	private static readonly GROUP_SEPARATOR_SAMPLE = 1234567;
+	private static readonly SEPARATOR_SAMPLE = 1234567.5;
 
 	private _value!: string | null;
-	private readonly formatter: Intl.NumberFormat;
+	private decimals = 0;
+	private formatter: Intl.NumberFormat;
 	private readonly group_separator: string;
+	private readonly decimal_separator: string;
 
 	get value(): string | null {
 		return this._value;
@@ -26,21 +27,51 @@ export class FormNumberSeparatorDirective {
 		this.formatAndDisplay(value);
 	}
 
+	/** Fraction digits the amount takes, typed with the locale's decimal separator; 0 keeps it whole */
+	@Input()
+	set number_decimals(decimals: number) {
+		this.decimals = decimals;
+		this.formatter = this.buildFormatter();
+		this.formatAndDisplay(this._value);
+	}
+
 	constructor(
 		private elementRef: ElementRef<HTMLInputElement>,
 		private ngControl: NgControl,
-		@Inject(LOCALE_ID) locale: string,
+		@Inject(LOCALE_ID) private locale: string,
 	) {
 		ngControl.valueAccessor = this;
-		this.formatter = new Intl.NumberFormat(locale, {useGrouping: true, maximumFractionDigits: 0});
-		this.group_separator = this.detectGroupSeparator();
+		this.formatter = this.buildFormatter();
+		this.group_separator = this.detectSeparator('group', ',');
+		this.decimal_separator = this.detectSeparator('decimal', '.');
 	}
 
 	private _onChange(_value: any): void {}
 
-	private detectGroupSeparator(): string {
-		const parts = this.formatter.formatToParts(FormNumberSeparatorDirective.GROUP_SEPARATOR_SAMPLE);
-		return parts.find((p) => p.type === 'group')?.value ?? FormNumberSeparatorDirective.DEFAULT_GROUP_SEPARATOR;
+	private buildFormatter(): Intl.NumberFormat {
+		return new Intl.NumberFormat(this.locale, {
+			useGrouping: true,
+			minimumFractionDigits: this.decimals,
+			maximumFractionDigits: this.decimals,
+		});
+	}
+
+	private detectSeparator(type: 'group' | 'decimal', fallback: string): string {
+		const parts = new Intl.NumberFormat(this.locale).formatToParts(FormNumberSeparatorDirective.SEPARATOR_SAMPLE);
+		return parts.find((part) => part.type === type)?.value ?? fallback;
+	}
+
+	/** Whether a character is part of the amount: a digit, or the decimal separator when the amount takes decimals */
+	private isAmountChar(char: string): boolean {
+		return FormNumberSeparatorDirective.DIGIT_RE.test(char) || (this.decimals > 0 && char === this.decimal_separator);
+	}
+
+	/** The amount's characters alone: digits, then one decimal separator and at most the allowed fraction digits */
+	private cleanAmount(value: string): string {
+		const chars = [...value].filter((char) => this.isAmountChar(char)).join('');
+		const [integer, ...fraction] = chars.split(this.decimal_separator);
+		if (fraction.length === 0) return integer;
+		return `${integer}${this.decimal_separator}${fraction.join('').slice(0, this.decimals)}`;
 	}
 
 	/**
@@ -71,39 +102,41 @@ export class FormNumberSeparatorDirective {
 		return parts.join(this.group_separator);
 	}
 
-	private countDigitsUpTo(str: string, pos: number): number {
+	private countAmountCharsUpTo(str: string, pos: number): number {
 		let count = 0;
 		for (let i = 0; i < pos && i < str.length; i++) {
-			if (FormNumberSeparatorDirective.DIGIT_RE.test(str[i])) count++;
+			if (this.isAmountChar(str[i])) count++;
 		}
 		return count;
 	}
 
-	private findPositionForDigitCount(str: string, digit_count: number): number {
-		if (digit_count <= 0) return 0;
+	private findPositionForAmountCharCount(str: string, char_count: number): number {
+		if (char_count <= 0) return 0;
 		let count = 0;
 		for (let i = 0; i < str.length; i++) {
-			if (FormNumberSeparatorDirective.DIGIT_RE.test(str[i])) {
+			if (this.isAmountChar(str[i])) {
 				count++;
-				if (count === digit_count) return i + 1;
+				if (count === char_count) return i + 1;
 			}
 		}
 		return str.length;
 	}
 
 	/**
-	 * Reformats a digit string with separators, emits the numeric value, and restores cursor position
+	 * Regroups the amount's integer part, emits the numeric value, and restores cursor position
 	 */
-	private applyEditedDigits(digits: string, target_digit_position: number) {
+	private applyEditedAmount(amount: string, target_position: number) {
 		const el = this.elementRef.nativeElement;
-		const num = digits === '' ? null : Number(digits);
+		const [integer, fraction] = amount.split(this.decimal_separator);
+		const num = amount === '' ? null : Number(amount.replace(this.decimal_separator, '.'));
 		this._value = num !== null ? num.toString() : null;
 		this._onChange(num);
 
-		const formatted = digits.length > 0 ? this.insertGroupSeparators(digits) : '';
+		const grouped = this.insertGroupSeparators(integer);
+		const formatted = fraction === undefined ? grouped : `${grouped}${this.decimal_separator}${fraction}`;
 		el.value = formatted;
 
-		const new_cursor = this.findPositionForDigitCount(formatted, target_digit_position);
+		const new_cursor = this.findPositionForAmountCharCount(formatted, target_position);
 		el.setSelectionRange(new_cursor, new_cursor);
 	}
 
@@ -112,11 +145,12 @@ export class FormNumberSeparatorDirective {
 	 * Skips the separator and removes the neighboring digit instead.
 	 */
 	private handleSeparatorDeletion(value: string, cursor: number, direction: 'backward' | 'forward') {
-		const all_digits = value.replace(/\D/g, '');
-		const digit_index = direction === 'backward' ? this.countDigitsUpTo(value, cursor - 1) : this.countDigitsUpTo(value, cursor);
-		const remove_index = direction === 'backward' ? digit_index - 1 : digit_index;
-		const new_digits = all_digits.slice(0, remove_index) + all_digits.slice(remove_index + 1);
-		this.applyEditedDigits(new_digits, direction === 'backward' ? remove_index : digit_index);
+		const amount = this.cleanAmount(value);
+		const char_index =
+			direction === 'backward' ? this.countAmountCharsUpTo(value, cursor - 1) : this.countAmountCharsUpTo(value, cursor);
+		const remove_index = direction === 'backward' ? char_index - 1 : char_index;
+		const edited = amount.slice(0, remove_index) + amount.slice(remove_index + 1);
+		this.applyEditedAmount(edited, direction === 'backward' ? remove_index : char_index);
 	}
 
 	@HostListener('input', ['$event'])
@@ -124,7 +158,7 @@ export class FormNumberSeparatorDirective {
 		const el = this.elementRef.nativeElement;
 		const raw_value = el.value;
 		const cursor_pos = el.selectionStart ?? raw_value.length;
-		this.applyEditedDigits(raw_value.replace(/\D/g, ''), this.countDigitsUpTo(raw_value, cursor_pos));
+		this.applyEditedAmount(this.cleanAmount(raw_value), this.countAmountCharsUpTo(raw_value, cursor_pos));
 	}
 
 	@HostListener('blur')

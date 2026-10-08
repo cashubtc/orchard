@@ -27,6 +27,7 @@
 							type="text"
 							matInput
 							formNumberSeparator
+							[number_decimals]="decimals()"
 							[formControlName]="control_name()"
 							(focus)="onFocus()"
 							(blur)="onBlur()"
@@ -38,6 +39,7 @@
 							<orc-mint-subsection-config-form-limit-hint
 								[amounts]="stat_amounts()"
 								[limit]="form_group().get(control_name())?.value"
+								[unit]="unit()"
 								[type]="'max'"
 							></orc-mint-subsection-config-form-limit-hint>
 						</mat-hint>

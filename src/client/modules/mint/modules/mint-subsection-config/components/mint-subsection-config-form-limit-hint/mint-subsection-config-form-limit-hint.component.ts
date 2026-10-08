@@ -1,5 +1,7 @@
 /* Core Dependencies */
 import {ChangeDetectionStrategy, Component, input, effect, signal} from '@angular/core';
+/* Application Dependencies */
+import {getUnitMeta, toDisplayAmountFor} from '@client/modules/local/helpers/unit.helpers';
 
 @Component({
 	selector: 'orc-mint-subsection-config-form-limit-hint',
@@ -11,6 +13,7 @@ import {ChangeDetectionStrategy, Component, input, effect, signal} from '@angula
 export class MintSubsectionConfigFormLimitHintComponent {
 	public limit = input.required<number>();
 	public amounts = input.required<Record<string, number>[]>();
+	public unit = input.required<string>();
 	public type = input.required<'min' | 'max'>();
 
 	public limit_hint = signal<number | null>(null);
@@ -27,8 +30,10 @@ export class MintSubsectionConfigFormLimitHintComponent {
 		this.limit_hint.set(hint);
 	}
 
+	/** Recent quotes outside the limit, compared in display units as the limit is entered */
 	private getHint(amounts: Record<string, number>[]): number {
-		const values = amounts.map((amount) => amount['amount']);
+		const meta = getUnitMeta(this.unit());
+		const values = amounts.map((amount) => toDisplayAmountFor(meta, amount['amount']));
 		if (this.type() === 'min') {
 			return values.filter((value) => value < this.limit()).length;
 		}

@@ -2,6 +2,8 @@
 import {ChangeDetectionStrategy, Component, computed, effect, ElementRef, input, output, signal, viewChild} from '@angular/core';
 import {FormGroup, ValidationErrors} from '@angular/forms';
 /* Application Dependencies */
+import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
+/* Shared Dependencies */
 import {OrchardNut4Method, OrchardNut5Method} from '@shared/generated.types';
 
 @Component({
@@ -35,6 +37,8 @@ export class MintSubsectionConfigFormMinComponent {
 		if (this.focused_min()) return true;
 		return this.control_dirty();
 	});
+
+	public decimals = computed(() => getUnitMeta(this.unit()).decimals); // fraction digits the unit is entered with
 
 	public help_text = computed(() => {
 		if (this.nut() === 'nut4') return 'Configure the minimum amount of ecash that can be minted per deposit invoice.';

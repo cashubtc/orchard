@@ -54,7 +54,7 @@ export const UpdateMintMethodMinTool = {
 			properties: {
 				min_amount: {
 					type: 'number',
-					description: 'The minimum amount of the method',
+					description: "The minimum amount of the method, in the unit's display amount (e.g. dollars, not cents, for usd)",
 				},
 				operation: {
 					type: 'string',
@@ -85,7 +85,7 @@ export const UpdateMintMethodMaxTool = {
 			properties: {
 				max_amount: {
 					type: 'number',
-					description: 'The maximum amount of the method',
+					description: "The maximum amount of the method, in the unit's display amount (e.g. dollars, not cents, for usd)",
 				},
 				operation: {
 					type: 'string',

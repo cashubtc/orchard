@@ -18,11 +18,21 @@ describe('MintSubsectionConfigFormLimitHintComponent', () => {
 		component = fixture.componentInstance;
 		fixture.componentRef.setInput('limit', 0);
 		fixture.componentRef.setInput('amounts', []);
+		fixture.componentRef.setInput('unit', 'sat');
 		fixture.componentRef.setInput('type', 'min');
 		fixture.detectChanges();
 	});
 
 	it('should create', () => {
 		expect(component).toBeTruthy();
+	});
+
+	it('counts recent quotes above a max entered in display units', () => {
+		fixture.componentRef.setInput('unit', 'usd');
+		fixture.componentRef.setInput('type', 'max');
+		fixture.componentRef.setInput('amounts', [{amount: 1500}, {amount: 2500}, {amount: 499}]);
+		fixture.componentRef.setInput('limit', 20);
+		fixture.detectChanges();
+		expect(component.limit_hint()).toBe(1);
 	});
 });

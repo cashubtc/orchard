@@ -74,6 +74,16 @@ export function fromDisplayAmountFor(meta: UnitMeta, amount: number): number {
 }
 
 /**
+ * Converts an amount from the unit's display units back to its stored base units.
+ * @param {string} unit - The unit the amount is denominated in
+ * @param {number} amount - The amount in display units
+ * @returns {number} The amount in whole base units
+ */
+export function fromDisplayAmount(unit: string, amount: number): number {
+	return fromDisplayAmountFor(getUnitMeta(unit), amount);
+}
+
+/**
  * Converts an amount in a bitcoin unit's stored base units to sats.
  * @param {string} unit - The unit the amount is denominated in
  * @param {number} amount - The amount in base units

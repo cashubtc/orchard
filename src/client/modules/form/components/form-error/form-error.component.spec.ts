@@ -31,6 +31,6 @@ describe('FormErrorComponent', () => {
 
 	it('should describe a fractional precision error by its decimal places', () => {
 		fixture.componentRef.setInput('errors', {orchardDecimals: {decimals: 2}});
-		expect(component.known_error()).toBe('Must have 2 decimals');
+		expect(component.known_error()).toBe('At most 2 decimals');
 	});
 });

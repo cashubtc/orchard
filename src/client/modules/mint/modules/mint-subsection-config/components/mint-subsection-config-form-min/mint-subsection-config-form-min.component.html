@@ -26,6 +26,7 @@
 						<input
 							type="text"
 							formNumberSeparator
+							[number_decimals]="decimals()"
 							matInput
 							[formControlName]="control_name()"
 							(focus)="onFocus()"
@@ -38,6 +39,7 @@
 							<orc-mint-subsection-config-form-limit-hint
 								[amounts]="stat_amounts()"
 								[limit]="form_group().get(control_name())?.value"
+								[unit]="unit()"
 								[type]="'min'"
 							></orc-mint-subsection-config-form-limit-hint>
 						</mat-hint>

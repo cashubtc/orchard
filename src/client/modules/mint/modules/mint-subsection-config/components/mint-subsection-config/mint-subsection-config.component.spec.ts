@@ -52,6 +52,7 @@ describe('MintSubsectionConfigComponent', () => {
 						mint_info$: of(null),
 						loadMintMintQuotes: () => of([]),
 						loadMintMeltQuotes: () => of([]),
+						updateMintNut04: jasmine.createSpy('updateMintNut04').and.returnValue(of({})),
 					},
 				},
 			],
@@ -117,7 +118,7 @@ describe('MintSubsectionConfigComponent', () => {
 			expect(form_branch.get('max_amount')?.valid).toBeTrue();
 		});
 
-		it('should keep fiat limits at two decimals', () => {
+		it('should show fiat limits in dollars, valid at two decimals', () => {
 			component.mint_info = {
 				nuts: {
 					nut4: {
@@ -133,8 +134,34 @@ describe('MintSubsectionConfigComponent', () => {
 			(component as any).buildDynamicFormElements();
 			const form_bolt11 = component.form_minting.get('usd')?.get('bolt11') as FormGroup;
 
-			expect(form_bolt11.get('min_amount')?.value).toBe('1.00');
-			expect(form_bolt11.get('max_amount')?.value).toBe('5.00');
+			expect(form_bolt11.get('min_amount')?.value).toBe(1);
+			expect(form_bolt11.get('max_amount')?.value).toBe(5);
+			expect(form_bolt11.valid).toBeTrue();
+		});
+
+		it('should save a fiat limit entered in dollars as cents', () => {
+			component.mint_info = {
+				nuts: {
+					nut4: {
+						disabled: false,
+						methods: [{method: 'bolt11', unit: 'usd', min_amount: 100, max_amount: 500}],
+					},
+					nut5: {disabled: false, methods: []},
+				},
+			} as any;
+			component.minting_units = ['usd'];
+			component.melting_units = [];
+			(component as any).buildDynamicFormElements();
+			component.form_minting.get('usd')?.get('bolt11')?.get('max_amount')?.setValue(20.5);
+
+			component.onMethodUpdate({
+				nut: 'nut4',
+				unit: 'usd',
+				method: 'bolt11',
+				form_group: component.form_minting,
+				control_name: 'max_amount',
+			});
+			expect(TestBed.inject(MintService).updateMintNut04).toHaveBeenCalledWith('usd', 'bolt11', 'max_amount', 2050);
 		});
 	});
 
