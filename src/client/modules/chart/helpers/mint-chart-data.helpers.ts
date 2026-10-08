@@ -1,6 +1,6 @@
 /* Application Dependencies */
 import {eligibleForOracleConversion, oracleConvertToUSDCents, findNearestOraclePrice} from '@client/modules/bitcoin/helpers/oracle.helpers';
-import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
+import {fromDisplayAmountFor, getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
 /* Native Dependencies */
 import {OracleChartDataPoint} from '@client/modules/chart/types/chart.types';
 
@@ -31,7 +31,7 @@ export function getYAxisId(unit: string): string {
 	}
 }
 
-/** Converts chart data with oracle prices, storing both original and converted values */
+/** Converts chart data, already in display units, with oracle prices, storing both original and converted values */
 export function convertChartDataWithOracle(
 	data: {x: number; y: number}[],
 	unit: string,
@@ -39,12 +39,13 @@ export function convertChartDataWithOracle(
 	use_oracle: boolean,
 ): OracleChartDataPoint[] {
 	const is_eligible = eligibleForOracleConversion(unit);
+	const meta = getUnitMeta(unit);
 
 	return data.map((point) => {
 		const timestamp_seconds = point.x / 1000;
 		const oracle_price = oracle_map ? findNearestOraclePrice(oracle_map, timestamp_seconds) : null;
 		const price = oracle_price?.price || null;
-		const converted = is_eligible ? oracleConvertToUSDCents(point.y, price, unit) : null;
+		const converted = is_eligible ? oracleConvertToUSDCents(fromDisplayAmountFor(meta, point.y), price, unit) : null;
 
 		return {
 			x: point.x,

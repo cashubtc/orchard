@@ -22,8 +22,9 @@ export class LocalAmountPipe implements PipeTransform {
 		const meta = getUnitMeta(unit);
 
 		if (meta.family === 'btc') {
-			if (meta.decimals > 0) return this.transformBtc(amount, locale, meta);
-			return this.transformSat(toDisplayAmountFor(meta, amount), locale, currency.type_btc, abbreviate, unitless);
+			const display_amount = toDisplayAmountFor(meta, amount);
+			if (meta.decimals > 0) return this.transformBtc(display_amount, locale, meta);
+			return this.transformSat(display_amount, locale, currency.type_btc, abbreviate, unitless);
 		}
 		if (meta.family === 'fiat') return this.transformFiat(amount, meta, locale, currency.type_fiat, section, abbreviate, unitless);
 		return this.transformStandard(amount, locale, meta.code, abbreviate, unitless);

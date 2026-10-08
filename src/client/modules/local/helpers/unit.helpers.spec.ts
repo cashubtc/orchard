@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {compareUnits, getUnitMeta, toDisplayAmount, toSats} from './unit.helpers';
+import {compareUnits, fromDisplayAmountFor, getUnitMeta, toDisplayAmount, toSats} from './unit.helpers';
 
 describe('UnitHelpers', () => {
 	describe('getUnitMeta', () => {
@@ -62,6 +62,20 @@ describe('UnitHelpers', () => {
 			expect(toDisplayAmount('eur', 0)).toBe(0);
 		});
 
+		it('should convert btc, held in sats, to whole BTC', () => {
+			expect(toDisplayAmount('btc', 100_000_000)).toBe(1);
+			expect(toDisplayAmount('btc', 12345)).toBe(0.00012345);
+		});
+	});
+
+	describe('fromDisplayAmountFor', () => {
+		it('should convert display amounts back to whole base units', () => {
+			expect(fromDisplayAmountFor(getUnitMeta('sat'), 2100)).toBe(2100);
+			expect(fromDisplayAmountFor(getUnitMeta('msat'), 2)).toBe(2000);
+			expect(fromDisplayAmountFor(getUnitMeta('btc'), 0.00012345)).toBe(12345);
+			expect(fromDisplayAmountFor(getUnitMeta('usd'), 2.15)).toBe(215);
+		});
+
 		it('should pass a custom unit through unchanged', () => {
 			expect(toDisplayAmount('ora', 3776)).toBe(3776);
 		});
@@ -71,7 +85,7 @@ describe('UnitHelpers', () => {
 		it('should convert each bitcoin unit to whole sats, rounding msat up', () => {
 			expect(toSats('sat', 2100)).toBe(2100);
 			expect(toSats('MSAT', 1500)).toBe(2);
-			expect(toSats('btc', 0.0005)).toBe(50000);
+			expect(toSats('btc', 50000)).toBe(50000);
 		});
 
 		it('should have no sats for fiat or custom units', () => {

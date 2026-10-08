@@ -16,7 +16,7 @@ describe('mint-solvency.helpers', () => {
 		it('divides reserves in sats by liabilities converted to sats', () => {
 			expect(getSolvencyMultiple(50000, 12000, 'sat')).toBeCloseTo(4.1667);
 			expect(getSolvencyMultiple(50000, 12_000_000, 'msat')).toBeCloseTo(4.1667);
-			expect(getSolvencyMultiple(50000, 0.0005, 'btc')).toBe(1);
+			expect(getSolvencyMultiple(50000, 50000, 'btc')).toBe(1);
 		});
 
 		it('has no multiple for non-bitcoin units, no liabilities or unknown reserves', () => {

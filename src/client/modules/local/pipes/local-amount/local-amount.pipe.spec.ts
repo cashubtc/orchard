@@ -33,6 +33,10 @@ describe('LocalAmountPipe', () => {
 			expect(text(buildPipe().transform(1500, 'msat'))).toBe('2 sat');
 		});
 
+		it('should render btc, held in sats, as whole BTC', () => {
+			expect(text(buildPipe().transform(12345, 'btc'))).toBe('0.00012345 BTC');
+		});
+
 		it('should render sat with a glyph when configured', () => {
 			expect(text(buildPipe(CurrencyType.GLYPH).transform(500, 'sat'))).toBe('₿ 500');
 		});

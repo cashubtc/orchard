@@ -2,26 +2,18 @@
 import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {BitcoinOraclePrice} from '@client/modules/bitcoin/classes/bitcoin-oracle-price.class';
-import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
+import {getUnitMeta, toSats} from '@client/modules/local/helpers/unit.helpers';
 
 export function eligibleForOracleConversion(unit: string): boolean {
 	return getUnitMeta(unit).family === 'btc';
 }
 
-export function oracleConvertToUSDCents(amount_btc: number | null, price_usd: number | null, unit: string): number | null {
-	if (amount_btc === null) return null;
-	if (price_usd === null) return null;
-	const unit_lower = unit.toLowerCase();
-	switch (unit_lower) {
-		case 'sat':
-			return Math.round((amount_btc / 100_000_000) * price_usd * 100);
-		case 'msat':
-			return Math.round((amount_btc / 100_000_000_000) * price_usd * 100);
-		case 'btc':
-			return Math.round(amount_btc * price_usd * 100);
-		default:
-			return null;
-	}
+/** USD cents for an amount in a bitcoin unit's base units; null for other units or without a price */
+export function oracleConvertToUSDCents(amount: number | null, price_usd: number | null, unit: string): number | null {
+	if (amount === null || price_usd === null) return null;
+	const sats = toSats(unit, amount);
+	if (sats === null) return null;
+	return Math.round((sats / 100_000_000) * price_usd * 100);
 }
 
 export function findNearestOraclePrice(oracle_map: Map<number, number>, target_timestamp: number): BitcoinOraclePrice | null {

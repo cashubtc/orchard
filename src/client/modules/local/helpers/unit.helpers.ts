@@ -4,7 +4,7 @@ import {UnitFamily, UnitMeta} from '@client/modules/local/types/unit.types';
 const KNOWN_UNITS: Record<string, UnitMeta> = {
 	sat: {code: 'sat', decimals: 0, divisor: 1, family: 'btc', asset: 'btc', icon: 'currency_bitcoin', glyph: '₿'},
 	msat: {code: 'sat', decimals: 0, divisor: 1000, family: 'btc', asset: 'btc', icon: 'currency_bitcoin', glyph: '₿'},
-	btc: {code: 'BTC', decimals: 8, divisor: 1, family: 'btc', asset: 'btc', icon: 'currency_bitcoin', glyph: '₿'},
+	btc: {code: 'BTC', decimals: 8, divisor: 100_000_000, family: 'btc', asset: 'btc', icon: 'currency_bitcoin', glyph: '₿'},
 	usd: {code: 'USD', decimals: 2, divisor: 100, family: 'fiat', asset: 'usd', icon: 'attach_money', glyph: '$'},
 	eur: {code: 'EUR', decimals: 2, divisor: 100, family: 'fiat', asset: 'eur', icon: 'euro', glyph: '€'},
 };
@@ -61,6 +61,16 @@ export function toDisplayAmountFor(meta: UnitMeta, amount: number): number {
  */
 export function toDisplayAmount(unit: string, amount: number): number {
 	return toDisplayAmountFor(getUnitMeta(unit), amount);
+}
+
+/**
+ * Converts an amount from a unit's display units back to its stored base units.
+ * @param {UnitMeta} meta - Metadata for the unit
+ * @param {number} amount - The amount in display units
+ * @returns {number} The amount in whole base units
+ */
+export function fromDisplayAmountFor(meta: UnitMeta, amount: number): number {
+	return Math.round(amount * meta.divisor);
 }
 
 /**

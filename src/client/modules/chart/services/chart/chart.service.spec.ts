@@ -71,26 +71,14 @@ describe('ChartService', () => {
 	});
 
 	describe('formatTooltipAmount', () => {
-		// The contract: input is the data point's `y` value AS THE CHART
-		// PIPELINE PRODUCES IT — i.e. already converted to display units by
-		// `LocalAmountPipe.getConvertedAmount` upstream in `getAmountData`
-		// (analytics-chart-data.helpers.ts:106). For sat/btc that's identity;
-		// for usd/eur that's cents/100. The formatter must NOT re-divide —
-		// doing so produced the `$0.02` regression on the Fee Revenue chart.
-		// These tests pin the contract so reintroducing a `/100` here fails
-		// loudly.
-
 		it('formats sat as a glyph-prefixed integer with locale grouping', () => {
 			expect(service.formatTooltipAmount(162, 'sat')).toBe('₿162');
 			expect(service.formatTooltipAmount(1234567, 'sat')).toBe('₿1,234,567');
 		});
 
-		it('formats msat by ceiling-dividing into sat then glyph-formatting', () => {
-			// `Math.ceil(1500 / 1000) = 2` → ceiling, not floor: a partial sat
-			// counts as one. Mirrors `formatBtcAmount` behavior in
-			// chart.service.ts:285-288.
-			expect(service.formatTooltipAmount(1500, 'msat')).toBe('₿2');
-			expect(service.formatTooltipAmount(1000, 'msat')).toBe('₿1');
+		it('formats msat, already converted to sat, as sat', () => {
+			expect(service.formatTooltipAmount(2, 'msat')).toBe('₿2');
+			expect(service.formatTooltipAmount(1234567, 'msat')).toBe('₿1,234,567');
 		});
 
 		it('formats btc as 8-decimal full string', () => {

@@ -9,7 +9,7 @@ import {ThemeService} from '@client/modules/settings/services/theme/theme.servic
 import {SettingDeviceService} from '@client/modules/settings/services/setting-device/setting-device.service';
 import {CurrencyType} from '@client/modules/cache/services/local-storage/local-storage.types';
 import {eligibleForOracleConversion} from '@client/modules/bitcoin/helpers/oracle.helpers';
-import {getUnitMeta, getUnitSymbol, toDisplayAmountFor} from '@client/modules/local/helpers/unit.helpers';
+import {getUnitMeta, getUnitSymbol} from '@client/modules/local/helpers/unit.helpers';
 import type {UnitMeta} from '@client/modules/local/types/unit.types';
 import {OracleChartDataPoint} from '@client/modules/chart/types/chart.types';
 /* Shared Dependencies */
@@ -340,7 +340,7 @@ export class ChartService {
 	}
 
 	/**
-	 * Formats an amount for display in chart tooltips, respecting user locale and currency preferences
+	 * Formats a chart amount, already in display units, for tooltips, respecting user locale and currency preferences
 	 */
 	public formatTooltipAmount(amount: number, unit: string): string {
 		const locale = this.settingDeviceService.getLocale();
@@ -349,7 +349,7 @@ export class ChartService {
 
 		if (meta.family === 'btc') {
 			if (meta.decimals > 0) return this.formatBtcFull(amount, locale, meta);
-			return this.formatBtcAmount(toDisplayAmountFor(meta, amount), locale, currency.type_btc);
+			return this.formatBtcAmount(amount, locale, currency.type_btc);
 		}
 		if (meta.family === 'fiat') return this.formatFiatAmount(amount, meta, locale, currency.type_fiat);
 		return `${amount.toLocaleString(locale)} ${meta.code}`;
