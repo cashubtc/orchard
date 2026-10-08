@@ -1,5 +1,5 @@
-export const MINT_INFO_QUERY = `{
-    mint_info{
+/** Every field of a mint's info; shared with the wallet's mints, which carry their own info */
+export const MINT_INFO_FIELDS = `
         name
         pubkey
         version
@@ -99,7 +99,10 @@ export const MINT_INFO_QUERY = `{
 				max_batch_size
 				methods
 			}
-        }
+        }`;
+
+export const MINT_INFO_QUERY = `{
+    mint_info{${MINT_INFO_FIELDS}
   	}
 }`;
 

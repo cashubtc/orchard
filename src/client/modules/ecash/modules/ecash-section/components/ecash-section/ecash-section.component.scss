@@ -6,6 +6,11 @@
 	@extend %flex-grow;
 }
 
+// Fill the subsection, so the panel spans the full height on short pages
+mat-sidenav-container {
+	@extend %flex-grow;
+}
+
 .form-sidenav {
 	&.device-desktop {
 		width: 50%;

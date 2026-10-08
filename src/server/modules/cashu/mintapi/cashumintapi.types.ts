@@ -1,7 +1,7 @@
 export type CashuMintInfo = {
 	name: string;
 	pubkey: string;
-	version: string;
+	version?: string;
 	description: string;
 	description_long: string;
 	contact: CashuContact[];

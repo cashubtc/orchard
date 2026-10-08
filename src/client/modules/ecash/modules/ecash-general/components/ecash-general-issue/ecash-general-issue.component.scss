@@ -1,0 +1,41 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+.ecash-issue-container {
+	@extend %relative;
+	@extend %flex;
+	@extend %flex-column;
+	@extend %h-full;
+	@extend %overflow-hidden;
+}
+
+.ecash-issue-header {
+	@extend %p-0-5;
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-justify-between;
+	@extend %flex-shrink-0;
+}
+
+.ecash-issue-content {
+	@extend %p-1;
+	@extend %flex-1;
+	@extend %overflow-y-auto;
+}
+
+// Label, before, arrow, after
+.ecash-issue-preview {
+	@extend %grid;
+	@extend %flex-items-center;
+	grid-template-columns: minmax(0, 1fr) auto auto auto;
+	gap: 0.5rem 0.75rem;
+}
+
+.ecash-issue-sheet {
+	@extend %p-v-1;
+}
+
+.ecash-issue-sheet-submit {
+	@extend %w-full;
+	@extend %h-3;
+}

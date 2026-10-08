@@ -1,12 +1,13 @@
+/* Application Dependencies */
+import {MINT_INFO_FIELDS} from '@client/modules/mint/services/mint/mint.queries';
+
 const ECASH_MINT_FIELDS = `
     id
     urls
-    name
-    pubkey
-    icon_url
-    units
     is_orchard
-    created_at`;
+    created_at
+    info {${MINT_INFO_FIELDS}
+    }`;
 
 const ECASH_OPERATION_FIELDS = `
     id

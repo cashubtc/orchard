@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 /* Vendor Dependencies */
@@ -11,11 +11,15 @@ import {BitcoinOraclePrice} from '@client/modules/bitcoin/classes/bitcoin-oracle
 import {CrewService} from '@client/modules/crew/services/crew/crew.service';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 import {deviceTypeFromBreakpoints} from '@client/modules/layout/helpers/device.helpers';
+import {FormPanelService} from '@client/modules/form/services/form-panel';
+import {MintService} from '@client/modules/mint/services/mint/mint.service';
 /* Native Dependencies */
 import {EcashService} from '@client/modules/ecash/services/ecash/ecash.service';
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
 import {EcashMintStatus} from '@client/modules/ecash/classes/ecash-mint-status.class';
+import {EcashOperation} from '@client/modules/ecash/classes/ecash-operation.class';
+import {EcashGeneralIssueComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-issue/ecash-general-issue.component';
 
 @Component({
 	selector: 'orc-ecash-subsection-wallet',
@@ -29,6 +33,8 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 	private readonly bitcoinService = inject(BitcoinService);
 	private readonly settingAppService = inject(SettingAppService);
 	private readonly crewService = inject(CrewService);
+	private readonly mintService = inject(MintService);
+	private readonly formPanelService = inject(FormPanelService);
 	private readonly breakpointObserver = inject(BreakpointObserver);
 	private readonly destroyRef = inject(DestroyRef);
 
@@ -43,6 +49,12 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 	public readonly loading_balances = signal<boolean>(true);
 	public readonly loading_mints = signal<boolean>(true);
 	public readonly loading_mint_statuses = signal<boolean>(true);
+
+	/** Ecash is only issued from the Orchard mint, by an admin */
+	public readonly orchard_mint = computed(() => this.mints().find((mint) => mint.is_orchard) ?? null);
+	public readonly can_issue = computed(() => this.is_admin() && this.orchard_mint() !== null);
+
+	public readonly issue_blocked = computed(() => this.orchard_mint()?.issue_blocked ?? null);
 
 	private subscriptions: Subscription = new Subscription();
 
@@ -132,6 +144,26 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 			.loadBitcoinOraclePrice()
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe((price) => this.bitcoin_oracle_price.set(price));
+	}
+
+	/* *******************************************************
+		Actions Up
+	******************************************************** */
+
+	/** Opens the issue panel; an issued operation refreshes the balances it changed */
+	public onIssue(): void {
+		const mint = this.orchard_mint();
+		if (!mint) return;
+		this.formPanelService
+			.open<unknown, EcashOperation>(EcashGeneralIssueComponent, {data: {mint}})
+			.afterClosed()
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe((operation) => {
+				if (!operation) return;
+				this.mintService.clearSolvencyCache();
+				this.ecashService.clearBalancesCache();
+				this.loadBalances();
+			});
 	}
 
 	/* *******************************************************

@@ -11,7 +11,8 @@ import {DeviceType} from '@client/modules/layout/types/device.types';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EcashGeneralActionsComponent {
-	public readonly is_admin = input<boolean>(false);
+	public readonly can_issue = input<boolean>(false);
+	public readonly issue_blocked = input<string | null>(null);
 	public readonly device_type = input.required<DeviceType>();
 
 	public readonly issue = output<void>();

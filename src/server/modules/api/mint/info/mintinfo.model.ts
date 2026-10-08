@@ -219,8 +219,8 @@ export class OrchardMintInfo {
 	@Field({nullable: true, description: 'Mint public key'})
 	pubkey: string;
 
-	@Field({description: 'Mint software version'})
-	version: string;
+	@Field(() => String, {nullable: true, description: 'Mint software version'})
+	version: string | null;
 
 	@Field({nullable: true, description: 'Short description of the mint'})
 	description: string;
@@ -249,7 +249,7 @@ export class OrchardMintInfo {
 	constructor(cashu_info: CashuMintInfo) {
 		this.name = cashu_info.name;
 		this.pubkey = cashu_info.pubkey;
-		this.version = cashu_info.version;
+		this.version = cashu_info.version ?? null;
 		this.description = cashu_info.description;
 		this.description_long = cashu_info.description_long;
 		this.contact = cashu_info.contact;

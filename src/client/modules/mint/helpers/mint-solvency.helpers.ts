@@ -20,15 +20,23 @@ export function getSolvencyMultiple(reserves_sats: number | null, liabilities: n
 }
 
 /**
+ * A unit's unspent ecash
+ * @param {MintReserves} reserves - Liabilities, reserve sources and the reserves total
+ * @param {string} unit - Unit whose liabilities to read
+ * @returns {number} Liabilities in the unit's stored base units; 0 when the mint holds none
+ */
+export function getUnitLiabilities(reserves: MintReserves, unit: string): number {
+	return reserves.liabilities.find((item) => item.unit === unit.toLowerCase())?.amount ?? 0;
+}
+
+/**
  * How many times the operator's reserves cover a unit's liabilities
  * @param {MintReserves} reserves - Liabilities, reserve sources and the reserves total
  * @param {string} unit - Unit whose liabilities to cover
  * @returns {number | null} The unrounded multiple, or null when it can't be computed
  */
 export function getSolvencyRatio(reserves: MintReserves, unit: string): number | null {
-	const liability = reserves.liabilities.find((item) => item.unit === unit.toLowerCase());
-	if (!liability) return null;
-	return getSolvencyMultiple(reserves.reserves, liability.amount, liability.unit);
+	return getSolvencyMultiple(reserves.reserves, getUnitLiabilities(reserves, unit), unit);
 }
 
 /**

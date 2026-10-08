@@ -8,8 +8,10 @@
 	></orc-ecash-general-balance>
 	<orc-ecash-general-actions
 		class="ecash-wallet-actions"
-		[is_admin]="is_admin()"
+		[can_issue]="can_issue()"
+		[issue_blocked]="issue_blocked()"
 		[device_type]="device_type()"
+		(issue)="onIssue()"
 	></orc-ecash-general-actions>
 	<orc-ecash-general-mints
 		class="ecash-wallet-mints"

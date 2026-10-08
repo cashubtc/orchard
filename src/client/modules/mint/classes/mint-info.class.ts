@@ -3,7 +3,7 @@ import {OrchardContact, OrchardMintInfo, OrchardNuts} from '@shared/generated.ty
 export class MintInfo implements OrchardMintInfo {
 	name: string | null;
 	pubkey: string | null;
-	version: string;
+	version: string | null;
 	description: string | null;
 	description_long: string | null;
 	contact: OrchardContact[] | null;
@@ -16,7 +16,7 @@ export class MintInfo implements OrchardMintInfo {
 	constructor(omi: OrchardMintInfo) {
 		this.name = omi.name ?? null;
 		this.pubkey = omi.pubkey ?? null;
-		this.version = omi.version;
+		this.version = omi.version ?? null;
 		this.description = omi.description ?? null;
 		this.description_long = omi.description_long ?? null;
 		this.contact = omi.contact ?? null;

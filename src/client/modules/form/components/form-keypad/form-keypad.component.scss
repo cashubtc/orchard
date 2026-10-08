@@ -1,0 +1,27 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+.form-keypad {
+	@extend %grid;
+	@extend %flex-gap-0-5;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.form-keypad-key {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+	@extend %h-3;
+	@extend %border-none;
+	@extend %cursor-pointer;
+	@extend %font-size-xl;
+	@extend %font-weight-semi-bold;
+	@extend %m-0;
+	@extend %font-family-inherit;
+	color: inherit;
+
+	// 0 sits under 8, with delete beside it
+	&:nth-child(10) {
+		grid-column: 2;
+	}
+}

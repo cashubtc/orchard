@@ -113,7 +113,8 @@ const ICONS = [
   'money_bag',
   'zoom_in',
   'call_made',
-  'call_received'
+  'call_received',
+  'backspace'
 ];
 
 // Sort alphabetically and remove duplicates

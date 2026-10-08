@@ -3,7 +3,13 @@ import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 /* Shared Dependencies */
 import {MintReserveSource} from '@shared/generated.types';
 /* Local Dependencies */
-import {getReserveSourcesLabel, getSolvencyMultiple, getSolvencyRatio, roundSolvencyMultiple} from './mint-solvency.helpers';
+import {
+	getReserveSourcesLabel,
+	getSolvencyMultiple,
+	getSolvencyRatio,
+	getUnitLiabilities,
+	roundSolvencyMultiple,
+} from './mint-solvency.helpers';
 
 describe('mint-solvency.helpers', () => {
 	describe('getSolvencyMultiple', () => {
@@ -17,6 +23,15 @@ describe('mint-solvency.helpers', () => {
 			expect(getSolvencyMultiple(50000, 100, 'usd')).toBeNull();
 			expect(getSolvencyMultiple(50000, 0, 'sat')).toBeNull();
 			expect(getSolvencyMultiple(null, 100, 'sat')).toBeNull();
+		});
+	});
+
+	describe('getUnitLiabilities', () => {
+		const reserves = new MintReserves({liabilities: [{unit: 'sat', amount: 12000}], sources: [], reserves: null, partial: false});
+
+		it("reads a unit's liabilities, and none for a unit the mint holds none of", () => {
+			expect(getUnitLiabilities(reserves, 'SAT')).toBe(12000);
+			expect(getUnitLiabilities(reserves, 'msat')).toBe(0);
 		});
 	});
 

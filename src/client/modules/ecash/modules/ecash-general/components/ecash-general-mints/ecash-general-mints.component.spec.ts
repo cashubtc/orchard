@@ -13,7 +13,13 @@ describe('EcashGeneralMintsComponent', () => {
 	let fixture: ComponentFixture<EcashGeneralMintsComponent>;
 
 	const mint = (id: string, name: string | null, url: string, is_orchard: boolean, created_at: number) =>
-		new EcashMint({id, name, urls: [url], icon_url: null, pubkey: null, units: ['sat'], is_orchard, created_at});
+		new EcashMint({
+			id,
+			urls: [url],
+			is_orchard,
+			created_at,
+			info: {name, nuts: {nut4: {disabled: false, methods: [{method: 'bolt11', unit: 'sat'}]}, nut5: {disabled: false, methods: []}}},
+		});
 	const mints = [
 		mint('cedar', 'Cedar Community Mint', 'https://cedar.example', false, 1),
 		mint('orchard', null, 'https://mint.orchard.example', true, 2),

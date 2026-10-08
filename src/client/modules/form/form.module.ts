@@ -32,6 +32,7 @@ import {FormScrollCalendarComponent} from './components/form-scroll-calendar/for
 import {FormDaterangeScrollPickerComponent} from './components/form-daterange-scroll-picker/form-daterange-scroll-picker.component';
 import {FormMarkdownEditorComponent} from './components/form-markdown-editor/form-markdown-editor.component';
 import {FormCronBuilderComponent} from './components/form-cron-builder/form-cron-builder.component';
+import {FormKeypadComponent} from './components/form-keypad/form-keypad.component';
 
 @NgModule({
 	declarations: [
@@ -48,6 +49,7 @@ import {FormCronBuilderComponent} from './components/form-cron-builder/form-cron
 		FormDaterangeScrollPickerComponent,
 		FormMarkdownEditorComponent,
 		FormCronBuilderComponent,
+		FormKeypadComponent,
 	],
 	imports: [
 		CommonModule,
@@ -82,6 +84,7 @@ import {FormCronBuilderComponent} from './components/form-cron-builder/form-cron
 		FormDaterangeScrollPickerComponent,
 		FormMarkdownEditorComponent,
 		FormCronBuilderComponent,
+		FormKeypadComponent,
 	],
 })
 export class OrcFormModule {}

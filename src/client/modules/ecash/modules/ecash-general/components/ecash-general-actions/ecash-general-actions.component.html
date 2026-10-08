@@ -3,12 +3,18 @@
 
 	<mat-card appearance="outlined" class="relative overflow-hidden">
 		<mat-card-content class="ecash-actions orc-surface-container-low-bg" [class.tiles]="tiles()">
-			@if (is_admin()) {
-				<button type="button" class="ecash-action orc-primary-card orc-on-primary-container-color" matRipple (click)="issue.emit()">
+			@if (can_issue()) {
+				<button
+					type="button"
+					class="ecash-action orc-primary-card orc-on-primary-container-color"
+					matRipple
+					[disabled]="issue_blocked() !== null"
+					(click)="issue.emit()"
+				>
 					<mat-icon class="mat-symbol-fill">add_circle</mat-icon>
 					<div class="flex flex-column flex-grow">
 						<span class="font-weight-semi-bold">{{ tiles() ? 'Issue' : 'Issue ecash' }}</span>
-						<span class="ecash-action-detail font-size-xs">From your Orchard mint, no payment needed</span>
+						<span class="ecash-action-detail font-size-xs">{{ issue_blocked() ?? 'From your mint, no payment needed' }}</span>
 					</div>
 					<span class="ecash-action-detail ecash-action-badge font-size-xs font-weight-semi-bold">ADMIN</span>
 				</button>

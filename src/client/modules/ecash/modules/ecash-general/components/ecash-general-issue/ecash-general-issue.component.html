@@ -1,0 +1,201 @@
+@if (!sheet) {
+	<div class="ecash-issue-container">
+		<div class="ecash-issue-header">
+			<div class="p-l-0-5">Issue ecash</div>
+			<div class="flex flex-items-center flex-gap-1">
+				<button matButton="filled" type="button" [disabled]="!can_submit()" (click)="onSubmit()">Issue</button>
+				<button mat-icon-button type="button" class="orc-icon-button" (click)="onClose()">
+					<mat-icon>close</mat-icon>
+				</button>
+			</div>
+		</div>
+		<div class="category-rule"></div>
+		<div class="ecash-issue-content flex flex-column flex-gap-1">
+			<div class="font-size-s orc-outline-color">
+				Mint new ecash straight into your wallet. No Lightning payment is made; the quote is marked paid through the mint RPC.
+			</div>
+			<div class="orc-high-card p-1 flex flex-items-center flex-gap-1">
+				<orc-ecash-general-mint-icon
+					[name]="data.mint.display_name"
+					[icon_url]="data.mint.icon_url"
+					[is_orchard]="data.mint.is_orchard"
+				></orc-ecash-general-mint-icon>
+				<div class="flex flex-column">
+					<span class="font-size-xs orc-outline-color">Issuing from</span>
+					<span class="font-weight-semi-bold">{{ data.mint.display_name }}</span>
+				</div>
+			</div>
+			<ng-container *ngTemplateOutlet="unit_toggle"></ng-container>
+			<form [formGroup]="form" class="flex flex-column flex-gap-0-5" (ngSubmit)="onSubmit()">
+				<div class="flex flex-column flex-gap-0-5">
+					<orc-form-field-dynamic
+						[hot]="focused_amount() || form.controls.amount.dirty"
+						[invalid]="form.controls.amount.invalid"
+						[info]="true"
+						[standalone]="false"
+						(inform)="help_amount.set(!help_amount())"
+						(cancel)="onCancel($event, 'amount')"
+					>
+						<mat-form-field
+							appearance="fill"
+							hideRequiredMarker="true"
+							[ngClass]="focused_amount() || form.controls.amount.dirty ? 'orc-hot-form-field' : 'orc-cold-form-field'"
+							class="orc-dynamic-form-field w-full"
+						>
+							<mat-label>Amount</mat-label>
+							<input
+								type="text"
+								inputmode="numeric"
+								formNumberSeparator
+								matInput
+								formControlName="amount"
+								(focus)="focused_amount.set(true)"
+								(blur)="focused_amount.set(false)"
+							/>
+							<span matSuffix class="form-suffix-text">{{ unit() | localUnit }}</span>
+							<mat-error>
+								<orc-form-error [errors]="form.controls.amount.errors">Invalid amount</orc-form-error>
+							</mat-error>
+						</mat-form-field>
+					</orc-form-field-dynamic>
+					<div class="orc-animation-expand-collapse" [class.animation-expanded]="help_amount()">
+						<div class="orc-animation-expand-collapse-inner">
+							<div class="flex">
+								<orc-form-help-text class="orc-surface-container-high-bg">
+									Issued in {{ unit() | localUnit }}, straight into your wallet.
+									@if (limits().min !== null || limits().max !== null) {
+										Your mint allows
+										@if (limits().min !== null) {
+											at least <span [innerHTML]="limits().min | localAmount: unit() : 'mint'"></span>
+										}
+										@if (limits().min !== null && limits().max !== null) {
+											and
+										}
+										@if (limits().max !== null) {
+											at most <span [innerHTML]="limits().max | localAmount: unit() : 'mint'"></span>
+										}
+										per issue.
+									}
+								</orc-form-help-text>
+							</div>
+						</div>
+					</div>
+				</div>
+				<ng-container *ngTemplateOutlet="memo_field"></ng-container>
+			</form>
+			@if (preview(); as preview) {
+				<div class="orc-high-card p-1 flex flex-column flex-gap-0-5">
+					<div class="font-size-xs orc-outline-color">Balance sheet after issuing</div>
+					<div class="ecash-issue-preview">
+						<span>Liabilities</span>
+						<span class="orc-outline-color" [innerHTML]="preview.liabilities_before | localAmount: unit() : 'mint'"></span>
+						<mat-icon class="icon-sm orc-outline-color">arrow_forward</mat-icon>
+						<span class="font-weight-semi-bold" [innerHTML]="preview.liabilities_after | localAmount: unit() : 'mint'"></span>
+						<span>Reserves</span>
+						<span class="orc-outline-color" [innerHTML]="(preview.reserves | localAmount: 'sat' : 'lightning') || '-'"></span>
+						<mat-icon class="icon-sm orc-outline-color">arrow_forward</mat-icon>
+						<span
+							class="font-weight-semi-bold"
+							[innerHTML]="(preview.reserves | localAmount: 'sat' : 'lightning') || '-'"
+						></span>
+						<span>Coverage</span>
+						<span class="orc-outline-color">
+							<ng-container *ngTemplateOutlet="coverage; context: {$implicit: preview.coverage_before}"></ng-container>
+						</span>
+						<mat-icon class="icon-sm orc-outline-color">arrow_forward</mat-icon>
+						<span class="font-weight-semi-bold">
+							<ng-container *ngTemplateOutlet="coverage; context: {$implicit: preview.coverage_after}"></ng-container>
+						</span>
+					</div>
+					<div class="font-size-xs orc-outline-color">
+						Issued ecash is a liability like any other: users can redeem it against your reserves.
+					</div>
+				</div>
+			}
+		</div>
+	</div>
+} @else {
+	<div class="ecash-issue-sheet flex flex-column flex-gap-1">
+		<div class="flex flex-items-center flex-justify-between flex-gap-1">
+			<div class="title-l">Issue ecash</div>
+			<ng-container *ngTemplateOutlet="unit_toggle"></ng-container>
+		</div>
+		<div class="flex flex-column flex-items-center flex-gap-0-5 p-v-1">
+			<div class="font-size-3 font-weight-semi-bold" [innerHTML]="amount() ?? 0 | localAmount: unit() : 'mint'"></div>
+			@if (form.controls.amount.errors) {
+				<div class="font-size-xs orc-error-color">
+					<orc-form-error [errors]="form.controls.amount.errors">Invalid amount</orc-form-error>
+				</div>
+			}
+			<div class="font-size-s orc-outline-color">from {{ data.mint.display_name }}</div>
+			@if (preview(); as preview) {
+				<div class="font-size-xs orc-outline-color">
+					Coverage
+					<ng-container *ngTemplateOutlet="coverage; context: {$implicit: preview.coverage_before}"></ng-container>
+					→
+					<span class="font-weight-semi-bold">
+						<ng-container *ngTemplateOutlet="coverage; context: {$implicit: preview.coverage_after}"></ng-container>
+					</span>
+				</div>
+			}
+		</div>
+		<ng-container *ngTemplateOutlet="memo_field"></ng-container>
+		<orc-form-keypad (digit)="onDigit($event)" (backspace)="onBackspace()"></orc-form-keypad>
+		<button matButton="filled" type="button" class="ecash-issue-sheet-submit" [disabled]="!can_submit()" (click)="onSubmit()">
+			Issue <span [innerHTML]="amount() ?? 0 | localAmount: unit() : 'mint'"></span>
+		</button>
+	</div>
+}
+
+<ng-template #unit_toggle>
+	@if (units.length > 1) {
+		<orc-form-toggle-group>
+			@for (option of units; track option) {
+				<orc-form-toggle [selected]="option === unit()" (click)="unit.set(option)">
+					<div class="font-size-s">{{ option | localUnit }}</div>
+				</orc-form-toggle>
+			}
+		</orc-form-toggle-group>
+	}
+</ng-template>
+
+<ng-template #memo_field>
+	<div class="flex flex-column flex-gap-0-5">
+		<orc-form-field-dynamic
+			[hot]="focused_memo() || form.controls.memo.dirty"
+			[invalid]="form.controls.memo.invalid"
+			[info]="true"
+			[standalone]="false"
+			(inform)="help_memo.set(!help_memo())"
+			(cancel)="onCancel($event, 'memo')"
+		>
+			<mat-form-field
+				appearance="fill"
+				[ngClass]="focused_memo() || form.controls.memo.dirty ? 'orc-hot-form-field' : 'orc-cold-form-field'"
+				class="orc-dynamic-form-field w-full"
+			>
+				<mat-label>Memo</mat-label>
+				<textarea
+					rows="1"
+					matInput
+					[formControl]="form.controls.memo"
+					[formAutogrow]="true"
+					(focus)="focused_memo.set(true)"
+					(blur)="focused_memo.set(false)"
+				></textarea>
+			</mat-form-field>
+		</orc-form-field-dynamic>
+		<div class="orc-animation-expand-collapse" [class.animation-expanded]="help_memo()">
+			<div class="orc-animation-expand-collapse-inner">
+				<div class="flex">
+					<orc-form-help-text class="orc-surface-container-high-bg">
+						A note kept with this issue in your wallet history.
+					</orc-form-help-text>
+				</div>
+			</div>
+		</div>
+	</div>
+</ng-template>
+
+<!-- Coverage to two decimals, so small issues still move it -->
+<ng-template #coverage let-multiple>{{ multiple === null ? '-' : (multiple | number: '1.2-2') + 'x' }}</ng-template>

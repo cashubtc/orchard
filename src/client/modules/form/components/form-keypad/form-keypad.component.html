@@ -1,0 +1,8 @@
+<div class="form-keypad">
+	@for (key of digits; track key) {
+		<button type="button" class="form-keypad-key orc-high-card" matRipple (click)="digit.emit(key)">{{ key }}</button>
+	}
+	<button type="button" class="form-keypad-key orc-high-card" matRipple aria-label="Delete" (click)="backspace.emit()">
+		<mat-icon>backspace</mat-icon>
+	</button>
+</div>

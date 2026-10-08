@@ -22,8 +22,13 @@ describe('EcashMintService', () => {
 		urls: ['https://mint.orchard.example'],
 		name: 'Orchard Test Mint',
 		info: JSON.stringify({
+			name: 'Orchard Test Mint',
 			icon_url: 'https://mint.orchard.example/icon.png',
-			nuts: {4: {methods: [{unit: 'sat'}, {unit: 'usd'}, {unit: 'sat'}]}},
+			nuts: {
+				4: {methods: [{method: 'bolt11', unit: 'sat', min_amount: 1, max_amount: 500000}], disabled: false},
+				5: {methods: [{method: 'bolt11', unit: 'sat', min_amount: 1, max_amount: 500000}], disabled: false},
+				20: {supported: true},
+			},
 		}),
 		info_updated_at: 0,
 		created_at: 0,
@@ -51,11 +56,20 @@ describe('EcashMintService', () => {
 		expect(ecashMintService).toBeDefined();
 	});
 
-	it('getEcashMints maps wallet mints, reading icon and units from the cached info', async () => {
+	it("getEcashMints maps wallet mints with the mint's cached info", async () => {
 		cashuWalletMintService.listMints.mockResolvedValue([mint]);
 		const [result] = await ecashMintService.getEcashMints('TAG', 'user-1');
 		expect(result).toBeInstanceOf(OrchardEcashMint);
-		expect(result).toMatchObject({icon_url: 'https://mint.orchard.example/icon.png', units: ['sat', 'usd'], is_orchard: true});
+		expect(result).toMatchObject({id: 'mint-1', is_orchard: true});
+		expect(result.info).toMatchObject({name: 'Orchard Test Mint', icon_url: 'https://mint.orchard.example/icon.png', version: null});
+		expect(result.info?.nuts.nut4.methods[0]).toMatchObject({method: 'bolt11', unit: 'sat', min_amount: 1, max_amount: 500000});
+		expect(result.info?.nuts.nut20).toMatchObject({supported: true});
+	});
+
+	it('getEcashMints leaves info null until the mint was first fetched', async () => {
+		cashuWalletMintService.listMints.mockResolvedValue([{...mint, info: null}]);
+		const [result] = await ecashMintService.getEcashMints('TAG', 'user-1');
+		expect(result.info).toBeNull();
 	});
 
 	it('getEcashMintStatus maps each mint status', async () => {
@@ -70,7 +84,7 @@ describe('EcashMintService', () => {
 		cashuWalletMintService.addMint.mockResolvedValue({...mint, info: null, is_orchard: false});
 		const result = await ecashMintService.addEcashMint('TAG', 'user-1', 'https://cedar.example');
 		expect(cashuWalletMintService.addMint).toHaveBeenCalledWith('user-1', 'https://cedar.example');
-		expect(result).toMatchObject({icon_url: null, units: []});
+		expect(result).toMatchObject({is_orchard: false, info: null});
 	});
 
 	it('removeEcashMint returns true once removed', async () => {
