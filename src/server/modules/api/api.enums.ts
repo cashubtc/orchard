@@ -341,6 +341,7 @@ registerEnumType(EventLogEntityType, {
 		DATABASE: {description: 'Database entity'},
 		SETTING: {description: 'Setting entity'},
 		AGENT: {description: 'AI agent entity'},
+		ECASH: {description: 'Ecash wallet operation'},
 	},
 });
 registerEnumType(EventLogType, {

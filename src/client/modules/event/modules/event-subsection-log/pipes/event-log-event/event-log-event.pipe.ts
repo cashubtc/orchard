@@ -14,6 +14,7 @@ const ENTITY_TYPE_LABELS: Record<EventLogEntityType, string> = {
 	[EventLogEntityType.QuoteTtl]: 'Quote Expiry',
 	[EventLogEntityType.Setting]: 'Setting',
 	[EventLogEntityType.Agent]: 'Agent',
+	[EventLogEntityType.Ecash]: 'Ecash',
 };
 
 /** Maps EventLogType enum values to past-tense display strings */

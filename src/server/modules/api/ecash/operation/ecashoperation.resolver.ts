@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Logger} from '@nestjs/common';
+import {Logger, UseInterceptors} from '@nestjs/common';
 import {Resolver, Query, Mutation, Args, Context, Float, Int, ID} from '@nestjs/graphql';
 /* Application Dependencies */
 import {Roles} from '#server/modules/auth/decorators/auth.decorator';
@@ -8,9 +8,12 @@ import {normalizeMintUnit, normalizeMintUnits} from '#server/modules/cashu/cashu
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 import {OrchardCommonCount} from '#server/modules/api/common/entity-count.model';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
+import {LogEvent} from '#server/modules/event/event.decorator';
+import {EventLogType} from '#server/modules/event/event.enums';
 /* Local Dependencies */
 import {EcashOperationService} from './ecashoperation.service.js';
 import {OrchardEcashOperation} from './ecashoperation.model.js';
+import {EcashOperationInterceptor} from './ecashoperation.interceptor.js';
 
 @Resolver()
 export class EcashOperationResolver {
@@ -75,6 +78,8 @@ export class EcashOperationResolver {
 	}
 
 	@Roles(UserRole.ADMIN)
+	@UseInterceptors(EcashOperationInterceptor)
+	@LogEvent({type: EventLogType.CREATE, field: 'issue'})
 	@Mutation(() => OrchardEcashOperation, {description: "Issue ecash on the Orchard mint into the current user's wallet"})
 	async ecash_issue(
 		@Context() context: any,

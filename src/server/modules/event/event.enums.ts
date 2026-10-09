@@ -23,6 +23,7 @@ export enum EventLogEntityType {
 	DATABASE = 'database',
 	SETTING = 'setting',
 	AGENT = 'agent',
+	ECASH = 'ecash',
 }
 
 export enum EventLogType {
