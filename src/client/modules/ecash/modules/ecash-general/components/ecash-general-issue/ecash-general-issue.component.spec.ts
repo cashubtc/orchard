@@ -37,7 +37,7 @@ describe('EcashGeneralIssueComponent', () => {
 				nut4: {
 					disabled: false,
 					methods: [
-						{method: 'bolt11', unit: 'usd'},
+						{method: 'bolt11', unit: 'usd', min_amount: 100, max_amount: 500000},
 						{method: 'bolt11', unit: 'sat', min_amount: 1, max_amount: 500000},
 						{method: 'bolt12', unit: 'eur'},
 					],
@@ -88,15 +88,26 @@ describe('EcashGeneralIssueComponent', () => {
 		expect(component.unit()).toBe('sat');
 	});
 
-	it("holds the amount to the mint's bolt11 limits for the unit", () => {
+	it("holds the amount to the mint's bolt11 limits for the unit, in display units", () => {
 		component.form.controls.amount.setValue(600000);
 		expect(component.form.controls.amount.errors).toEqual({max: {max: 500000, actual: 600000}});
 		expect(component.can_submit()).toBeFalse();
 
-		component.unit.set('usd');
+		component.onUnit('usd');
 		TestBed.tick();
-		expect(component.form.controls.amount.errors).toBeNull();
+		expect(component.amount()).toBeNull();
+		component.form.controls.amount.setValue(0.5);
+		expect(component.form.controls.amount.errors).toEqual({min: {min: 1, actual: 0.5}});
+		component.form.controls.amount.setValue(12.5);
 		expect(component.can_submit()).toBeTrue();
+	});
+
+	it('issues an amount entered in dollars as cents', () => {
+		component.onUnit('usd');
+		TestBed.tick();
+		component.form.controls.amount.setValue(12.5);
+		component.onSubmit();
+		expect(ecash_service.issueEcash).toHaveBeenCalledWith('usd', 1250, null);
 	});
 
 	it('shows the balance sheet before and after the amount', () => {
@@ -113,14 +124,22 @@ describe('EcashGeneralIssueComponent', () => {
 		expect(component.preview()).toBeNull();
 	});
 
-	it('builds the amount from keypad digits and drops the last one on backspace', () => {
-		component.onDigit('0');
-		expect(component.amount()).toBeNull();
-		component.onDigit('2');
-		component.onDigit('1');
+	it('builds the amount from keypad keys at the unit precision', () => {
+		for (const key of ['2', '1', '.']) component.onKey(key);
 		expect(component.amount()).toBe(21);
-		component.onBackspace();
-		expect(component.amount()).toBe(2);
+
+		component.onUnit('usd');
+		for (const key of ['1', '2', '.', '5', '0', '9']) component.onKey(key);
+		expect(component.amount()).toBe(12.5);
+		expect(component.base_amount()).toBe(1250);
+		component.onKey('backspace');
+		component.onKey('backspace');
+		expect(component.amount()).toBe(12);
+	});
+
+	it('rejects an amount past the unit precision', () => {
+		component.form.controls.amount.setValue(2.5);
+		expect(component.form.controls.amount.errors).toEqual({orchardDecimals: {decimals: 0}});
 	});
 
 	it('issues the amount and closes with the operation', () => {

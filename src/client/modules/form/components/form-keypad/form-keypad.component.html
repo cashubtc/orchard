@@ -1,8 +1,18 @@
 <div class="form-keypad">
-	@for (key of digits; track key) {
-		<button type="button" class="form-keypad-key orc-high-card" matRipple (click)="digit.emit(key)">{{ key }}</button>
+	@for (key_name of keys(); track key_name) {
+		<button
+			type="button"
+			class="form-keypad-key orc-high-card"
+			[class.form-keypad-zero]="key_name === '0'"
+			matRipple
+			[attr.aria-label]="key_name === 'backspace' ? 'Delete' : key_name === '.' ? 'Decimal point' : null"
+			(click)="key.emit(key_name)"
+		>
+			@if (key_name === 'backspace') {
+				<mat-icon>backspace</mat-icon>
+			} @else {
+				{{ key_name }}
+			}
+		</button>
 	}
-	<button type="button" class="form-keypad-key orc-high-card" matRipple aria-label="Delete" (click)="backspace.emit()">
-		<mat-icon>backspace</mat-icon>
-	</button>
 </div>

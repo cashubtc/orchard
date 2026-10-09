@@ -25,17 +25,23 @@ describe('FormKeypadComponent', () => {
 		expect(component).toBeTruthy();
 	});
 
-	it('emits the digit pressed', () => {
-		const digit = jasmine.createSpy('digit');
-		component.digit.subscribe(digit);
+	it('emits the key pressed, delete as backspace', () => {
+		const key = jasmine.createSpy('key');
+		component.key.subscribe(key);
 		buttons()[9].click();
-		expect(digit).toHaveBeenCalledWith('0');
+		buttons()[10].click();
+		expect(key.calls.allArgs()).toEqual([['0'], ['backspace']]);
 	});
 
-	it('emits backspace from the delete key', () => {
-		const backspace = jasmine.createSpy('backspace');
-		component.backspace.subscribe(backspace);
-		buttons()[10].click();
-		expect(backspace).toHaveBeenCalled();
+	it('offers a decimal point only when asked', () => {
+		expect(buttons().length).toBe(11);
+		const key = jasmine.createSpy('key');
+		component.key.subscribe(key);
+		fixture.componentRef.setInput('decimal', true);
+		fixture.detectChanges();
+
+		expect(buttons().length).toBe(12);
+		buttons()[9].click();
+		expect(key).toHaveBeenCalledWith('.');
 	});
 });

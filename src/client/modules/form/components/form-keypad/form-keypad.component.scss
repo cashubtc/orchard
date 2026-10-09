@@ -19,9 +19,8 @@
 	@extend %m-0;
 	@extend %font-family-inherit;
 	color: inherit;
+}
 
-	// 0 sits under 8, with delete beside it
-	&:nth-child(10) {
-		grid-column: 2;
-	}
+.form-keypad-zero {
+	grid-column: 2;
 }

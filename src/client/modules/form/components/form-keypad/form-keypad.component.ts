@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, output} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, input, output} from '@angular/core';
 
 @Component({
 	selector: 'orc-form-keypad',
@@ -9,8 +9,9 @@ import {ChangeDetectionStrategy, Component, output} from '@angular/core';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FormKeypadComponent {
-	public readonly digit = output<string>();
-	public readonly backspace = output<void>();
+	public readonly decimal = input<boolean>(false);
 
-	public readonly digits: string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+	public readonly key = output<string>();
+
+	public readonly keys = computed(() => [...'123456789', ...(this.decimal() ? ['.'] : []), '0', 'backspace']);
 }

@@ -7,10 +7,12 @@ import {MatBottomSheetRef} from '@angular/material/bottom-sheet';
 /* Application Dependencies */
 import {FormPanelRef} from '@client/modules/form/services/form-panel/form-panel-ref';
 import {FORM_PANEL_DATA} from '@client/modules/form/services/form-panel/form-panel.types';
+import {OrchardValidators} from '@client/modules/form/validators';
+import {applyKeypadKey} from '@client/modules/form/helpers/form-keypad.helpers';
 import {EventService} from '@client/modules/event/services/event/event.service';
 import {EventData} from '@client/modules/event/classes/event-data.class';
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
-import {compareUnits, getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
+import {compareUnits, fromDisplayAmount, getUnitMeta, toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 import {getSolvencyMultiple, getUnitLiabilities} from '@client/modules/mint/helpers/mint-solvency.helpers';
@@ -54,7 +56,16 @@ export class EcashGeneralIssueComponent implements OnInit {
 
 	public readonly can_submit = computed(() => (this.amount() ?? 0) > 0 && this.amount_status() === 'VALID' && !this.submitting());
 
-	/** The mint's own limits for issuing in the selected unit */
+	/** Fraction digits the amount is entered with, e.g. cents for usd */
+	public readonly decimals = computed(() => getUnitMeta(this.unit()).decimals);
+
+	/** The entered amount in the unit's base units, as the mint counts it */
+	public readonly base_amount = computed(() => {
+		const amount = this.amount();
+		return amount === null ? null : fromDisplayAmount(this.unit(), amount);
+	});
+
+	/** The mint's own limits for issuing in the selected unit, in base units */
 	public readonly limits = computed(() => {
 		const method = this.data.mint.getIssueMethod(this.unit());
 		return {min: method?.min_amount ?? null, max: method?.max_amount ?? null};
@@ -66,7 +77,7 @@ export class EcashGeneralIssueComponent implements OnInit {
 		const unit = this.unit();
 		if (!reserves || getUnitMeta(unit).family !== 'btc') return null;
 		const liabilities_before = getUnitLiabilities(reserves, unit);
-		const liabilities_after = liabilities_before + (this.amount() ?? 0);
+		const liabilities_after = liabilities_before + (this.base_amount() ?? 0);
 		return {
 			liabilities_before,
 			liabilities_after,
@@ -77,9 +88,10 @@ export class EcashGeneralIssueComponent implements OnInit {
 	});
 
 	private readonly reserves = signal<MintReserves | null>(null);
+	private readonly keypad_text = signal<string>('');
 
 	constructor() {
-		effect(() => this.applyLimits(this.limits()));
+		effect(() => this.applyLimits());
 	}
 
 	ngOnInit(): void {
@@ -101,18 +113,21 @@ export class EcashGeneralIssueComponent implements OnInit {
 			});
 	}
 
-	/** Sets the amount from the keypad, as an edit, so its field turns hot and shows the mint's limits */
-	private setAmount(amount: number | null): void {
-		this.form.controls.amount.setValue(amount);
+	/** Sets the amount from the keypad's text, as an edit, so its field turns hot and shows the mint's limits */
+	private setKeypadText(text: string): void {
+		this.keypad_text.set(text);
+		this.form.controls.amount.setValue(text === '' ? null : Number(text));
 		this.form.controls.amount.markAsDirty();
 		this.form.controls.amount.markAsTouched();
 	}
 
-	/** Holds the amount to the mint's limits for the selected unit */
-	private applyLimits({min, max}: {min: number | null; max: number | null}): void {
-		const validators = [];
-		if (min !== null) validators.push(Validators.min(min));
-		if (max !== null) validators.push(Validators.max(max));
+	/** Holds the amount, entered in display units, to the unit's precision and the mint's limits */
+	private applyLimits(): void {
+		const unit = this.unit();
+		const {min, max} = this.limits();
+		const validators = [OrchardValidators.decimals(this.decimals())];
+		if (min !== null) validators.push(Validators.min(toDisplayAmount(unit, min)));
+		if (max !== null) validators.push(Validators.max(toDisplayAmount(unit, max)));
 		this.form.controls.amount.setValidators(validators);
 		this.form.controls.amount.updateValueAndValidity();
 	}
@@ -121,27 +136,28 @@ export class EcashGeneralIssueComponent implements OnInit {
 		Actions
 	******************************************************** */
 
-	/** Appends a keypad digit to the amount */
-	public onDigit(digit: string): void {
-		const amount = (this.amount() ?? 0) * 10 + Number(digit);
-		if (amount > Number.MAX_SAFE_INTEGER) return;
-		this.setAmount(amount || null);
+	/** Switches the unit, clearing an amount entered at the old unit's precision */
+	public onUnit(unit: string): void {
+		this.unit.set(unit);
+		this.keypad_text.set('');
+		this.form.controls.amount.reset();
 	}
 
-	/** Drops the amount's last digit */
-	public onBackspace(): void {
-		this.setAmount(Math.floor((this.amount() ?? 0) / 10) || null);
+	/** Applies a keypad key to the amount, within the unit's precision */
+	public onKey(key: string): void {
+		this.setKeypadText(applyKeypadKey(this.keypad_text(), key, this.decimals()));
 	}
 
 	/** Clears a field back to where it started */
 	public onCancel(event: Event, field: 'amount' | 'memo'): void {
 		event.preventDefault();
 		this.form.controls[field].reset();
+		if (field === 'amount') this.keypad_text.set('');
 	}
 
 	/** Issues the amount and closes with the operation; a refusal keeps the panel open and shows the server's own message */
 	public onSubmit(): void {
-		const amount = this.amount();
+		const amount = this.base_amount();
 		if (!amount || !this.can_submit()) return;
 		this.submitting.set(true);
 		const memo = this.form.controls.memo.value?.trim() || null;

@@ -47,6 +47,7 @@
 								type="text"
 								inputmode="numeric"
 								formNumberSeparator
+								[number_decimals]="decimals()"
 								matInput
 								formControlName="amount"
 								(focus)="focused_amount.set(true)"
@@ -121,7 +122,7 @@
 			<ng-container *ngTemplateOutlet="unit_toggle"></ng-container>
 		</div>
 		<div class="flex flex-column flex-items-center flex-gap-0-5 p-v-1">
-			<div class="font-size-3 font-weight-semi-bold" [innerHTML]="amount() ?? 0 | localAmount: unit() : 'mint'"></div>
+			<div class="font-size-3 font-weight-semi-bold" [innerHTML]="base_amount() ?? 0 | localAmount: unit() : 'mint'"></div>
 			@if (form.controls.amount.errors) {
 				<div class="font-size-xs orc-error-color">
 					<orc-form-error [errors]="form.controls.amount.errors">Invalid amount</orc-form-error>
@@ -140,9 +141,9 @@
 			}
 		</div>
 		<ng-container *ngTemplateOutlet="memo_field"></ng-container>
-		<orc-form-keypad (digit)="onDigit($event)" (backspace)="onBackspace()"></orc-form-keypad>
+		<orc-form-keypad [decimal]="decimals() > 0" (key)="onKey($event)"></orc-form-keypad>
 		<button matButton="filled" type="button" class="ecash-issue-sheet-submit" [disabled]="!can_submit()" (click)="onSubmit()">
-			Issue <span [innerHTML]="amount() ?? 0 | localAmount: unit() : 'mint'"></span>
+			Issue <span [innerHTML]="base_amount() ?? 0 | localAmount: unit() : 'mint'"></span>
 		</button>
 	</div>
 }
@@ -151,7 +152,7 @@
 	@if (units.length > 1) {
 		<orc-form-toggle-group>
 			@for (option of units; track option) {
-				<orc-form-toggle [selected]="option === unit()" (click)="unit.set(option)">
+				<orc-form-toggle [selected]="option === unit()" (click)="onUnit(option)">
 					<div class="font-size-s">{{ option | localUnit }}</div>
 				</orc-form-toggle>
 			}
