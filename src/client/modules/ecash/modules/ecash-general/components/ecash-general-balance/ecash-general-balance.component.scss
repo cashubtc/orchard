@@ -3,3 +3,8 @@
 :host {
 	@extend %block;
 }
+
+.ecash-balance-amount {
+	font-size: 4rem;
+	line-height: 1;
+}

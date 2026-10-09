@@ -1,0 +1,32 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+.ecash-unit-chips {
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-gap-0-5;
+}
+
+.ecash-unit-chip {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+	@extend %h-2-5;
+	@extend %border;
+	@extend %border-solid;
+	@extend %orc-outline-variant-border;
+	@extend %orc-corner-full;
+	@extend %cursor-pointer;
+	@extend %font-family-inherit;
+	@extend %font-weight-semi-bold;
+	@extend %m-0;
+	@extend %transparent-bg;
+	padding: 0 0.875rem 0 0.375rem;
+	color: inherit;
+
+	&.selected {
+		@extend %orc-secondary-container-bg;
+		@extend %orc-on-secondary-container-color;
+		@extend %border-transparent;
+	}
+}

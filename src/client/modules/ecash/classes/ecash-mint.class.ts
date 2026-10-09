@@ -33,6 +33,11 @@ export class EcashMint implements OrchardEcashMint {
 		return this.info?.icon_url ?? null;
 	}
 
+	/** Every unit the mint offers, from its minting methods */
+	public get units(): string[] {
+		return [...new Set((this.info?.nuts.nut4.methods ?? []).map((method) => method.unit))];
+	}
+
 	/** The minting methods issuing can use; none until info is fetched or while the mint has minting disabled */
 	public get issue_methods(): OrchardNut4Method[] {
 		const nut4 = this.info?.nuts.nut4;

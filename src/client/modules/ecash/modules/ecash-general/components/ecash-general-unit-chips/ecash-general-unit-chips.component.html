@@ -1,0 +1,19 @@
+<div class="ecash-unit-chips" role="group" aria-label="Unit">
+	@for (chip of chips(); track chip.unit) {
+		<button
+			type="button"
+			class="ecash-unit-chip"
+			[class.selected]="chip.unit === selected()"
+			[attr.aria-pressed]="chip.unit === selected()"
+			matRipple
+			(click)="select.emit(chip.unit)"
+		>
+			<orc-graphic-asset [unit]="chip.unit" [height]="'1.75rem'"></orc-graphic-asset>
+			@if (show_unit()) {
+				<span>{{ chip.unit | localUnit }}</span>
+			} @else {
+				<span [innerHTML]="chip.amount ?? 0 | localAmount: chip.unit : 'mint'"></span>
+			}
+		</button>
+	}
+</div>

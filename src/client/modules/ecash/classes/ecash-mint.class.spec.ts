@@ -29,6 +29,7 @@ describe('EcashMint', () => {
 				{method: 'bolt11', unit: 'usd'},
 			],
 		});
+		expect(mint.units).toEqual(['sat', 'eur', 'usd']);
 		expect(mint.issue_units).toEqual(['sat', 'usd']);
 		expect(mint.getIssueMethod('sat')).toEqual(jasmine.objectContaining({min_amount: 1, max_amount: 500000}));
 		expect(mint.getIssueMethod('eur')).toBeNull();
