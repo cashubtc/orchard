@@ -7,7 +7,6 @@ import {FormPanelRef} from '@client/modules/form/services/form-panel/form-panel-
 import {FORM_PANEL_DATA} from '@client/modules/form/services/form-panel/form-panel.types';
 import {EventService} from '@client/modules/event/services/event/event.service';
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
-import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 /* Native Dependencies */
 import {OrcEcashGeneralModule} from '@client/modules/ecash/modules/ecash-general/ecash-general.module';
@@ -66,10 +65,9 @@ describe('EcashGeneralIssueComponent', () => {
 		await TestBed.configureTestingModule({
 			imports: [OrcEcashGeneralModule],
 			providers: [
-				{provide: FORM_PANEL_DATA, useValue: {mint}},
+				{provide: FORM_PANEL_DATA, useValue: {mint, reserves}},
 				{provide: FormPanelRef, useValue: panel_ref},
 				{provide: EcashService, useValue: ecash_service},
-				{provide: MintService, useValue: {loadMintReserves: () => of(reserves)}},
 				{provide: EventService, useValue: event_service},
 			],
 		}).compileComponents();

@@ -51,8 +51,7 @@ export class MintGeneralBalanceSheetComponent {
 	/** Names the reserves the operator counts, for the assets caption */
 	public readonly reserves_label = computed(() => getReserveSourcesLabel(this.reserves()?.selected_sources ?? []));
 
-	/** Lightning custody while only channels back the mint, hot otherwise */
-	public readonly reserves_custody = computed(() => ((this.reserves()?.channels_only ?? true) ? 'lightning' : 'hot'));
+	public readonly reserves_custody = computed(() => this.reserves()?.custody ?? 'lightning');
 
 	/** Why reserves may be missing: the query failed, or selected sources could not be read */
 	public readonly reserves_failures = computed<OrchardError[]>(() =>

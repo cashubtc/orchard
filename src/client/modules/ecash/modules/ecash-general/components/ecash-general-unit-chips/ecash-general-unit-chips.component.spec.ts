@@ -43,6 +43,13 @@ describe('EcashGeneralUnitChipsComponent', () => {
 		expect(buttons()[1].textContent).not.toContain('0.00');
 	});
 
+	it('shows display-only chips without buttons', () => {
+		fixture.componentRef.setInput('selectable', false);
+		fixture.detectChanges();
+		expect(buttons().length).toBe(0);
+		expect(fixture.nativeElement.querySelectorAll('.ecash-unit-chip').length).toBe(2);
+	});
+
 	it('emits the unit picked', () => {
 		const select = jasmine.createSpy('select');
 		component.select.subscribe(select);

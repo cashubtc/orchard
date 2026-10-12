@@ -15,6 +15,7 @@ import {GraphicStatusComponent} from './components/graphic-status/graphic-status
 import {GraphicGroundskeeperComponent} from './components/graphic-groundskeeper/graphic-groundskeeper.component';
 import {GraphicQrComponent} from './components/graphic-qr/graphic-qr.component';
 import {GraphicQrDialogComponent} from './components/graphic-qr-dialog/graphic-qr-dialog.component';
+import {GraphicCoinStackComponent} from './components/graphic-coin-stack/graphic-coin-stack.component';
 
 @NgModule({
 	declarations: [
@@ -26,6 +27,7 @@ import {GraphicQrDialogComponent} from './components/graphic-qr-dialog/graphic-q
 		GraphicGroundskeeperComponent,
 		GraphicQrComponent,
 		GraphicQrDialogComponent,
+		GraphicCoinStackComponent,
 	],
 	imports: [CommonModule, MatIconModule, MatDialogModule, MatButtonModule, MatSliderModule],
 	exports: [
@@ -36,6 +38,7 @@ import {GraphicQrDialogComponent} from './components/graphic-qr-dialog/graphic-q
 		GraphicStatusComponent,
 		GraphicGroundskeeperComponent,
 		GraphicQrComponent,
+		GraphicCoinStackComponent,
 	],
 })
 export class OrcGraphicModule {}

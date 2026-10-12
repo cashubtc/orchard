@@ -14,6 +14,7 @@ export class EcashGeneralUnitChipsComponent {
 	public readonly chips = input.required<EcashUnitChip[]>();
 	public readonly selected = input<string | null>(null);
 	public readonly show_unit = input<boolean>(false);
+	public readonly selectable = input<boolean>(true);
 
 	public readonly select = output<string>();
 }

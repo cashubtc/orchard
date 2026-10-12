@@ -1,34 +1,15 @@
 <div class="mint-balance-stacks-container">
-	<ng-container *ngTemplateOutlet="stackTpl; context: {rows: asset_rows(), showSolvency: true}" />
-	<div class="divider"></div>
-	<ng-container *ngTemplateOutlet="stackTpl; context: {rows: liability_rows(), showSolvency: false}" />
-</div>
-
-<ng-template #stackTpl let-rows="rows" let-showSolvency="showSolvency">
 	<div class="stack-container">
-		<div class="stack" [class]="unit_class()">
-			@for (groups of rows; track $index) {
-				@if (groups.length > 0) {
-					<div class="coin-row" [style.--drop-delay]="(rows.length - 1 - $index) * 150">
-						@for (group_size of groups; track $index) {
-							<div class="coin-group" [style.--group-offset]="$index * 60">
-								@for (_ of [].constructor(group_size); track $index) {
-									<div class="coin" [style.--coin-offset]="$index * 30"></div>
-								}
-							</div>
-						}
-					</div>
-				}
-			}
-		</div>
+		<orc-graphic-coin-stack [unit]="unit()" [value]="assets()" [counterpart]="liabilities()"></orc-graphic-coin-stack>
 		@if (solvency() !== null) {
-			<div
-				class="orc-outline-color text-nowrap"
-				[class.invisible]="!showSolvency"
-				[class.orc-status-inactive-color]="solvency()! < 1"
-			>
-				{{ solvency() }}x
-			</div>
+			<div class="orc-outline-color text-nowrap" [class.orc-status-inactive-color]="solvency()! < 1">{{ solvency() }}x</div>
 		}
 	</div>
-</ng-template>
+	<div class="divider"></div>
+	<div class="stack-container">
+		<orc-graphic-coin-stack [unit]="unit()" [value]="liabilities()" [counterpart]="assets()"></orc-graphic-coin-stack>
+		@if (solvency() !== null) {
+			<div class="orc-outline-color text-nowrap invisible">{{ solvency() }}x</div>
+		}
+	</div>
+</div>

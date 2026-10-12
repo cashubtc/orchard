@@ -1,0 +1,23 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+:host {
+	@extend %block;
+}
+
+.ecash-mint-status {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+	@extend %flex-shrink-0;
+	@extend %orc-corner-full;
+	@extend %orc-surface-container-high-bg;
+	@extend %h-1-75;
+	padding: 0 0.625rem;
+}
+
+.ecash-mint-solvency {
+	@extend %border-top;
+	@extend %border-top-solid;
+	@extend %orc-outline-variant-border;
+}

@@ -13,6 +13,7 @@ import {DeviceType} from '@client/modules/layout/types/device.types';
 import {deviceTypeFromBreakpoints} from '@client/modules/layout/helpers/device.helpers';
 import {FormPanelService} from '@client/modules/form/services/form-panel';
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
+import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 /* Native Dependencies */
 import {EcashService} from '@client/modules/ecash/services/ecash/ecash.service';
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
@@ -43,6 +44,7 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 	public readonly balances = signal<EcashBalance[]>([]);
 	public readonly mints = signal<EcashMint[]>([]);
 	public readonly mint_statuses = signal<EcashMintStatus[]>([]);
+	public readonly mint_reserves = signal<MintReserves | null>(null);
 	public readonly bitcoin_oracle_price = signal<BitcoinOraclePrice | null>(null);
 	public readonly is_admin = signal<boolean>(false);
 	public readonly device_type = signal<DeviceType>('desktop');
@@ -113,6 +115,7 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 				next: (mints) => {
 					this.mints.set(mints);
 					this.loading_mints.set(false);
+					if (this.orchard_mint()) this.loadMintReserves();
 				},
 				error: (error) => {
 					console.error(error);
@@ -138,6 +141,17 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 			});
 	}
 
+	/** The Orchard mint's balance sheet; its card shows no solvency if this fails */
+	private loadMintReserves(): void {
+		this.mintService
+			.loadMintReserves()
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: (reserves) => this.mint_reserves.set(reserves),
+				error: (error) => console.error(error),
+			});
+	}
+
 	/** The latest oracle price, for the USD conversions */
 	private loadBitcoinOraclePrice(): void {
 		this.bitcoinService
@@ -155,7 +169,7 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 		const mint = this.orchard_mint();
 		if (!mint) return;
 		this.formPanelService
-			.open<unknown, EcashOperation>(EcashGeneralIssueComponent, {data: {mint}})
+			.open<unknown, EcashOperation>(EcashGeneralIssueComponent, {data: {mint, reserves: this.mint_reserves()}})
 			.afterClosed()
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe((operation) => {
@@ -163,6 +177,7 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 				this.mintService.clearSolvencyCache();
 				this.ecashService.clearBalancesCache();
 				this.loadBalances();
+				this.loadMintReserves();
 			});
 	}
 

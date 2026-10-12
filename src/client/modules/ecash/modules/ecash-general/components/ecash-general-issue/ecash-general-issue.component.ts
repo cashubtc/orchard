@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal} from '@angular/core';
 import {takeUntilDestroyed, toSignal} from '@angular/core/rxjs-interop';
 import {FormControl, FormGroup, Validators} from '@angular/forms';
 /* Vendor Dependencies */
@@ -13,7 +13,6 @@ import {EventService} from '@client/modules/event/services/event/event.service';
 import {EventData} from '@client/modules/event/classes/event-data.class';
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
 import {compareUnits, fromDisplayAmount, getUnitMeta, toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
-import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 import {getSolvencyMultiple, getUnitLiabilities} from '@client/modules/mint/helpers/mint-solvency.helpers';
 /* Native Dependencies */
@@ -29,13 +28,12 @@ import {WalletOperationState} from '@shared/generated.types';
 	styleUrl: './ecash-general-issue.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class EcashGeneralIssueComponent implements OnInit {
+export class EcashGeneralIssueComponent {
 	private readonly ecashService = inject(EcashService);
-	private readonly mintService = inject(MintService);
 	private readonly eventService = inject(EventService);
 	private readonly panelRef = inject(FormPanelRef);
 	private readonly destroyRef = inject(DestroyRef);
-	public readonly data: {mint: EcashMint} = inject(FORM_PANEL_DATA);
+	public readonly data: {mint: EcashMint; reserves: MintReserves | null} = inject(FORM_PANEL_DATA);
 
 	/** The host opened this panel as a bottom sheet */
 	public readonly sheet: boolean = inject(MatBottomSheetRef, {optional: true}) !== null;
@@ -73,7 +71,7 @@ export class EcashGeneralIssueComponent implements OnInit {
 
 	/** Liabilities, reserves and coverage before and after this issue; bitcoin units only, as reserves back nothing else */
 	public readonly preview = computed(() => {
-		const reserves = this.reserves();
+		const reserves = this.data.reserves;
 		const unit = this.unit();
 		if (!reserves || getUnitMeta(unit).family !== 'btc') return null;
 		const liabilities_before = getUnitLiabilities(reserves, unit);
@@ -87,31 +85,15 @@ export class EcashGeneralIssueComponent implements OnInit {
 		};
 	});
 
-	private readonly reserves = signal<MintReserves | null>(null);
 	private readonly keypad_text = signal<string>('');
 
 	constructor() {
 		effect(() => this.applyLimits());
 	}
 
-	ngOnInit(): void {
-		this.loadReserves();
-	}
-
 	/* *******************************************************
-		Data
+		Form
 	******************************************************** */
-
-	/** The mint's reserves, for the balance sheet preview; without them the preview stays hidden */
-	private loadReserves(): void {
-		this.mintService
-			.loadMintReserves()
-			.pipe(takeUntilDestroyed(this.destroyRef))
-			.subscribe({
-				next: (reserves) => this.reserves.set(reserves),
-				error: (error) => console.error(error),
-			});
-	}
 
 	/** Sets the amount from the keypad's text, as an edit, so its field turns hot and shows the mint's limits */
 	private setKeypadText(text: string): void {

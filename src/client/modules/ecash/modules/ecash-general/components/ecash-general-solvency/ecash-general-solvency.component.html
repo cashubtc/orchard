@@ -1,0 +1,49 @@
+<div class="ecash-solvency-verdict" [class]="'verdict-' + verdict()">
+	<div class="ecash-solvency-icon">
+		<mat-icon>{{ verdict_view().icon }}</mat-icon>
+	</div>
+	<div class="flex flex-column flex-grow w-min-0">
+		<span class="font-weight-semi-bold">{{ verdict_view().label }}</span>
+		<span class="font-size-xs orc-outline-color">Mint balance sheet · {{ unit() | localUnit }}</span>
+	</div>
+	@if (coverage() !== null) {
+		<div class="flex flex-column flex-items-end">
+			<span class="ecash-solvency-coverage font-size-l font-weight-semi-bold">{{ coverage() | number }}x</span>
+			<span class="font-size-xs orc-outline-color">coverage</span>
+		</div>
+	}
+</div>
+
+<div class="ecash-solvency-stacks">
+	<div class="ecash-solvency-side">
+		<div class="ecash-solvency-stack">
+			<orc-graphic-coin-stack
+				[unit]="unit()"
+				[value]="reserves().reserves ?? 0"
+				[counterpart]="liabilities_sats()"
+			></orc-graphic-coin-stack>
+		</div>
+		<span
+			class="font-size-l font-weight-semi-bold text-nowrap"
+			[innerHTML]="(reserves().reserves | localAmount: 'sat' : reserves().custody) || '-'"
+		></span>
+		<span class="font-size-xs orc-outline-color text-center">Reserves · {{ reserves_label() }}</span>
+	</div>
+	<div class="ecash-solvency-divider"></div>
+	<div class="ecash-solvency-side">
+		<div class="ecash-solvency-stack">
+			<orc-graphic-coin-stack
+				[unit]="unit()"
+				[value]="liabilities_sats()"
+				[counterpart]="reserves().reserves ?? 0"
+			></orc-graphic-coin-stack>
+		</div>
+		<span class="font-size-l font-weight-semi-bold text-nowrap" [innerHTML]="liabilities() | localAmount: unit() : 'mint'"></span>
+		<span class="font-size-xs orc-outline-color text-center">Liabilities · Unspent ecash</span>
+		@if (wallet_amount() > 0) {
+			<span class="font-size-xs font-weight-semi-bold orc-asset-btc-color">
+				<span [innerHTML]="wallet_amount() | localAmount: unit() : 'mint'"></span> is in your wallet
+			</span>
+		}
+	</div>
+</div>

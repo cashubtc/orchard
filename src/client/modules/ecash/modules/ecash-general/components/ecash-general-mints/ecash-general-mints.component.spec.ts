@@ -1,5 +1,7 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
+/* Application Dependencies */
+import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 /* Native Dependencies */
 import {OrcEcashGeneralModule} from '@client/modules/ecash/modules/ecash-general/ecash-general.module';
 import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
@@ -40,31 +42,35 @@ describe('EcashGeneralMintsComponent', () => {
 		expect(component).toBeTruthy();
 	});
 
-	it('lists the Orchard mint first, named by its host when it has no name', () => {
-		expect(component.rows().map(({name, host, is_orchard}) => ({name, host, is_orchard}))).toEqual([
-			{name: 'mint.orchard.example', host: 'mint.orchard.example', is_orchard: true},
-			{name: 'Cedar Community Mint', host: 'cedar.example', is_orchard: false},
-		]);
+	it('lists the Orchard mint first, then the rest in the order they were added', () => {
+		expect(component.rows().map((row) => row.mint.id)).toEqual(['orchard', 'cedar']);
 	});
 
 	it('shows each mint checking until statuses load, then online or unreachable with the reason', () => {
 		fixture.componentRef.setInput('loading_statuses', true);
-		expect(component.rows().map((row) => row.status_text)).toEqual(['Checking', 'Checking']);
+		expect(component.rows().map((row) => row.status.text)).toEqual(['Checking', 'Checking']);
 
 		fixture.componentRef.setInput('loading_statuses', false);
 		fixture.componentRef.setInput('statuses', [
 			new EcashMintStatus({mint_id: 'orchard', online: true, latency_ms: 12, error: null, checked_at: 0}),
 			new EcashMintStatus({mint_id: 'cedar', online: false, latency_ms: null, error: 'connection refused', checked_at: 0}),
 		]);
-		expect(component.rows().map(({status, status_text, status_error}) => ({status, status_text, status_error}))).toEqual([
-			{status: 'active', status_text: 'Online · 12 ms', status_error: null},
-			{status: 'inactive', status_text: 'Unreachable', status_error: 'connection refused'},
+		expect(component.rows().map((row) => row.status)).toEqual([
+			{state: 'active', text: 'Online · 12 ms', error: null},
+			{state: 'inactive', text: 'Unreachable', error: 'connection refused'},
 		]);
 	});
 
-	it("shows each mint's own balances", () => {
+	it('hands each mint its own balances', () => {
 		const orchard_balance = new EcashBalance({mint_id: 'orchard', unit: 'sat', balance: 2100});
-		fixture.componentRef.setInput('balances', [orchard_balance, new EcashBalance({mint_id: 'cedar', unit: 'sat', balance: 0})]);
-		expect(component.rows().map((row) => row.balances)).toEqual([[orchard_balance], []]);
+		const cedar_balance = new EcashBalance({mint_id: 'cedar', unit: 'sat', balance: 0});
+		fixture.componentRef.setInput('balances', [orchard_balance, cedar_balance]);
+		expect(component.rows().map((row) => row.balances)).toEqual([[orchard_balance], [cedar_balance]]);
+	});
+
+	it('hands reserves only to the Orchard mint', () => {
+		const reserves = new MintReserves({liabilities: [], sources: [], reserves: 1000, partial: false});
+		fixture.componentRef.setInput('reserves', reserves);
+		expect(component.rows().map((row) => row.reserves)).toEqual([reserves, null]);
 	});
 });

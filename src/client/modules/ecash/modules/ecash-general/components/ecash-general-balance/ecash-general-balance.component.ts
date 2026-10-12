@@ -3,11 +3,11 @@ import {ChangeDetectionStrategy, Component, computed, input, signal} from '@angu
 /* Application Dependencies */
 import {BitcoinOraclePrice} from '@client/modules/bitcoin/classes/bitcoin-oracle-price.class';
 import {oracleConvertToUSDCents} from '@client/modules/bitcoin/helpers/oracle.helpers';
-import {compareUnits} from '@client/modules/local/helpers/unit.helpers';
 /* Native Dependencies */
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
 import {EcashUnitChip} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
+import {buildUnitChips} from '@client/modules/ecash/modules/ecash-general/helpers/ecash-general.helpers';
 
 @Component({
 	selector: 'orc-ecash-general-balance',
@@ -25,16 +25,11 @@ export class EcashGeneralBalanceComponent {
 
 	/** Every unit the wallet's mints offer, with its balance summed across mints; sat alone without mints */
 	public readonly chips = computed<Required<EcashUnitChip>[]>(() => {
-		const totals = new Map<string, number>();
-		for (const mint of this.mints()) {
-			for (const unit of mint.units) totals.set(unit.toLowerCase(), 0);
-		}
-		for (const {unit, balance} of this.balances()) {
-			const key = unit.toLowerCase();
-			totals.set(key, (totals.get(key) ?? 0) + balance);
-		}
-		if (totals.size === 0) totals.set('sat', 0);
-		return [...totals].map(([unit, amount]) => ({unit, amount})).sort((a, b) => compareUnits(a.unit, b.unit));
+		const chips = buildUnitChips(
+			this.mints().flatMap((mint) => mint.units),
+			this.balances(),
+		);
+		return chips.length > 0 ? chips : [{unit: 'sat', amount: 0}];
 	});
 
 	/** The picked unit's balance, its USD value while held, and where it's held */

@@ -76,6 +76,11 @@ export class MintReserves implements OrchardMintReserves {
 		return this.selected_sources.every((source) => CHANNEL_RESERVE_SOURCES.includes(source));
 	}
 
+	/** Lightning custody while only channels back the mint, hot otherwise */
+	public get custody(): 'lightning' | 'hot' {
+		return this.channels_only ? 'lightning' : 'hot';
+	}
+
 	/** Whether a selected channel source is missing because lightning isn't set up */
 	public get lightning_unconfigured(): boolean {
 		return this.sources.some((source) => {

@@ -10,6 +10,7 @@ import {CrewService} from '@client/modules/crew/services/crew/crew.service';
 import {User} from '@client/modules/crew/classes/user.class';
 import {FormPanelService} from '@client/modules/form/services/form-panel';
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
+import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 /* Native Dependencies */
 import {OrcEcashSubsectionWalletModule} from '@client/modules/ecash/modules/ecash-subsection-wallet/ecash-subsection-wallet.module';
 import {EcashService} from '@client/modules/ecash/services/ecash/ecash.service';
@@ -47,7 +48,11 @@ describe('EcashSubsectionWalletComponent', () => {
 		loadMintStatuses: jasmine.createSpy('loadMintStatuses').and.returnValue(of([])),
 		clearBalancesCache: jasmine.createSpy('clearBalancesCache'),
 	};
-	const mint_service = {clearSolvencyCache: jasmine.createSpy('clearSolvencyCache')};
+	const reserves = new MintReserves({liabilities: [{unit: 'sat', amount: 2100}], sources: [], reserves: 50_000, partial: false});
+	const mint_service = {
+		clearSolvencyCache: jasmine.createSpy('clearSolvencyCache'),
+		loadMintReserves: jasmine.createSpy('loadMintReserves').and.returnValue(of(reserves)),
+	};
 	const form_panel_service = {open: jasmine.createSpy('open')};
 	const price = new BitcoinOraclePrice({date: 0, price: 100_000});
 	const bitcoin_service = {loadBitcoinOraclePrice: jasmine.createSpy('loadBitcoinOraclePrice').and.returnValue(of(price))};
@@ -101,6 +106,11 @@ describe('EcashSubsectionWalletComponent', () => {
 		expect(component.loading_mint_statuses()).toBeFalse();
 	});
 
+	it("loads the Orchard mint's reserves for any user", async () => {
+		await create();
+		expect(component.mint_reserves()).toEqual(reserves);
+	});
+
 	it('hides issuing from non-admins', async () => {
 		await create();
 		expect(component.can_issue()).toBeFalse();
@@ -113,10 +123,11 @@ describe('EcashSubsectionWalletComponent', () => {
 		expect(component.issue_blocked()).toBeNull();
 	});
 
-	it('opens the issue panel on the Orchard mint, and refreshes balances once ecash is issued', async () => {
+	it('opens the issue panel on the Orchard mint, and refreshes balances and reserves once ecash is issued', async () => {
 		role = UserRole.Admin;
 		await create();
 		ecash_service.loadBalances.calls.reset();
+		mint_service.loadMintReserves.calls.reset();
 		const operation = new EcashOperation({
 			id: 'op-1',
 			mint_id: 'mint-1',
@@ -130,10 +141,11 @@ describe('EcashSubsectionWalletComponent', () => {
 		form_panel_service.open.and.returnValue({afterClosed: () => of(operation)});
 
 		component.onIssue();
-		expect(form_panel_service.open).toHaveBeenCalledWith(EcashGeneralIssueComponent, {data: {mint: mints[0]}});
+		expect(form_panel_service.open).toHaveBeenCalledWith(EcashGeneralIssueComponent, {data: {mint: mints[0], reserves}});
 		expect(mint_service.clearSolvencyCache).toHaveBeenCalled();
 		expect(ecash_service.clearBalancesCache).toHaveBeenCalled();
 		expect(ecash_service.loadBalances).toHaveBeenCalled();
+		expect(mint_service.loadMintReserves).toHaveBeenCalled();
 	});
 
 	it('skips the oracle price while the oracle is disabled', async () => {

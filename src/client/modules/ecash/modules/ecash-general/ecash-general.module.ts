@@ -21,6 +21,8 @@ import {EcashGeneralMintIconComponent} from './components/ecash-general-mint-ico
 import {EcashGeneralActionsComponent} from './components/ecash-general-actions/ecash-general-actions.component';
 import {EcashGeneralIssueComponent} from './components/ecash-general-issue/ecash-general-issue.component';
 import {EcashGeneralUnitChipsComponent} from './components/ecash-general-unit-chips/ecash-general-unit-chips.component';
+import {EcashGeneralSolvencyComponent} from './components/ecash-general-solvency/ecash-general-solvency.component';
+import {EcashGeneralMintComponent} from './components/ecash-general-mint/ecash-general-mint.component';
 
 @NgModule({
 	declarations: [
@@ -31,6 +33,8 @@ import {EcashGeneralUnitChipsComponent} from './components/ecash-general-unit-ch
 		EcashGeneralActionsComponent,
 		EcashGeneralIssueComponent,
 		EcashGeneralUnitChipsComponent,
+		EcashGeneralSolvencyComponent,
+		EcashGeneralMintComponent,
 	],
 	imports: [
 		CommonModule,
