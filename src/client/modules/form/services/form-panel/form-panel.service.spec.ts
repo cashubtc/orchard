@@ -48,7 +48,8 @@ describe('FormPanelService', () => {
 		const opened = jasmine.createSpy('opened');
 		service.afterOpened().subscribe(opened);
 		const ref = service.open(TestPanelComponent, {data: {amount: 21}});
-		const {injector} = bottom_sheet.open.calls.mostRecent().args[1]!;
+		const {injector, panelClass} = bottom_sheet.open.calls.mostRecent().args[1]!;
+		expect(panelClass).toBe('orc-form-sheet');
 		expect(injector!.get(FORM_PANEL_DATA)).toEqual({amount: 21});
 		expect(injector!.get(FormPanelRef)).toBe(ref);
 		expect(container.createComponent).not.toHaveBeenCalled();

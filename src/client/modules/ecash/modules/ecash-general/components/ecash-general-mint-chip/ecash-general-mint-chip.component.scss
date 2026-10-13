@@ -1,0 +1,21 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+:host {
+	@extend %flex;
+	@extend %w-min-0;
+}
+
+.ecash-mint-chip {
+	@extend %w-min-0;
+	@extend %h-2-5;
+	@extend %orc-surface-container-high-bg;
+	padding: 0 0.875rem 0 0.375rem;
+
+	&.orc-pill-outlined {
+		@extend %flex-grow;
+		@extend %h-3;
+		@extend %orc-surface-container-bg;
+		padding: 0 1rem 0 0.5rem;
+	}
+}

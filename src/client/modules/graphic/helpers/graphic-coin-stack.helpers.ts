@@ -2,16 +2,15 @@
 import {COIN_STACK_MAX} from '@client/modules/graphic/constants/graphic.constants';
 
 /**
- * How many coins a value gets beside its counterpart, 1 to the stack's max
+ * How many coins a value gets beside its counterpart: the larger side a full stack, the smaller its share of it, rounded down
  * @param {number} value - The value this stack shows
  * @param {number} counterpart - The value it is weighed against
- * @returns {number} The coin count
+ * @returns {number} The coin count, 1 to the stack's max
  */
 export function getCoinStackSize(value: number, counterpart: number): number {
 	if (!value) return 1;
-	if (value > counterpart) return COIN_STACK_MAX;
-	const stack = (value / (value + counterpart)) * COIN_STACK_MAX;
-	return Math.max(1, Math.min(COIN_STACK_MAX, Math.ceil(stack)));
+	if (value >= counterpart) return COIN_STACK_MAX;
+	return Math.max(1, Math.floor((value / counterpart) * COIN_STACK_MAX));
 }
 
 /**

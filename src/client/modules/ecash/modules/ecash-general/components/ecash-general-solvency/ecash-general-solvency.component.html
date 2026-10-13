@@ -1,49 +1,104 @@
-<div class="ecash-solvency-verdict" [class]="'verdict-' + verdict()">
-	<div class="ecash-solvency-icon">
-		<mat-icon>{{ verdict_view().icon }}</mat-icon>
-	</div>
-	<div class="flex flex-column flex-grow w-min-0">
-		<span class="font-weight-semi-bold">{{ verdict_view().label }}</span>
-		<span class="font-size-xs orc-outline-color">Mint balance sheet · {{ unit() | localUnit }}</span>
-	</div>
-	@if (coverage() !== null) {
-		<div class="flex flex-column flex-items-end">
-			<span class="ecash-solvency-coverage font-size-l font-weight-semi-bold">{{ coverage() | number }}x</span>
-			<span class="font-size-xs orc-outline-color">coverage</span>
+@if (collapsible()) {
+	<button
+		type="button"
+		class="ecash-solvency-toggle font-size-s"
+		[class]="'verdict-' + verdict()"
+		[attr.aria-expanded]="expanded()"
+		matRipple
+		(click)="onToggle()"
+	>
+		<mat-icon class="ecash-solvency-toggle-icon icon-sm">{{ verdict_icon() }}</mat-icon>
+		<span class="font-weight-semi-bold text-nowrap">{{ verdict_label() }}</span>
+		@if (coverage() !== null) {
+			<span class="orc-outline-color">·</span>
+			<span class="text-nowrap"><ng-container *ngTemplateOutlet="coverage_change_tpl"></ng-container></span>
+		}
+		<mat-icon class="orc-animation-rotate-toggle orc-outline-color icon-sm" [class.animation-expanded]="expanded()"
+			>keyboard_arrow_down</mat-icon
+		>
+	</button>
+} @else {
+	<div class="ecash-solvency-verdict" [class]="'verdict-' + verdict()">
+		<div class="ecash-solvency-icon">
+			<mat-icon>{{ verdict_icon() }}</mat-icon>
 		</div>
-	}
-</div>
+		<div class="flex flex-column flex-grow w-min-0">
+			<span class="font-weight-semi-bold">{{ verdict_label() }}</span>
+			@if (!impact()) {
+				<span class="font-size-xs orc-outline-color">Mint balance sheet · {{ unit() | localUnit }}</span>
+			}
+		</div>
+		@if (impact()) {
+			<span class="text-nowrap"><ng-container *ngTemplateOutlet="coverage_change_tpl"></ng-container></span>
+		} @else if (coverage() !== null) {
+			<div class="flex flex-column flex-items-end">
+				<span class="ecash-solvency-coverage font-size-l font-weight-semi-bold">{{ coverage() | number }}x</span>
+				<span class="font-size-xs orc-outline-color">coverage</span>
+			</div>
+		}
+	</div>
+}
 
-<div class="ecash-solvency-stacks">
-	<div class="ecash-solvency-side">
-		<div class="ecash-solvency-stack">
-			<orc-graphic-coin-stack
-				[unit]="unit()"
-				[value]="reserves().reserves ?? 0"
-				[counterpart]="liabilities_sats()"
-			></orc-graphic-coin-stack>
-		</div>
-		<span
-			class="font-size-l font-weight-semi-bold text-nowrap"
-			[innerHTML]="(reserves().reserves | localAmount: 'sat' : reserves().custody) || '-'"
-		></span>
-		<span class="font-size-xs orc-outline-color text-center">Reserves · {{ reserves_label() }}</span>
-	</div>
-	<div class="ecash-solvency-divider"></div>
-	<div class="ecash-solvency-side">
-		<div class="ecash-solvency-stack">
-			<orc-graphic-coin-stack
-				[unit]="unit()"
-				[value]="liabilities_sats()"
-				[counterpart]="reserves().reserves ?? 0"
-			></orc-graphic-coin-stack>
-		</div>
-		<span class="font-size-l font-weight-semi-bold text-nowrap" [innerHTML]="liabilities() | localAmount: unit() : 'mint'"></span>
-		<span class="font-size-xs orc-outline-color text-center">Liabilities · Unspent ecash</span>
-		@if (wallet_amount() > 0) {
-			<span class="font-size-xs font-weight-semi-bold orc-asset-btc-color">
-				<span [innerHTML]="wallet_amount() | localAmount: unit() : 'mint'"></span> is in your wallet
-			</span>
+<div class="orc-animation-expand-collapse" [class.animation-expanded]="open()">
+	<div class="orc-animation-expand-collapse-inner">
+		@if (rendered()) {
+			<div class="ecash-solvency-stacks">
+				<div class="ecash-solvency-side">
+					@if (reserves().reserves === null) {
+						<span class="ecash-solvency-empty font-size-xs orc-outline-color">
+							{{ verdict() === 'none' ? verdict_label() : "Couldn't be read" }}
+						</span>
+					} @else {
+						<div class="ecash-solvency-stack">
+							<orc-graphic-coin-stack
+								[unit]="unit()"
+								[value]="reserves().reserves ?? 0"
+								[counterpart]="liabilities_sats()"
+							></orc-graphic-coin-stack>
+						</div>
+						<span
+							class="font-size-l font-weight-semi-bold text-nowrap"
+							[innerHTML]="reserves().reserves | localAmount: 'sat' : reserves().custody"
+						></span>
+						<span class="font-size-xs orc-outline-color text-center">Assets · {{ reserves_label() }}</span>
+						@if (entered()) {
+							<span class="font-size-xs">No change</span>
+						}
+					}
+				</div>
+				<div class="ecash-solvency-divider"></div>
+				<div class="ecash-solvency-side">
+					<div class="ecash-solvency-stack">
+						<orc-graphic-coin-stack
+							[unit]="unit()"
+							[value]="liabilities_sats()"
+							[counterpart]="reserves().reserves ?? 0"
+						></orc-graphic-coin-stack>
+					</div>
+					<span
+						class="font-size-l font-weight-semi-bold text-nowrap"
+						[innerHTML]="liabilities() | localAmount: unit() : 'mint'"
+					></span>
+					<span class="font-size-xs orc-outline-color text-center">Liabilities · Unspent ecash</span>
+					@if (entered()) {
+						<span class="font-size-xs font-weight-semi-bold orc-asset-btc-color">
+							+<span [innerHTML]="issuing() | localAmount: unit() : 'mint' : false : true"></span> from this issue
+						</span>
+					} @else if (!impact() && wallet_amount() > 0) {
+						<span class="font-size-xs font-weight-semi-bold orc-asset-btc-color">
+							<span [innerHTML]="wallet_amount() | localAmount: unit() : 'mint'"></span> is in your wallet
+						</span>
+					}
+				</div>
+			</div>
 		}
 	</div>
 </div>
+
+<ng-template #coverage_change_tpl>
+	@if (entered()) {
+		<span class="orc-outline-color">{{ coverage_before() === null ? '-' : (coverage_before() | number) + 'x' }}</span>
+		<mat-icon class="ecash-solvency-arrow icon-sm orc-outline-color">arrow_forward</mat-icon>
+	}
+	<span class="ecash-solvency-coverage font-weight-semi-bold">{{ coverage() === null ? '-' : (coverage() | number) + 'x' }}</span>
+</ng-template>

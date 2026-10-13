@@ -30,21 +30,12 @@ export function getUnitLiabilities(reserves: MintReserves, unit: string): number
 }
 
 /**
- * How many times the operator's reserves cover a unit's liabilities
- * @param {MintReserves} reserves - Liabilities, reserve sources and the reserves total
- * @param {string} unit - Unit whose liabilities to cover
- * @returns {number | null} The unrounded multiple, or null when it can't be computed
- */
-export function getSolvencyRatio(reserves: MintReserves, unit: string): number | null {
-	return getSolvencyMultiple(reserves.reserves, getUnitLiabilities(reserves, unit), unit);
-}
-
-/**
- * Rounds a multiple for display: one decimal under 5x, whole multiples above
+ * Rounds a multiple for display: two decimals rounded down under 1x, so a shortfall never reads as 1x; one decimal under 5x; whole above
  * @param {number} multiple - The unrounded multiple
  * @returns {number} The display value
  */
 export function roundSolvencyMultiple(multiple: number): number {
+	if (multiple < 1) return Math.floor(multiple * 100 + 1e-9) / 100;
 	if (multiple < 5) return Math.round(multiple * 10) / 10;
 	return Math.round(multiple);
 }

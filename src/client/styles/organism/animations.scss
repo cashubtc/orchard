@@ -53,6 +53,16 @@
     50% { opacity: 0.3; }
 }
 
+/* Blink */
+
+.orc-animation-blink {
+    animation: blinking 1s step-end infinite;
+}
+
+@keyframes blinking {
+    50% { opacity: 0; }
+}
+
 /* Fade */
 
 .orc-animation-fadein-fast {

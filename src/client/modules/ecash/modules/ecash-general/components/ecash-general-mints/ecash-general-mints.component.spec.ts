@@ -68,6 +68,13 @@ describe('EcashGeneralMintsComponent', () => {
 		expect(component.rows().map((row) => row.balances)).toEqual([[orchard_balance], [cedar_balance]]);
 	});
 
+	it('shows a placeholder card until the mints load', () => {
+		fixture.componentRef.setInput('loading', true);
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('.orc-animation-shimmer-high')).not.toBeNull();
+		expect(fixture.nativeElement.querySelector('orc-ecash-general-mint')).toBeNull();
+	});
+
 	it('hands reserves only to the Orchard mint', () => {
 		const reserves = new MintReserves({liabilities: [], sources: [], reserves: 1000, partial: false});
 		fixture.componentRef.setInput('reserves', reserves);

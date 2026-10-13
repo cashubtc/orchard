@@ -1,0 +1,49 @@
+<button
+	type="button"
+	class="ecash-unit-picker-trigger orc-pill orc-pill-outlined"
+	aria-haspopup="dialog"
+	[attr.aria-expanded]="is_open()"
+	[disabled]="disabled()"
+	[attr.aria-label]="'Unit: ' + (selected() | localUnit)"
+	matRipple
+	(click)="onOpen()"
+>
+	<orc-graphic-asset [unit]="selected()" [height]="'1.875rem'"></orc-graphic-asset>
+	<span>{{ selected() | localUnit }}</span>
+	<mat-icon class="orc-outline-color">unfold_more</mat-icon>
+</button>
+
+<ng-template #panel>
+	<div class="ecash-unit-picker-panel" role="dialog" [attr.aria-label]="title()">
+		<div class="ecash-unit-picker-handle"></div>
+		<div class="flex flex-column p-h-0-5">
+			<div class="title-m">{{ title() }}</div>
+			@if (caption()) {
+				<span class="font-size-s orc-outline-color">{{ caption() }}</span>
+			}
+		</div>
+		<div class="flex flex-column flex-gap-0-5" role="radiogroup" [attr.aria-label]="title()">
+			@for (chip of chips(); track chip.unit) {
+				<button
+					type="button"
+					role="radio"
+					class="ecash-unit-picker-option"
+					[class.selected]="chip.unit === selected()"
+					[attr.aria-checked]="chip.unit === selected()"
+					matRipple
+					(click)="onPick(chip.unit)"
+				>
+					<orc-graphic-asset [unit]="chip.unit" [height]="'2.75rem'" [custody]="'ecash'"></orc-graphic-asset>
+					<div class="flex flex-column flex-grow w-min-0">
+						<span
+							class="font-size-l font-weight-semi-bold"
+							[innerHTML]="chip.amount ?? 0 | localAmount: chip.unit : 'mint'"
+						></span>
+						<span class="font-size-xs orc-outline-color">{{ chip.unit | localUnit }}</span>
+					</div>
+					<span class="ecash-unit-picker-radio"></span>
+				</button>
+			}
+		</div>
+	</div>
+</ng-template>

@@ -5,23 +5,33 @@
 		<mat-card-content class="orc-surface-container-low-bg">
 			@if (!loading()) {
 				@let current = selection();
-				<div class="flex flex-column flex-gap-2 p-b-1">
-					<orc-ecash-general-unit-chips
-						[chips]="chips()"
-						[selected]="current.unit"
-						(select)="onSelect($event)"
-					></orc-ecash-general-unit-chips>
+				<div class="flex flex-column flex-gap-2 p-b-1" [class.p-t-1]="chips().length === 1">
+					@if (chips().length > 1) {
+						<orc-ecash-general-unit-chips
+							[chips]="chips()"
+							[selected]="current.unit"
+							(select)="select.emit($event)"
+						></orc-ecash-general-unit-chips>
+					}
 					<div class="flex flex-items-center flex-justify-center flex-gap-1-5" animate.enter="orc-animation-fadein">
-						<orc-graphic-asset class="low-bg" [unit]="current.unit" [height]="'4rem'" [custody]="'ecash'"></orc-graphic-asset>
+						<orc-graphic-asset
+							class="low-bg"
+							[unit]="current.unit"
+							[height]="mobile() ? '2.5rem' : '4rem'"
+							[custody]="'ecash'"
+						></orc-graphic-asset>
 						<div class="flex flex-column flex-gap-0-25 w-min-0">
 							<div
 								class="ecash-balance-amount font-weight-semi-bold text-nowrap"
+								[class.mobile]="mobile()"
 								[innerHTML]="current.amount | localAmount: current.unit : 'mint'"
 							></div>
 							<div class="font-size-s orc-outline-color">
 								@if (current.amount_oracle !== null) {
 									<span [innerHTML]="current.amount_oracle | localAmount: 'usd'"></span>
-									&nbsp;&nbsp;●&nbsp;&nbsp;
+									@if (current.caption) {
+										&nbsp;&nbsp;●&nbsp;&nbsp;
+									}
 								}
 								{{ current.caption }}
 							</div>

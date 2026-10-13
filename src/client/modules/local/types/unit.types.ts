@@ -17,3 +17,9 @@ export interface UnitMeta {
 	/** Currency symbol, where the unit has one */
 	glyph?: string;
 }
+
+/** The unit shown with an amount: a glyph before it, or a code after it */
+export type UnitSign = {
+	text: string;
+	before: boolean;
+};

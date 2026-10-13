@@ -5,20 +5,52 @@
 	@extend %block;
 }
 
-.ecash-solvency-verdict {
-	@extend %flex;
-	@extend %flex-items-center;
-	@extend %flex-gap-1;
-	@extend %p-1;
+.ecash-solvency-verdict,
+.ecash-solvency-toggle {
 	--verdict-color: var(--orc-status-active);
 
 	&.verdict-short {
 		--verdict-color: var(--orc-status-inactive);
 	}
 
+	&.verdict-none,
 	&.verdict-unknown {
 		--verdict-color: var(--orc-status-warning);
 	}
+}
+
+.ecash-solvency-verdict {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-1;
+	@extend %p-1;
+}
+
+// One line in the mobile sheet: verdict, coverage change and a chevron to open the stacks
+.ecash-solvency-toggle {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+	@extend %flex-gap-0-5;
+	@extend %w-full;
+	@extend %m-0;
+	@extend %p-v-0-5;
+	@extend %p-h-0-75;
+	@extend %border-none;
+	@extend %orc-corner-full;
+	@extend %transparent-bg;
+	@extend %cursor-pointer;
+	@extend %font-family-inherit;
+	color: inherit;
+}
+
+.ecash-solvency-toggle-icon {
+	color: var(--verdict-color);
+}
+
+.ecash-solvency-arrow {
+	vertical-align: middle;
+	margin: 0 0.25rem;
 }
 
 .ecash-solvency-icon {
@@ -60,6 +92,13 @@
 	@extend %flex-justify-center;
 	@extend %p-b-0-5;
 	height: 4.75rem;
+}
+
+.ecash-solvency-empty {
+	@extend %flex;
+	@extend %flex-1;
+	@extend %flex-items-center;
+	@extend %text-center;
 }
 
 .ecash-solvency-divider {

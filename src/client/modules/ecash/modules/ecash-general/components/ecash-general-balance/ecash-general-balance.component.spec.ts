@@ -48,6 +48,7 @@ describe('EcashGeneralBalanceComponent', () => {
 		expect(component.chips()).toEqual([{unit: 'sat', amount: 0}]);
 		expect(component.selection()).toEqual(jasmine.objectContaining({unit: 'sat', amount: 0, caption: 'No balance on any mint'}));
 		expect(fixture.nativeElement.textContent).toContain('No balance on any mint');
+		expect(fixture.nativeElement.querySelector('orc-ecash-general-unit-chips')).toBeNull();
 	});
 
 	it("offers every unit the wallet's mints offer, zero balances included, summed across mints and bitcoin first", () => {
@@ -60,24 +61,33 @@ describe('EcashGeneralBalanceComponent', () => {
 		]);
 		fixture.detectChanges();
 		expect(fixture.nativeElement.textContent).toContain('Across 2 mints');
+		expect(fixture.nativeElement.querySelector('orc-ecash-general-unit-chips')).not.toBeNull();
 	});
 
-	it('shows the picked chip, naming the one mint that holds it', () => {
+	it('asks for the picked chip, and shows the selected one naming the one mint that holds it', () => {
+		const picked = jasmine.createSpy('select');
+		component.select.subscribe(picked);
 		fixture.componentRef.setInput('mints', [mint('mint-1', 'Cedar', ['sat', 'usd'])]);
 		fixture.componentRef.setInput('balances', [balance('mint-1', 'usd', 450)]);
 		fixture.detectChanges();
 		fixture.nativeElement.querySelectorAll('.ecash-unit-chip')[1].click();
-		fixture.detectChanges();
+		expect(picked).toHaveBeenCalledWith('usd');
 
+		fixture.componentRef.setInput('selected', 'usd');
+		fixture.detectChanges();
 		expect(component.selection()).toEqual(jasmine.objectContaining({unit: 'usd', amount: 450, caption: 'Cedar'}));
 		expect(fixture.nativeElement.textContent).toContain('Cedar');
 	});
 
-	it('falls back to the first chip once the picked unit is no longer offered', () => {
-		fixture.componentRef.setInput('mints', [mint('mint-1', 'Cedar', ['sat', 'usd'])]);
-		component.onSelect('usd');
+	it('falls back to the first chip once the selected unit is no longer offered', () => {
 		fixture.componentRef.setInput('mints', [mint('mint-1', 'Cedar', ['sat'])]);
+		fixture.componentRef.setInput('selected', 'usd');
 		expect(component.selection().unit).toBe('sat');
+	});
+
+	it('leaves the mint unnamed until the wallet mints load', () => {
+		fixture.componentRef.setInput('balances', [balance('mint-1', 'sat', 1000)]);
+		expect(component.selection().caption).toBeNull();
 	});
 
 	it('converts sat to USD only when the oracle is enabled', () => {

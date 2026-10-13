@@ -9,6 +9,29 @@ export function getCurrencySymbol(unit: string): string {
 }
 
 /* *******************************************************
+	Numbers
+******************************************************** */
+
+const NUMBER_SEPARATORS = new Map<string, string>();
+
+/**
+ * The character a locale groups digits or marks decimals with, worked out once per locale
+ * @param {string} locale - Locale to format numbers in
+ * @param {'group' | 'decimal'} type - Which separator
+ * @returns {string} The separator, falling back to the en-US one
+ */
+export function getNumberSeparator(locale: string, type: 'group' | 'decimal'): string {
+	const key = `${locale}:${type}`;
+	let separator = NUMBER_SEPARATORS.get(key);
+	if (separator === undefined) {
+		const parts = new Intl.NumberFormat(locale).formatToParts(1234567.5);
+		separator = parts.find((part) => part.type === type)?.value ?? (type === 'group' ? ',' : '.');
+		NUMBER_SEPARATORS.set(key, separator);
+	}
+	return separator;
+}
+
+/* *******************************************************
 	Cron
 ******************************************************** */
 

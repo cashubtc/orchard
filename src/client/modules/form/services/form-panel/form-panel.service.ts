@@ -102,7 +102,7 @@ export class FormPanelService {
 
 	/** Render the panel in a bottom sheet; closing the ref dismisses the sheet, and dismissing the sheet closes the ref */
 	private openSheet(component: Type<any>, injector: Injector, panel_ref: FormPanelRef): void {
-		const sheet_ref = this.bottomSheet.open(component, {injector, autoFocus: false});
+		const sheet_ref = this.bottomSheet.open(component, {injector, autoFocus: false, panelClass: 'orc-form-sheet'});
 		sheet_ref.afterDismissed().subscribe(() => panel_ref.close());
 		panel_ref.afterClosed().subscribe(() => sheet_ref.dismiss());
 	}

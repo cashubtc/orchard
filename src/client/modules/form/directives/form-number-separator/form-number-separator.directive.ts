@@ -1,6 +1,7 @@
 import {Directive, ElementRef, HostListener, Inject, Input, LOCALE_ID} from '@angular/core';
 import {MAT_INPUT_VALUE_ACCESSOR} from '@angular/material/input';
 import {NgControl} from '@angular/forms';
+import {getNumberSeparator} from '@client/modules/local/helpers/local.helpers';
 
 @Directive({
 	selector: 'input[formNumberSeparator]',
@@ -9,7 +10,6 @@ import {NgControl} from '@angular/forms';
 })
 export class FormNumberSeparatorDirective {
 	private static readonly DIGIT_RE = /\d/;
-	private static readonly SEPARATOR_SAMPLE = 1234567.5;
 
 	private _value!: string | null;
 	private decimals = 0;
@@ -42,8 +42,8 @@ export class FormNumberSeparatorDirective {
 	) {
 		ngControl.valueAccessor = this;
 		this.formatter = this.buildFormatter();
-		this.group_separator = this.detectSeparator('group', ',');
-		this.decimal_separator = this.detectSeparator('decimal', '.');
+		this.group_separator = getNumberSeparator(this.locale, 'group');
+		this.decimal_separator = getNumberSeparator(this.locale, 'decimal');
 	}
 
 	private _onChange(_value: any): void {}
@@ -54,11 +54,6 @@ export class FormNumberSeparatorDirective {
 			minimumFractionDigits: this.decimals,
 			maximumFractionDigits: this.decimals,
 		});
-	}
-
-	private detectSeparator(type: 'group' | 'decimal', fallback: string): string {
-		const parts = new Intl.NumberFormat(this.locale).formatToParts(FormNumberSeparatorDirective.SEPARATOR_SAMPLE);
-		return parts.find((part) => part.type === type)?.value ?? fallback;
 	}
 
 	/** Whether a character is part of the amount: a digit, or the decimal separator when the amount takes decimals */

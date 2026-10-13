@@ -4,7 +4,7 @@ import {ChangeDetectionStrategy, Component, computed, input, output, signal} fro
 import {OrchardError} from '@client/modules/error/types/error.types';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 import {BitcoinOraclePrice} from '@client/modules/bitcoin/classes/bitcoin-oracle-price.class';
-import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
+import {compareUnits, getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
 /* Native Module Dependencies */
 import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
@@ -111,10 +111,7 @@ export class MintGeneralBalanceSheetComponent {
 				if (row.fees_oracle !== null) rows_by_unit[unit].fees_oracle = (rows_by_unit[unit].fees_oracle ?? 0) + row.fees_oracle;
 			});
 
-		return Object.values(rows_by_unit).sort((a, b) => {
-			const currency_order: Record<string, number> = {btc: 1, sat: 2, msat: 3, usd: 4, eur: 5};
-			return (currency_order[a.unit_mint.toLowerCase()] || 999) - (currency_order[b.unit_mint.toLowerCase()] || 999);
-		});
+		return Object.values(rows_by_unit).sort((a, b) => compareUnits(a.unit_mint.toLowerCase(), b.unit_mint.toLowerCase()));
 	}
 
 	/** Toggles the expanded state for a given unit row */

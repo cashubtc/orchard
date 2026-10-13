@@ -1,0 +1,121 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+:host {
+	@extend %block;
+	container-type: inline-size;
+}
+
+.ecash-amount-hero {
+	@extend %relative;
+	@extend %flex;
+	@extend %flex-justify-center;
+	@extend %text-nowrap;
+	@extend %font-weight-semi-bold;
+	align-items: baseline;
+	font-size: min(4.5rem, calc(100cqi / var(--amount-ems)));
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: -0.01em;
+	transition: font-size 150ms ease-out;
+}
+
+.ecash-amount-sign {
+	@extend %font-weight-light;
+	@extend %orc-outline-color;
+	font-size: 0.6em;
+	margin-right: 0.25em;
+
+	&.ecash-amount-sign-after {
+		margin-right: 0;
+		margin-left: 0.25em;
+	}
+}
+
+.ecash-amount-digits {
+	@extend %flex;
+	align-items: baseline;
+}
+
+.ecash-amount-char {
+	display: inline-block;
+
+	&.ghost {
+		@extend %orc-outline-variant-color;
+	}
+}
+
+.ecash-amount-caret {
+	@extend %orc-primary-bg;
+	display: inline-block;
+	align-self: center;
+	width: 2px;
+	height: 0.8em;
+	margin-left: 0.05em;
+}
+
+.ecash-amount-input {
+	@extend %absolute;
+	@extend %inset-0;
+	@extend %w-full;
+	@extend %h-full;
+	@extend %m-0;
+	@extend %p-0;
+	@extend %border-none;
+	@extend %outline-none;
+	@extend %transparent-bg;
+	cursor: text;
+	color: transparent;
+	caret-color: transparent;
+}
+
+.ecash-amount-char-enter {
+	animation: amount-char-grow 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.ecash-amount-char-leave {
+	animation: amount-char-shrink 140ms ease-in both;
+}
+
+@keyframes amount-char-grow {
+	0% {
+		max-width: 0;
+		opacity: 0;
+		transform: scale(0.6);
+	}
+	70% {
+		max-width: 1ch;
+		opacity: 1;
+		transform: scale(1.04);
+	}
+	100% {
+		max-width: 1ch;
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@keyframes amount-char-shrink {
+	from {
+		max-width: 1ch;
+		opacity: 1;
+		transform: scale(1);
+	}
+	to {
+		max-width: 0;
+		opacity: 0;
+		transform: scale(0.6);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ecash-amount-hero {
+		transition: none;
+	}
+
+	.ecash-amount-char-enter,
+	.ecash-amount-char-leave,
+	.ecash-amount-caret {
+		animation: none;
+	}
+}

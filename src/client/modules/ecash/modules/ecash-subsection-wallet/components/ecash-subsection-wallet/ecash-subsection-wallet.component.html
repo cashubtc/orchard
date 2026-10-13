@@ -6,6 +6,9 @@
 		[loading]="loading_balances()"
 		[bitcoin_oracle_enabled]="bitcoin_oracle_enabled"
 		[bitcoin_oracle_price]="bitcoin_oracle_price()"
+		[device_type]="device_type()"
+		[selected]="selected_unit()"
+		(select)="onSelectUnit($event)"
 	></orc-ecash-general-balance>
 	<orc-ecash-general-actions
 		class="ecash-wallet-actions"

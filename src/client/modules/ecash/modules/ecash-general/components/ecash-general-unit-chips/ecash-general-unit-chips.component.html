@@ -3,16 +3,17 @@
 		@if (selectable()) {
 			<button
 				type="button"
-				class="ecash-unit-chip"
-				[class.selected]="chip.unit === selected()"
+				class="ecash-unit-chip orc-pill orc-pill-outlined"
+				[class.orc-pill-selected]="chip.unit === selected()"
 				[attr.aria-pressed]="chip.unit === selected()"
+				[disabled]="disabled()"
 				matRipple
 				(click)="select.emit(chip.unit)"
 			>
 				<ng-container *ngTemplateOutlet="chip_content; context: {$implicit: chip}"></ng-container>
 			</button>
 		} @else {
-			<div class="ecash-unit-chip">
+			<div class="ecash-unit-chip orc-pill orc-pill-outlined">
 				<ng-container *ngTemplateOutlet="chip_content; context: {$implicit: chip}"></ng-container>
 			</div>
 		}

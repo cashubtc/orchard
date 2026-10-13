@@ -1,7 +1,26 @@
+/* Application Dependencies */
+import {CurrencyType} from '@client/modules/cache/services/local-storage/local-storage.types';
 /* Local Dependencies */
-import {compareUnits, fromDisplayAmount, fromDisplayAmountFor, getUnitMeta, toDisplayAmount, toSats} from './unit.helpers';
+import {compareUnits, fromDisplayAmount, fromDisplayAmountFor, getUnitMeta, getUnitSign, toDisplayAmount, toSats} from './unit.helpers';
 
 describe('UnitHelpers', () => {
+	describe('getUnitSign', () => {
+		const glyphs = {type_btc: CurrencyType.GLYPH, type_fiat: CurrencyType.GLYPH};
+		const codes = {type_btc: CurrencyType.CODE, type_fiat: CurrencyType.CODE};
+
+		it('puts the glyph before the amount when the user prefers glyphs', () => {
+			expect(getUnitSign('sat', glyphs)).toEqual({text: '₿', before: true});
+			expect(getUnitSign('usd', glyphs)).toEqual({text: '$', before: true});
+		});
+
+		it('puts the code after the amount for code users, BTC and custom units', () => {
+			expect(getUnitSign('sat', codes)).toEqual({text: 'sat', before: false});
+			expect(getUnitSign('eur', codes)).toEqual({text: 'EUR', before: false});
+			expect(getUnitSign('btc', glyphs)).toEqual({text: 'BTC', before: false});
+			expect(getUnitSign('ora', glyphs)).toEqual({text: 'ora', before: false});
+		});
+	});
+
 	describe('getUnitMeta', () => {
 		it('should describe sat as a whole-number bitcoin unit', () => {
 			expect(getUnitMeta('sat')).toEqual({

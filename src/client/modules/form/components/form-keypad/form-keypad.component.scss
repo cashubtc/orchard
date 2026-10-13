@@ -3,7 +3,7 @@
 
 .form-keypad {
 	@extend %grid;
-	@extend %flex-gap-0-5;
+	gap: clamp(0.25rem, 0.75dvh, 0.5rem);
 	grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -11,14 +11,21 @@
 	@extend %flex;
 	@extend %flex-items-center;
 	@extend %flex-justify-center;
-	@extend %h-3;
+	@extend %m-0;
 	@extend %border-none;
+	@extend %orc-corner-full;
+	@extend %transparent-bg;
 	@extend %cursor-pointer;
 	@extend %font-size-xl;
-	@extend %font-weight-semi-bold;
-	@extend %m-0;
+	@extend %font-weight-regular;
 	@extend %font-family-inherit;
+	height: clamp(2.75rem, 6.5dvh, 3rem);
 	color: inherit;
+
+	&:disabled {
+		cursor: default;
+		opacity: 0.38;
+	}
 }
 
 .form-keypad-zero {

@@ -1,7 +1,7 @@
 /* Native Dependencies */
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 /* Local Dependencies */
-import {buildUnitChips} from './ecash-general.helpers';
+import {buildAmountChars, buildUnitChips} from './ecash-general.helpers';
 
 describe('buildUnitChips', () => {
 	it('offers every unit at 0, sums balances across mints, and sorts bitcoin first', () => {
@@ -18,5 +18,27 @@ describe('buildUnitChips', () => {
 
 	it('adds units only held, not offered', () => {
 		expect(buildUnitChips([], [new EcashBalance({mint_id: 'a', unit: 'usd', balance: 25})])).toEqual([{unit: 'usd', amount: 25}]);
+	});
+});
+
+describe('buildAmountChars', () => {
+	const render = (text: string, decimals: number, locale = 'en-US') =>
+		buildAmountChars(text, decimals, locale)
+			.map(({char, ghost}) => (ghost ? `(${char})` : char))
+			.join('');
+
+	it('shows a ghost zero until something is typed', () => {
+		expect(render('', 0)).toBe('(0)');
+	});
+
+	it('groups whole amounts the way the locale does', () => {
+		expect(render('1000000', 0)).toBe('1,000,000');
+		expect(render('1000000', 0, 'de-DE')).toBe('1.000.000');
+	});
+
+	it('ghosts the fraction digits still to be typed after the decimal point', () => {
+		expect(render('5.', 2)).toBe('5.(0)(0)');
+		expect(render('5.2', 2)).toBe('5.2(0)');
+		expect(render('1234.50', 2, 'de-DE')).toBe('1.234,50');
 	});
 });

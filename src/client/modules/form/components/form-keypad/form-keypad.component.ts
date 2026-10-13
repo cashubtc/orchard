@@ -10,6 +10,7 @@ import {ChangeDetectionStrategy, Component, computed, input, output} from '@angu
 })
 export class FormKeypadComponent {
 	public readonly decimal = input<boolean>(false);
+	public readonly disabled = input<boolean>(false);
 
 	public readonly key = output<string>();
 

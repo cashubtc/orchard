@@ -1,5 +1,7 @@
+/* Application Dependencies */
+import {Currency, CurrencyType} from '@client/modules/cache/services/local-storage/local-storage.types';
 /* Native Dependencies */
-import {UnitFamily, UnitMeta} from '@client/modules/local/types/unit.types';
+import {UnitFamily, UnitMeta, UnitSign} from '@client/modules/local/types/unit.types';
 
 const KNOWN_UNITS: Record<string, UnitMeta> = {
 	sat: {code: 'sat', decimals: 0, divisor: 1, family: 'btc', asset: 'btc', icon: 'currency_bitcoin', glyph: '₿'},
@@ -39,6 +41,19 @@ export function getUnitMeta(unit: string): UnitMeta {
  */
 export function getUnitSymbol(meta: UnitMeta): string {
 	return meta.glyph ?? meta.code;
+}
+
+/**
+ * The unit sign an amount is shown with, following the user's currency setting as the localAmount pipe does
+ * @param {string} unit - The unit the amount is in
+ * @param {Currency} currency - The user's glyph or code preference for bitcoin and fiat
+ * @returns {UnitSign} A glyph before the amount, or the unit code after it
+ */
+export function getUnitSign(unit: string, currency: Currency): UnitSign {
+	const meta = getUnitMeta(unit);
+	const type = meta.family === 'btc' ? currency.type_btc : meta.family === 'fiat' ? currency.type_fiat : CurrencyType.CODE;
+	const glyph = type === CurrencyType.GLYPH && !(meta.family === 'btc' && meta.decimals > 0) ? meta.glyph : undefined;
+	return glyph ? {text: glyph, before: true} : {text: meta.code, before: false};
 }
 
 /**

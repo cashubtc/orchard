@@ -9,7 +9,17 @@
 		</div>
 	</div>
 
-	@if (!loading()) {
+	@if (loading()) {
+		<mat-card appearance="outlined" class="overflow-hidden">
+			<div class="orc-surface-container-low-bg flex flex-items-center flex-gap-1 p-1">
+				<div class="h-2-5 w-2-5 flex-shrink-0 orc-corner-full orc-animation-shimmer-high"></div>
+				<div class="flex flex-column flex-gap-0-5">
+					<div class="h-1 w-8 orc-corner-full orc-animation-shimmer-high"></div>
+					<div class="h-0-5 w-6 orc-corner-full orc-animation-shimmer-high"></div>
+				</div>
+			</div>
+		</mat-card>
+	} @else {
 		<div class="flex flex-column flex-gap-1">
 			@for (row of rows(); track row.mint.id) {
 				<orc-ecash-general-mint

@@ -3,13 +3,7 @@ import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 /* Shared Dependencies */
 import {MintReserveSource} from '@shared/generated.types';
 /* Local Dependencies */
-import {
-	getReserveSourcesLabel,
-	getSolvencyMultiple,
-	getSolvencyRatio,
-	getUnitLiabilities,
-	roundSolvencyMultiple,
-} from './mint-solvency.helpers';
+import {getReserveSourcesLabel, getSolvencyMultiple, getUnitLiabilities, roundSolvencyMultiple} from './mint-solvency.helpers';
 
 describe('mint-solvency.helpers', () => {
 	describe('getSolvencyMultiple', () => {
@@ -35,23 +29,15 @@ describe('mint-solvency.helpers', () => {
 		});
 	});
 
-	describe('getSolvencyRatio', () => {
-		const reserves = (reserves_sats: number | null) =>
-			new MintReserves({liabilities: [{unit: 'sat', amount: 12000}], sources: [], reserves: reserves_sats, partial: false});
-
-		it("covers the unit's liabilities with the operator's reserves", () => {
-			expect(getSolvencyRatio(reserves(50000), 'SAT')).toBeCloseTo(4.1667);
-		});
-
-		it('has no ratio for a unit without liabilities or without readable reserves', () => {
-			expect(getSolvencyRatio(reserves(50000), 'msat')).toBeNull();
-			expect(getSolvencyRatio(reserves(null), 'sat')).toBeNull();
-		});
-	});
-
 	describe('roundSolvencyMultiple', () => {
+		it('rounds a shortfall down to two decimals, so it never reads as 1x', () => {
+			expect(roundSolvencyMultiple(0.9967)).toBe(0.99);
+			expect(roundSolvencyMultiple(0.854)).toBe(0.85);
+			expect(roundSolvencyMultiple(29 / 100)).toBe(0.29);
+		});
+
 		it('keeps one decimal under 5x and whole multiples above', () => {
-			expect(roundSolvencyMultiple(0.96)).toBe(1);
+			expect(roundSolvencyMultiple(1.04)).toBe(1);
 			expect(roundSolvencyMultiple(4.1667)).toBe(4.2);
 			expect(roundSolvencyMultiple(6.25)).toBe(6);
 		});

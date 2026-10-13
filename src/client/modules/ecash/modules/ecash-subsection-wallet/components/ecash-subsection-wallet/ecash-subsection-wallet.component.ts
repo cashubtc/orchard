@@ -21,6 +21,8 @@ import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
 import {EcashMintStatus} from '@client/modules/ecash/classes/ecash-mint-status.class';
 import {EcashOperation} from '@client/modules/ecash/classes/ecash-operation.class';
 import {EcashGeneralIssueComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-issue/ecash-general-issue.component';
+import {getMintStatusPill} from '@client/modules/ecash/modules/ecash-general/helpers/ecash-general.helpers';
+import {EcashIssuePanelData} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
 
 @Component({
 	selector: 'orc-ecash-subsection-wallet',
@@ -45,6 +47,7 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 	public readonly mints = signal<EcashMint[]>([]);
 	public readonly mint_statuses = signal<EcashMintStatus[]>([]);
 	public readonly mint_reserves = signal<MintReserves | null>(null);
+	public readonly selected_unit = signal<string | null>(null);
 	public readonly bitcoin_oracle_price = signal<BitcoinOraclePrice | null>(null);
 	public readonly is_admin = signal<boolean>(false);
 	public readonly device_type = signal<DeviceType>('desktop');
@@ -164,12 +167,24 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 		Actions Up
 	******************************************************** */
 
-	/** Opens the issue panel; an issued operation refreshes the balances it changed */
+	/** Shows the picked unit's balance, and opens forms in it */
+	public onSelectUnit(unit: string): void {
+		this.selected_unit.set(unit);
+	}
+
+	/** Opens the issue panel in the selected unit; an issued operation refreshes the balances it changed */
 	public onIssue(): void {
 		const mint = this.orchard_mint();
 		if (!mint) return;
+		const data: EcashIssuePanelData = {
+			mint,
+			reserves: this.mint_reserves,
+			status: computed(() => getMintStatusPill(this.mint_statuses(), mint.id, this.loading_mint_statuses())),
+			balances: computed(() => this.balances().filter((balance) => balance.mint_id === mint.id)),
+			unit: this.selected_unit(),
+		};
 		this.formPanelService
-			.open<unknown, EcashOperation>(EcashGeneralIssueComponent, {data: {mint, reserves: this.mint_reserves()}})
+			.open<EcashIssuePanelData, EcashOperation>(EcashGeneralIssueComponent, {data})
 			.afterClosed()
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe((operation) => {

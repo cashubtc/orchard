@@ -141,11 +141,27 @@ describe('EcashSubsectionWalletComponent', () => {
 		form_panel_service.open.and.returnValue({afterClosed: () => of(operation)});
 
 		component.onIssue();
-		expect(form_panel_service.open).toHaveBeenCalledWith(EcashGeneralIssueComponent, {data: {mint: mints[0], reserves}});
+		const [panel, {data}] = form_panel_service.open.calls.mostRecent().args;
+		expect(panel).toBe(EcashGeneralIssueComponent);
+		expect(data.mint).toBe(mints[0]);
+		expect(data.reserves()).toBe(reserves);
+		expect(data.status().state).toBe('disabled');
+		expect(data.balances()).toEqual(balances);
+		expect(data.unit).toBeNull();
 		expect(mint_service.clearSolvencyCache).toHaveBeenCalled();
 		expect(ecash_service.clearBalancesCache).toHaveBeenCalled();
 		expect(ecash_service.loadBalances).toHaveBeenCalled();
 		expect(mint_service.loadMintReserves).toHaveBeenCalled();
+	});
+
+	it('opens the issue panel in the unit the balance card has selected', async () => {
+		role = UserRole.Admin;
+		await create();
+		form_panel_service.open.and.returnValue({afterClosed: () => of(undefined)});
+
+		component.onSelectUnit('usd');
+		component.onIssue();
+		expect(form_panel_service.open.calls.mostRecent().args[1].data.unit).toBe('usd');
 	});
 
 	it('skips the oracle price while the oracle is disabled', async () => {

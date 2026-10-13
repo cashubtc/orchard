@@ -5,3 +5,37 @@
         @extend %cursor-pointer;
     }
 }
+
+/* Pill */
+
+.orc-pill {
+    @extend %flex;
+    @extend %flex-items-center;
+    @extend %flex-gap-0-5;
+    @extend %orc-corner-full;
+
+    &:is(button) {
+        @extend %m-0;
+        @extend %transparent-bg;
+        @extend %cursor-pointer;
+        @extend %font-family-inherit;
+        color: inherit;
+
+        &:disabled {
+            cursor: default;
+            opacity: 0.38;
+        }
+    }
+
+    &.orc-pill-outlined {
+        @extend %border;
+        @extend %border-solid;
+        @extend %orc-outline-variant-border;
+    }
+
+    &.orc-pill-selected {
+        @extend %orc-secondary-container-bg;
+        @extend %orc-on-secondary-container-color;
+        @extend %border-transparent;
+    }
+}

@@ -6,7 +6,7 @@ import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
 import {EcashMintStatus} from '@client/modules/ecash/classes/ecash-mint-status.class';
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
-import {EcashMintStatusPill} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
+import {getMintStatusPill} from '@client/modules/ecash/modules/ecash-general/helpers/ecash-general.helpers';
 
 @Component({
 	selector: 'orc-ecash-general-mints',
@@ -31,24 +31,8 @@ export class EcashGeneralMintsComponent {
 			.map((mint) => ({
 				mint,
 				balances: balances.filter((balance) => balance.mint_id === mint.id),
-				status: this.getStatus(mint.id),
+				status: getMintStatusPill(this.statuses(), mint.id, this.loading_statuses()),
 				reserves: mint.is_orchard ? this.reserves() : null,
 			}));
 	});
-
-	/* *******************************************************
-		Helpers
-	******************************************************** */
-
-	/** Status dot and text: checking until statuses load, then online with latency or unreachable with the reason */
-	private getStatus(mint_id: string): EcashMintStatusPill {
-		if (this.loading_statuses()) return {state: 'loading', text: 'Checking', error: null};
-		const status = this.statuses().find((status) => status.mint_id === mint_id);
-		if (!status) return {state: 'disabled', text: 'Unknown', error: null};
-		if (status.online) {
-			const latency = status.latency_ms === null ? '' : ` · ${status.latency_ms} ms`;
-			return {state: 'active', text: `Online${latency}`, error: null};
-		}
-		return {state: 'inactive', text: 'Unreachable', error: status.error};
-	}
 }

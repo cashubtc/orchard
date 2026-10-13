@@ -1,0 +1,35 @@
+<div class="ecash-amount-hero" [style.--amount-ems]="width_ems()">
+	@if (sign().before) {
+		<span class="ecash-amount-sign">{{ sign().text }}</span>
+	}
+	<span class="ecash-amount-digits" aria-hidden="true">
+		@for (item of chars(); track (item.ghost ? 'ghost-' : 'char-') + $index) {
+			<span
+				class="ecash-amount-char"
+				[class.ghost]="item.ghost"
+				[animate.enter]="item.ghost ? '' : 'ecash-amount-char-enter'"
+				[animate.leave]="item.ghost ? '' : 'ecash-amount-char-leave'"
+				>{{ item.char }}</span
+			>
+		}
+		@if (focused()) {
+			<span class="ecash-amount-caret orc-animation-blink"></span>
+		}
+	</span>
+	@if (!sign().before) {
+		<span class="ecash-amount-sign ecash-amount-sign-after">{{ sign().text }}</span>
+	}
+	@if (editable()) {
+		<input
+			class="ecash-amount-input"
+			type="text"
+			inputmode="decimal"
+			autocomplete="off"
+			aria-label="Amount"
+			[value]="text()"
+			(beforeinput)="onBeforeInput($event)"
+			(focus)="focused.set(true)"
+			(blur)="focused.set(false)"
+		/>
+	}
+</div>

@@ -8,5 +8,11 @@
     @extend %flex-items-center;
     @extend %flex-justify-center;
     @extend %transparent-bg;
-    @extend %blur-medium;    
+    @extend %blur-medium;
+}
+
+// Form sheets rise to a 72px top margin, measured against the visible viewport
+.orc-form-sheet .mat-bottom-sheet-container {
+    max-height: calc(100dvh - 4.5rem);
+    padding-inline: 0;
 }

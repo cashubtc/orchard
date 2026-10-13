@@ -1,0 +1,27 @@
+<div class="ecash-mint-chip orc-pill" [class.orc-pill-outlined]="balance() !== null">
+	<orc-ecash-general-mint-icon
+		[name]="mint().display_name"
+		[icon_url]="mint().icon_url"
+		[is_orchard]="mint().is_orchard"
+		[height]="balance() !== null ? '2.125rem' : '1.75rem'"
+	></orc-ecash-general-mint-icon>
+	<div class="flex flex-column flex-grow w-min-0">
+		<span class="font-weight-semi-bold text-nowrap text-ellipsis">{{ mint().display_name }}</span>
+		@if (balance() !== null) {
+			<span class="font-size-xs orc-outline-color text-nowrap">
+				Balance <span [innerHTML]="balance() | localAmount: unit() : 'mint'"></span>
+			</span>
+		}
+	</div>
+	@if (status(); as status) {
+		<orc-graphic-status
+			class="flex-shrink-0"
+			[status]="status.state"
+			size="0.5rem"
+			[title]="status.error ?? status.text"
+		></orc-graphic-status>
+		@if (status.state === 'inactive') {
+			<span class="font-size-xs orc-status-inactive-color text-nowrap">{{ status.text }}</span>
+		}
+	}
+</div>

@@ -1,5 +1,17 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal} from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	DestroyRef,
+	ElementRef,
+	Injector,
+	afterNextRender,
+	computed,
+	effect,
+	inject,
+	signal,
+	viewChild,
+} from '@angular/core';
 import {takeUntilDestroyed, toSignal} from '@angular/core/rxjs-interop';
 import {FormControl, FormGroup, Validators} from '@angular/forms';
 /* Vendor Dependencies */
@@ -13,11 +25,9 @@ import {EventService} from '@client/modules/event/services/event/event.service';
 import {EventData} from '@client/modules/event/classes/event-data.class';
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
 import {compareUnits, fromDisplayAmount, getUnitMeta, toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
-import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
-import {getSolvencyMultiple, getUnitLiabilities} from '@client/modules/mint/helpers/mint-solvency.helpers';
 /* Native Dependencies */
 import {EcashService} from '@client/modules/ecash/services/ecash/ecash.service';
-import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
+import {EcashIssuePanelData, EcashUnitChip} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
 /* Shared Dependencies */
 import {WalletOperationState} from '@shared/generated.types';
 
@@ -33,7 +43,8 @@ export class EcashGeneralIssueComponent {
 	private readonly eventService = inject(EventService);
 	private readonly panelRef = inject(FormPanelRef);
 	private readonly destroyRef = inject(DestroyRef);
-	public readonly data: {mint: EcashMint; reserves: MintReserves | null} = inject(FORM_PANEL_DATA);
+	private readonly injector = inject(Injector);
+	public readonly data: EcashIssuePanelData = inject(FORM_PANEL_DATA);
 
 	/** The host opened this panel as a bottom sheet */
 	public readonly sheet: boolean = inject(MatBottomSheetRef, {optional: true}) !== null;
@@ -43,14 +54,24 @@ export class EcashGeneralIssueComponent {
 		memo: new FormControl<string>(''),
 	});
 
-	public readonly unit = signal<string>(this.units[0] ?? 'sat');
+	public readonly unit = signal<string>(
+		this.data.unit && this.units.includes(this.data.unit) ? this.data.unit : (this.units[0] ?? 'sat'),
+	);
+	public readonly amount_text = signal<string>('');
 	public readonly submitting = signal<boolean>(false);
-	public readonly focused_amount = signal<boolean>(false);
 	public readonly focused_memo = signal<boolean>(false);
-	public readonly help_amount = signal<boolean>(false);
+	public readonly memo_open = signal<boolean>(false);
 	public readonly help_memo = signal<boolean>(false);
 	public readonly amount = toSignal(this.form.controls.amount.valueChanges, {initialValue: null});
 	public readonly amount_status = toSignal(this.form.controls.amount.statusChanges, {initialValue: 'VALID'});
+
+	/** Each unit the mint issues in, with what the wallet holds there */
+	public readonly unit_chips = computed<Required<EcashUnitChip>[]>(() =>
+		this.units.map((unit) => ({
+			unit,
+			amount: this.data.balances().find((balance) => balance.unit.toLowerCase() === unit)?.balance ?? 0,
+		})),
+	);
 
 	public readonly can_submit = computed(() => (this.amount() ?? 0) > 0 && this.amount_status() === 'VALID' && !this.submitting());
 
@@ -69,23 +90,13 @@ export class EcashGeneralIssueComponent {
 		return {min: method?.min_amount ?? null, max: method?.max_amount ?? null};
 	});
 
-	/** Liabilities, reserves and coverage before and after this issue; bitcoin units only, as reserves back nothing else */
-	public readonly preview = computed(() => {
-		const reserves = this.data.reserves;
-		const unit = this.unit();
-		if (!reserves || getUnitMeta(unit).family !== 'btc') return null;
-		const liabilities_before = getUnitLiabilities(reserves, unit);
-		const liabilities_after = liabilities_before + (this.base_amount() ?? 0);
-		return {
-			liabilities_before,
-			liabilities_after,
-			reserves: reserves.reserves,
-			coverage_before: getSolvencyMultiple(reserves.reserves, liabilities_before, unit),
-			coverage_after: getSolvencyMultiple(reserves.reserves, liabilities_after, unit),
-		};
-	});
+	/** What the wallet holds in the selected unit on this mint */
+	public readonly unit_balance = computed(() => this.unit_chips().find((chip) => chip.unit === this.unit())?.amount ?? 0);
 
-	private readonly keypad_text = signal<string>('');
+	/** The reserves the issue is weighed against; reserves back bitcoin units only */
+	public readonly solvency_reserves = computed(() => (getUnitMeta(this.unit()).family === 'btc' ? this.data.reserves() : null));
+
+	private readonly memo_input = viewChild<ElementRef<HTMLTextAreaElement>>('memo_input');
 
 	constructor() {
 		effect(() => this.applyLimits());
@@ -95,9 +106,9 @@ export class EcashGeneralIssueComponent {
 		Form
 	******************************************************** */
 
-	/** Sets the amount from the keypad's text, as an edit, so its field turns hot and shows the mint's limits */
-	private setKeypadText(text: string): void {
-		this.keypad_text.set(text);
+	/** Sets the amount from its typed text, as an edit, so a breach of the mint's limits shows */
+	private setAmountText(text: string): void {
+		this.amount_text.set(text);
 		this.form.controls.amount.setValue(text === '' ? null : Number(text));
 		this.form.controls.amount.markAsDirty();
 		this.form.controls.amount.markAsTouched();
@@ -120,29 +131,44 @@ export class EcashGeneralIssueComponent {
 
 	/** Switches the unit, clearing an amount entered at the old unit's precision */
 	public onUnit(unit: string): void {
+		if (this.submitting()) return;
 		this.unit.set(unit);
-		this.keypad_text.set('');
+		this.amount_text.set('');
 		this.form.controls.amount.reset();
 	}
 
-	/** Applies a keypad key to the amount, within the unit's precision */
+	/** Applies a key from the amount or the keypad, within the unit's precision */
 	public onKey(key: string): void {
-		this.setKeypadText(applyKeypadKey(this.keypad_text(), key, this.decimals()));
+		if (this.submitting()) return;
+		this.setAmountText(applyKeypadKey(this.amount_text(), key, this.decimals()));
 	}
 
-	/** Clears a field back to where it started */
-	public onCancel(event: Event, field: 'amount' | 'memo'): void {
+	/** Replaces the amount with pasted or retyped text, still held to the unit's precision */
+	public onReplace(text: string): void {
+		if (this.submitting()) return;
+		this.setAmountText([...text].reduce((amount, key) => applyKeypadKey(amount, key, this.decimals()), ''));
+	}
+
+	/** Opens the memo field the sheet keeps folded, focused, or folds it again; a written memo is kept either way */
+	public onToggleMemo(): void {
+		this.memo_open.update((open) => !open);
+		if (this.memo_open()) afterNextRender(() => this.memo_input()?.nativeElement.focus(), {injector: this.injector});
+	}
+
+	/** Clears the memo back to where it started */
+	public onCancelMemo(event: Event): void {
 		event.preventDefault();
-		this.form.controls[field].reset();
-		if (field === 'amount') this.keypad_text.set('');
+		this.form.controls.memo.reset();
 	}
 
-	/** Issues the amount and closes with the operation; a refusal keeps the panel open and shows the server's own message */
+	/** Issues the amount and closes with the operation; the form is locked meanwhile, and a refusal unlocks it with the server's own message */
 	public onSubmit(): void {
 		const amount = this.base_amount();
 		if (!amount || !this.can_submit()) return;
 		this.submitting.set(true);
+		this.eventService.registerEvent(new EventData({type: 'SAVING'}));
 		const memo = this.form.controls.memo.value?.trim() || null;
+		this.form.controls.memo.disable();
 		this.ecashService
 			.issueEcash(this.unit(), amount, memo)
 			.pipe(takeUntilDestroyed(this.destroyRef))
@@ -155,6 +181,7 @@ export class EcashGeneralIssueComponent {
 				},
 				error: (errors: OrchardErrors) => {
 					this.submitting.set(false);
+					this.form.controls.memo.enable();
 					this.eventService.registerEvent(new EventData({type: 'ERROR', message: errors.errors[0].getFullError()}));
 				},
 			});

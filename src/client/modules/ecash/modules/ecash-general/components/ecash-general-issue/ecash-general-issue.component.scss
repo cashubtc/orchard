@@ -23,19 +23,65 @@
 	@extend %overflow-y-auto;
 }
 
-// Label, before, arrow, after
-.ecash-issue-preview {
-	@extend %grid;
+.ecash-issue-body {
+	@extend %flex;
+	@extend %flex-column;
 	@extend %flex-items-center;
-	grid-template-columns: minmax(0, 1fr) auto auto auto;
-	gap: 0.5rem 0.75rem;
+	@extend %flex-gap-1-5;
+	@extend %w-full;
+	max-width: 37.5rem;
+	margin: 0 auto;
+}
+
+.ecash-issue-footer {
+	@extend %p-1;
+	@extend %flex-shrink-0;
+	@extend %border-top;
+	@extend %border-top-solid;
+	@extend %orc-outline-variant-border;
+}
+
+.ecash-issue-solvency {
+	@extend %w-full;
+	@extend %overflow-hidden;
+}
+
+.ecash-issue-note {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+	@extend %p-1;
+	@extend %orc-corner-large;
+	@extend %orc-surface-container-bg;
+}
+
+.ecash-issue-submit {
+	@extend %w-full;
+	@extend %h-3;
 }
 
 .ecash-issue-sheet {
-	@extend %p-v-1;
+	@extend %flex;
+	@extend %flex-column;
+	@extend %p-t-1;
+	@extend %p-h-1;
+	gap: clamp(0.75rem, 1.75dvh, 1rem);
+	padding-bottom: clamp(0.75rem, 1.75dvh, 1rem);
 }
 
-.ecash-issue-sheet-submit {
-	@extend %w-full;
-	@extend %h-3;
+// Keeps the action on screen while the form scrolls under it
+.ecash-issue-sheet-actions {
+	@extend %sticky;
+	@extend %bottom-0;
+	@extend %p-v-0-5;
+	@extend %p-h-1;
+	@extend %orc-surface-container-low-bg;
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+}
+
+.ecash-issue-memo-toggle {
+	@extend %flex-shrink-0;
+	--mat-icon-button-state-layer-size: 3rem;
 }

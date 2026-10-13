@@ -114,7 +114,9 @@ const ICONS = [
   'zoom_in',
   'call_made',
   'call_received',
-  'backspace'
+  'backspace',
+  'unfold_more',
+  'sticky_note_2'
 ];
 
 // Sort alphabetically and remove duplicates
