@@ -221,9 +221,13 @@ describe('CashuWalletIssueService', () => {
 
 	it('loads from the mint when the cached keyset has no keys, and caches what it loaded', async () => {
 		const now = Math.floor(Date.now() / 1000);
-		await data_source
-			.getRepository(CashuWalletMintInfo)
-			.save({mint_url: 'http://localhost:3338', info: '{"name":"x","nuts":{}}', info_updated_at: now, keysets_updated_at: now});
+		await data_source.getRepository(CashuWalletMintInfo).save({
+			mint_url: 'http://localhost:3338',
+			pubkey: '02orchard',
+			info: '{"name":"x","pubkey":"02orchard","nuts":{}}',
+			info_updated_at: now,
+			keysets_updated_at: now,
+		});
 		await data_source
 			.getRepository(CashuWalletMintKeyset)
 			.save({mint_url: 'http://localhost:3338', id: mint.keyset.keysetId, unit: 'sat', active: true, keys: null, updated_at: now});

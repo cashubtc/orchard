@@ -5,7 +5,7 @@ import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {In, Repository} from 'typeorm';
 import {DateTime} from 'luxon';
-import {HttpResponseError, Mint, MintInfo, Wallet, normalizeMintUrl, type KeyChainCache} from '@cashu/cashu-ts';
+import {HttpResponseError, Mint, MintInfo, Wallet, normalizeMintUrl, type GetInfoResponse, type KeyChainCache} from '@cashu/cashu-ts';
 /* Local Dependencies */
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
 import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
@@ -25,7 +25,9 @@ type Memo<T> = {value: Promise<T>; expires_at: number};
 @Injectable()
 export class CashuWalletMintService {
 	private readonly logger = new Logger(CashuWalletMintService.name);
-	private orchard_identity: Promise<OrchardMintIdentity | null> | null = null;
+	private orchard_live: OrchardMintIdentity | null = null;
+	private orchard_cached: OrchardMintIdentity | null | undefined = undefined;
+	private orchard_lookup: Promise<OrchardMintIdentity | null> | null = null;
 	private orchard_failed_at = 0;
 	private wallets = new Map<string, Memo<Wallet>>();
 	private statuses = new Map<string, Memo<CashuWalletMintProbe>>();
@@ -46,12 +48,15 @@ export class CashuWalletMintService {
 		Registry
 	******************************************************** */
 
-	/** List a user's wallet mints with their cached info, adding the Orchard mint if it's missing */
+	/** List a user's wallet mints with their cached info, adding the Orchard mint if it's missing once its live identity is known */
 	public async listMints(user_id: string): Promise<CashuWalletMintRecord[]> {
-		const identity = await this.getOrchardIdentity();
-		const mints = await this.walletMintRepository.find({where: {user_id}, order: {created_at: 'ASC'}});
-		if (identity && !mints.some((mint) => this.matchesIdentity(mint, identity.pubkey, identity.urls))) {
-			mints.push(await this.ensureOrchardMint(user_id, identity));
+		const [identity, mints] = await Promise.all([
+			this.getOrchardIdentity(),
+			this.walletMintRepository.find({where: {user_id}, order: {created_at: 'ASC'}}),
+		]);
+		const live = this.orchard_live;
+		if (live && !mints.some((mint) => this.matchesIdentity(mint, live.pubkey, live.urls))) {
+			mints.push(await this.ensureOrchardMint(user_id, live));
 		}
 		return this.toRecords(mints, identity);
 	}
@@ -61,7 +66,7 @@ export class CashuWalletMintService {
 		const mint_url = this.parseMintUrl(url);
 		const identity = await this.getOrchardIdentity();
 		if (identity && this.isOrchardUrl(mint_url, identity)) {
-			const [record] = await this.toRecords([await this.ensureOrchardMint(user_id, identity)], identity);
+			const [record] = await this.toRecords([await this.getOrchardMint(user_id)], identity);
 			return record;
 		}
 
@@ -196,6 +201,7 @@ export class CashuWalletMintService {
 		const latency_ms = Date.now() - started_at;
 		await this.cashuWalletMintCacheService
 			.saveInfo(mint.mintUrl, info)
+			.then(() => (this.orchard_cached = undefined))
 			.then(() => this.cashuWalletMintCacheService.refreshKeysets(mint))
 			.catch((error) => this.logger.warn(`Cache of ${mint.mintUrl} not refreshed: ${describeMintError(error)}`));
 		return {online: true, latency_ms, error: null, checked_at: DateTime.now().toUnixInteger()};
@@ -205,22 +211,43 @@ export class CashuWalletMintService {
 		Orchard Mint
 	******************************************************** */
 
-	/** Identity of the mint Orchard manages; memoized, a failed lookup is retried after ORCHARD_RETRY_MS */
-	public getOrchardIdentity(): Promise<OrchardMintIdentity | null> {
-		if (!this.orchard_identity && Date.now() - this.orchard_failed_at < ORCHARD_RETRY_MS) return Promise.resolve(null);
-		this.orchard_identity ??= this.loadOrchardIdentity().then((identity) => {
-			if (!identity) {
-				this.orchard_identity = null;
-				this.orchard_failed_at = Date.now();
-			}
+	/** Identity of the mint Orchard manages, for recognizing and reaching it: the live one, else its cached /v1/info while a lookup runs */
+	public async getOrchardIdentity(): Promise<OrchardMintIdentity | null> {
+		if (this.orchard_live) return this.orchard_live;
+		const live = this.getLiveOrchardIdentity();
+		return (await this.getCachedOrchardIdentity()) ?? live;
+	}
+
+	/** Identity from the mint itself, for anything that writes; one lookup at a time, a failed lookup is retried after ORCHARD_RETRY_MS */
+	private getLiveOrchardIdentity(): Promise<OrchardMintIdentity | null> {
+		if (this.orchard_live) return Promise.resolve(this.orchard_live);
+		if (Date.now() - this.orchard_failed_at < ORCHARD_RETRY_MS) return Promise.resolve(null);
+		this.orchard_lookup ??= this.loadOrchardIdentity().then((identity) => {
+			this.orchard_lookup = null;
+			if (identity) this.orchard_live = identity;
+			else this.orchard_failed_at = Date.now();
 			return identity;
 		});
-		return this.orchard_identity;
+		return this.orchard_lookup;
+	}
+
+	/** The Orchard mint's identity from the /v1/info last saved for MINT_API, read once until a probe saves fresh info */
+	private async getCachedOrchardIdentity(): Promise<OrchardMintIdentity | null> {
+		if (this.orchard_cached !== undefined) return this.orchard_cached;
+		try {
+			const api_mint_url = this.getApiMintUrl();
+			const info = api_mint_url ? await this.cashuWalletMintCacheService.getInfo(api_mint_url) : null;
+			this.orchard_cached = api_mint_url && info ? this.toOrchardIdentity(api_mint_url, info) : null;
+		} catch (error) {
+			this.logger.warn(`Cached Orchard mint info unreadable: ${error?.message ?? error}`);
+			this.orchard_cached = null;
+		}
+		return this.orchard_cached;
 	}
 
 	/** The Orchard mint in a user's wallet, added if missing; refused while the mint can't be reached */
 	public async getOrchardMint(user_id: string): Promise<CashuWalletMint> {
-		const identity = await this.getOrchardIdentity();
+		const identity = await this.getLiveOrchardIdentity();
 		if (!identity) throw walletError('The Orchard mint is not responding at MINT_API; check that the mint is running');
 		return this.ensureOrchardMint(user_id, identity);
 	}
@@ -247,23 +274,33 @@ export class CashuWalletMintService {
 
 	/** Look up the Orchard mint through MINT_API; its public URLs come from its own /v1/info */
 	private async loadOrchardIdentity(): Promise<OrchardMintIdentity | null> {
-		const api_url = this.configService.get<string>('cashu.api');
-		if (!api_url) return null;
 		try {
-			const api_mint_url = normalizeMintUrl(api_url);
+			const api_mint_url = this.getApiMintUrl();
+			if (!api_mint_url) return null;
 			const info = await this.fetchMintInfo(api_mint_url);
 			await this.cashuWalletMintCacheService
 				.saveInfo(api_mint_url, info)
 				.catch((error) => this.logger.warn(`Orchard mint info not cached: ${describeMintError(error)}`));
-			const urls = this.normalizeUrls(info.urls ?? []);
 			if (!info.pubkey) this.logger.warn('Orchard mint publishes no pubkey; wallets recognize it by URL only');
-			return {pubkey: info.pubkey || null, urls: urls.length > 0 ? urls : [api_mint_url], api_url: api_mint_url};
+			return this.toOrchardIdentity(api_mint_url, info);
 		} catch (error) {
 			this.logger.warn(
 				`Orchard mint info unavailable; it joins wallets once it responds: ${error?.details ?? error?.message ?? error}`,
 			);
 			return null;
 		}
+	}
+
+	/** MINT_API, normalized; null when no mint is configured */
+	private getApiMintUrl(): string | null {
+		const api_url = this.configService.get<string>('cashu.api');
+		return api_url ? normalizeMintUrl(api_url) : null;
+	}
+
+	/** The Orchard mint's identity from its /v1/info: its pubkey and public URLs, or MINT_API when it lists none */
+	private toOrchardIdentity(api_mint_url: string, info: Pick<GetInfoResponse, 'pubkey' | 'urls'>): OrchardMintIdentity {
+		const urls = this.normalizeUrls(info.urls ?? []);
+		return {pubkey: info.pubkey || null, urls: urls.length > 0 ? urls : [api_mint_url], api_url: api_mint_url};
 	}
 
 	/** Whether a wallet mint is the Orchard mint: by pubkey, or by URL only when the mint publishes no pubkey */

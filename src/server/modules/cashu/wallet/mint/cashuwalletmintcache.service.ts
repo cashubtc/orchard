@@ -97,9 +97,15 @@ export class CashuWalletMintCacheService {
 
 	/** Cached info and keychain for building a wallet without network calls, or null until both are cached */
 	public async getWalletCache(mint_url: string): Promise<{info: GetInfoResponse; keychain: KeyChainCache} | null> {
-		const [info, keychain] = await Promise.all([this.mintInfoRepository.findOneBy({mint_url}), this.getKeychain(mint_url)]);
+		const [info, keychain] = await Promise.all([this.getInfo(mint_url), this.getKeychain(mint_url)]);
 		if (!info || !keychain) return null;
-		return {info: JSONInt.parse(info.info) as GetInfoResponse, keychain};
+		return {info, keychain};
+	}
+
+	/** A URL's cached /v1/info, or null before it first answered */
+	public async getInfo(mint_url: string): Promise<GetInfoResponse | null> {
+		const row = await this.mintInfoRepository.findOneBy({mint_url});
+		return row ? (JSONInt.parse(row.info) as GetInfoResponse) : null;
 	}
 
 	/** A URL's cached keysets as a cashu-ts keychain cache, or null before its keysets were first saved */

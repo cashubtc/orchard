@@ -60,6 +60,7 @@ describe('CashuWalletMintService', () => {
 		getInfos: jest.fn(
 			async (urls: string[]) => new Map(urls.filter((url) => cached_infos.has(url)).map((url) => [url, cached_infos.get(url)])),
 		),
+		getInfo: jest.fn(async (url: string) => (cached_infos.has(url) ? JSON.parse(cached_infos.get(url)!.info) : null)),
 		saveInfo: jest.fn(async (url: string, info: {name?: string}) => void cached_infos.set(url, {name: info.name || null, info: '{}'})),
 		refreshKeysets: jest.fn().mockResolvedValue(undefined),
 	};
@@ -122,6 +123,48 @@ describe('CashuWalletMintService', () => {
 			now.mockRestore();
 		});
 
+		it('flags the Orchard mint from its cached identity without waiting on an unresponsive mint', async () => {
+			rows = [
+				{
+					id: 'mint-1',
+					user_id: 'user-1',
+					pubkey: '02orchard',
+					urls: ['https://mint.orchard.example'],
+					created_at: 0,
+				} as CashuWalletMint,
+			];
+			cached_infos.set(ORCHARD_API, {name: orchard_info.name, info: JSON.stringify(orchard_info)});
+			route(ORCHARD_API, () => new Promise(() => {}));
+			const [mint] = await service.listMints('user-1');
+			expect(mint).toMatchObject({id: 'mint-1', is_orchard: true});
+		});
+
+		it('only adds the Orchard mint once its live identity is known', async () => {
+			cached_infos.set(ORCHARD_API, {name: orchard_info.name, info: JSON.stringify(orchard_info)});
+			route(ORCHARD_API, () => new Promise(() => {}));
+			expect(await service.listMints('user-1')).toEqual([]);
+			expect(rows).toHaveLength(0);
+		});
+
+		it('reads the cached Orchard identity once while the mint stays unreachable', async () => {
+			cached_infos.set(ORCHARD_API, {name: orchard_info.name, info: JSON.stringify(orchard_info)});
+			route(ORCHARD_API, () => Promise.reject(new Error('ECONNREFUSED')));
+			await service.listMints('user-1');
+			await service.listMints('user-1');
+			expect(cache_service.getInfo).toHaveBeenCalledTimes(1);
+		});
+	});
+
+	describe('getOrchardMint', () => {
+		it('refuses on a cached identity alone, without adding the mint', async () => {
+			cached_infos.set(ORCHARD_API, {name: orchard_info.name, info: JSON.stringify(orchard_info)});
+			route(ORCHARD_API, () => Promise.reject(new Error('ECONNREFUSED')));
+			const refusal = {details: expect.stringContaining('not responding')};
+			await expect(service.getOrchardMint('user-1')).rejects.toMatchObject(refusal);
+			await expect(service.addMint('user-1', 'https://mint.orchard.example')).rejects.toMatchObject(refusal);
+			expect(rows).toHaveLength(0);
+		});
+
 		it('recognizes the Orchard mint by pubkey after its URLs change', async () => {
 			rows = [
 				{id: 'mint-1', user_id: 'user-1', pubkey: '02orchard', urls: ['https://old.example'], created_at: 0} as CashuWalletMint,
@@ -142,7 +185,8 @@ describe('CashuWalletMintService', () => {
 		});
 
 		it('joins the cached info of the URL each mint is reached at', async () => {
-			cache_service.getInfos.mockResolvedValueOnce(new Map([[ORCHARD_API, {name: 'Orchard Test Mint', info: '{"name":"x"}'}]]));
+			await service.listMints('user-1');
+			cached_infos.set(ORCHARD_API, {name: 'Orchard Test Mint', info: '{"name":"x"}'});
 			const [mint] = await service.listMints('user-1');
 			expect(cache_service.getInfos).toHaveBeenCalledWith([ORCHARD_API]);
 			expect(mint).toMatchObject({name: 'Orchard Test Mint', info: '{"name":"x"}'});
