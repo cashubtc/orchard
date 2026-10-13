@@ -1,5 +1,5 @@
 /* Local Dependencies */
-import {buildCoinStackRows, getCoinStackSize} from './graphic-coin-stack.helpers';
+import {buildCoinStackRows, getCoinStackSize, orderCoinStackDrops} from './graphic-coin-stack.helpers';
 
 describe('graphic-coin-stack.helpers', () => {
 	describe('getCoinStackSize', () => {
@@ -23,6 +23,32 @@ describe('graphic-coin-stack.helpers', () => {
 			expect(buildCoinStackRows(6)).toEqual([[3, 3]]);
 			expect(buildCoinStackRows(10)).toEqual([[1], [3, 3, 3]]);
 			expect(buildCoinStackRows(18)).toEqual([[3], [3, 3], [3, 3, 3]]);
+		});
+	});
+
+	describe('orderCoinStackDrops', () => {
+		it('lands the bottom row first, layer by layer from the left, laid out top coin first', () => {
+			expect(orderCoinStackDrops([[2, 3]])).toEqual([
+				[
+					[2, 0],
+					[4, 3, 1],
+				],
+			]);
+			expect(orderCoinStackDrops([[1], [3, 3, 3]])).toEqual([
+				[[9]],
+				[
+					[6, 3, 0],
+					[7, 4, 1],
+					[8, 5, 2],
+				],
+			]);
+		});
+
+		it('numbers every coin once, so the last to land is the top of the stack', () => {
+			const drops = orderCoinStackDrops(buildCoinStackRows(18));
+			const orders = drops.flat(2).sort((a, b) => a - b);
+			expect(orders).toEqual(Array.from({length: 18}, (_, i) => i));
+			expect(drops[0][0][0]).toBe(17);
 		});
 	});
 });

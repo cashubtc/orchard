@@ -37,3 +37,22 @@ export function buildCoinStackRows(count: number): number[][] {
 		.filter((groups) => groups.length > 0)
 		.reverse();
 }
+
+/**
+ * Numbers each coin in the order it lands: bottom row first, then layer by layer, left to right within a layer
+ * @param {number[][]} rows - Each row's column heights, top row first
+ * @returns {number[][][]} Each coin's landing order, laid out like the rows: top row first, each column's top coin first
+ */
+export function orderCoinStackDrops(rows: number[][]): number[][][] {
+	const drops = rows.map((groups) => groups.map((height) => new Array<number>(height).fill(0)));
+	let order = 0;
+	for (let row = drops.length - 1; row >= 0; row--) {
+		const tallest = Math.max(...drops[row].map((column) => column.length));
+		for (let layer = 0; layer < tallest; layer++) {
+			for (const column of drops[row]) {
+				if (layer < column.length) column[column.length - 1 - layer] = order++;
+			}
+		}
+	}
+	return drops;
+}

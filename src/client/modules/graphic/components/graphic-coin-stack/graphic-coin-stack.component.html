@@ -1,10 +1,14 @@
 <div class="stack" [class]="unit_class()">
-	@for (groups of rows(); track $index) {
-		<div class="coin-row" [style.--drop-delay]="(rows().length - 1 - $index) * 150">
-			@for (group_size of groups; track $index) {
-				<div class="coin-group" [style.--group-offset]="$index * 60">
-					@for (_ of [].constructor(group_size); track $index) {
-						<div class="coin" [style.--coin-offset]="$index * 30"></div>
+	@for (layer of layers(); track layer) {
+		<div class="coin-layer" [class.coin-layer-leave]="!$last" [style.--coin-count]="coin_count()" (animationend)="onLeft($event)">
+			@for (groups of layer; track $index) {
+				<div class="coin-row">
+					@for (coins of groups; track $index) {
+						<div class="coin-group" [style.--group-x]="$index - (groups.length - 1) / 2">
+							@for (order of coins; track $index) {
+								<div class="coin" [style.--drop-order]="order"></div>
+							}
+						</div>
 					}
 				</div>
 			}
