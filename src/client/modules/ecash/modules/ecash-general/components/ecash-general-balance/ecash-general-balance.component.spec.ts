@@ -90,6 +90,12 @@ describe('EcashGeneralBalanceComponent', () => {
 		expect(component.selection().caption).toBeNull();
 	});
 
+	it("hands the selected unit's balance to the amount", () => {
+		fixture.componentRef.setInput('balances', [balance('mint-1', 'sat', 2100)]);
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('orc-ecash-general-balance-amount').getAttribute('aria-label')).toBe('₿ 2,100');
+	});
+
 	it('converts sat to USD only when the oracle is enabled', () => {
 		fixture.componentRef.setInput('balances', [balance('mint-1', 'sat', 100_000)]);
 		fixture.componentRef.setInput('bitcoin_oracle_price', new BitcoinOraclePrice({date: 0, price: 100_000}));

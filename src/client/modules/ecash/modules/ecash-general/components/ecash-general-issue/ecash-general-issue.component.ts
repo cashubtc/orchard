@@ -16,6 +16,7 @@ import {takeUntilDestroyed, toSignal} from '@angular/core/rxjs-interop';
 import {FormControl, FormGroup, Validators} from '@angular/forms';
 /* Vendor Dependencies */
 import {MatBottomSheetRef} from '@angular/material/bottom-sheet';
+import {filter, take} from 'rxjs';
 /* Application Dependencies */
 import {FormPanelRef} from '@client/modules/form/services/form-panel/form-panel-ref';
 import {FORM_PANEL_DATA} from '@client/modules/form/services/form-panel/form-panel.types';
@@ -161,7 +162,7 @@ export class EcashGeneralIssueComponent {
 		this.form.controls.memo.reset();
 	}
 
-	/** Issues the amount and closes with the operation; the form is locked meanwhile, and a refusal unlocks it with the server's own message */
+	/** Issues the amount and closes with the operation once its success is on screen; the form is locked meanwhile, and a refusal unlocks it with the server's own message */
 	public onSubmit(): void {
 		const amount = this.base_amount();
 		if (!amount || !this.can_submit()) return;
@@ -175,9 +176,20 @@ export class EcashGeneralIssueComponent {
 			.subscribe({
 				next: (operation) => {
 					const finalized = operation.state === WalletOperationState.Finalized;
-					const message = finalized ? 'Ecash issued!' : 'Issue started, it finishes on its own';
-					this.eventService.registerEvent(new EventData({type: 'SUCCESS', message}));
-					this.panelRef.close(operation);
+					const success = new EventData({
+						type: 'SUCCESS',
+						message: finalized ? 'Ecash issued!' : 'Issue started, it finishes on its own',
+					});
+					this.panelRef.setResult(operation);
+					this.eventService
+						.getActiveEvent()
+						.pipe(
+							filter((event) => event === success),
+							take(1),
+							takeUntilDestroyed(this.destroyRef),
+						)
+						.subscribe(() => this.panelRef.close());
+					this.eventService.registerEvent(success);
 				},
 				error: (errors: OrchardErrors) => {
 					this.submitting.set(false);

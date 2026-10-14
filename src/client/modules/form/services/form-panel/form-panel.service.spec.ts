@@ -70,6 +70,16 @@ describe('FormPanelService', () => {
 		expect(service.opened()).toBeFalse();
 	});
 
+	it('hands back a result the panel set early, however the panel is closed', () => {
+		sheet.set(true);
+		const ref = service.open(TestPanelComponent);
+		const closed = jasmine.createSpy('closed');
+		ref.afterClosed().subscribe(closed);
+		ref.setResult('issued');
+		sheet_dismissed.next();
+		expect(closed).toHaveBeenCalledWith('issued');
+	});
+
 	it('forgets the host once it is destroyed', () => {
 		const host_injector = createEnvironmentInjector([], TestBed.inject(EnvironmentInjector));
 		service.registerContainer(jasmine.createSpyObj('ViewContainerRef', ['clear'], {injector: host_injector}), {sheet});

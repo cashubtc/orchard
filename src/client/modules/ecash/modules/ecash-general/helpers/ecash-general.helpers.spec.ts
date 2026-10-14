@@ -1,7 +1,7 @@
 /* Native Dependencies */
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 /* Local Dependencies */
-import {buildAmountChars, buildUnitChips} from './ecash-general.helpers';
+import {buildAmountChars, buildBalanceCells, buildUnitChips, getBalanceCellsWidth} from './ecash-general.helpers';
 
 describe('buildUnitChips', () => {
 	it('offers every unit at 0, sums balances across mints, and sorts bitcoin first', () => {
@@ -40,5 +40,14 @@ describe('buildAmountChars', () => {
 		expect(render('5.', 2)).toBe('5.(0)(0)');
 		expect(render('5.2', 2)).toBe('5.2(0)');
 		expect(render('1234.50', 2, 'de-DE')).toBe('1.234,50');
+	});
+});
+
+describe('buildBalanceCells', () => {
+	it('gives digits in any script a full cell and separators a narrow one', () => {
+		const widths = (text: string) => buildBalanceCells(text).map((cell) => cell.width);
+		expect(widths('2,100')).toEqual([0.665, 0.24, 0.665, 0.665, 0.665]);
+		expect(widths('١٬٢٣')).toEqual([0.665, 0.24, 0.665, 0.665]);
+		expect(getBalanceCellsWidth(buildBalanceCells('1.5'))).toBeCloseTo(1.57);
 	});
 });

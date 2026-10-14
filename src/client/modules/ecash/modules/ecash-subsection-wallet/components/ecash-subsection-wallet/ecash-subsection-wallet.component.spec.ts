@@ -148,6 +148,7 @@ describe('EcashSubsectionWalletComponent', () => {
 		expect(data.status().state).toBe('disabled');
 		expect(data.balances()).toEqual(balances);
 		expect(data.unit).toBeNull();
+		expect(component.selected_unit()).toBe('sat');
 		expect(mint_service.clearSolvencyCache).toHaveBeenCalled();
 		expect(ecash_service.clearBalancesCache).toHaveBeenCalled();
 		expect(ecash_service.loadBalances).toHaveBeenCalled();

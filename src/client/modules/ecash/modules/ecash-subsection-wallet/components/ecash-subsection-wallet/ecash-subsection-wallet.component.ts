@@ -172,7 +172,7 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 		this.selected_unit.set(unit);
 	}
 
-	/** Opens the issue panel in the selected unit; an issued operation refreshes the balances it changed */
+	/** Opens the issue panel in the selected unit; an issued operation switches the balance to its unit and refreshes what it changed */
 	public onIssue(): void {
 		const mint = this.orchard_mint();
 		if (!mint) return;
@@ -189,6 +189,7 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe((operation) => {
 				if (!operation) return;
+				this.selected_unit.set(operation.unit.toLowerCase());
 				this.mintService.clearSolvencyCache();
 				this.ecashService.clearBalancesCache();
 				this.loadBalances();

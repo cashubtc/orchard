@@ -8,6 +8,7 @@ import {MatBottomSheetRef} from '@angular/material/bottom-sheet';
 import {FormPanelRef} from '@client/modules/form/services/form-panel/form-panel-ref';
 import {FORM_PANEL_DATA} from '@client/modules/form/services/form-panel/form-panel.types';
 import {EventService} from '@client/modules/event/services/event/event.service';
+import {EventData} from '@client/modules/event/classes/event-data.class';
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
 import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 /* Native Dependencies */
@@ -26,8 +27,9 @@ describe('EcashGeneralIssueComponent', () => {
 	let component: EcashGeneralIssueComponent;
 	let fixture: ComponentFixture<EcashGeneralIssueComponent>;
 	let ecash_service: {issueEcash: jasmine.Spy};
-	let event_service: {registerEvent: jasmine.Spy};
-	let panel_ref: {close: jasmine.Spy};
+	let event_service: {registerEvent: jasmine.Spy; getActiveEvent: () => Subject<EventData | null>};
+	let active_events: Subject<EventData | null>;
+	let panel_ref: {close: jasmine.Spy; setResult: jasmine.Spy};
 
 	const mint = new EcashMint({
 		id: 'mint-1',
@@ -73,8 +75,12 @@ describe('EcashGeneralIssueComponent', () => {
 			unit: null,
 		};
 		ecash_service = {issueEcash: jasmine.createSpy('issueEcash').and.returnValue(of(operation))};
-		event_service = {registerEvent: jasmine.createSpy('registerEvent')};
-		panel_ref = {close: jasmine.createSpy('close')};
+		active_events = new Subject<EventData | null>();
+		event_service = {
+			registerEvent: jasmine.createSpy('registerEvent').and.callFake((event: EventData) => active_events.next(event)),
+			getActiveEvent: () => active_events,
+		};
+		panel_ref = {close: jasmine.createSpy('close'), setResult: jasmine.createSpy('setResult')};
 
 		await TestBed.configureTestingModule({
 			imports: [OrcEcashGeneralModule],
@@ -202,7 +208,8 @@ describe('EcashGeneralIssueComponent', () => {
 		component.form.controls.memo.setValue(' Meetup prizes ');
 		component.onSubmit();
 		expect(ecash_service.issueEcash).toHaveBeenCalledWith('sat', 2100, 'Meetup prizes');
-		expect(panel_ref.close).toHaveBeenCalledWith(operation);
+		expect(panel_ref.setResult).toHaveBeenCalledWith(operation);
+		expect(panel_ref.close).toHaveBeenCalled();
 		expect(event_service.registerEvent.calls.allArgs().map(([event]) => event.type)).toEqual(['SAVING', 'SUCCESS']);
 		expect(event_service.registerEvent).toHaveBeenCalledWith(jasmine.objectContaining({type: 'SUCCESS', message: 'Ecash issued!'}));
 	});
@@ -255,6 +262,17 @@ describe('EcashGeneralIssueComponent', () => {
 		expect(event_service.registerEvent).toHaveBeenCalledWith(
 			jasmine.objectContaining({type: 'ERROR', message: errors.errors[0].getFullError()}),
 		);
+	});
+
+	it('hands back the operation at once, but closes only once its success is on screen', () => {
+		event_service.registerEvent.and.stub();
+		component.form.controls.amount.setValue(2100);
+		component.onSubmit();
+		expect(panel_ref.setResult).toHaveBeenCalledWith(operation);
+		expect(panel_ref.close).not.toHaveBeenCalled();
+
+		active_events.next(event_service.registerEvent.calls.mostRecent().args[0]);
+		expect(panel_ref.close).toHaveBeenCalled();
 	});
 
 	it("warns of the mint's minimum in the unit", () => {

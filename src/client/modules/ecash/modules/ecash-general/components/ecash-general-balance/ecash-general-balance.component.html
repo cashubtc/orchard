@@ -21,11 +21,12 @@
 							[custody]="'ecash'"
 						></orc-graphic-asset>
 						<div class="flex flex-column flex-gap-0-25 w-min-0">
-							<div
-								class="ecash-balance-amount font-weight-semi-bold text-nowrap"
+							<orc-ecash-general-balance-amount
+								class="ecash-balance-amount font-weight-semi-bold"
 								[class.mobile]="mobile()"
-								[innerHTML]="current.amount | localAmount: current.unit : 'mint'"
-							></div>
+								[amount]="current.amount"
+								[unit]="current.unit"
+							></orc-ecash-general-balance-amount>
 							<div class="font-size-s orc-outline-color">
 								@if (current.amount_oracle !== null) {
 									<span [innerHTML]="current.amount_oracle | localAmount: 'usd'"></span>

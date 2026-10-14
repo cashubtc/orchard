@@ -19,6 +19,12 @@ export type EcashAmountChar = {
 	ghost: boolean;
 };
 
+/** One character of a counting balance, in a cell as wide as its widest glyph so the number holds still */
+export type EcashBalanceCell = {
+	char: string;
+	width: number;
+};
+
 /** Whether a mint's reserves cover its liabilities */
 export type EcashSolvencyVerdict = 'backed' | 'short' | 'none' | 'unknown';
 

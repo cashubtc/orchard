@@ -4,7 +4,13 @@ import {getNumberSeparator} from '@client/modules/local/helpers/local.helpers';
 /* Native Dependencies */
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 import {EcashMintStatus} from '@client/modules/ecash/classes/ecash-mint-status.class';
-import {EcashAmountChar, EcashMintStatusPill, EcashUnitChip} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
+import {BALANCE_DIGIT_EM, BALANCE_SEPARATOR_EM} from '@client/modules/ecash/modules/ecash-general/constants/ecash-general.constants';
+import {
+	EcashAmountChar,
+	EcashBalanceCell,
+	EcashMintStatusPill,
+	EcashUnitChip,
+} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
 
 /**
  * A mint's status pill: checking until statuses load, then online with latency or unreachable with the reason
@@ -37,6 +43,24 @@ export function buildUnitChips(units: string[], balances: EcashBalance[]): Requi
 		totals.set(key, (totals.get(key) ?? 0) + balance);
 	}
 	return [...totals].map(([unit, amount]) => ({unit, amount})).sort((a, b) => compareUnits(a.unit, b.unit));
+}
+
+/**
+ * Lays a formatted balance out in fixed-width cells, so its digits don't shift while it counts
+ * @param {string} text - The balance in the locale's format
+ * @returns {EcashBalanceCell[]} Each character with its cell width in ems
+ */
+export function buildBalanceCells(text: string): EcashBalanceCell[] {
+	return [...text].map((char) => ({char, width: /\p{Nd}/u.test(char) ? BALANCE_DIGIT_EM : BALANCE_SEPARATOR_EM}));
+}
+
+/**
+ * How wide a balance's cells are together
+ * @param {EcashBalanceCell[]} cells - The balance's cells
+ * @returns {number} The width in ems
+ */
+export function getBalanceCellsWidth(cells: EcashBalanceCell[]): number {
+	return cells.reduce((width, cell) => width + cell.width, 0);
 }
 
 /**

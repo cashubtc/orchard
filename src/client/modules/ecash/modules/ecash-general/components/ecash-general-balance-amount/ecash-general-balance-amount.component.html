@@ -1,0 +1,11 @@
+@if (sign().before) {
+	<span class="ecash-balance-sign orc-unit">{{ sign().text }}</span>
+}
+<span class="ecash-balance-digits" aria-hidden="true" [style.width.em]="width()">
+	@for (cell of cells(); track $index) {
+		<span class="ecash-balance-cell" [style.width.em]="cell.width">{{ cell.char }}</span>
+	}
+</span>
+@if (!sign().before) {
+	<span class="ecash-balance-sign ecash-balance-sign-after orc-unit">{{ sign().text }}</span>
+}
