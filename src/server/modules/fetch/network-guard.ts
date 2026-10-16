@@ -164,6 +164,57 @@ export async function assertPublicHost(host: string): Promise<string | null> {
 }
 
 /**
+ * Whether a URL is sent direct rather than through Tor: localhost, local TLDs, names with no TLD,
+ * and private or link-local IPv4 ranges
+ * @param {string} url - URL to check
+ * @returns {boolean} True if the URL is a local address, false otherwise
+ */
+export function isLocalAddress(url: string): boolean {
+	try {
+		const parsed = new URL(url);
+		const hostname = parsed.hostname.toLowerCase();
+		if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return true;
+		if (hostname.endsWith('.local') || hostname.endsWith('.internal') || hostname.endsWith('.lan')) return true;
+		if (!hostname.includes('.')) return true;
+		if (hostname.startsWith('192.168.') || hostname.startsWith('10.')) return true;
+		if (hostname.startsWith('169.254.')) return true;
+		if (hostname.startsWith('172.')) {
+			const second_octet = parseInt(hostname.split('.')[1]);
+			if (second_octet >= 16 && second_octet <= 31) {
+				return true;
+			}
+		}
+		return false;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Refuses a URL that would reach a private network. Through Tor only what Tor wouldn't carry is refused
+ * (hosts sent direct, private IP literals, metadata names), so no hostname is resolved outside Tor;
+ * without Tor the host's resolved addresses are checked too.
+ * @param {string} url - URL about to be fetched
+ * @param {boolean} via_tor - Whether requests go through the Tor proxy
+ * @returns {Promise<boolean>} False when the host doesn't resolve, which is only known without Tor
+ * @throws Error if the URL is refused
+ */
+export async function assertPublicDestination(url: string, via_tor: boolean): Promise<boolean> {
+	const {protocol, hostname} = new URL(url);
+	if (protocol !== 'http:' && protocol !== 'https:') throw new Error(`Blocked: scheme '${protocol}' is not allowed`);
+	const host = hostname.replace(/^\[|\]$/g, '');
+	if (host.endsWith('.onion')) {
+		if (!via_tor) throw new Error('Onion addresses need a Tor proxy; set TOR_PROXY_SERVER');
+		return true;
+	}
+	if (!via_tor) return (await assertPublicHost(host)) !== null;
+	if (BLOCKED_HOSTNAMES.has(host.toLowerCase())) throw new Error(`Blocked: hostname '${host}' is not allowed`);
+	if (net.isIP(host) && isBlockedIp(host)) throw new Error(`Blocked: IP '${host}' is in a private/reserved range`);
+	if (isLocalAddress(url)) throw new Error(`Blocked: '${host}' is a local address`);
+	return true;
+}
+
+/**
  * Extracts the hostname from a URL string and validates it via assertPublicHost.
  * Returns the resolved IP address on success.
  *

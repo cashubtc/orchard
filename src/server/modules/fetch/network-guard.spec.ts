@@ -1,7 +1,8 @@
 /* Core Dependencies */
+import {promises as dns} from 'dns';
 import {expect} from '@jest/globals';
 /* Local Dependencies */
-import {assertPublicHost, assertPublicUrl} from './network-guard.js';
+import {assertPublicDestination, assertPublicHost, assertPublicUrl} from './network-guard.js';
 
 describe('network-guard', () => {
 	describe('assertPublicUrl', () => {
@@ -80,6 +81,34 @@ describe('network-guard', () => {
 
 		it('rejects blocked metadata hostnames', async () => {
 			await expect(assertPublicHost('metadata.google.internal')).rejects.toThrow('not allowed');
+		});
+	});
+
+	describe('assertPublicDestination', () => {
+		afterEach(() => jest.restoreAllMocks());
+
+		it('checks resolved addresses without Tor', async () => {
+			jest.spyOn(dns, 'resolve4').mockResolvedValue(['10.0.0.7']);
+			await expect(assertPublicDestination('https://mint.example', false)).rejects.toThrow('private/reserved');
+			jest.spyOn(dns, 'resolve4').mockRejectedValue(new Error('ENOTFOUND'));
+			jest.spyOn(dns, 'resolve6').mockRejectedValue(new Error('ENOTFOUND'));
+			expect(await assertPublicDestination('https://typo.example', false)).toBe(false);
+		});
+
+		it('resolves nothing outside Tor, refusing only what Tor would not carry', async () => {
+			const resolve = jest.spyOn(dns, 'resolve4');
+			expect(await assertPublicDestination('https://mint.example', true)).toBe(true);
+			expect(await assertPublicDestination('http://cedarmintq7v3xabcdefghij.onion', true)).toBe(true);
+			await expect(assertPublicDestination('http://nutshell:3338', true)).rejects.toThrow('local address');
+			await expect(assertPublicDestination('http://mint.lan', true)).rejects.toThrow('local address');
+			await expect(assertPublicDestination('http://100.64.0.1', true)).rejects.toThrow('private/reserved');
+			await expect(assertPublicDestination('http://metadata.google.internal', true)).rejects.toThrow('not allowed');
+			expect(resolve).not.toHaveBeenCalled();
+		});
+
+		it('refuses onion addresses without Tor, and schemes other than http(s)', async () => {
+			await expect(assertPublicDestination('http://cedarmintq7v3xabcdefghij.onion', false)).rejects.toThrow('need a Tor proxy');
+			await expect(assertPublicDestination('file:///etc/passwd', true)).rejects.toThrow('scheme');
 		});
 	});
 });
