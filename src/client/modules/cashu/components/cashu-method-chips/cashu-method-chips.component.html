@@ -1,0 +1,32 @@
+<div class="cashu-method-chips" role="group" aria-label="Method">
+	@for (chip of chips(); track chip.method) {
+		@if (selectable()) {
+			<button
+				type="button"
+				class="cashu-method-chip orc-pill orc-pill-outlined orc-pill-coin"
+				[class.orc-pill-selected]="chip.method === selected()"
+				[attr.aria-pressed]="chip.method === selected()"
+				[disabled]="disabled()"
+				matRipple
+				(click)="select.emit(chip.method)"
+			>
+				<ng-container *ngTemplateOutlet="chip_content; context: {$implicit: chip}"></ng-container>
+			</button>
+		} @else {
+			<div class="cashu-method-chip orc-pill orc-pill-outlined orc-pill-coin">
+				<ng-container *ngTemplateOutlet="chip_content; context: {$implicit: chip}"></ng-container>
+			</div>
+		}
+	}
+</div>
+
+<ng-template #chip_content let-chip>
+	<span class="cashu-method-coin">
+		@if (chip.display.svg_icon) {
+			<mat-icon class="icon-sm" [svgIcon]="chip.display.icon"></mat-icon>
+		} @else {
+			<mat-icon class="icon-sm mat-symbol-fill">{{ chip.display.icon }}</mat-icon>
+		}
+	</span>
+	<span>{{ chip.display.label }}</span>
+</ng-template>

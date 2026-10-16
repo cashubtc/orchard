@@ -1,0 +1,19 @@
+@use 'molecule/molecule';
+
+.cashu-method-chips {
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-gap-0-5;
+}
+
+.cashu-method-coin {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+	@extend %flex-shrink-0;
+	@extend %h-1-75;
+	@extend %w-1-75;
+	@extend %orc-corner-full;
+	@extend %orc-surface-container-highest-bg;
+	@extend %orc-on-surface-color;
+}

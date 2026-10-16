@@ -1,0 +1,7 @@
+@use 'molecule/molecule';
+
+.cashu-unit-chips {
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-gap-0-5;
+}
