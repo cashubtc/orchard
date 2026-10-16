@@ -1,5 +1,5 @@
-<div class="agent-form-container">
-	<div class="agent-form-header">
+<div class="orc-form-panel">
+	<div class="orc-form-panel-header">
 		<div class="p-l-0-5" [class.orc-error-color]="form.invalid && submitted()">{{ form_title() }}</div>
 		<div class="flex flex-items-center flex-gap-1">
 			<button matButton="filled" (click)="onSave()">Save</button>
@@ -9,7 +9,7 @@
 		</div>
 	</div>
 	<div class="category-rule"></div>
-	<div class="agent-form-content">
+	<div class="orc-form-panel-content">
 		<form [formGroup]="form" (ngSubmit)="$event.preventDefault()" class="flex flex-column flex-gap-1">
 			@if (data.mode !== 'groundskeeper') {
 				<div class="flex p-b-1">

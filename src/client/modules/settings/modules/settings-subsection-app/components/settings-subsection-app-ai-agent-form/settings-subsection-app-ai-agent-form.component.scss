@@ -1,28 +1,6 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
 
-.agent-form-container {
-	@extend %relative;
-	@extend %flex;
-	@extend %flex-column;
-	@extend %h-full;
-	@extend %overflow-hidden;
-}
-
-.agent-form-header {
-	@extend %p-0-5;
-	@extend %flex;
-	@extend %flex-items-center;
-	@extend %flex-justify-between;
-	flex-shrink: 0;
-}
-
-.agent-form-content {
-	@extend %p-1;
-	flex: 1;
-	@extend %overflow-y-auto;
-}
-
 .fullscreen-button {
 	rotate: 45deg;
 }

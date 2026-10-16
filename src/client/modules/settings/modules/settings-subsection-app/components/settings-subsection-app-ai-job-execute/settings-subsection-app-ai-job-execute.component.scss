@@ -1,28 +1,6 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
 
-.execute-container {
-	@extend %relative;
-	@extend %flex;
-	@extend %flex-column;
-	@extend %h-full;
-	@extend %overflow-hidden;
-}
-
-.execute-header {
-	@extend %p-0-5;
-	@extend %flex;
-	@extend %flex-items-center;
-	@extend %flex-justify-between;
-	flex-shrink: 0;
-}
-
-.execute-content {
-	@extend %p-1;
-	flex: 1;
-	@extend %overflow-y-auto;
-}
-
 .elapsed-timer {
 	font-size: 2rem;
 	font-weight: 300;

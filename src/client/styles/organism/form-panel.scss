@@ -1,0 +1,64 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+// Panels opened through FormPanelService: a side panel on wide screens, a bottom sheet on mobile
+.orc-form-panel {
+    @extend %relative;
+    @extend %flex;
+    @extend %flex-column;
+    @extend %h-full;
+    @extend %overflow-hidden;
+}
+
+.orc-form-panel-header {
+    @extend %p-0-5;
+    @extend %flex;
+    @extend %flex-items-center;
+    @extend %flex-justify-between;
+    @extend %flex-shrink-0;
+}
+
+.orc-form-panel-content {
+    @extend %p-1;
+    @extend %flex-1;
+    @extend %overflow-y-auto;
+}
+
+// Centres the form at a readable width on wide panels
+.orc-form-panel-body {
+    @extend %flex;
+    @extend %flex-column;
+    @extend %flex-items-center;
+    @extend %w-full;
+    max-width: 37.5rem;
+    margin: 0 auto;
+}
+
+.orc-form-panel-footer {
+    @extend %p-1;
+    @extend %flex-shrink-0;
+    @extend %border-top;
+    @extend %border-top-solid;
+    @extend %orc-outline-variant-border;
+}
+
+.orc-form-panel-sheet {
+    @extend %flex;
+    @extend %flex-column;
+    @extend %p-t-1;
+    @extend %p-h-1;
+    gap: clamp(0.75rem, 1.75dvh, 1rem);
+    padding-bottom: clamp(0.75rem, 1.75dvh, 1rem);
+}
+
+// Keeps the action on screen while the form scrolls under it
+.orc-form-panel-sheet-actions {
+    @extend %sticky;
+    @extend %bottom-0;
+    @extend %p-v-0-5;
+    @extend %p-h-1;
+    @extend %orc-surface-container-low-bg;
+    @extend %flex;
+    @extend %flex-items-center;
+    @extend %flex-gap-0-5;
+}
