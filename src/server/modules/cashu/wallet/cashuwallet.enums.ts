@@ -7,6 +7,12 @@ export enum WalletProofState {
 
 export enum WalletOperationType {
 	MINT = 'MINT',
+	ISSUE = 'ISSUE',
+}
+
+export enum WalletMintMatch {
+	URL = 'URL',
+	PUBKEY = 'PUBKEY',
 }
 
 export enum WalletOperationState {

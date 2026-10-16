@@ -1,5 +1,7 @@
 /* Core Dependencies */
 import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core';
+/* Application Dependencies */
+import {CashuUnitChip} from '@client/modules/cashu/types/cashu.types';
 /* Native Dependencies */
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 import {MintKeysetCount} from '@client/modules/mint/classes/mint-keyset-count.class';
@@ -39,6 +41,9 @@ export class MintGeneralKeysetsComponent {
 		const units = this.keysets().map((k) => k.unit);
 		return [...new Set(units)];
 	});
+
+	/** The units as display-only chips */
+	public unit_chips = computed<CashuUnitChip[]>(() => this.unique_units().map((unit) => ({unit})));
 
 	/** Set of keyset IDs where the keyset is active. */
 	public active_keyset_ids = computed<Set<string>>(() => {

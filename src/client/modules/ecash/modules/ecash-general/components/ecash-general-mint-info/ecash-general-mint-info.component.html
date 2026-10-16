@@ -1,0 +1,79 @@
+<mat-card appearance="outlined" class="overflow-hidden" role="region" aria-label="Mint details">
+	<div class="orc-surface-container-low-bg">
+		<div class="ecash-mint-info-summary">
+			<orc-ecash-general-mint-header
+				[name]="name()"
+				[subtitle]="subtitle()"
+				[icon_url]="info().icon_url"
+				[icon_height]="mobile() ? '3rem' : '3.5rem'"
+				[large]="true"
+			>
+				@if (mobile()) {
+					<span mint-header-detail class="flex flex-items-center flex-gap-0-5 font-size-xs p-t-0-25">
+						<orc-graphic-status class="flex-shrink-0" status="active" size="0.5rem"></orc-graphic-status>
+						<span>{{ status_text() }}</span>
+					</span>
+				}
+				@if (!mobile()) {
+					<div class="orc-pill orc-pill-filled font-size-xs">
+						<orc-graphic-status class="flex-shrink-0" status="active" size="0.5rem"></orc-graphic-status>
+						<span class="text-nowrap">{{ status_text() }}</span>
+					</div>
+				}
+			</orc-ecash-general-mint-header>
+			@if (!compact()) {
+				@if (info().description) {
+					<p class="ecash-mint-info-text">{{ info().description }}</p>
+				}
+				@if (info().motd) {
+					<div class="ecash-mint-info-note" role="note" aria-label="Message from the mint">
+						<mat-icon class="icon-sm orc-primary-color mat-symbol-fill flex-shrink-0 p-h-0-5">chat_bubble</mat-icon>
+						<span>{{ info().motd }}</span>
+					</div>
+				}
+			}
+			@if (sign_in_required()) {
+				<div class="ecash-mint-info-note ecash-mint-info-warning" role="note">
+					<mat-icon class="icon-sm orc-status-warning-color flex-shrink-0 p-h-0-5">lock</mat-icon>
+					<span class="flex flex-column flex-gap-0-25">
+						<span>This mint requires sign-in (NUT-21 / NUT-22).</span>
+						<span class="orc-on-surface-variant-color"
+							>Orchard’s wallet can’t sign in yet, so anything the mint protects will fail.</span
+						>
+					</span>
+				</div>
+			}
+			@if (!compact()) {
+				<div class="ecash-mint-info-rows" [class.mobile]="mobile()">
+					<span class="font-size-xs orc-outline-color">Units</span>
+					<orc-cashu-unit-chips [chips]="unit_chips()" [show_unit]="true" [selectable]="false"></orc-cashu-unit-chips>
+					<span class="font-size-xs orc-outline-color">Methods</span>
+					<orc-cashu-method-chips [methods]="methods()" [selectable]="false"></orc-cashu-method-chips>
+				</div>
+			}
+		</div>
+
+		<ng-content></ng-content>
+
+		@if (!compact()) {
+			<div class="orc-animation-expand-collapse" [class.animation-expanded]="expanded()" [inert]="!expanded()">
+				<div class="orc-animation-expand-collapse-inner">
+					<orc-ecash-general-mint-details
+						[info]="info()"
+						[time_offset]="time_offset()"
+						[device_type]="device_type()"
+					></orc-ecash-general-mint-details>
+				</div>
+			</div>
+			<button
+				type="button"
+				class="ecash-mint-info-toggle font-weight-semi-bold"
+				[attr.aria-expanded]="expanded()"
+				(click)="onToggle()"
+			>
+				{{ expanded() ? 'Hide details' : 'View all info' }}
+				<mat-icon class="orc-animation-rotate-toggle icon-sm" [class.animation-expanded]="expanded()">keyboard_arrow_down</mat-icon>
+			</button>
+		}
+	</div>
+</mat-card>

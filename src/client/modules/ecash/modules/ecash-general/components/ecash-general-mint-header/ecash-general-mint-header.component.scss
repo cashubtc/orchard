@@ -1,0 +1,7 @@
+@use 'molecule/molecule';
+
+:host {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-1;
+}

@@ -116,7 +116,10 @@ const ICONS = [
   'call_received',
   'backspace',
   'unfold_more',
-  'sticky_note_2'
+  'sticky_note_2',
+  'check_circle',
+  'lock',
+  'shield'
 ];
 
 // Sort alphabetically and remove duplicates

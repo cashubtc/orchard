@@ -13,6 +13,7 @@ import {ApiService} from '@client/modules/api/services/api/api.service';
 import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 import {EcashMintStatus} from '@client/modules/ecash/classes/ecash-mint-status.class';
+import {EcashMintLookup} from '@client/modules/ecash/classes/ecash-mint-lookup.class';
 import {EcashOperation} from '@client/modules/ecash/classes/ecash-operation.class';
 import {EcashSeed} from '@client/modules/ecash/classes/ecash-seed.class';
 import {
@@ -22,6 +23,7 @@ import {
 	EcashSeedResponse,
 	EcashOperationsDataResponse,
 	EcashIssueResponse,
+	EcashMintLookupResponse,
 	EcashMintAddResponse,
 	EcashMintRemoveResponse,
 	EcashSeedRevealResponse,
@@ -35,6 +37,7 @@ import {
 	ECASH_SEED_QUERY,
 	ECASH_OPERATIONS_DATA_QUERY,
 	ECASH_ISSUE_MUTATION,
+	ECASH_MINT_LOOKUP_QUERY,
 	ECASH_MINT_ADD_MUTATION,
 	ECASH_MINT_REMOVE_MUTATION,
 	ECASH_SEED_REVEAL_MUTATION,
@@ -116,9 +119,9 @@ export class EcashService {
 		);
 	}
 
-	/** Whether each wallet mint answers; the server shares each result for a minute, so it isn't cached here */
-	public loadMintStatuses(): Observable<EcashMintStatus[]> {
-		const query = getApiQuery(ECASH_MINT_STATUS_QUERY);
+	/** Whether the wallet mints answer, or just one; the server shares each result for a minute, so it isn't cached here */
+	public loadMintStatuses(mint_id: string | null = null): Observable<EcashMintStatus[]> {
+		const query = getApiQuery(ECASH_MINT_STATUS_QUERY, {mint_id});
 		return this.http.post<OrchardRes<EcashMintStatusResponse>>(this.apiService.api, query).pipe(
 			map((response) => {
 				if (response.errors) throw new OrchardErrors(response.errors);
@@ -166,6 +169,18 @@ export class EcashService {
 			map((response) => {
 				if (response.errors) throw new OrchardErrors(response.errors);
 				return new EcashOperation(response.data.ecash_issue);
+			}),
+			catchError((error) => throwError(() => error)),
+		);
+	}
+
+	/** Look a mint up by URL before adding it: its info, or the wallet mint it already is */
+	public lookupMint(mint_url: string): Observable<EcashMintLookup> {
+		const query = getApiQuery(ECASH_MINT_LOOKUP_QUERY, {mint_url});
+		return this.http.post<OrchardRes<EcashMintLookupResponse>>(this.apiService.api, query).pipe(
+			map((response) => {
+				if (response.errors) throw new OrchardErrors(response.errors);
+				return new EcashMintLookup(response.data.ecash_mint_lookup);
 			}),
 			catchError((error) => throwError(() => error)),
 		);

@@ -1,0 +1,65 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+:host {
+	@extend %block;
+}
+
+.ecash-mint-info-summary {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-1;
+	@extend %p-1;
+}
+
+.ecash-mint-info-text {
+	@extend %m-0;
+	@extend %orc-on-surface-variant-color;
+	line-height: 1.5;
+}
+
+.ecash-mint-info-note {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+	@extend %orc-corner-medium;
+	@extend %orc-surface-container-bg;
+	@extend %font-size-s;
+	@extend %p-v-0-5;
+	@extend %p-h-0-75;
+	@extend %line-height-1-4;
+}
+
+.ecash-mint-info-warning {
+	background-color: color-mix(in srgb, var(--orc-status-warning) 15%, transparent);
+}
+
+.ecash-mint-info-rows {
+	@extend %grid;
+	@extend %flex-items-center;
+	grid-template-columns: 5.25rem minmax(0, 1fr);
+	gap: 0.75rem;
+
+	&.mobile {
+		grid-template-columns: 3.75rem minmax(0, 1fr);
+	}
+}
+
+.ecash-mint-info-toggle {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+	@extend %flex-gap-0-5;
+	@extend %w-full;
+	@extend %h-3;
+	@extend %m-0;
+	@extend %cursor-pointer;
+	@extend %transparent-bg;
+	@extend %font-family-inherit;
+	@extend %border-none;
+	@extend %border-top;
+	@extend %border-top-solid;
+	@extend %orc-outline-variant-border;
+	@extend %orc-primary-color;
+	@extend %font-size-inherit;
+}

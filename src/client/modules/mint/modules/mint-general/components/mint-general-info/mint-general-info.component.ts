@@ -6,15 +6,10 @@ import {MatDialog} from '@angular/material/dialog';
 import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 import {PublicUrl} from '@client/modules/public/classes/public-url.class';
+import {MintUri} from '@client/modules/mint/types/mint-uri.types';
+import {getMintUri} from '@client/modules/mint/helpers/mint-uri.helpers';
 /* Components */
 import {NetworkConnectionComponent} from '@client/modules/network/components/network-connection/network-connection.component';
-
-type MintUri = {
-	uri: string;
-	origin: string;
-	type: string;
-	label: string;
-};
 
 @Component({
 	selector: 'orc-mint-general-info',
@@ -53,26 +48,8 @@ export class MintGeneralInfoComponent {
 
 	public uris = computed(() => {
 		const urls = this.info()?.urls ?? [];
-		return urls.map((url) => this.transformUrl(url));
+		return urls.map((url) => getMintUri(url));
 	});
-
-	/** Transforms a mint connection string into a truncated display object */
-	private transformUrl(url: string): MintUri {
-		const is_tor = url.includes('.onion');
-		let label = url;
-		let origin = url;
-		try {
-			const parsed = new URL(url);
-			const host = parsed.hostname;
-			label = is_tor ? `${host.split('.onion')[0].slice(0, 15)}...onion` : host;
-			if (parsed.port) label += `:${parsed.port}`;
-			origin = parsed.origin;
-		} catch {
-			label = is_tor ? `${url.split('.onion')[0].slice(0, 15)}...onion` : url;
-		}
-		const type = is_tor ? 'tor' : url.startsWith('http://') ? 'insecure' : 'clearnet';
-		return {uri: url, origin, type, label};
-	}
 
 	public onUriClick(uri: MintUri): void {
 		this.dialog.open(NetworkConnectionComponent, {

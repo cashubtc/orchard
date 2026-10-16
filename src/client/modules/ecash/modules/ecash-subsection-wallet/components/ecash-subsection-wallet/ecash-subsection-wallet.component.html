@@ -1,6 +1,23 @@
 <div class="ecash-wallet-container" [class.desktop]="device_type() === 'desktop'">
+	@if (device_type() === 'desktop') {
+		<div class="ecash-wallet-column">
+			<ng-container *ngTemplateOutlet="balance"></ng-container>
+			<ng-container *ngTemplateOutlet="wallet_mints"></ng-container>
+		</div>
+		<div class="ecash-wallet-column ecash-wallet-column-side">
+			<ng-container *ngTemplateOutlet="actions"></ng-container>
+			<ng-container *ngTemplateOutlet="activity"></ng-container>
+		</div>
+	} @else {
+		<ng-container *ngTemplateOutlet="balance"></ng-container>
+		<ng-container *ngTemplateOutlet="actions"></ng-container>
+		<ng-container *ngTemplateOutlet="wallet_mints"></ng-container>
+		<ng-container *ngTemplateOutlet="activity"></ng-container>
+	}
+</div>
+
+<ng-template #balance>
 	<orc-ecash-general-balance
-		class="ecash-wallet-balance"
 		[balances]="balances()"
 		[mints]="mints()"
 		[loading]="loading_balances()"
@@ -10,20 +27,34 @@
 		[selected]="selected_unit()"
 		(select)="onSelectUnit($event)"
 	></orc-ecash-general-balance>
+</ng-template>
+
+<ng-template #actions>
 	<orc-ecash-general-actions
-		class="ecash-wallet-actions"
 		[can_issue]="can_issue()"
 		[issue_blocked]="issue_blocked()"
 		[device_type]="device_type()"
 		(issue)="onIssue()"
 	></orc-ecash-general-actions>
+</ng-template>
+
+<ng-template #wallet_mints>
 	<orc-ecash-general-mints
-		class="ecash-wallet-mints"
 		[mints]="mints()"
 		[statuses]="mint_statuses()"
 		[balances]="balances()"
 		[reserves]="mint_reserves()"
 		[loading]="loading_mints()"
 		[loading_statuses]="loading_mint_statuses()"
+		(add)="onAddMint()"
 	></orc-ecash-general-mints>
-</div>
+</ng-template>
+
+<ng-template #activity>
+	<orc-ecash-general-activity
+		[operations]="operations()"
+		[loading]="loading_operations()"
+		[bitcoin_oracle_enabled]="bitcoin_oracle_enabled"
+		[bitcoin_oracle_price]="bitcoin_oracle_price()"
+	></orc-ecash-general-activity>
+</ng-template>

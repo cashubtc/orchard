@@ -13,9 +13,9 @@ import {
 } from '@cashu/cashu-ts';
 /* Application Dependencies */
 import {FetchService} from '#server/modules/fetch/fetch.service';
-import {assertPublicHost} from '#server/modules/fetch/network-guard';
-/* Local Dependencies */
-import {walletError} from '../cashuwallet.helpers.js';
+import {assertPublicDestination} from '#server/modules/fetch/network-guard';
+/* Native Dependencies */
+import {MintRedirectError} from '#server/modules/cashu/wallet/classes/mint-redirect-error.class';
 
 const MINT_TIMEOUT_MS = 10_000;
 const MINT_MAX_BYTES = 256 * 1024;
@@ -24,8 +24,6 @@ const MINT_MAX_BYTES = 256 * 1024;
 export class CashuWalletMintTransportService {
 	/** cashu-ts transport for the Orchard mint over MINT_API */
 	public readonly request: RequestFn = (options) => this.requestMint(options);
-	/** cashu-ts transport for user-added mints: re-checks the address on every request */
-	public readonly guarded_request: RequestFn = (options) => this.requestPublicMint(options);
 
 	constructor(
 		private configService: ConfigService,
@@ -36,30 +34,32 @@ export class CashuWalletMintTransportService {
 		Address
 	******************************************************** */
 
-	/** Refuse mint URLs that aren't https (onion via Tor excepted) or that reach a private network */
-	public async assertPublicMintUrl(mint_url: string): Promise<void> {
-		const {protocol, hostname} = new URL(mint_url);
-		const host = hostname.replace(/^\[|\]$/g, '');
-		if (host.endsWith('.onion')) {
-			if (this.configService.get<string>('server.proxy')) return;
-			throw walletError('Onion mints need a Tor proxy; set TOR_PROXY_SERVER');
+	/** Why a mint URL can't be reached: an onion mint without the Tor proxy, or a local address unless local addresses are allowed; null when it can */
+	private async refuseMintUrl(mint_url: string, allow_local: boolean): Promise<string | null> {
+		const host = new URL(mint_url).hostname.replace(/^\[|\]$/g, '');
+		const via_tor = !!this.configService.get<string>('server.proxy');
+		if (host.endsWith('.onion')) return via_tor ? null : 'Onion mints need a Tor proxy; set TOR_PROXY_SERVER';
+		if (allow_local) return null;
+		try {
+			return (await assertPublicDestination(mint_url, via_tor)) ? null : `Could not resolve mint host ${host}`;
+		} catch (error) {
+			return `${error?.message ?? error}; only an admin can add mints on local addresses`;
 		}
-		if (protocol !== 'https:') throw walletError('Mint URLs must use https (http is only allowed for .onion mints)');
-		const resolved = await assertPublicHost(host).catch((error) => {
-			throw walletError(`${error?.message ?? error}; only public mints can be added`);
-		});
-		if (!resolved) throw walletError(`Could not resolve mint host ${host}`);
 	}
 
 	/* *******************************************************
 		Transport
 	******************************************************** */
 
-	/** Transport for user-added mints: re-checks the address on every request before sending it */
-	private async requestPublicMint<T>(options: RequestOptions): Promise<T> {
-		await this.assertPublicMintUrl(options.endpoint).catch((error) => {
-			throw new NetworkError(error?.details ?? error?.message ?? String(error), {cause: error});
-		});
+	/** cashu-ts transport for user-added mints, re-checking the address on every request; local addresses only when allowed */
+	public guardedRequest(allow_local: boolean): RequestFn {
+		return (options) => this.requestAddedMint(options, allow_local);
+	}
+
+	/** Refuses an address that can't be reached before anything is sent, keeping the cashu-ts error contract */
+	private async requestAddedMint<T>(options: RequestOptions, allow_local: boolean): Promise<T> {
+		const refusal = await this.refuseMintUrl(options.endpoint, allow_local);
+		if (refusal) throw new NetworkError(`${options.endpoint}: ${refusal}`);
 		return this.requestMint<T>(options);
 	}
 
@@ -76,11 +76,15 @@ export class CashuWalletMintTransportService {
 				method: method ?? (requestBody ? 'POST' : 'GET'),
 				headers: {Accept: 'application/json', ...(requestBody && {'Content-Type': 'application/json'}), ...headers},
 				body: requestBody ? JSONInt.stringify(requestBody) : undefined,
-				redirect: 'error',
+				redirect: 'manual',
 				signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
 				size: MINT_MAX_BYTES,
 			})
 			.catch(toNetworkError);
+		if (response.status >= 300 && response.status < 400) {
+			const location = response.headers.get('location');
+			throw new MintRedirectError(endpoint, location ? new URL(location, endpoint).href : null);
+		}
 		const text = await response.text().catch(toNetworkError);
 		if (response.status === 429)
 			throw new RateLimitError('429 Too Many Requests', this.parseRetryAfter(response.headers.get('Retry-After')));

@@ -5,6 +5,8 @@ import {getRepositoryToken} from '@nestjs/typeorm';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
 import {FetchService} from '#server/modules/fetch/fetch.service';
+import {UserService} from '#server/modules/user/user.service';
+import {UserRole} from '#server/modules/user/user.enums';
 /* Local Dependencies */
 import {CashuWalletMintService} from './cashuwalletmint.service.js';
 import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
@@ -71,6 +73,9 @@ describe('CashuWalletMintService', () => {
 			routes[url] ? routes[url](options) : Promise.reject(new Error(`no route for ${url}`)),
 		),
 	};
+	const user_service = {
+		getUserById: jest.fn(async (id: string) => ({id, role: id === 'admin-1' ? UserRole.ADMIN : UserRole.MANAGER})),
+	};
 
 	beforeEach(async () => {
 		jest.clearAllMocks();
@@ -92,6 +97,7 @@ describe('CashuWalletMintService', () => {
 				{provide: ConfigService, useValue: {get: jest.fn((key: string) => config[key])}},
 				{provide: FetchService, useValue: fetch_service},
 				{provide: CashuWalletMintCacheService, useValue: cache_service},
+				{provide: UserService, useValue: user_service},
 			],
 		}).compile();
 
@@ -221,7 +227,7 @@ describe('CashuWalletMintService', () => {
 			const mint = await service.addMint('user-1', 'https://203.0.113.10/');
 			expect(fetch_service.fetchWithProxy).toHaveBeenCalledWith(
 				'https://203.0.113.10/v1/info',
-				expect.objectContaining({method: 'GET', redirect: 'error', signal: expect.any(AbortSignal), size: 262144}),
+				expect.objectContaining({method: 'GET', redirect: 'manual', signal: expect.any(AbortSignal), size: 262144}),
 			);
 			expect(mint).toMatchObject({name: 'Cedar Mint', pubkey: '02cedar', urls: ['https://203.0.113.10'], is_orchard: false});
 		});
@@ -235,9 +241,32 @@ describe('CashuWalletMintService', () => {
 			expect(rows.filter((row) => row.pubkey === '02cedar')).toHaveLength(1);
 		});
 
+		it('adds what a lookup found without asking the mint again, following its redirect', async () => {
+			route('http://203.0.113.10', async () => response('', 301, {location: 'https://203.0.113.11/v1/info'}));
+			route('https://203.0.113.11', async () => response(cedar_info));
+			await service.lookupMint('user-1', 'http://203.0.113.10');
+			const mint = await service.addMint('user-1', 'http://203.0.113.10');
+			expect(mint).toMatchObject({name: 'Cedar Mint', urls: ['https://203.0.113.11']});
+			expect(lookedUp()).toEqual(['http://203.0.113.10/v1/info', 'https://203.0.113.11/v1/info']);
+			expect(await service.addMint('user-1', 'https://203.0.113.11')).toMatchObject({id: mint.id, urls: ['https://203.0.113.11']});
+			expect(lookedUp()).toHaveLength(2);
+		});
+
+		it('adds a public mint served over plain http', async () => {
+			route('http://203.0.113.10', async () => response(cedar_info));
+			await expect(service.addMint('user-1', 'http://203.0.113.10')).resolves.toMatchObject({urls: ['http://203.0.113.10']});
+		});
+
+		it.each([['http://127.0.0.1:3338'], ['https://10.0.0.5'], ['http://mint.lan:3338']])(
+			'adds a mint on a local address for an admin: %s',
+			async (url) => {
+				route(url, async () => response(cedar_info));
+				await expect(service.addMint('user-1', url, true)).resolves.toMatchObject({urls: [url]});
+			},
+		);
+
 		it.each([
-			['http://203.0.113.10', 'must use https'],
-			['https://10.0.0.5', 'private/reserved'],
+			['https://10.0.0.5', 'only an admin can add mints on local addresses'],
 			['https://[::1]', 'private/reserved'],
 			['https://[::ffff:192.168.1.1]', 'private/reserved'],
 			['https://localhost', 'localhost'],
@@ -268,6 +297,137 @@ describe('CashuWalletMintService', () => {
 		});
 	});
 
+	describe('lookupMint', () => {
+		it.each([
+			['its public URL', 'https://mint.orchard.example/'],
+			['its internal MINT_API URL', ORCHARD_API],
+		])('matches the Orchard mint by %s without looking the URL up', async (_label, url) => {
+			const lookup = await service.lookupMint('user-1', url);
+			expect(lookup).toMatchObject({info: null, match: 'URL', mint_id: rows[0].id});
+			expect(lookedUp()).toEqual([]);
+		});
+
+		it('matches a URL already in the wallet without contacting the mint', async () => {
+			rows = [{id: 'cedar', user_id: 'user-1', pubkey: '02cedar', urls: ['https://203.0.113.10']} as CashuWalletMint];
+			expect(await service.lookupMint('user-1', 'https://203.0.113.10/')).toEqual({
+				url: 'https://203.0.113.10',
+				info: null,
+				latency_ms: null,
+				time_offset: null,
+				match: 'URL',
+				mint_id: 'cedar',
+			});
+			expect(lookedUp()).toEqual([]);
+		});
+
+		it("returns a new mint's info, round trip and clock offset without saving it", async () => {
+			const now = jest.spyOn(Date, 'now').mockReturnValue(1_000_000_000);
+			route('https://203.0.113.10', async () => response({...cedar_info, motd: 'Maintenance Sunday', time: 1_000_180}));
+			const lookup = await service.lookupMint('user-1', 'https://203.0.113.10');
+			expect(lookup).toMatchObject({url: 'https://203.0.113.10', latency_ms: 0, time_offset: 180, match: null, mint_id: null});
+			expect(JSON.parse(lookup.info!)).toMatchObject({name: 'Cedar Mint', motd: 'Maintenance Sunday'});
+			expect(cache_service.saveInfo).not.toHaveBeenCalledWith('https://203.0.113.10', expect.anything());
+			now.mockRestore();
+		});
+
+		it('looks up https when no scheme is given', async () => {
+			route('https://203.0.113.10', async () => response(cedar_info));
+			expect(await service.lookupMint('user-1', ' 203.0.113.10 ')).toMatchObject({url: 'https://203.0.113.10'});
+		});
+
+		it('follows a redirect to the mint behind it, known by the first URL it publishes', async () => {
+			route('http://203.0.113.10', async () => response('', 301, {location: 'https://203.0.113.11/v1/info'}));
+			route('https://203.0.113.11', async () =>
+				response({...cedar_info, urls: ['https://Mint.Cedar.example/', 'http://cedar.onion']}),
+			);
+			const lookup = await service.lookupMint('user-1', 'http://203.0.113.10');
+			expect(lookup).toMatchObject({url: 'https://mint.cedar.example', match: null});
+			expect(JSON.parse(lookup.info!)).toMatchObject({name: 'Cedar Mint'});
+		});
+
+		it('keeps where the redirects ended when the mint publishes no URLs, and matches it against the wallet', async () => {
+			route('https://203.0.113.10', async () => response(cedar_info));
+			route('http://203.0.113.10', async () => response('', 302, {location: 'https://203.0.113.10/v1/info'}));
+			expect(await service.lookupMint('user-1', 'http://203.0.113.10')).toMatchObject({url: 'https://203.0.113.10'});
+
+			rows = [{id: 'cedar', user_id: 'user-1', pubkey: '02cedar', urls: ['https://203.0.113.10']} as CashuWalletMint];
+			expect(await service.lookupMint('user-2', 'http://203.0.113.10')).toMatchObject({match: null});
+			expect(await service.lookupMint('user-1', 'http://203.0.113.10')).toMatchObject({
+				url: 'https://203.0.113.10',
+				match: 'URL',
+				mint_id: 'cedar',
+			});
+		});
+
+		it('refuses a redirect to a local address unless an admin is looking, and gives up after three redirects', async () => {
+			route('https://203.0.113.10', async () => response('', 301, {location: 'http://10.0.0.5/v1/info'}));
+			route('http://10.0.0.5', async () => response(cedar_info));
+			await expect(service.lookupMint('user-1', 'https://203.0.113.10')).rejects.toMatchObject({
+				details: expect.stringContaining('only an admin can add mints on local addresses'),
+			});
+			await expect(service.lookupMint('user-1', 'https://203.0.113.10', true)).resolves.toMatchObject({url: 'http://10.0.0.5'});
+			route('https://203.0.113.20', async () => response('', 301, {location: 'https://203.0.113.21/v1/info'}));
+			route('https://203.0.113.21', async () => response('', 301, {location: 'https://203.0.113.20/v1/info'}));
+			await expect(service.lookupMint('user-1', 'https://203.0.113.20')).rejects.toMatchObject({
+				details: "Couldn't reach https://203.0.113.21/v1/info: redirects to https://203.0.113.20/v1/info",
+			});
+		});
+
+		it('leaves the offset unknown when the mint sends no time', async () => {
+			route('https://203.0.113.10', async () => response(cedar_info));
+			expect((await service.lookupMint('user-1', 'https://203.0.113.10')).time_offset).toBeNull();
+		});
+
+		it('matches a wallet mint with the same pubkey at another URL', async () => {
+			rows = [{id: 'cedar', user_id: 'user-1', pubkey: '02cedar', urls: ['https://203.0.113.10']} as CashuWalletMint];
+			route('https://203.0.113.11', async () => response(cedar_info));
+			expect(await service.lookupMint('user-1', 'https://203.0.113.11')).toMatchObject({match: 'PUBKEY', mint_id: 'cedar'});
+		});
+
+		it("refuses a URL claiming the Orchard mint's pubkey", async () => {
+			route('https://203.0.113.20', async () => response({...cedar_info, pubkey: '02orchard'}));
+			await expect(service.lookupMint('user-1', 'https://203.0.113.20')).rejects.toMatchObject({
+				details: expect.stringContaining('claims to be your Orchard mint'),
+			});
+		});
+
+		it('looks up a mint on a local address for an admin only, without contacting it otherwise', async () => {
+			route('http://192.168.1.20:3338', async () => response(cedar_info));
+			await expect(service.lookupMint('user-1', 'http://192.168.1.20:3338')).rejects.toMatchObject({
+				details: expect.stringContaining('private/reserved'),
+			});
+			expect(lookedUp()).toEqual([]);
+			expect(await service.lookupMint('user-1', 'http://192.168.1.20:3338', true)).toMatchObject({url: 'http://192.168.1.20:3338'});
+		});
+
+		it('shares a lookup for 60s, and explains one that failed', async () => {
+			const now = jest.spyOn(Date, 'now').mockReturnValue(1_000_000);
+			route('https://203.0.113.10', async () => response(cedar_info));
+			const lookups = () => lookedUp().filter((url) => url === 'https://203.0.113.10/v1/info').length;
+			await service.lookupMint('user-1', 'https://203.0.113.10');
+			await service.lookupMint('user-2', 'https://203.0.113.10');
+			expect(lookups()).toBe(1);
+			now.mockReturnValue(1_060_001);
+			route('https://203.0.113.10', () => Promise.reject(new Error('socket hang up')));
+			await expect(service.lookupMint('user-1', 'https://203.0.113.10')).rejects.toMatchObject({
+				details: expect.stringContaining('socket hang up'),
+			});
+			now.mockRestore();
+		});
+
+		it('drops expired lookups as new ones are stored', async () => {
+			const now = jest.spyOn(Date, 'now').mockReturnValue(1_000_000);
+			route('https://203.0.113.10', async () => response(cedar_info));
+			route('https://203.0.113.11', async () => response(cedar_info));
+			const stored = () => [...(service as any).lookups.keys()];
+			await service.lookupMint('user-1', 'https://203.0.113.10');
+			now.mockReturnValue(1_060_001);
+			await service.lookupMint('user-1', 'https://203.0.113.11');
+			expect(stored()).toEqual(['false:https://203.0.113.11']);
+			now.mockRestore();
+		});
+	});
+
 	describe('checkMints', () => {
 		const addRow = (id: string, url: string) => rows.push({id, user_id: 'user-1', pubkey: `02${id}`, urls: [url]} as CashuWalletMint);
 
@@ -277,15 +437,25 @@ describe('CashuWalletMintService', () => {
 			route('https://203.0.113.11', () => Promise.reject(refused));
 			addRow('cedar', 'https://203.0.113.10');
 			addRow('kelp', 'https://203.0.113.11');
-			addRow('lan', 'https://10.0.0.9');
+			addRow('lan', 'http://10.0.0.9');
+			route('http://10.0.0.9', async () => response(cedar_info));
 
 			expect(await service.checkMints('user-1')).toMatchObject([
 				{mint_id: 'cedar', online: true, latency_ms: expect.any(Number), error: null},
 				{mint_id: 'kelp', online: false, latency_ms: null, error: 'https://203.0.113.11/v1/info: ECONNREFUSED'},
-				{mint_id: 'lan', online: false, error: expect.stringContaining('private/reserved')},
+				{mint_id: 'lan', online: false, error: expect.stringContaining('only an admin can add mints on local addresses')},
 				{online: true},
 			]);
-			expect(lookedUp()).not.toContain('https://10.0.0.9/v1/info');
+		});
+
+		it('checks only the mint asked about', async () => {
+			route('https://203.0.113.10', async () => response(cedar_info));
+			route('https://203.0.113.11', async () => response(cedar_info));
+			addRow('cedar', 'https://203.0.113.10');
+			addRow('kelp', 'https://203.0.113.11');
+
+			expect(await service.checkMints('user-1', 'kelp')).toMatchObject([{mint_id: 'kelp', online: true}]);
+			expect(lookedUp()).toEqual(['https://203.0.113.11/v1/info']);
 		});
 
 		it('shares a status for 60s, saving fresh info and refreshing keysets only when the mint answers', async () => {
@@ -317,10 +487,20 @@ describe('CashuWalletMintService', () => {
 			expect((await service.getMint(orchard)).mintUrl).toBe(ORCHARD_API);
 		});
 
-		it('re-checks the address of other mints on every request', async () => {
-			const client = await service.getMint({urls: ['https://10.0.0.9'], pubkey: '02other'} as CashuWalletMint);
-			await expect(client.getInfo()).rejects.toThrow('private/reserved');
+		it('refuses an onion mint without the Tor proxy before sending anything', async () => {
+			const client = await service.getMint({urls: ['http://abcdefghijklmnop.onion'], pubkey: '02other'} as CashuWalletMint);
+			await expect(client.getInfo()).rejects.toThrow('need a Tor proxy');
 			expect(lookedUp()).toEqual([]);
+		});
+
+		it("re-checks the address on every request, reaching a local address only for an admin's mint", async () => {
+			route('http://10.0.0.9', async () => response(cedar_info));
+			const lan = {urls: ['http://10.0.0.9'], pubkey: '02lan'};
+			const manager = await service.getMint({...lan, user_id: 'user-1'} as CashuWalletMint);
+			await expect(manager.getInfo()).rejects.toThrow('only an admin can add mints on local addresses');
+			expect(lookedUp()).toEqual([]);
+			const admin = await service.getMint({...lan, user_id: 'admin-1'} as CashuWalletMint);
+			await expect(admin.getInfo()).resolves.toMatchObject({name: 'Cedar Mint'});
 		});
 	});
 

@@ -1,0 +1,109 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+:host {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-1-5;
+	@extend %p-1;
+	@extend %border-top;
+	@extend %border-top-solid;
+	@extend %orc-outline-variant-border;
+}
+
+.ecash-mint-details-text {
+	@extend %m-0;
+	@extend %orc-on-surface-variant-color;
+	line-height: 1.5;
+}
+
+.ecash-mint-details-section {
+	@extend %flex;
+	@extend %flex-column;
+	gap: 0.625rem;
+}
+
+.ecash-mint-details-table {
+	@extend %overflow-hidden;
+	@extend %orc-corner-medium;
+	@extend %border;
+	@extend %border-solid;
+	@extend %orc-outline-variant-border;
+}
+
+.ecash-mint-details-connection {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+	@extend %font-size-s;
+	padding: 0.625rem 0.75rem;
+
+	& + & {
+		@extend %border-top;
+		@extend %border-top-solid;
+		@extend %orc-outline-variant-border;
+	}
+}
+
+.ecash-mint-details-limits {
+	@extend %grid;
+	@extend %flex-items-center;
+	@extend %font-size-s;
+	grid-template-columns: 4.625rem minmax(0, 1fr) 3.375rem auto;
+
+	&.mobile {
+		grid-template-columns: 3.625rem minmax(0, 1fr) auto;
+	}
+}
+
+.ecash-mint-details-head,
+.ecash-mint-details-cell {
+	@extend %h-full;
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %p-v-0-5;
+	@extend %p-l-0-75;
+
+	&.ecash-mint-details-end {
+		@extend %flex-justify-end;
+		@extend %p-r-0-75;
+	}
+}
+
+.ecash-mint-details-head {
+	@extend %font-size-xs;
+	@extend %orc-outline-color;
+	@extend %orc-surface-container-bg;
+}
+
+.ecash-mint-details-cell {
+	@extend %border-top;
+	@extend %border-top-solid;
+	@extend %orc-outline-variant-border;
+}
+
+.ecash-mint-details-features {
+	@extend %grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-rows: repeat(var(--rows), auto);
+	grid-auto-flow: column;
+	gap: 0.625rem 1rem;
+
+	&.mobile {
+		grid-template-columns: minmax(0, 1fr);
+		grid-auto-flow: row;
+	}
+}
+
+.ecash-mint-details-feature {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+}
+
+.ecash-mint-details-facts {
+	@extend %grid;
+	@extend %flex-items-center;
+	grid-template-columns: 6rem minmax(0, 1fr);
+	gap: 0.625rem 0.75rem;
+}

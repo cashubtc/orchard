@@ -2,6 +2,8 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {getRepositoryToken} from '@nestjs/typeorm';
+/* Vendor Dependencies */
+import {In} from 'typeorm';
 /* Local Dependencies */
 import {CashuWalletRecoveryService} from './cashuwalletrecovery.service.js';
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
@@ -37,7 +39,10 @@ describe('CashuWalletRecoveryService', () => {
 		issue_service.resume.mockImplementation(async (operation) => ({...operation, state: WalletOperationState.FINALIZED}));
 		await service.reconcileOperations();
 		expect(operation_repository.find).toHaveBeenCalledWith(
-			expect.objectContaining({where: expect.objectContaining({type: WalletOperationType.MINT}), order: {created_at: 'ASC'}}),
+			expect.objectContaining({
+				where: expect.objectContaining({type: In([WalletOperationType.MINT, WalletOperationType.ISSUE])}),
+				order: {created_at: 'ASC'},
+			}),
 		);
 		expect(issue_service.resume.mock.calls.map(([operation]) => operation.id)).toEqual(['op-1', 'op-2']);
 	});

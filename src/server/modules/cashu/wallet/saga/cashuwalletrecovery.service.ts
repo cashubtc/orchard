@@ -40,7 +40,7 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 	private async runReconciliation(): Promise<void> {
 		const open_states = In([WalletOperationState.PENDING, WalletOperationState.EXECUTING]);
 		const operations = await this.walletOperationRepository.find({
-			where: {type: WalletOperationType.MINT, state: open_states},
+			where: {type: In([WalletOperationType.MINT, WalletOperationType.ISSUE]), state: open_states},
 			order: {created_at: 'ASC'},
 		});
 		let finalized = 0;

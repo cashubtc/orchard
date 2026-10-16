@@ -79,7 +79,7 @@ async function createProbeAgent(page: Page, name: string): Promise<void> {
 	await cronDialog.locator('button', {hasText: 'Add Schedule'}).click();
 	await expect(cronDialog).toHaveCount(0);
 
-	await form.locator('.agent-form-header button', {hasText: 'Save'}).click();
+	await form.locator('.orc-form-panel-header button', {hasText: 'Save'}).click();
 	await expect(eventToast(page).filter({hasText: 'Agent created!'})).toBeVisible();
 }
 

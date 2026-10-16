@@ -1,30 +1,21 @@
 <mat-card appearance="outlined" class="overflow-hidden">
 	<div class="orc-surface-container-low-bg">
 		<div class="flex flex-column flex-gap-1 p-1">
-			<div class="flex flex-items-center flex-gap-1">
-				<orc-ecash-general-mint-icon
-					[name]="mint().display_name"
-					[icon_url]="mint().icon_url"
-					[is_orchard]="mint().is_orchard"
-				></orc-ecash-general-mint-icon>
-				<div class="flex flex-column flex-grow w-min-0">
-					<span class="font-weight-semi-bold text-nowrap text-ellipsis">{{ mint().display_name }}</span>
-					<span class="font-size-xs orc-outline-color text-nowrap text-ellipsis">
-						{{ mint().host }}
-						@if (mint().is_orchard) {
-							· Your Orchard mint
-						}
-					</span>
-				</div>
-				<div class="ecash-mint-status font-size-xs" [title]="status().error ?? ''">
+			<orc-ecash-general-mint-header
+				[name]="mint().display_name"
+				[subtitle]="mint().host"
+				[icon_url]="mint().icon_url"
+				[is_orchard]="mint().is_orchard"
+			>
+				<div class="orc-pill orc-pill-filled font-size-xs" [title]="status().error ?? ''">
 					<orc-graphic-status class="flex-shrink-0" [status]="status().state" size="0.5rem"></orc-graphic-status>
 					<span class="text-nowrap">{{ status().text }}</span>
 				</div>
 				<button mat-icon-button type="button" class="orc-icon-button" aria-label="Mint options" disabled>
 					<mat-icon>more_vert</mat-icon>
 				</button>
-			</div>
-			<orc-ecash-general-unit-chips [chips]="chips()" [selectable]="false"></orc-ecash-general-unit-chips>
+			</orc-ecash-general-mint-header>
+			<orc-cashu-unit-chips [chips]="chips()" [selectable]="false"></orc-cashu-unit-chips>
 		</div>
 		@if (solvency(); as solvency) {
 			<orc-ecash-general-solvency

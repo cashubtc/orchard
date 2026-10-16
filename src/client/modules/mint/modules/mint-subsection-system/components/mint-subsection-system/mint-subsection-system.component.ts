@@ -26,6 +26,7 @@ import {buildSystemAssistantContext, parseAssistantDateRange} from '@client/modu
 import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
 import {MintMetric} from '@client/modules/mint/classes/mint-metric.class';
 import {computeHttpErrorRate, computeEndpointDistribution} from '@client/modules/mint/helpers/mint-http-metric.helpers';
+import {isMintAuthOffered} from '@client/modules/mint/helpers/mint-nut.helpers';
 /* Shared Dependencies */
 import {AssistantToolName, SystemMetricsInterval} from '@shared/generated.types';
 
@@ -110,7 +111,7 @@ export class MintSubsectionSystemComponent implements OnInit, OnDestroy {
 	/** Flags whether the mint advertises auth (NUT-21 clear or NUT-22 blind) from resolved mint info */
 	private resolveAuthSupported(): boolean {
 		const mint_info = this.route.snapshot.data['mint_info'] as MintInfo | null;
-		return !!(mint_info?.nuts?.nut21 || mint_info?.nuts?.nut22);
+		return mint_info ? isMintAuthOffered(mint_info.nuts) : false;
 	}
 
 	/** Registers AI assistant subscriptions when the assistant is enabled */

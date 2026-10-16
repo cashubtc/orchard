@@ -4,10 +4,10 @@ import {ChangeDetectionStrategy, Component, computed, input, output} from '@angu
 import {BitcoinOraclePrice} from '@client/modules/bitcoin/classes/bitcoin-oracle-price.class';
 import {oracleConvertToUSDCents} from '@client/modules/bitcoin/helpers/oracle.helpers';
 import {DeviceType} from '@client/modules/layout/types/device.types';
+import {CashuUnitChip} from '@client/modules/cashu/types/cashu.types';
 /* Native Dependencies */
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
-import {EcashUnitChip} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
 import {buildUnitChips} from '@client/modules/ecash/modules/ecash-general/helpers/ecash-general.helpers';
 
 @Component({
@@ -31,7 +31,7 @@ export class EcashGeneralBalanceComponent {
 	public readonly mobile = computed(() => this.device_type() === 'mobile');
 
 	/** Every unit the wallet's mints offer, with its balance summed across mints; sat alone without mints */
-	public readonly chips = computed<Required<EcashUnitChip>[]>(() => {
+	public readonly chips = computed<Required<CashuUnitChip>[]>(() => {
 		const chips = buildUnitChips(
 			this.mints().flatMap((mint) => mint.units),
 			this.balances(),

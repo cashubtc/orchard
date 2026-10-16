@@ -1,5 +1,6 @@
 /* Core Dependencies */
 import {NgModule} from '@angular/core';
+import {CommonModule} from '@angular/common';
 import {RouterModule as CoreRouterModule} from '@angular/router';
 /* Native Dependencies */
 import {OrcEcashGeneralModule} from '@client/modules/ecash/modules/ecash-general/ecash-general.module';
@@ -9,6 +10,7 @@ import {EcashSubsectionWalletComponent} from './components/ecash-subsection-wall
 @NgModule({
 	declarations: [EcashSubsectionWalletComponent],
 	imports: [
+		CommonModule,
 		CoreRouterModule.forChild([
 			{
 				path: '',

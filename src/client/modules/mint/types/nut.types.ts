@@ -1,4 +1,7 @@
 /* Shared Dependencies */
+import type {OrchardNuts} from '@shared/generated.types';
+
+export type MintNut = Exclude<keyof OrchardNuts, '__typename'>;
 
 export type Nut15Method = {
 	unit: string;

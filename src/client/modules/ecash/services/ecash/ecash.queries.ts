@@ -39,8 +39,9 @@ export const ECASH_BALANCES_QUERY = `{
     }
 }`;
 
-export const ECASH_MINT_STATUS_QUERY = `{
-    ecash_mint_status {
+export const ECASH_MINT_STATUS_QUERY = `
+query EcashMintStatus($mint_id: ID) {
+    ecash_mint_status(mint_id: $mint_id) {
         mint_id
         online
         latency_ms
@@ -94,6 +95,19 @@ query EcashOperationsData(
 export const ECASH_ISSUE_MUTATION = `
 mutation ecash_issue($unit: String!, $amount: Float!, $memo: String) {
     ecash_issue(unit: $unit, amount: $amount, memo: $memo) {${ECASH_OPERATION_FIELDS}
+    }
+}`;
+
+export const ECASH_MINT_LOOKUP_QUERY = `
+query ecash_mint_lookup($mint_url: String!) {
+    ecash_mint_lookup(mint_url: $mint_url) {
+        url
+        latency_ms
+        time_offset
+        match
+        mint_id
+        info {${MINT_INFO_FIELDS}
+        }
     }
 }`;
 

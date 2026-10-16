@@ -38,4 +38,18 @@
         @extend %orc-on-secondary-container-color;
         @extend %border-transparent;
     }
+
+    &.orc-pill-filled {
+        @extend %flex-shrink-0;
+        @extend %orc-surface-container-high-bg;
+        @extend %h-1-75;
+        padding: 0 0.625rem;
+    }
+
+    // A pill led by a coin: a unit's graphic or a method's tonal circle
+    &.orc-pill-coin {
+        @extend %h-2-5;
+        @extend %font-weight-semi-bold;
+        padding: 0 0.875rem 0 0.375rem;
+    }
 }

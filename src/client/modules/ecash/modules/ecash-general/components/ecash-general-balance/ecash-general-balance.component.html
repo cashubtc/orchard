@@ -7,11 +7,11 @@
 				@let current = selection();
 				<div class="flex flex-column flex-gap-2 p-b-1" [class.p-t-1]="chips().length === 1">
 					@if (chips().length > 1) {
-						<orc-ecash-general-unit-chips
+						<orc-cashu-unit-chips
 							[chips]="chips()"
 							[selected]="current.unit"
 							(select)="select.emit($event)"
-						></orc-ecash-general-unit-chips>
+						></orc-cashu-unit-chips>
 					}
 					<div class="flex flex-items-center flex-justify-center flex-gap-1-5" animate.enter="orc-animation-fadein">
 						<orc-graphic-asset

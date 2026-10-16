@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, input, output} from '@angular/core';
 /* Application Dependencies */
 import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 /* Native Dependencies */
@@ -22,6 +22,8 @@ export class EcashGeneralMintsComponent {
 	public readonly reserves = input<MintReserves | null>(null);
 	public readonly loading = input<boolean>(false);
 	public readonly loading_statuses = input<boolean>(false);
+
+	public readonly add = output<void>();
 
 	/** The Orchard mint first, then the rest in the order they were added, each with its balances, status and, for Orchard, reserves */
 	public readonly rows = computed(() => {

@@ -34,6 +34,8 @@ import {NavTertiaryItem} from '@client/modules/nav/types/nav-tertiary-item.type'
 import {NavTertiaryItemStatus} from '@client/modules/nav/enums/nav-tertiary-item-status.enum';
 import {fromDisplayAmount, getUnitMeta, toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
 import {DeviceType} from '@client/modules/layout/types/device.types';
+import {CashuMethodDisplay} from '@client/modules/cashu/types/cashu.types';
+import {getCashuMethodDisplay} from '@client/modules/cashu/helpers/cashu.helpers';
 /* Native Dependencies */
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
@@ -41,6 +43,8 @@ import {MintQuoteTtls} from '@client/modules/mint/classes/mint-quote-ttls.class'
 import {MintMintQuote} from '@client/modules/mint/classes/mint-mint-quote.class';
 import {MintMeltQuote} from '@client/modules/mint/classes/mint-melt-quote.class';
 import {Nut15Method, Nut17Commands} from '@client/modules/mint/types/nut.types';
+import {isNutOffered} from '@client/modules/mint/helpers/mint-nut.helpers';
+import {MINT_NUT_TITLES} from '@client/modules/mint/constants/mint.constants';
 /* Shared Dependencies */
 import {OrchardNut4Method, OrchardNut5Method, AssistantToolName} from '@shared/generated.types';
 
@@ -63,22 +67,13 @@ enum TertiaryNav {
 	Nut29 = 'nav29',
 }
 
-type MethodDisplay = {label: string; icon: string; svg_icon: boolean};
-
 /** One advertised unit/method pairing, precomputed for the template */
-type MethodSection = MethodDisplay & {
+type MethodSection = CashuMethodDisplay & {
 	unit: string;
 	method: string;
 	/** Stable identity for the template repeater */
 	key: string;
 	quotes: MintMintQuote[] | MintMeltQuote[];
-};
-
-/** Presentation for the payment methods Orchard recognizes; anything else falls back to its own name */
-const METHOD_DISPLAY: Record<string, MethodDisplay> = {
-	bolt11: {label: 'Bolt 11', icon: 'bolt', svg_icon: false},
-	bolt12: {label: 'Bolt 12', icon: 'double_bolt', svg_icon: true},
-	onchain: {label: 'Onchain', icon: 'deployed_code', svg_icon: false},
 };
 
 @Component({
@@ -128,67 +123,67 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 	public tertiary_nav_revision: number = 0;
 	public tertiary_nav_items: Record<TertiaryNav, NavTertiaryItem> = {
 		[TertiaryNav.Nut4]: {
-			title: 'Minting',
+			title: MINT_NUT_TITLES.nut4,
 			status: undefined,
 		},
 		[TertiaryNav.Nut5]: {
-			title: 'Melting',
+			title: MINT_NUT_TITLES.nut5,
 			status: undefined,
 		},
 		[TertiaryNav.Nut7]: {
-			title: 'Token check',
+			title: MINT_NUT_TITLES.nut7,
 			status: undefined,
 		},
 		[TertiaryNav.Nut8]: {
-			title: 'Lightning fee',
+			title: MINT_NUT_TITLES.nut8,
 			status: undefined,
 		},
 		[TertiaryNav.Nut9]: {
-			title: 'Restore signatures',
+			title: MINT_NUT_TITLES.nut9,
 			status: undefined,
 		},
 		[TertiaryNav.Nut10]: {
-			title: 'Spending conditions',
+			title: MINT_NUT_TITLES.nut10,
 			status: undefined,
 		},
 		[TertiaryNav.Nut11]: {
-			title: 'P2Pk',
+			title: MINT_NUT_TITLES.nut11,
 			status: undefined,
 		},
 		[TertiaryNav.Nut12]: {
-			title: 'Offline validation',
+			title: MINT_NUT_TITLES.nut12,
 			status: undefined,
 		},
 		[TertiaryNav.Nut14]: {
-			title: 'HTLCs',
+			title: MINT_NUT_TITLES.nut14,
 			status: undefined,
 		},
 		[TertiaryNav.Nut15]: {
-			title: 'PMP payments',
+			title: MINT_NUT_TITLES.nut15,
 			status: undefined,
 		},
 		[TertiaryNav.Nut17]: {
-			title: 'Websockets',
+			title: MINT_NUT_TITLES.nut17,
 			status: undefined,
 		},
 		[TertiaryNav.Nut19]: {
-			title: 'Cached responses',
+			title: MINT_NUT_TITLES.nut19,
 			status: undefined,
 		},
 		[TertiaryNav.Nut20]: {
-			title: 'Quote signature',
+			title: MINT_NUT_TITLES.nut20,
 			status: undefined,
 		},
 		[TertiaryNav.Nut21]: {
-			title: 'Clear auth',
+			title: MINT_NUT_TITLES.nut21,
 			status: undefined,
 		},
 		[TertiaryNav.Nut22]: {
-			title: 'Blind auth',
+			title: MINT_NUT_TITLES.nut22,
 			status: undefined,
 		},
 		[TertiaryNav.Nut29]: {
-			title: 'Batched minting',
+			title: MINT_NUT_TITLES.nut29,
 			status: undefined,
 		},
 	};
@@ -392,11 +387,6 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 		Methods
 	******************************************************** */
 
-	/** Label and icon for a payment method; unrecognized methods show the mint's own name for it */
-	public getMethodDisplay(method: string): MethodDisplay {
-		return METHOD_DISPLAY[method] ?? {label: method, icon: 'payments', svg_icon: false};
-	}
-
 	/** Builds the flat unit/method sections the template renders, so nothing is computed during change detection */
 	private buildMethodSections(): void {
 		this.minting_sections = this.getMethodSections('nut4', this.minting_units, this.mint_quotes_by_method);
@@ -418,7 +408,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 					unit,
 					method: method.method,
 					key: `${unit}:${method.method}`,
-					...this.getMethodDisplay(method.method),
+					...getCashuMethodDisplay(method.method),
 					quotes: quotes_by_method[method.method] ?? [],
 				})),
 		);
@@ -993,20 +983,21 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 
 	private initTertiaryNavStatus(): void {
 		this.updateTertiaryNavStatus();
-		this.setNavItemStatus(TertiaryNav.Nut7, this.mint_info?.nuts.nut7?.supported ? true : false);
-		this.setNavItemStatus(TertiaryNav.Nut8, this.mint_info?.nuts.nut8?.supported ? true : false);
-		this.setNavItemStatus(TertiaryNav.Nut9, this.mint_info?.nuts.nut9?.supported ? true : false);
-		this.setNavItemStatus(TertiaryNav.Nut10, this.mint_info?.nuts.nut10?.supported ? true : false);
-		this.setNavItemStatus(TertiaryNav.Nut11, this.mint_info?.nuts.nut11?.supported ? true : false);
-		this.setNavItemStatus(TertiaryNav.Nut12, this.mint_info?.nuts.nut12?.supported ? true : false);
-		this.setNavItemStatus(TertiaryNav.Nut14, this.mint_info?.nuts?.nut14?.supported ? true : false);
-		this.setNavItemStatus(TertiaryNav.Nut15, this.mint_info?.nuts?.nut15?.methods?.length === 0 ? false : true);
-		this.setNavItemStatus(TertiaryNav.Nut17, this.mint_info?.nuts?.nut17?.supported ? true : false);
-		this.setNavItemStatus(TertiaryNav.Nut19, this.mint_info?.nuts?.nut19 ? true : false);
-		this.setNavItemStatus(TertiaryNav.Nut20, this.mint_info?.nuts?.nut20?.supported ? true : false);
-		this.setNavItemStatus(TertiaryNav.Nut21, this.mint_info?.nuts?.nut21 ? true : false);
-		this.setNavItemStatus(TertiaryNav.Nut22, this.mint_info?.nuts?.nut22 ? true : false);
-		this.setNavItemStatus(TertiaryNav.Nut29, this.mint_info?.nuts?.nut29 ? true : false);
+		const nuts = this.mint_info?.nuts;
+		this.setNavItemStatus(TertiaryNav.Nut7, isNutOffered(nuts?.nut7));
+		this.setNavItemStatus(TertiaryNav.Nut8, isNutOffered(nuts?.nut8));
+		this.setNavItemStatus(TertiaryNav.Nut9, isNutOffered(nuts?.nut9));
+		this.setNavItemStatus(TertiaryNav.Nut10, isNutOffered(nuts?.nut10));
+		this.setNavItemStatus(TertiaryNav.Nut11, isNutOffered(nuts?.nut11));
+		this.setNavItemStatus(TertiaryNav.Nut12, isNutOffered(nuts?.nut12));
+		this.setNavItemStatus(TertiaryNav.Nut14, isNutOffered(nuts?.nut14));
+		this.setNavItemStatus(TertiaryNav.Nut15, isNutOffered(nuts?.nut15));
+		this.setNavItemStatus(TertiaryNav.Nut17, isNutOffered(nuts?.nut17));
+		this.setNavItemStatus(TertiaryNav.Nut19, isNutOffered(nuts?.nut19));
+		this.setNavItemStatus(TertiaryNav.Nut20, isNutOffered(nuts?.nut20));
+		this.setNavItemStatus(TertiaryNav.Nut21, isNutOffered(nuts?.nut21));
+		this.setNavItemStatus(TertiaryNav.Nut22, isNutOffered(nuts?.nut22));
+		this.setNavItemStatus(TertiaryNav.Nut29, isNutOffered(nuts?.nut29));
 	}
 
 	private updateTertiaryNavStatus(): void {

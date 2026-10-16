@@ -1,14 +1,14 @@
 @if (!sheet) {
-	<div class="ecash-issue-container">
-		<div class="ecash-issue-header">
+	<div class="orc-form-panel">
+		<div class="orc-form-panel-header">
 			<div class="p-l-0-5">Issue ecash</div>
 			<button mat-icon-button type="button" class="orc-icon-button" aria-label="Close" (click)="onClose()">
 				<mat-icon>close</mat-icon>
 			</button>
 		</div>
 		<div class="category-rule"></div>
-		<div class="ecash-issue-content">
-			<div class="ecash-issue-body">
+		<div class="orc-form-panel-content">
+			<div class="orc-form-panel-body flex-gap-1-5">
 				<orc-ecash-general-mint-chip [mint]="data.mint" [status]="data.status()"></orc-ecash-general-mint-chip>
 				<div class="flex flex-column flex-items-center flex-gap-0-5 w-full">
 					<span class="font-size-s orc-outline-color">Amount</span>
@@ -22,22 +22,22 @@
 					></orc-ecash-general-amount-hero>
 					<ng-container *ngTemplateOutlet="amount_hint"></ng-container>
 					@if (units.length > 1) {
-						<orc-ecash-general-unit-chips
+						<orc-cashu-unit-chips
 							class="p-t-0-5"
 							[chips]="unit_chips()"
 							[disabled]="submitting()"
 							[selected]="unit()"
 							[show_unit]="true"
 							(select)="onUnit($event)"
-						></orc-ecash-general-unit-chips>
+						></orc-cashu-unit-chips>
 					}
 				</div>
 				<ng-container *ngTemplateOutlet="memo_field"></ng-container>
 				<ng-container *ngTemplateOutlet="solvency"></ng-container>
 			</div>
 		</div>
-		<div class="ecash-issue-footer">
-			<div class="ecash-issue-body flex-gap-0-5">
+		<div class="orc-form-panel-footer">
+			<div class="orc-form-panel-body flex-gap-0-5">
 				<ng-container *ngTemplateOutlet="submit_button"></ng-container>
 				<div class="font-size-xs orc-outline-color text-center">
 					No Lightning payment is made. The quote is marked paid through your mint's RPC.
@@ -46,7 +46,7 @@
 		</div>
 	</div>
 } @else {
-	<div class="ecash-issue-sheet">
+	<div class="orc-form-panel-sheet">
 		<div class="flex flex-items-center flex-justify-between">
 			<div class="title-l">Issue ecash</div>
 			<button mat-icon-button type="button" class="orc-icon-button" aria-label="Close" (click)="onClose()">
@@ -86,7 +86,7 @@
 			<orc-form-keypad [decimal]="decimals() > 0" [disabled]="submitting()" (key)="onKey($event)"></orc-form-keypad>
 		</div>
 	</div>
-	<div class="ecash-issue-sheet-actions">
+	<div class="orc-form-panel-sheet-actions">
 		<button
 			mat-icon-button
 			type="button"

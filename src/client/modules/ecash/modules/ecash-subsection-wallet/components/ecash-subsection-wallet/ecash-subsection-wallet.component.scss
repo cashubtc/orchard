@@ -1,4 +1,5 @@
 @use 'molecule/molecule';
+@use 'nucleus/nucleus';
 
 :host {
 	@extend %flex;
@@ -7,26 +8,25 @@
 }
 
 .ecash-wallet-container {
-	@extend %grid;
+	@extend %flex;
+	@extend %flex-column;
 	@extend %flex-gap-2;
 	@extend %p-1;
-	grid-template-columns: minmax(0, 1fr);
-	grid-template-areas: 'balance' 'actions' 'mints';
-	align-content: start;
 
 	&.desktop {
-		grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
-		grid-template-areas: 'balance actions' 'mints actions';
-		align-items: start;
+		@extend %flex-row;
+		@extend %flex-items-start;
 	}
 }
 
-.ecash-wallet-balance {
-	grid-area: balance;
-}
-.ecash-wallet-actions {
-	grid-area: actions;
-}
-.ecash-wallet-mints {
-	grid-area: mints;
+.ecash-wallet-column {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-2;
+	@extend %w-min-0;
+	flex: 1.7 1 0;
+
+	&.ecash-wallet-column-side {
+		@extend %flex-1;
+	}
 }

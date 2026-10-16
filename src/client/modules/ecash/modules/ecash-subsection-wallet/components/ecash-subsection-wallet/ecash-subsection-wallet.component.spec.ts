@@ -16,8 +16,10 @@ import {OrcEcashSubsectionWalletModule} from '@client/modules/ecash/modules/ecas
 import {EcashService} from '@client/modules/ecash/services/ecash/ecash.service';
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
+import {EcashMintStatus} from '@client/modules/ecash/classes/ecash-mint-status.class';
 import {EcashOperation} from '@client/modules/ecash/classes/ecash-operation.class';
 import {EcashGeneralIssueComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-issue/ecash-general-issue.component';
+import {EcashGeneralMintAddComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-mint-add/ecash-general-mint-add.component';
 /* Shared Dependencies */
 import {UserRole, WalletOperationState, WalletOperationType} from '@shared/generated.types';
 /* Local Dependencies */
@@ -42,11 +44,23 @@ describe('EcashSubsectionWalletComponent', () => {
 			},
 		}),
 	];
+	const operation = new EcashOperation({
+		id: 'op-1',
+		mint_id: 'mint-1',
+		type: WalletOperationType.Issue,
+		state: WalletOperationState.Finalized,
+		unit: 'sat',
+		amount: 2100,
+		created_at: 0,
+		updated_at: 0,
+	});
 	const ecash_service = {
 		loadBalances: jasmine.createSpy('loadBalances').and.returnValue(of(balances)),
 		loadMints: jasmine.createSpy('loadMints').and.returnValue(of(mints)),
 		loadMintStatuses: jasmine.createSpy('loadMintStatuses').and.returnValue(of([])),
+		getOperationsData: jasmine.createSpy('getOperationsData').and.returnValue(of({operations: [operation], count: 1})),
 		clearBalancesCache: jasmine.createSpy('clearBalancesCache'),
+		clearMintsCache: jasmine.createSpy('clearMintsCache'),
 	};
 	const reserves = new MintReserves({liabilities: [{unit: 'sat', amount: 2100}], sources: [], reserves: 50_000, partial: false});
 	const mint_service = {
@@ -92,6 +106,24 @@ describe('EcashSubsectionWalletComponent', () => {
 		expect(component).toBeTruthy();
 	});
 
+	it('stacks the cards in one column off desktop, and in two independent columns on desktop', async () => {
+		await create();
+		const selector = 'orc-ecash-general-balance, orc-ecash-general-actions, orc-ecash-general-mints, orc-ecash-general-activity';
+		const cards = (root: Element) =>
+			Array.from(root.querySelectorAll(selector), (card) => card.tagName.toLowerCase().replace('orc-ecash-general-', ''));
+
+		component.device_type.set('mobile');
+		fixture.detectChanges();
+		expect(cards(fixture.nativeElement)).toEqual(['balance', 'actions', 'mints', 'activity']);
+
+		component.device_type.set('desktop');
+		fixture.detectChanges();
+		expect(Array.from(fixture.nativeElement.querySelectorAll('.ecash-wallet-column'), cards)).toEqual([
+			['balance', 'mints'],
+			['actions', 'activity'],
+		]);
+	});
+
 	it('loads the wallet balances', async () => {
 		await create();
 		expect(component.balances()).toEqual(balances);
@@ -104,6 +136,13 @@ describe('EcashSubsectionWalletComponent', () => {
 		expect(component.loading_mints()).toBeFalse();
 		expect(component.mint_statuses()).toEqual([]);
 		expect(component.loading_mint_statuses()).toBeFalse();
+	});
+
+	it('loads the latest operations for the activity summary', async () => {
+		await create();
+		expect(ecash_service.getOperationsData).toHaveBeenCalledWith({page: 0, page_size: 8});
+		expect(component.operations()).toEqual([operation]);
+		expect(component.loading_operations()).toBeFalse();
 	});
 
 	it("loads the Orchard mint's reserves for any user", async () => {
@@ -123,21 +162,12 @@ describe('EcashSubsectionWalletComponent', () => {
 		expect(component.issue_blocked()).toBeNull();
 	});
 
-	it('opens the issue panel on the Orchard mint, and refreshes balances and reserves once ecash is issued', async () => {
+	it('opens the issue panel on the Orchard mint, and refreshes balances, reserves and activity once ecash is issued', async () => {
 		role = UserRole.Admin;
 		await create();
 		ecash_service.loadBalances.calls.reset();
+		ecash_service.getOperationsData.calls.reset();
 		mint_service.loadMintReserves.calls.reset();
-		const operation = new EcashOperation({
-			id: 'op-1',
-			mint_id: 'mint-1',
-			type: WalletOperationType.Mint,
-			state: WalletOperationState.Finalized,
-			unit: 'sat',
-			amount: 2100,
-			created_at: 0,
-			updated_at: 0,
-		});
 		form_panel_service.open.and.returnValue({afterClosed: () => of(operation)});
 
 		component.onIssue();
@@ -153,6 +183,29 @@ describe('EcashSubsectionWalletComponent', () => {
 		expect(ecash_service.clearBalancesCache).toHaveBeenCalled();
 		expect(ecash_service.loadBalances).toHaveBeenCalled();
 		expect(mint_service.loadMintReserves).toHaveBeenCalled();
+		expect(ecash_service.getOperationsData).toHaveBeenCalled();
+	});
+
+	it('opens the add-mint panel with the wallet mints, refreshing mints and checking only the added mint once one is added', async () => {
+		await create();
+		ecash_service.loadMints.calls.reset();
+		ecash_service.loadMintStatuses.calls.reset();
+		form_panel_service.open.and.returnValue({afterClosed: () => of(undefined)});
+		component.onAddMint();
+		const [panel, {data}] = form_panel_service.open.calls.mostRecent().args;
+		expect(panel).toBe(EcashGeneralMintAddComponent);
+		expect(data.mints()).toEqual(mints);
+		expect(ecash_service.loadMints).not.toHaveBeenCalled();
+
+		const status = (mint_id: string) => new EcashMintStatus({mint_id, online: true, latency_ms: 5, error: null, checked_at: 0});
+		component.mint_statuses.set([status('mint-0')]);
+		ecash_service.loadMintStatuses.and.returnValue(of([status('mint-1')]));
+		form_panel_service.open.and.returnValue({afterClosed: () => of(mints[0])});
+		component.onAddMint();
+		expect(ecash_service.clearMintsCache).toHaveBeenCalled();
+		expect(ecash_service.loadMints).toHaveBeenCalled();
+		expect(ecash_service.loadMintStatuses).toHaveBeenCalledOnceWith('mint-1');
+		expect(component.mint_statuses().map((item) => item.mint_id)).toEqual(['mint-0', 'mint-1']);
 	});
 
 	it('opens the issue panel in the unit the balance card has selected', async () => {

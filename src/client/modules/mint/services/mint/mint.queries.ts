@@ -5,7 +5,9 @@ export const MINT_INFO_FIELDS = `
         version
         description
         description_long
+        motd
         icon_url
+        tos_url
         urls
         time
 		contact{

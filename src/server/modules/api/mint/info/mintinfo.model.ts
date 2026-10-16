@@ -228,6 +228,9 @@ export class OrchardMintInfo {
 	@Field({nullable: true, description: 'Long description of the mint'})
 	description_long: string;
 
+	@Field({nullable: true, description: 'Message of the day the mint wants wallets to show'})
+	motd: string;
+
 	@Field(() => [OrchardContact], {nullable: true, description: 'Mint contact methods'})
 	contact: OrchardContact[];
 
@@ -252,6 +255,7 @@ export class OrchardMintInfo {
 		this.version = cashu_info.version ?? null;
 		this.description = cashu_info.description;
 		this.description_long = cashu_info.description_long;
+		this.motd = cashu_info.motd;
 		this.contact = cashu_info.contact;
 		this.icon_url = cashu_info.icon_url;
 		this.tos_url = cashu_info.tos_url;

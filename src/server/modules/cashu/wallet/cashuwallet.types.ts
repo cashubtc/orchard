@@ -1,9 +1,9 @@
 /* Vendor Dependencies */
-import type {MintQuoteBaseResponse, MintQuoteState} from '@cashu/cashu-ts';
+import type {MintInfo, MintQuoteBaseResponse, MintQuoteState} from '@cashu/cashu-ts';
 /* Local Dependencies */
 import type {CashuWalletMint} from './mint/cashuwalletmint.entity.js';
 import type {CashuWalletSeed} from './seed/cashuwalletseed.entity.js';
-import type {WalletOperationState, WalletOperationType} from './cashuwallet.enums.js';
+import type {WalletMintMatch, WalletOperationState, WalletOperationType} from './cashuwallet.enums.js';
 
 export type CashuWalletBalance = {
 	mint_id: string;
@@ -33,6 +33,7 @@ export type CashuWalletSeedStatus = Pick<CashuWalletSeed, 'created_at' | 'backed
 export type CashuWalletMintRequest = {
 	user_id: string;
 	mint_id: string;
+	type: WalletOperationType;
 	unit: string;
 	amount: number;
 	method: string;
@@ -57,6 +58,25 @@ export type CashuWalletMintProbe = {
 
 export type CashuWalletMintStatus = CashuWalletMintProbe & {
 	mint_id: string;
+};
+
+export type CashuWalletMintFetch = {
+	url: string;
+	info: MintInfo;
+	latency_ms: number;
+	time_offset: number | null;
+};
+
+export type CashuWalletMintResolution =
+	{url: string; known: CashuWalletMint} | {url: string; fetched: CashuWalletMintFetch; sibling: CashuWalletMint | null};
+
+export type CashuWalletMintLookup = {
+	url: string;
+	info: string | null;
+	latency_ms: number | null;
+	time_offset: number | null;
+	match: WalletMintMatch | null;
+	mint_id: string | null;
 };
 
 export type CashuWalletMintRecord = CashuWalletMint & {

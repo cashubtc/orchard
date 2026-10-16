@@ -3,6 +3,7 @@ import {Module} from '@nestjs/common';
 import {TypeOrmModule} from '@nestjs/typeorm';
 /* Application Dependencies */
 import {FetchModule} from '#server/modules/fetch/fetch.module';
+import {UserModule} from '#server/modules/user/user.module';
 import {CashuMintRpcModule} from '#server/modules/cashu/mintrpc/cashumintrpc.module';
 /* Local Dependencies */
 import {CashuWalletSeed} from './seed/cashuwalletseed.entity.js';
@@ -34,6 +35,7 @@ import {CashuWalletIssueService} from './saga/issue/cashuwalletissue.service.js'
 			CashuWalletMintKeyset,
 		]),
 		FetchModule,
+		UserModule,
 		CashuMintRpcModule,
 	],
 	providers: [

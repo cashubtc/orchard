@@ -3,8 +3,9 @@ import {Field, ID, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 import {OrchardMintInfo} from '#server/modules/api/mint/info/mintinfo.model';
+import {WalletMintMatch} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import type {CashuMintInfo} from '#server/modules/cashu/mintapi/cashumintapi.types';
-import type {CashuWalletMintRecord, CashuWalletMintStatus} from '#server/modules/cashu/wallet/cashuwallet.types';
+import type {CashuWalletMintLookup, CashuWalletMintRecord, CashuWalletMintStatus} from '#server/modules/cashu/wallet/cashuwallet.types';
 
 @ObjectType({description: "A mint in the current user's ecash wallet"})
 export class OrchardEcashMint {
@@ -33,6 +34,36 @@ export class OrchardEcashMint {
 		this.created_at = mint.created_at;
 		// Plain parse: GraphQL Float can't carry the bigints JSONInt makes of out-of-range amounts
 		this.info = mint.info ? new OrchardMintInfo(JSON.parse(mint.info) as CashuMintInfo) : null;
+	}
+}
+
+@ObjectType({description: "A mint looked up before adding it to the current user's ecash wallet"})
+export class OrchardEcashMintLookup {
+	@Field({description: 'Normalized mint URL'})
+	url: string;
+
+	@Field(() => OrchardMintInfo, {nullable: true, description: "The mint's own info; null when the URL is already in the wallet"})
+	info: OrchardMintInfo | null;
+
+	@Field(() => Int, {nullable: true, description: 'Round trip time of the info request in milliseconds'})
+	latency_ms: number | null;
+
+	@Field(() => Int, {nullable: true, description: "Seconds the mint's clock is ahead of Orchard's, negative when behind"})
+	time_offset: number | null;
+
+	@Field(() => WalletMintMatch, {nullable: true, description: 'How the mint matches one already in the wallet'})
+	match: WalletMintMatch | null;
+
+	@Field(() => ID, {nullable: true, description: 'The wallet mint it matches'})
+	mint_id: string | null;
+
+	constructor(lookup: CashuWalletMintLookup) {
+		this.url = lookup.url;
+		this.info = lookup.info ? new OrchardMintInfo(JSON.parse(lookup.info) as CashuMintInfo) : null;
+		this.latency_ms = lookup.latency_ms;
+		this.time_offset = lookup.time_offset;
+		this.match = lookup.match;
+		this.mint_id = lookup.mint_id;
 	}
 }
 

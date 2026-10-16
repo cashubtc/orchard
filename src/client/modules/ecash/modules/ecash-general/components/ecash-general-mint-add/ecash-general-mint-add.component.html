@@ -1,0 +1,165 @@
+@if (!sheet) {
+	<div class="orc-form-panel">
+		<div class="orc-form-panel-header">
+			<div class="p-l-0-5">Add mint</div>
+			<button mat-icon-button type="button" class="orc-icon-button" aria-label="Close" (click)="onClose()">
+				<mat-icon>close</mat-icon>
+			</button>
+		</div>
+		<div class="category-rule"></div>
+		<div class="orc-form-panel-content">
+			<div class="orc-form-panel-body flex-gap-1">
+				<ng-container *ngTemplateOutlet="body"></ng-container>
+			</div>
+		</div>
+		<div class="orc-form-panel-footer">
+			<div class="orc-form-panel-body">
+				<ng-container *ngTemplateOutlet="submit_button"></ng-container>
+			</div>
+		</div>
+	</div>
+} @else {
+	<div class="orc-form-panel-sheet">
+		<div class="flex flex-items-center flex-justify-between">
+			<div class="title-l">Add mint</div>
+			<button mat-icon-button type="button" class="orc-icon-button" aria-label="Close" (click)="onClose()">
+				<mat-icon>close</mat-icon>
+			</button>
+		</div>
+		<ng-container *ngTemplateOutlet="body"></ng-container>
+	</div>
+	<div class="orc-form-panel-sheet-actions">
+		<ng-container *ngTemplateOutlet="submit_button"></ng-container>
+	</div>
+}
+
+<ng-template #body>
+	<p class="m-0 font-size-s orc-outline-color">Paste the mint’s URL. Orchard checks it with the mint before you can add it.</p>
+	<form class="w-full" [formGroup]="form" (ngSubmit)="onLookup()">
+		<orc-form-field-dynamic
+			[hot]="focused() || form.controls.url.dirty"
+			[invalid]="state() === 'error'"
+			[standalone]="false"
+			subscript_sizing="dynamic"
+			(cancel)="onCancel($event)"
+		>
+			<mat-form-field
+				appearance="fill"
+				subscriptSizing="dynamic"
+				[ngClass]="focused() || form.controls.url.dirty ? 'orc-hot-form-field' : 'orc-cold-form-field'"
+				class="orc-dynamic-form-field w-full"
+			>
+				<mat-label>Mint URL</mat-label>
+				<input
+					matInput
+					formControlName="url"
+					placeholder="https://"
+					inputmode="url"
+					autocapitalize="off"
+					spellcheck="false"
+					autocomplete="off"
+					(focus)="focused.set(true)"
+					(blur)="onBlur()"
+				/>
+				<div matSuffix class="ecash-mint-add-suffix">
+					@if (state() === 'loading') {
+						<mat-spinner diameter="20" aria-label="Checking the mint"></mat-spinner>
+					} @else if (status_icon(); as status_icon) {
+						<mat-icon [class]="status_icon.color">{{ status_icon.icon }}</mat-icon>
+					}
+					@if (can_lookup()) {
+						<button mat-icon-button type="button" class="orc-icon-button" aria-label="Look up mint" (click)="onLookup()">
+							<mat-icon>arrow_forward</mat-icon>
+						</button>
+					}
+				</div>
+				<mat-error>
+					<orc-form-error [errors]="form.controls.url.errors">{{ error() }}</orc-form-error>
+				</mat-error>
+				@if (hint(); as hint) {
+					<mat-hint class="font-size-xs orc-outline-color">{{ hint }}</mat-hint>
+				}
+			</mat-form-field>
+		</orc-form-field-dynamic>
+	</form>
+
+	@if (state() === 'loading') {
+		<mat-card appearance="outlined" class="overflow-hidden w-full" aria-hidden="true">
+			<div class="orc-surface-container-low-bg flex flex-column flex-gap-1 p-1">
+				<div class="flex flex-items-center flex-gap-1">
+					<div class="h-2-5 w-2-5 flex-shrink-0 orc-corner-full orc-animation-shimmer-high"></div>
+					<div class="flex flex-column flex-gap-0-5">
+						<div class="h-1 w-8 orc-corner-full orc-animation-shimmer-high"></div>
+						<div class="h-0-5 w-6 orc-corner-full orc-animation-shimmer-high"></div>
+					</div>
+				</div>
+				<div class="h-0-5 w-full orc-corner-full orc-animation-shimmer-high"></div>
+			</div>
+		</mat-card>
+	} @else if (state() === 'exists') {
+		@if (wallet_mint(); as mint) {
+			<mat-card appearance="outlined" class="overflow-hidden w-full" animate.enter="orc-animation-fadein">
+				<orc-ecash-general-mint-header
+					class="orc-surface-container-low-bg p-1"
+					[name]="mint.display_name"
+					[subtitle]="mint.host"
+					[icon_url]="mint.icon_url"
+					[is_orchard]="mint.is_orchard"
+				>
+					<button matButton type="button" class="flex-shrink-0" (click)="onClose()">
+						View in wallet
+						<mat-icon iconPositionEnd>chevron_right</mat-icon>
+					</button>
+				</orc-ecash-general-mint-header>
+			</mat-card>
+		}
+	} @else if (lookup(); as lookup) {
+		@if (lookup.info; as info) {
+			<orc-ecash-general-mint-info
+				class="w-full"
+				animate.enter="orc-animation-fadein"
+				[info]="info"
+				[url]="lookup.url"
+				[latency_ms]="lookup.latency_ms"
+				[time_offset]="lookup.time_offset"
+				[compact]="state() === 'joins'"
+				[device_type]="sheet ? 'mobile' : 'desktop'"
+				[(expanded)]="expanded"
+			>
+				@if (state() === 'joins') {
+					<div class="ecash-mint-add-joins font-size-s">
+						<mat-icon class="icon-sm orc-primary-color flex-shrink-0">link</mat-icon>
+						<span class="flex flex-column flex-gap-0-25">
+							<span>
+								Same public key as <span class="font-weight-semi-bold">{{ wallet_mint()?.display_name }}</span> ({{
+									wallet_mint()?.host
+								}}), already in your wallet.
+							</span>
+							<span class="orc-outline-color"
+								>This address is added to {{ wallet_mint()?.display_name }}, so both reach the same balance.</span
+							>
+						</span>
+					</div>
+				}
+			</orc-ecash-general-mint-info>
+			@if (state() !== 'joins') {
+				<div class="ecash-mint-add-trust font-size-xs orc-outline-color">
+					<mat-icon class="icon-sm flex-shrink-0">shield</mat-icon>
+					<span>Ecash is a claim on the mint that issued it. Only add mints you trust to hold your balance.</span>
+				</div>
+			}
+		}
+	}
+</ng-template>
+
+<ng-template #submit_button>
+	<button matButton="filled" type="button" class="ecash-mint-add-submit" [disabled]="!can_add()" (click)="onSubmit()">
+		@if (submitting()) {
+			Adding…
+		} @else if (state() === 'joins') {
+			Add URL to {{ wallet_mint()?.display_name }}
+		} @else {
+			Add mint
+		}
+	</button>
+</ng-template>

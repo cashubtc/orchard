@@ -18,11 +18,7 @@
 
 				<!-- Units chip set -->
 				<div class="flex flex-column flex-gap-0-25">
-					<mat-chip-set>
-						@for (unit of unique_units(); track unit) {
-							<mat-chip>{{ unit | uppercase }}</mat-chip>
-						}
-					</mat-chip-set>
+					<orc-cashu-unit-chips [chips]="unit_chips()" [show_unit]="true" [selectable]="false"></orc-cashu-unit-chips>
 					<div class="font-size-xs orc-outline-color">Units</div>
 				</div>
 

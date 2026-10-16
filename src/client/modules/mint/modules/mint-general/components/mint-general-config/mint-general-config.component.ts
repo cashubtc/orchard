@@ -2,10 +2,14 @@
 import {ChangeDetectionStrategy, Component, computed, inject, input} from '@angular/core';
 import {Router} from '@angular/router';
 /* Application Dependencies */
-import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
 import {GraphicStatusState} from '@client/modules/graphic/types/graphic-status.types';
+/* Native Dependencies */
+import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
+import {MintNut} from '@client/modules/mint/types/nut.types';
+import {getMintMethods} from '@client/modules/mint/helpers/mint-method.helpers';
+import {isNutOffered} from '@client/modules/mint/helpers/mint-nut.helpers';
 /* Shared Dependencies */
-import {OrchardNut4Method, OrchardNut5Method} from '@shared/generated.types';
+import {OrchardNut4Method, OrchardNut5Method, OrchardNuts} from '@shared/generated.types';
 
 type MethodLimit = {
 	method: string;
@@ -36,15 +40,15 @@ export class MintGeneralConfigComponent {
 				const number = parseInt(key.replace('nut', ''), 10);
 				return {
 					number,
-					status: this.getNutStatus(number, value),
+					status: this.getNutStatus(number, value as OrchardNuts[MintNut]),
 				};
 			});
 	});
 
 	/** Deduped payment methods supported across minting (NUT4) and melting (NUT5). */
 	public supported_methods = computed<string[]>(() => {
-		const methods = [...(this.info()?.nuts?.nut4?.methods ?? []), ...(this.info()?.nuts?.nut5?.methods ?? [])];
-		return [...new Set(methods.map((m) => m.method))];
+		const nuts = this.info()?.nuts;
+		return nuts ? getMintMethods(nuts) : [];
 	});
 
 	/** Minting method limits from NUT4. */
@@ -88,14 +92,10 @@ export class MintGeneralConfigComponent {
 	}
 
 	/** Derives a status string from a nut number and its value. */
-	private getNutStatus(number: number, nut: unknown): GraphicStatusState {
-		if (nut == null || typeof nut !== 'object') return number === 4 || number === 5 ? 'inactive' : 'disabled';
-		const is_disabled = 'disabled' in nut && (nut as {disabled: boolean}).disabled;
-		const is_supported = 'supported' in nut && !!(nut as {supported: unknown}).supported;
-		if (number === 4 || number === 5) return is_disabled ? 'inactive' : 'active';
-		if ('disabled' in nut) return is_disabled ? 'disabled' : 'enabled';
-		if ('supported' in nut) return is_supported ? 'enabled' : 'disabled';
-		return 'enabled';
+	private getNutStatus(number: number, nut: OrchardNuts[MintNut]): GraphicStatusState {
+		const offered = isNutOffered(nut);
+		if (number === 4 || number === 5) return offered ? 'active' : 'inactive';
+		return offered ? 'enabled' : 'disabled';
 	}
 
 	/** Maps NUT4/NUT5 methods to MethodLimit rows. */

@@ -14,13 +14,9 @@ import {
 import {FormGroup, FormArray} from '@angular/forms';
 /* Vendor Dependencies */
 import {MatSelect} from '@angular/material/select';
-
-type ContactOption = {
-	label: string;
-	method: string;
-	icon: string;
-	svg: string;
-};
+/* Native Dependencies */
+import {MintContactMethod} from '@client/modules/mint/types/mint-contact.types';
+import {MINT_CONTACT_METHODS} from '@client/modules/mint/constants/mint.constants';
 
 @Component({
 	selector: 'orc-mint-subsection-info-form-contact',
@@ -45,28 +41,9 @@ export class MintSubsectionInfoFormContactComponent implements AfterViewInit {
 	@ViewChild('element_method') element_method!: MatSelect;
 	@ViewChild('element_info') element_info!: ElementRef<HTMLInputElement>;
 
-	public options: ContactOption[] = [
-		{
-			label: 'Email',
-			method: 'email',
-			icon: 'mail',
-			svg: '',
-		},
-		{
-			label: 'X',
-			method: 'twitter',
-			icon: '',
-			svg: 'x',
-		},
-		{
-			label: 'Nostr',
-			method: 'nostr',
-			icon: '',
-			svg: 'nostr',
-		},
-	];
+	public options: MintContactMethod[] = MINT_CONTACT_METHODS;
 
-	public get method_option(): ContactOption | undefined {
+	public get method_option(): MintContactMethod | undefined {
 		const method = this.form_array.at(this.subgroup_index).get('method')?.value;
 		const selected_option = this.options.find((option) => option.method === method);
 		return selected_option;

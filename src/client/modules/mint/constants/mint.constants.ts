@@ -1,5 +1,35 @@
+/* Native Dependencies */
+import {MintContactMethod} from '@client/modules/mint/types/mint-contact.types';
+import {MintNut} from '@client/modules/mint/types/nut.types';
 /* Shared Dependencies */
 import {MintReserveSource} from '@shared/generated.types';
+
+/** What each NUT is called wherever a mint's settings are shown */
+export const MINT_NUT_TITLES: Record<MintNut, string> = {
+	nut4: 'Minting',
+	nut5: 'Melting',
+	nut7: 'Token check',
+	nut8: 'Lightning fee',
+	nut9: 'Restore signatures',
+	nut10: 'Spending conditions',
+	nut11: 'P2Pk',
+	nut12: 'Offline validation',
+	nut14: 'HTLCs',
+	nut15: 'PMP payments',
+	nut17: 'Websockets',
+	nut19: 'Cached responses',
+	nut20: 'Quote signature',
+	nut21: 'Clear auth',
+	nut22: 'Blind auth',
+	nut29: 'Batched minting',
+};
+
+/** The ways a mint can publish a contact */
+export const MINT_CONTACT_METHODS: MintContactMethod[] = [
+	{label: 'Email', method: 'email', icon: 'mail', svg: ''},
+	{label: 'X', method: 'twitter', icon: '', svg: 'x'},
+	{label: 'Nostr', method: 'nostr', icon: '', svg: 'nostr'},
+];
 
 /** Outbound liquidity in the node's channels, active or not */
 export const CHANNEL_RESERVE_SOURCES: readonly MintReserveSource[] = [

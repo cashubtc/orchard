@@ -10,6 +10,7 @@ import {createBlindSignature, createNewMintKeys, pointFromHex, serializeMintKeys
 /* Application Dependencies */
 import {FetchService} from '#server/modules/fetch/fetch.service';
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
+import {UserService} from '#server/modules/user/user.service';
 /* Local Dependencies */
 import {CashuWalletIssueService} from './cashuwalletissue.service.js';
 import {CashuWalletJournalService} from '../cashuwalletjournal.service.js';
@@ -24,7 +25,7 @@ import {CashuWalletMintInfo} from '../../mint/cashuwalletmintinfo.entity.js';
 import {CashuWalletMintKeyset} from '../../mint/cashuwalletmintkeyset.entity.js';
 import {CashuWalletMintCacheService} from '../../mint/cashuwalletmintcache.service.js';
 import {CashuWalletMintTransportService} from '../../mint/cashuwalletminttransport.service.js';
-import {WalletOperationState, WalletProofState} from '../../cashuwallet.enums.js';
+import {WalletOperationState, WalletOperationType, WalletProofState} from '../../cashuwallet.enums.js';
 import {walletError} from '../../cashuwallet.helpers.js';
 
 /** Minimal mint that signs outputs for real with cashu-ts crypto; `failures` queues NUT errors for /v1/mint, `outages` answers whole paths with an HTTP status */
@@ -123,6 +124,7 @@ describe('CashuWalletIssueService', () => {
 	const request = (quote_id = 'quote-1') => ({
 		user_id: 'user-1',
 		mint_id: mint_row.id,
+		type: WalletOperationType.MINT,
 		unit: 'sat',
 		amount: 100,
 		method: 'bolt11',
@@ -174,6 +176,7 @@ describe('CashuWalletIssueService', () => {
 				},
 				{provide: FetchService, useValue: fetch_service},
 				{provide: CashuMintRpcService, useValue: mint_rpc},
+				{provide: UserService, useValue: {getUserById: jest.fn()}},
 				...entities.map((entity) => ({provide: getRepositoryToken(entity), useValue: data_source.getRepository(entity)})),
 			],
 		}).compile();
@@ -342,7 +345,13 @@ describe('CashuWalletIssueService', () => {
 
 	it('issues on the Orchard mint through a NUT-20 locked quote forced paid over the mint RPC', async () => {
 		const result = await service.issueEcash({user_id: 'user-1', unit: 'sat', amount: 100, memo: 'Giveaway'});
-		expect(result).toMatchObject({state: WalletOperationState.FINALIZED, mint_id: mint_row.id, quote_counter: 0, memo: 'Giveaway'});
+		expect(result).toMatchObject({
+			type: WalletOperationType.ISSUE,
+			state: WalletOperationState.FINALIZED,
+			mint_id: mint_row.id,
+			quote_counter: 0,
+			memo: 'Giveaway',
+		});
 		expect(mint.quotes.get(result.quote_id!)).toMatchObject({pubkey: expect.stringMatching(/^0[23][0-9a-f]{64}$/), state: 'ISSUED'});
 		expect(mint_rpc.updateNut04Quote).toHaveBeenCalledWith({quote_id: result.quote_id, state: 'PAID'});
 		expect(await total()).toBe(100);

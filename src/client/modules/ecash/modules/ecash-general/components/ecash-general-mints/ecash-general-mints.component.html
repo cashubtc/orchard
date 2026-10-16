@@ -2,7 +2,7 @@
 	<div class="flex flex-justify-between flex-items-center p-b-1">
 		<div class="title-l">Mints</div>
 		<div class="ecash-mints-add">
-			<button matButton type="button" disabled>
+			<button matButton type="button" (click)="add.emit()">
 				<mat-icon>add</mat-icon>
 				<span class="text-nowrap font-size-s">Add mint</span>
 			</button>

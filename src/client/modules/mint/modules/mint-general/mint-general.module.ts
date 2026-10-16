@@ -20,6 +20,7 @@ import {OrcErrorModule} from '@client/modules/error/error.module';
 import {OrcTimeModule} from '@client/modules/time/time.module';
 import {OrcDataModule} from '@client/modules/data/data.module';
 import {OrcProgressModule} from '@client/modules/progress/progress.module';
+import {OrcCashuModule} from '@client/modules/cashu/cashu.module';
 /* Local Dependencies */
 import {MintGeneralIconComponent} from './components/mint-general-icon/mint-general-icon.component';
 import {MintGeneralNameComponent} from './components/mint-general-name/mint-general-name.component';
@@ -66,6 +67,7 @@ import {MintGeneralActivityComponent} from './components/mint-general-activity/m
 		OrcTimeModule,
 		OrcDataModule,
 		OrcProgressModule,
+		OrcCashuModule,
 	],
 	exports: [
 		MintGeneralIconComponent,

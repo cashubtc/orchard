@@ -56,7 +56,7 @@ describe('EcashGeneralIssueComponent', () => {
 	const operation = new EcashOperation({
 		id: 'op-1',
 		mint_id: 'mint-1',
-		type: WalletOperationType.Mint,
+		type: WalletOperationType.Issue,
 		state: WalletOperationState.Finalized,
 		unit: 'sat',
 		amount: 2100,

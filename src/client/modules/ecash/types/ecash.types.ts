@@ -2,6 +2,7 @@ import {
 	OrchardCommonCount,
 	OrchardEcashBalance,
 	OrchardEcashMint,
+	OrchardEcashMintLookup,
 	OrchardEcashMintStatus,
 	OrchardEcashOperation,
 	OrchardEcashSeed,
@@ -30,6 +31,10 @@ export type EcashOperationsDataResponse = {
 
 export type EcashIssueResponse = {
 	ecash_issue: OrchardEcashOperation;
+};
+
+export type EcashMintLookupResponse = {
+	ecash_mint_lookup: OrchardEcashMintLookup;
 };
 
 export type EcashMintAddResponse = {

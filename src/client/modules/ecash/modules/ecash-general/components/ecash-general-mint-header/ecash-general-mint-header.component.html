@@ -1,0 +1,14 @@
+<orc-ecash-general-mint-icon
+	[name]="name()"
+	[icon_url]="icon_url()"
+	[is_orchard]="is_orchard()"
+	[height]="icon_height()"
+></orc-ecash-general-mint-icon>
+<div class="flex flex-column flex-grow w-min-0">
+	<span class="font-weight-semi-bold" [class.font-size-l]="large()" [class.text-nowrap]="!large()" [class.text-ellipsis]="!large()">{{
+		name()
+	}}</span>
+	<span class="font-size-xs orc-outline-color text-nowrap text-ellipsis">{{ detail() }}</span>
+	<ng-content select="[mint-header-detail]"></ng-content>
+</div>
+<ng-content></ng-content>

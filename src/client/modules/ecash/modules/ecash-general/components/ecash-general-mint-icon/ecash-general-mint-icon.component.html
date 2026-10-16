@@ -1,5 +1,11 @@
-@if (icon_url() && !icon_failed()) {
-	<img class="w-full h-full" [src]="icon_url()" [alt]="name()" (error)="onIconError()" />
-} @else {
-	<span class="font-size-s font-weight-semi-bold">{{ initials() }}</span>
+@switch (icon_state()) {
+	@case ('loading') {
+		<mat-spinner diameter="20" aria-label="Loading mint icon"></mat-spinner>
+	}
+	@case ('loaded') {
+		<img class="w-full h-full" [src]="icon_data()" [alt]="name()" (error)="onIconError()" />
+	}
+	@default {
+		<span class="font-size-s font-weight-semi-bold">{{ initials() }}</span>
+	}
 }

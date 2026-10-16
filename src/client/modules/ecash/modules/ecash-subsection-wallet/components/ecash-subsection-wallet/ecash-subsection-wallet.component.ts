@@ -22,7 +22,9 @@ import {EcashMintStatus} from '@client/modules/ecash/classes/ecash-mint-status.c
 import {EcashOperation} from '@client/modules/ecash/classes/ecash-operation.class';
 import {EcashGeneralIssueComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-issue/ecash-general-issue.component';
 import {getMintStatusPill} from '@client/modules/ecash/modules/ecash-general/helpers/ecash-general.helpers';
-import {EcashIssuePanelData} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
+import {EcashGeneralMintAddComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-mint-add/ecash-general-mint-add.component';
+import {EcashIssuePanelData, EcashMintAddPanelData} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
+import {ACTIVITY_RECENT_COUNT} from '@client/modules/ecash/modules/ecash-general/constants/ecash-general.constants';
 
 @Component({
 	selector: 'orc-ecash-subsection-wallet',
@@ -47,6 +49,7 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 	public readonly mints = signal<EcashMint[]>([]);
 	public readonly mint_statuses = signal<EcashMintStatus[]>([]);
 	public readonly mint_reserves = signal<MintReserves | null>(null);
+	public readonly operations = signal<EcashOperation[]>([]);
 	public readonly selected_unit = signal<string | null>(null);
 	public readonly bitcoin_oracle_price = signal<BitcoinOraclePrice | null>(null);
 	public readonly is_admin = signal<boolean>(false);
@@ -54,6 +57,7 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 	public readonly loading_balances = signal<boolean>(true);
 	public readonly loading_mints = signal<boolean>(true);
 	public readonly loading_mint_statuses = signal<boolean>(true);
+	public readonly loading_operations = signal<boolean>(true);
 
 	/** Ecash is only issued from the Orchard mint, by an admin */
 	public readonly orchard_mint = computed(() => this.mints().find((mint) => mint.is_orchard) ?? null);
@@ -69,6 +73,7 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 		this.loadBalances();
 		this.loadMints();
 		this.loadMintStatuses();
+		this.loadOperations();
 		if (this.bitcoin_oracle_enabled) this.loadBitcoinOraclePrice();
 	}
 
@@ -127,19 +132,39 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 			});
 	}
 
-	/** Probes every mint; each row shows as checking until this lands */
-	private loadMintStatuses(): void {
+	/** Probes every mint, or just one and merges it in; a mint with no status yet shows as checking until this lands */
+	private loadMintStatuses(mint_id: string | null = null): void {
+		this.loading_mint_statuses.set(true);
 		this.ecashService
-			.loadMintStatuses()
+			.loadMintStatuses(mint_id)
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (statuses) => {
-					this.mint_statuses.set(statuses);
+					this.mint_statuses.update((current) =>
+						mint_id === null ? statuses : [...current.filter((status) => status.mint_id !== mint_id), ...statuses],
+					);
 					this.loading_mint_statuses.set(false);
 				},
 				error: (error) => {
 					console.error(error);
 					this.loading_mint_statuses.set(false);
+				},
+			});
+	}
+
+	/** The latest operations, for the activity summary */
+	private loadOperations(): void {
+		this.ecashService
+			.getOperationsData({page: 0, page_size: ACTIVITY_RECENT_COUNT})
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: ({operations}) => {
+					this.operations.set(operations);
+					this.loading_operations.set(false);
+				},
+				error: (error) => {
+					console.error(error);
+					this.loading_operations.set(false);
 				},
 			});
 	}
@@ -172,7 +197,7 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 		this.selected_unit.set(unit);
 	}
 
-	/** Opens the issue panel in the selected unit; an issued operation switches the balance to its unit and refreshes what it changed */
+	/** Opens the issue panel in the selected unit; an issued operation switches the balance to its unit and refreshes what it changed, activity included */
 	public onIssue(): void {
 		const mint = this.orchard_mint();
 		if (!mint) return;
@@ -194,6 +219,22 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 				this.ecashService.clearBalancesCache();
 				this.loadBalances();
 				this.loadMintReserves();
+				this.loadOperations();
+			});
+	}
+
+	/** Opens the add-mint panel; an added mint refreshes the mints and their statuses */
+	public onAddMint(): void {
+		const data: EcashMintAddPanelData = {mints: this.mints};
+		this.formPanelService
+			.open<EcashMintAddPanelData, EcashMint>(EcashGeneralMintAddComponent, {data})
+			.afterClosed()
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe((mint) => {
+				if (!mint) return;
+				this.ecashService.clearMintsCache();
+				this.loadMints();
+				this.loadMintStatuses(mint.id);
 			});
 	}
 

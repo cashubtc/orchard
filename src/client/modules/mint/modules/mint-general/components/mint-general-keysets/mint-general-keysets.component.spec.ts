@@ -116,6 +116,18 @@ describe('MintGeneralKeysetsComponent', () => {
 			expect(units).toContain('sat');
 			expect(units).toContain('usd');
 		});
+
+		it('should show each unit as a chip with its coin, uppercase', () => {
+			fixture.componentRef.setInput('keysets', [buildKeyset({id: 'ks_001', unit: 'sat'}), buildKeyset({id: 'ks_002', unit: 'usd'})]);
+			fixture.detectChanges();
+
+			expect(component.unit_chips()).toEqual([{unit: 'sat'}, {unit: 'usd'}]);
+			const chips = fixture.nativeElement.querySelectorAll('orc-cashu-unit-chips .cashu-unit-chip');
+			expect(chips.length).toBe(2);
+			expect(chips[0].textContent).toContain('SAT');
+			expect(chips[1].textContent).toContain('USD');
+			expect(chips[0].querySelector('orc-graphic-asset')).not.toBeNull();
+		});
 	});
 
 	describe('active_keyset_ids', () => {

@@ -6,9 +6,10 @@ import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwal
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {WalletMintMatch} from '#server/modules/cashu/wallet/cashuwallet.enums';
 /* Local Dependencies */
 import {EcashMintService} from './ecashmint.service.js';
-import {OrchardEcashMint, OrchardEcashMintStatus} from './ecashmint.model.js';
+import {OrchardEcashMint, OrchardEcashMintLookup, OrchardEcashMintStatus} from './ecashmint.model.js';
 
 describe('EcashMintService', () => {
 	let ecashMintService: EcashMintService;
@@ -41,7 +42,13 @@ describe('EcashMintService', () => {
 				EcashMintService,
 				{
 					provide: CashuWalletMintService,
-					useValue: {listMints: jest.fn(), checkMints: jest.fn(), addMint: jest.fn(), removeMint: jest.fn()},
+					useValue: {
+						listMints: jest.fn(),
+						checkMints: jest.fn(),
+						lookupMint: jest.fn(),
+						addMint: jest.fn(),
+						removeMint: jest.fn(),
+					},
 				},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
 			],
@@ -78,12 +85,45 @@ describe('EcashMintService', () => {
 		const [result] = await ecashMintService.getEcashMintStatus('TAG', 'user-1');
 		expect(result).toBeInstanceOf(OrchardEcashMintStatus);
 		expect(result).toMatchObject(status);
+		expect(cashuWalletMintService.checkMints).toHaveBeenCalledWith('user-1', null);
+		await ecashMintService.getEcashMintStatus('TAG', 'user-1', 'mint-1');
+		expect(cashuWalletMintService.checkMints).toHaveBeenLastCalledWith('user-1', 'mint-1');
+	});
+
+	it("lookupEcashMint maps the looked-up mint's info, motd and match", async () => {
+		const info = JSON.stringify({...JSON.parse(mint.info), motd: 'Maintenance Sunday'});
+		const lookup = {
+			url: 'https://cedar.example',
+			info,
+			latency_ms: 84,
+			time_offset: -3,
+			match: WalletMintMatch.PUBKEY,
+			mint_id: 'mint-1',
+		};
+		cashuWalletMintService.lookupMint.mockResolvedValue(lookup);
+		const result = await ecashMintService.lookupEcashMint('TAG', 'user-1', 'https://cedar.example', true);
+		expect(cashuWalletMintService.lookupMint).toHaveBeenCalledWith('user-1', 'https://cedar.example', true);
+		expect(result).toBeInstanceOf(OrchardEcashMintLookup);
+		expect(result).toMatchObject({url: 'https://cedar.example', latency_ms: 84, time_offset: -3, match: 'PUBKEY', mint_id: 'mint-1'});
+		expect(result.info).toMatchObject({name: 'Orchard Test Mint', motd: 'Maintenance Sunday'});
+	});
+
+	it('lookupEcashMint leaves info null for a URL already in the wallet', async () => {
+		cashuWalletMintService.lookupMint.mockResolvedValue({
+			url: 'https://cedar.example',
+			info: null,
+			latency_ms: null,
+			time_offset: null,
+			match: WalletMintMatch.URL,
+			mint_id: 'mint-1',
+		});
+		expect((await ecashMintService.lookupEcashMint('TAG', 'user-1', 'https://cedar.example', false)).info).toBeNull();
 	});
 
 	it('addEcashMint passes the URL through', async () => {
 		cashuWalletMintService.addMint.mockResolvedValue({...mint, info: null, is_orchard: false});
-		const result = await ecashMintService.addEcashMint('TAG', 'user-1', 'https://cedar.example');
-		expect(cashuWalletMintService.addMint).toHaveBeenCalledWith('user-1', 'https://cedar.example');
+		const result = await ecashMintService.addEcashMint('TAG', 'user-1', 'https://cedar.example', false);
+		expect(cashuWalletMintService.addMint).toHaveBeenCalledWith('user-1', 'https://cedar.example', false);
 		expect(result).toMatchObject({is_orchard: false, info: null});
 	});
 
@@ -92,10 +132,10 @@ describe('EcashMintService', () => {
 	});
 
 	it('wraps wallet errors as OrchardApiError, keeping details', async () => {
-		const wallet_error = {code: OrchardErrorCode.EcashWalletError, details: 'Mint URLs must use https'};
+		const wallet_error = {code: OrchardErrorCode.EcashWalletError, details: 'Could not resolve mint host x'};
 		cashuWalletMintService.addMint.mockRejectedValue(wallet_error);
 		errorService.resolveError.mockReturnValue(wallet_error);
-		await expect(ecashMintService.addEcashMint('TAG', 'user-1', 'http://x')).rejects.toBeInstanceOf(OrchardApiError);
+		await expect(ecashMintService.addEcashMint('TAG', 'user-1', 'http://x', false)).rejects.toBeInstanceOf(OrchardApiError);
 		expect(errorService.resolveError).toHaveBeenCalledWith(expect.anything(), wallet_error, 'TAG', {
 			errord: OrchardErrorCode.EcashWalletError,
 		});

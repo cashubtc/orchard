@@ -109,7 +109,7 @@ test.describe('settings app AI agent CRUD — /settings/app', {tag: '@ai'}, () =
 		await expect(cronDialog).toHaveCount(0);
 
 		// Save → 'Agent created!' via the global event stack.
-		await form.locator('.agent-form-header button', {hasText: 'Save'}).click();
+		await form.locator('.orc-form-panel-header button', {hasText: 'Save'}).click();
 		await expect(eventToast(page).filter({hasText: 'Agent created!'})).toBeVisible();
 
 		// Backend truth: a custom agent row (agent_key NULL) with our name +
@@ -139,7 +139,7 @@ test.describe('settings app AI agent CRUD — /settings/app', {tag: '@ai'}, () =
 		await expect(descBox).toHaveValue(DESC);
 		await descBox.fill(DESC_EDITED);
 
-		await form.locator('.agent-form-header button', {hasText: 'Save'}).click();
+		await form.locator('.orc-form-panel-header button', {hasText: 'Save'}).click();
 		await expect(eventToast(page).filter({hasText: 'Agent updated!'})).toBeVisible();
 
 		// Backend truth: description updated, same row.

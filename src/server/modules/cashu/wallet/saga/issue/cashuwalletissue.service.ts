@@ -51,7 +51,6 @@ export class CashuWalletIssueService {
 		return this.walletOperationRepository.save(
 			this.walletOperationRepository.create({
 				...request,
-				type: WalletOperationType.MINT,
 				state: WalletOperationState.PENDING,
 				outputs: this.cashuWalletJournalService.serializeOutputs(outputs),
 				created_at: now,
@@ -138,7 +137,14 @@ export class CashuWalletIssueService {
 			quote_counter === null
 				? await wallet.createMintQuoteBolt11(request.amount)
 				: await wallet.createLockedMintQuote(request.amount, (await this.getQuoteKey(request.user_id, quote_counter)).pubkey);
-		return this.createMintOperation({...request, mint_id, method: 'bolt11', quote_id: quote.quote, quote_counter});
+		return this.createMintOperation({
+			...request,
+			mint_id,
+			type: WalletOperationType.ISSUE,
+			method: 'bolt11',
+			quote_id: quote.quote,
+			quote_counter,
+		});
 	}
 
 	/* *******************************************************

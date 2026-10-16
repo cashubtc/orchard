@@ -30,7 +30,7 @@ import {
 } from '#server/modules/event/event.enums';
 import {SystemMetric, SystemMetricsInterval} from '#server/modules/system/metrics/sysmetrics.enums';
 import {MintMetricType} from '#server/modules/cashu/mintmetrics/mintmetrics.enums';
-import {WalletOperationType, WalletOperationState} from '#server/modules/cashu/wallet/cashuwallet.enums';
+import {WalletOperationType, WalletOperationState, WalletMintMatch} from '#server/modules/cashu/wallet/cashuwallet.enums';
 
 registerEnumType(MintQuoteState, {
 	name: 'MintQuoteState',
@@ -413,6 +413,7 @@ registerEnumType(WalletOperationType, {
 	description: 'Type of an ecash wallet operation',
 	valuesMap: {
 		MINT: {description: 'Ecash minted into the wallet'},
+		ISSUE: {description: 'Ecash issued by the Orchard mint without a payment'},
 	},
 });
 registerEnumType(WalletOperationState, {
@@ -423,5 +424,13 @@ registerEnumType(WalletOperationState, {
 		EXECUTING: {description: 'Sent to the mint; retried until it settles'},
 		FINALIZED: {description: 'Completed'},
 		FAILED: {description: 'Ended without ecash reaching the wallet'},
+	},
+});
+registerEnumType(WalletMintMatch, {
+	name: 'WalletMintMatch',
+	description: 'How a looked-up mint matches one already in the wallet',
+	valuesMap: {
+		URL: {description: 'The URL is already in the wallet'},
+		PUBKEY: {description: 'A wallet mint has the same public key; adding the URL joins it'},
 	},
 });

@@ -17,13 +17,7 @@
 
 				<div class="flex flex-column flex-gap-0-25">
 					<div class="font-size-xs orc-outline-color">Supported Methods</div>
-					<mat-chip-set>
-						@for (method of supported_methods(); track method) {
-							<mat-chip>
-								<orc-mint-general-payment-method [payment_method]="method"></orc-mint-general-payment-method>
-							</mat-chip>
-						}
-					</mat-chip-set>
+					<orc-cashu-method-chips [methods]="supported_methods()" [selectable]="false"></orc-cashu-method-chips>
 				</div>
 
 				<div class="flex flex-row flex-gap-1">

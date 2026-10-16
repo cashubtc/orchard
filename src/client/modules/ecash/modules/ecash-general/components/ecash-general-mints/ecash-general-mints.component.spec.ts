@@ -75,6 +75,13 @@ describe('EcashGeneralMintsComponent', () => {
 		expect(fixture.nativeElement.querySelector('orc-ecash-general-mint')).toBeNull();
 	});
 
+	it('hands the add mint action up', () => {
+		let added = false;
+		component.add.subscribe(() => (added = true));
+		fixture.nativeElement.querySelector('.ecash-mints-add button').click();
+		expect(added).toBeTrue();
+	});
+
 	it('hands reserves only to the Orchard mint', () => {
 		const reserves = new MintReserves({liabilities: [], sources: [], reserves: 1000, partial: false});
 		fixture.componentRef.setInput('reserves', reserves);

@@ -51,7 +51,7 @@
 					@for (section of minting_sections; track section.key) {
 						<div class="sticky-config z-index-1">
 							<div class="flex flex-items-center flex-gap-0-5 p-b-0-5">
-								<div class="font-size-xs orc-outline-color">{{ section.unit | localUnit: true }} Configuration</div>
+								<div class="font-size-xs orc-outline-color">{{ section.unit | localUnit }} Configuration</div>
 								<orc-graphic-asset [unit]="section.unit" [height]="'1rem'"> </orc-graphic-asset>
 								<div class="font-size-xs orc-outline-color">{{ section.label }}</div>
 								@if (section.svg_icon) {
@@ -161,7 +161,7 @@
 					@for (section of melting_sections; track section.key) {
 						<div class="sticky-config z-index-1">
 							<div class="flex flex-items-center flex-gap-0-5 p-b-0-5">
-								<div class="font-size-xs orc-outline-color">{{ section.unit | localUnit: true }} Configuration</div>
+								<div class="font-size-xs orc-outline-color">{{ section.unit | localUnit }} Configuration</div>
 								<orc-graphic-asset [unit]="section.unit" [height]="'1rem'"> </orc-graphic-asset>
 								<div class="font-size-xs orc-outline-color">{{ section.label }}</div>
 								@if (section.svg_icon) {

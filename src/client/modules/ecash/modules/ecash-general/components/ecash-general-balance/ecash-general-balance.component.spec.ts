@@ -48,7 +48,7 @@ describe('EcashGeneralBalanceComponent', () => {
 		expect(component.chips()).toEqual([{unit: 'sat', amount: 0}]);
 		expect(component.selection()).toEqual(jasmine.objectContaining({unit: 'sat', amount: 0, caption: 'No balance on any mint'}));
 		expect(fixture.nativeElement.textContent).toContain('No balance on any mint');
-		expect(fixture.nativeElement.querySelector('orc-ecash-general-unit-chips')).toBeNull();
+		expect(fixture.nativeElement.querySelector('orc-cashu-unit-chips')).toBeNull();
 	});
 
 	it("offers every unit the wallet's mints offer, zero balances included, summed across mints and bitcoin first", () => {
@@ -61,7 +61,7 @@ describe('EcashGeneralBalanceComponent', () => {
 		]);
 		fixture.detectChanges();
 		expect(fixture.nativeElement.textContent).toContain('Across 2 mints');
-		expect(fixture.nativeElement.querySelector('orc-ecash-general-unit-chips')).not.toBeNull();
+		expect(fixture.nativeElement.querySelector('orc-cashu-unit-chips')).not.toBeNull();
 	});
 
 	it('asks for the picked chip, and shows the selected one naming the one mint that holds it', () => {
@@ -70,7 +70,7 @@ describe('EcashGeneralBalanceComponent', () => {
 		fixture.componentRef.setInput('mints', [mint('mint-1', 'Cedar', ['sat', 'usd'])]);
 		fixture.componentRef.setInput('balances', [balance('mint-1', 'usd', 450)]);
 		fixture.detectChanges();
-		fixture.nativeElement.querySelectorAll('.ecash-unit-chip')[1].click();
+		fixture.nativeElement.querySelectorAll('.cashu-unit-chip')[1].click();
 		expect(picked).toHaveBeenCalledWith('usd');
 
 		fixture.componentRef.setInput('selected', 'usd');

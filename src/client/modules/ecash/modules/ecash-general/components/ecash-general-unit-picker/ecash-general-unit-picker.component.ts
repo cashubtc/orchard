@@ -14,8 +14,8 @@ import {
 /* Vendor Dependencies */
 import {Overlay, OverlayRef} from '@angular/cdk/overlay';
 import {TemplatePortal} from '@angular/cdk/portal';
-/* Native Dependencies */
-import {EcashUnitChip} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
+/* Application Dependencies */
+import {CashuUnitChip} from '@client/modules/cashu/types/cashu.types';
 
 @Component({
 	selector: 'orc-ecash-general-unit-picker',
@@ -28,7 +28,7 @@ export class EcashGeneralUnitPickerComponent implements OnDestroy {
 	private readonly overlay = inject(Overlay);
 	private readonly view_container_ref = inject(ViewContainerRef);
 
-	public readonly chips = input.required<EcashUnitChip[]>();
+	public readonly chips = input.required<CashuUnitChip[]>();
 	public readonly selected = input.required<string>();
 	public readonly title = input<string>('Unit');
 	public readonly caption = input<string | null>(null);

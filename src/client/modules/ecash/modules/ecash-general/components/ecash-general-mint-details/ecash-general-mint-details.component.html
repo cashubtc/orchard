@@ -1,0 +1,113 @@
+@if (info().description_long) {
+	<div class="ecash-mint-details-section">
+		<span class="font-size-xs orc-outline-color">About</span>
+		<p class="ecash-mint-details-text">{{ info().description_long }}</p>
+	</div>
+}
+@if (connections().length > 0) {
+	<div class="ecash-mint-details-section">
+		<span class="font-size-xs orc-outline-color">Connections</span>
+		<div class="ecash-mint-details-table">
+			@for (connection of connections(); track connection.uri) {
+				<div class="ecash-mint-details-connection">
+					<orc-network-connection-status [type]="connection.type" status="unchecked" size="sm"></orc-network-connection-status>
+					<span class="flex-grow text-nowrap text-ellipsis">{{ connection.label }}</span>
+					<span class="font-size-xs orc-outline-color">{{ connection.type === 'tor' ? 'Tor' : 'Clearnet' }}</span>
+				</div>
+			}
+		</div>
+	</div>
+}
+@if (limit_groups().length > 0) {
+	<div class="ecash-mint-details-section">
+		<span class="font-size-xs orc-outline-color">Limits</span>
+		<div class="ecash-mint-details-table ecash-mint-details-limits" [class.mobile]="mobile()">
+			<span class="ecash-mint-details-head"></span>
+			<span class="ecash-mint-details-head">Method</span>
+			@if (!mobile()) {
+				<span class="ecash-mint-details-head">Unit</span>
+			}
+			<span class="ecash-mint-details-head ecash-mint-details-end">Min – max</span>
+			@for (group of limit_groups(); track group.label) {
+				@for (limit of group.limits; track $index) {
+					<span class="ecash-mint-details-cell font-size-xs orc-outline-color">{{ $first ? group.label : '' }}</span>
+					<span class="ecash-mint-details-cell flex flex-items-center flex-gap-0-25">
+						<ng-container *ngTemplateOutlet="method_icon; context: {$implicit: limit.method}"></ng-container>
+						{{ limit.method.label }}
+					</span>
+					@if (!mobile()) {
+						<span class="ecash-mint-details-cell">{{ limit.unit | localUnit }}</span>
+					}
+					<span class="ecash-mint-details-cell ecash-mint-details-end flex-gap-0-25 text-nowrap">
+						<span [innerHTML]="limit.min ?? 0 | localAmount: limit.unit : undefined : false : true"></span>
+						–
+						@if (limit.max === null) {
+							∞
+						} @else {
+							<span [innerHTML]="limit.max | localAmount: limit.unit : undefined : false : true"></span>
+						}
+						@if (mobile()) {
+							<span class="orc-outline-color">{{ limit.unit | localUnit }}</span>
+						}
+					</span>
+				}
+			}
+		</div>
+		@if (confirmations(); as confirmations) {
+			<span class="font-size-xs orc-outline-color">Onchain deposits need {{ confirmations }} confirmations.</span>
+		}
+	</div>
+}
+<div class="ecash-mint-details-section">
+	<span class="font-size-xs orc-outline-color">Features</span>
+	<div class="ecash-mint-details-features" [class.mobile]="mobile()" [style.--rows]="feature_rows()">
+		@for (feature of features(); track feature.nut) {
+			<span class="ecash-mint-details-feature font-size-s" [class.orc-outline-color]="!feature.supported">
+				<mat-icon class="icon-sm" [class.orc-status-active-color]="feature.supported">{{
+					feature.supported ? 'check' : 'check_indeterminate_small'
+				}}</mat-icon>
+				<span class="flex-grow">{{ feature.label }}</span>
+				<span class="font-size-xs orc-outline-color">{{ feature.nut }}</span>
+			</span>
+		}
+	</div>
+</div>
+<div class="ecash-mint-details-facts font-size-s">
+	@if (info().pubkey; as pubkey) {
+		<span class="font-size-xs orc-outline-color">Public key</span>
+		<orc-button-copy [text]="pubkey" size="sm">
+			<span class="mega-string">{{ pubkey }}</span>
+		</orc-button-copy>
+	}
+	@if (time_label(); as time_label) {
+		<span class="font-size-xs orc-outline-color">Server time</span>
+		<span>{{ time_label }}</span>
+	}
+	@if (info().tos_url; as tos_url) {
+		<span class="font-size-xs orc-outline-color">Terms</span>
+		<a class="orc-text-button text-nowrap text-ellipsis" [href]="tos_url" target="_blank" rel="noopener noreferrer">{{ tos_url }}</a>
+	}
+	@if (contacts().length > 0) {
+		<span class="font-size-xs orc-outline-color">Contact</span>
+		<span class="flex flex-column flex-gap-0-5 w-min-0">
+			@for (contact of contacts(); track $index) {
+				<span class="flex flex-items-center flex-gap-0-5 w-min-0">
+					@if (contact.svg) {
+						<mat-icon class="icon-sm orc-outline-color" [svgIcon]="contact.svg"></mat-icon>
+					} @else {
+						<mat-icon class="icon-sm orc-outline-color">{{ contact.icon }}</mat-icon>
+					}
+					<span class="text-nowrap text-ellipsis">{{ contact.info }}</span>
+				</span>
+			}
+		</span>
+	}
+</div>
+
+<ng-template #method_icon let-method>
+	@if (method.svg_icon) {
+		<mat-icon class="icon-sm orc-on-surface-variant-color" [svgIcon]="method.icon"></mat-icon>
+	} @else {
+		<mat-icon class="icon-sm orc-on-surface-variant-color mat-symbol-fill">{{ method.icon }}</mat-icon>
+	}
+</ng-template>

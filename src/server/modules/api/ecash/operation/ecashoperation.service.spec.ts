@@ -23,7 +23,7 @@ describe('EcashOperationService', () => {
 		id: 'op-1',
 		user_id: 'user-1',
 		mint_id: 'mint-1',
-		type: 'MINT',
+		type: 'ISSUE',
 		state: 'FINALIZED',
 		method: 'bolt11',
 		unit: 'sat',

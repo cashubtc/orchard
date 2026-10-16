@@ -200,13 +200,6 @@ describe('MintSubsectionConfigComponent', () => {
 		it('should list the distinct minting methods for the quote ttl caveat', () => {
 			expect(component.nut4_methods).toEqual(['bolt11', 'bolt12', 'branch']);
 		});
-
-		it('should label and icon known methods, falling back to the mint own name', () => {
-			expect(component.getMethodDisplay('bolt11')).toEqual({label: 'Bolt 11', icon: 'bolt', svg_icon: false});
-			expect(component.getMethodDisplay('bolt12')).toEqual({label: 'Bolt 12', icon: 'double_bolt', svg_icon: true});
-			expect(component.getMethodDisplay('onchain')).toEqual({label: 'Onchain', icon: 'deployed_code', svg_icon: false});
-			expect(component.getMethodDisplay('branch')).toEqual({label: 'branch', icon: 'payments', svg_icon: false});
-		});
 	});
 
 	describe('groupQuotesByMethod', () => {

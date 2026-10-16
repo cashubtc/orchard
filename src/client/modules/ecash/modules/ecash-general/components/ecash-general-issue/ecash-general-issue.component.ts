@@ -26,9 +26,10 @@ import {EventService} from '@client/modules/event/services/event/event.service';
 import {EventData} from '@client/modules/event/classes/event-data.class';
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
 import {compareUnits, fromDisplayAmount, getUnitMeta, toDisplayAmount} from '@client/modules/local/helpers/unit.helpers';
+import {CashuUnitChip} from '@client/modules/cashu/types/cashu.types';
 /* Native Dependencies */
 import {EcashService} from '@client/modules/ecash/services/ecash/ecash.service';
-import {EcashIssuePanelData, EcashUnitChip} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
+import {EcashIssuePanelData} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
 /* Shared Dependencies */
 import {WalletOperationState} from '@shared/generated.types';
 
@@ -67,7 +68,7 @@ export class EcashGeneralIssueComponent {
 	public readonly amount_status = toSignal(this.form.controls.amount.statusChanges, {initialValue: 'VALID'});
 
 	/** Each unit the mint issues in, with what the wallet holds there */
-	public readonly unit_chips = computed<Required<EcashUnitChip>[]>(() =>
+	public readonly unit_chips = computed<Required<CashuUnitChip>[]>(() =>
 		this.units.map((unit) => ({
 			unit,
 			amount: this.data.balances().find((balance) => balance.unit.toLowerCase() === unit)?.balance ?? 0,
