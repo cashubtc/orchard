@@ -1,0 +1,152 @@
+@use 'molecule/molecule';
+
+$row-padding: 0.625rem;
+$group-padding-top: 0.5rem;
+$group-padding-bottom: 0.375rem;
+
+:host {
+	@extend %block;
+}
+
+.ecash-activity-all {
+	@extend %z-index-0;
+	@extend %h-0;
+	@extend %p-b-1-5;
+}
+
+.ecash-activity {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %m-0;
+	@extend %p-0;
+	list-style: none;
+}
+
+.ecash-activity-group,
+.ecash-activity-row {
+	@extend %grid;
+	grid-template-columns: 3.5rem 1.5rem minmax(0, 1fr) auto;
+	column-gap: 0.75rem;
+}
+
+.ecash-activity-group {
+	@extend %flex-items-center;
+	padding: $group-padding-top 0 $group-padding-bottom;
+
+	.ecash-activity-rail {
+		@extend %flex-items-center;
+		grid-column: 2;
+
+		&::before {
+			top: -$group-padding-top;
+			bottom: -$group-padding-bottom;
+		}
+	}
+}
+
+.ecash-activity-label {
+	grid-column: 3 / -1;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+
+.ecash-activity-row {
+	@extend %flex-items-start;
+	@extend %text-left;
+	@extend %cursor-pointer;
+	@extend %border-none;
+	@extend %m-0;
+	@extend %orc-corner-small;
+	@extend %trans-bg-fast;
+	--ecash-activity-row-bg: var(--mat-sys-surface);
+	padding: $row-padding 0.5rem $row-padding 0;
+	font: inherit;
+	color: inherit;
+	background-color: var(--ecash-activity-row-bg);
+
+	&:hover {
+		--ecash-activity-row-bg: var(--mat-sys-surface-container);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--mat-sys-primary);
+		outline-offset: -2px;
+	}
+
+	&.open .ecash-activity-method {
+		@extend %orc-status-warning-color;
+		@extend %border-dashed;
+	}
+
+	&.failed .ecash-activity-method {
+		@extend %orc-error-color;
+	}
+
+	&.failed .ecash-activity-amount {
+		@extend %orc-outline-color;
+		text-decoration: line-through;
+	}
+}
+
+.ecash-activity-time {
+	@extend %text-right;
+	@extend %text-nowrap;
+	padding-top: 0.2rem;
+}
+
+.ecash-activity-rail {
+	@extend %relative;
+	@extend %flex;
+	@extend %flex-justify-center;
+	align-self: stretch;
+
+	&::before {
+		@extend %pseudo-element;
+		@extend %absolute;
+		@extend %orc-outline-variant-bg;
+		top: -$row-padding;
+		bottom: -$row-padding;
+		width: 2px;
+	}
+}
+
+.ecash-activity-diamond {
+	@extend %relative;
+	@extend %orc-outline-bg;
+	width: 0.375rem;
+	height: 0.375rem;
+	border-radius: 1px;
+	transform: rotate(45deg);
+}
+
+.ecash-activity-method {
+	@extend %relative;
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+	@extend %orc-corner-full;
+	@extend %orc-status-active-color;
+	@extend %trans-bg-fast;
+	box-sizing: border-box;
+	width: 1.5rem;
+	height: 1.5rem;
+	border: 1.5px solid currentColor;
+	background-color: var(--ecash-activity-row-bg);
+
+	mat-icon {
+		width: 0.875rem;
+		height: 0.875rem;
+		font-size: 0.875rem;
+	}
+}
+
+.ecash-activity-amount {
+	@extend %orc-status-active-color;
+}
+
+.ecash-activity-pill {
+	@extend %orc-corner-full;
+	@extend %orc-status-warning-color;
+	padding: 0.125rem 0.5rem;
+	background-color: color-mix(in srgb, var(--orc-status-warning) 15%, transparent);
+}
