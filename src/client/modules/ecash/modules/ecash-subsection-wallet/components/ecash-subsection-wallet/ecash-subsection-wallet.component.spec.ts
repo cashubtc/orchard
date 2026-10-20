@@ -99,6 +99,7 @@ describe('EcashSubsectionWalletComponent', () => {
 		oracle_enabled = false;
 		role = UserRole.Reader;
 		bitcoin_service.loadBitcoinOraclePrice.calls.reset();
+		ecash_service.loadMintStatuses.and.returnValue(of([]));
 	});
 
 	it('should create', async () => {
