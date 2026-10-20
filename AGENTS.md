@@ -30,6 +30,16 @@ Orchard is free and open source software. Anyone can clone it, configure it, and
 - **Bias toward fixing.** When given a bug report or failing test, just fix it — don't ask for hand-holding. Point at the error, resolve it, move on.
 - **Stop and re-plan when things go sideways.** If an approach isn't working, don't keep pushing — pause and reconsider before digging deeper.
 
+## Experimental Branches
+
+Work that isn't ready for every operator lives on a long-lived channel branch (currently `federation`), not on master.
+
+- Target PRs for the experiment at its channel branch. Work that isn't specific to the experiment (shared fixes, support for upstream changes) goes to master first and reaches the channel through a sync.
+- Sync by merging master into the channel branch with a merge commit — never squash or rebase, because published pre-release tags point at the branch's commits.
+- Don't add database migrations on a channel branch: operators who try a pre-release and return to stable would keep the schema. If the experiment needs storage, land the entity and migration on master first.
+- Keep experiment code in its own modules and touch shared files (routing, nav, configuration, `main.ts`) as little as possible so syncs stay clean.
+- Channel releases are `X.Y.Z-<channel>.N` GitHub pre-releases (see `/prepare-release`) and never receive the `latest` image tag.
+
 ## Core Principles
 
 - **Simplicity First**: Make every change as simple as possible. Impact minimal code.
