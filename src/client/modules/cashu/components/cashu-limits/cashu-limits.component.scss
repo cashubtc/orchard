@@ -1,0 +1,55 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+:host {
+	@extend %flex;
+	@extend %flex-row;
+	@extend %flex-gap-1;
+
+	&.stacked {
+		@extend %flex-column;
+	}
+}
+
+.cashu-limits-column {
+	@extend %flex-1;
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-0-5;
+}
+
+.cashu-limits-range {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+}
+
+.cashu-limits-end {
+	@extend %flex-shrink-0;
+	@extend %text-nowrap;
+}
+
+.cashu-limits-min {
+	opacity: 0.6;
+}
+
+.cashu-limits-fill {
+	@extend %flex-grow;
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+}
+
+.cashu-limits-bar {
+	@extend %flex;
+	@extend %flex-items-center;
+	min-width: 1.5rem;
+	transition: width 0.3s ease;
+}
+
+.cashu-limits-track {
+	@extend %w-full;
+	@extend %orc-corner-full;
+	height: 2px;
+	background: linear-gradient(to right, var(--mat-sys-outline-variant), var(--mat-sys-primary));
+}

@@ -21,7 +21,7 @@ import {OrcGraphicModule} from '@client/modules/graphic/graphic.module';
 import {OrcNavModule} from '@client/modules/nav/nav.module';
 import {OrcLocalModule} from '@client/modules/local/local.module';
 import {OrcPublicModule} from '@client/modules/public/public.module';
-import {OrcMintGeneralModule} from '@client/modules/mint/modules/mint-general/mint-general.module';
+import {OrcCashuModule} from '@client/modules/cashu/cashu.module';
 /* Application Dependencies */
 import {pendingEventGuard} from '@client/modules/event/guards/pending-event.guard';
 /* Local Dependencies */
@@ -101,7 +101,7 @@ import {MintSubsectionConfigNut29Component} from './components/mint-subsection-c
 		OrcNavModule,
 		OrcLocalModule,
 		OrcPublicModule,
-		OrcMintGeneralModule,
+		OrcCashuModule,
 	],
 	exports: [],
 })

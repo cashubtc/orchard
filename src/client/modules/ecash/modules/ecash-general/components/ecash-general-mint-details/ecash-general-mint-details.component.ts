@@ -5,12 +5,9 @@ import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 import {MINT_CONTACT_METHODS} from '@client/modules/mint/constants/mint.constants';
 import {getMintUri} from '@client/modules/mint/helpers/mint-uri.helpers';
+import {getMintMethods} from '@client/modules/mint/helpers/mint-method.helpers';
 /* Native Dependencies */
-import {
-	buildMintFeatures,
-	buildMintLimits,
-	getTimeOffsetLabel,
-} from '@client/modules/ecash/modules/ecash-general/helpers/ecash-general.helpers';
+import {buildMintFeatures, getTimeOffsetLabel} from '@client/modules/ecash/modules/ecash-general/helpers/ecash-general.helpers';
 
 @Component({
 	selector: 'orc-ecash-general-mint-details',
@@ -26,7 +23,7 @@ export class EcashGeneralMintDetailsComponent {
 
 	public readonly mobile = computed(() => this.device_type() === 'mobile');
 	public readonly connections = computed(() => (this.info().urls ?? []).map((url) => getMintUri(url)));
-	public readonly limit_groups = computed(() => buildMintLimits(this.info()));
+	public readonly has_limits = computed(() => getMintMethods(this.info().nuts).length > 0);
 	public readonly features = computed(() => buildMintFeatures(this.info().nuts));
 	/** Rows in the two-column features grid, so it fills down the left column before the right */
 	public readonly feature_rows = computed(() => Math.ceil(this.features().length / 2));

@@ -3,7 +3,8 @@
 		@if (selectable()) {
 			<button
 				type="button"
-				class="cashu-method-chip orc-pill orc-pill-outlined orc-pill-coin"
+				class="orc-pill orc-pill-outlined orc-pill-coin"
+				data-testid="cashu-method-chip"
 				[class.orc-pill-selected]="chip.method === selected()"
 				[attr.aria-pressed]="chip.method === selected()"
 				[disabled]="disabled()"
@@ -13,7 +14,7 @@
 				<ng-container *ngTemplateOutlet="chip_content; context: {$implicit: chip}"></ng-container>
 			</button>
 		} @else {
-			<div class="cashu-method-chip orc-pill orc-pill-outlined orc-pill-coin">
+			<div class="orc-pill orc-pill-outlined orc-pill-coin" data-testid="cashu-method-chip">
 				<ng-container *ngTemplateOutlet="chip_content; context: {$implicit: chip}"></ng-container>
 			</div>
 		}
@@ -22,11 +23,7 @@
 
 <ng-template #chip_content let-chip>
 	<span class="cashu-method-coin">
-		@if (chip.display.svg_icon) {
-			<mat-icon class="icon-sm" [svgIcon]="chip.display.icon"></mat-icon>
-		} @else {
-			<mat-icon class="icon-sm mat-symbol-fill">{{ chip.display.icon }}</mat-icon>
-		}
+		<orc-cashu-method-icon [display]="chip.display"></orc-cashu-method-icon>
 	</span>
 	<span>{{ chip.display.label }}</span>
 </ng-template>

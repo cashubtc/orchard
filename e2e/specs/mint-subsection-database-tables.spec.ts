@@ -14,7 +14,7 @@
  *
  *   UI paginator total  ==  SELECT COUNT(*) FROM <mint db> windowed the same way
  *
- * The Request column renders an `orc-mint-general-payment-method` chip per
+ * The Request column renders an `orc-cashu-payment-method` chip per
  * row (BOLT 11 / BOLT 12 / ONCHAIN) from the quote's `payment_method` column,
  * so the chip distribution is asserted against per-method DB counts — this is
  * the first spec that exercises non-bolt11 quote rendering. Sim coverage:
@@ -53,6 +53,7 @@ import {DateTime} from 'luxon';
 
 import {getConfig, mintUnitsFor} from '@e2e/helpers/config';
 import {mint} from '@e2e/helpers/backend';
+import {methodLabel} from '@e2e/helpers/ui/payment-method';
 import type {ConfigInfo} from '@e2e/types/config';
 
 /** localStorage key the page persists its type/window/filters into
@@ -132,11 +133,12 @@ async function switchType(page: Page, label: 'Mints' | 'Melts' | 'Swaps'): Promi
 }
 
 /** Count exact payment-method labels, including custom methods. The label
- *  div excludes the sibling icon's ligature text. */
+ *  span excludes the sibling icon's ligature text. */
 function methodChips(page: Page, label: string) {
-	return page.locator('orc-mint-subsection-database-table orc-mint-general-payment-method .mint-payment-method-container > div', {
-		hasText: new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`),
-	});
+	return page
+		.locator('orc-mint-subsection-database-table')
+		.getByTestId('cashu-payment-method-label')
+		.filter({hasText: new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)});
 }
 
 test.describe('mint-subsection-database — quote tables differential', {tag: '@mint'}, () => {
@@ -221,9 +223,8 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 				const total = mint.quoteCount(config, {kind, ...window});
 
 				const methods = [...new Set(['bolt11', 'bolt12', 'onchain', ...mint.quoteMethods(config, kind)])];
-				const labels: Record<string, string> = {bolt11: 'BOLT 11', bolt12: 'BOLT 12', onchain: 'ONCHAIN'};
 				const expected = Object.fromEntries(
-					methods.map((method) => [labels[method] ?? method, mint.quoteCount(config, {kind, ...window, payment_method: method})]),
+					methods.map((method) => [methodLabel(method), mint.quoteCount(config, {kind, ...window, payment_method: method})]),
 				);
 				expect(
 					Object.values(expected).reduce((sum, count) => sum + count, 0),
@@ -279,9 +280,7 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 		const db_row = mint.quoteById(config, 'mint', quote_id);
 		expect(db_row, `quote id "${quote_id}" from the UI should exist in the mint DB`).not.toBeNull();
 
-		const chip = (
-			(await first_row.locator('orc-mint-general-payment-method .mint-payment-method-container > div').textContent()) ?? ''
-		).trim();
+		const chip = ((await first_row.getByTestId('cashu-payment-method-label').textContent()) ?? '').trim();
 		expect(chip.replace(/\s+/g, '').toLowerCase(), 'row chip should match the DB payment_method').toBe(db_row!.payment_method);
 	});
 
@@ -369,7 +368,7 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 			await settle(page);
 			const onchain_row = page
 				.locator('orc-mint-subsection-database-table tr.entity-row')
-				.filter({has: page.locator('orc-mint-general-payment-method .mint-payment-method-container > div', {hasText: /^ONCHAIN$/})})
+				.filter({has: page.getByTestId('cashu-payment-method-label').filter({hasText: /^ONCHAIN$/})})
 				.filter({has: page.locator('.mat-column-unit .text-sm', {hasText: new RegExp(`^\\s*${unit}\\s*$`, 'i')})})
 				.first();
 			const next_page = page.getByRole('button', {name: 'Next page'});
@@ -418,7 +417,7 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 		const special_row = page
 			.locator('orc-mint-subsection-database-table tr.entity-row')
 			.filter({
-				has: page.locator('orc-mint-general-payment-method .mint-payment-method-container > div', {hasText: /^(BOLT 12|ONCHAIN)$/}),
+				has: page.getByTestId('cashu-payment-method-label').filter({hasText: /^(BOLT 12|ONCHAIN)$/}),
 			})
 			.first();
 		await special_row.click();
@@ -428,7 +427,7 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 		await special_row.click();
 		const bolt11_row = page
 			.locator('orc-mint-subsection-database-table tr.entity-row')
-			.filter({has: page.locator('orc-mint-general-payment-method .mint-payment-method-container > div', {hasText: /^BOLT 11$/})})
+			.filter({has: page.getByTestId('cashu-payment-method-label').filter({hasText: /^BOLT 11$/})})
 			.first();
 		await bolt11_row.click();
 		await expect(page.locator('orc-mint-subsection-database-table-mint')).toBeVisible();

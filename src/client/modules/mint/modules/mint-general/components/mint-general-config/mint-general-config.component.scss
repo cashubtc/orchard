@@ -14,39 +14,3 @@
 		@extend %orc-surface-container-highest-bg;
 	}
 }
-
-.limit-range {
-	@extend %flex;
-	@extend %flex-items-center;
-	@extend %flex-gap-0-5;
-}
-
-.limit-range-end {
-	@extend %flex-shrink-0;
-	white-space: nowrap;
-}
-
-.limit-range-min {
-	opacity: 0.6;
-}
-
-.limit-range-fill {
-	@extend %flex-grow;
-	@extend %flex;
-	@extend %flex-items-center;
-	@extend %flex-gap-0-5;
-}
-
-.limit-range-bar {
-	@extend %flex;
-	@extend %flex-items-center;
-	min-width: 1.5rem;
-	transition: width 0.3s ease;
-}
-
-.limit-range-track {
-	@extend %w-full;
-	height: 2px;
-	border-radius: 1px;
-	background: linear-gradient(to right, var(--mat-sys-outline-variant), var(--mat-sys-primary));
-}

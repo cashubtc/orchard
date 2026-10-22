@@ -10,10 +10,10 @@
 				@for (method of nut17_commands.methods; track method.method) {
 					<div class="flex flex-column flex-items-center">
 						<div class="p-b-1 flex">
-							<orc-mint-general-payment-method
+							<orc-cashu-payment-method
 								class="orc-outline-color font-size-xs"
 								[payment_method]="method.method"
-							></orc-mint-general-payment-method>
+							></orc-cashu-payment-method>
 						</div>
 						@if (method.commands.length > 0) {
 							<div class="flex flex-column flex-items-start flex-gap-0-5">

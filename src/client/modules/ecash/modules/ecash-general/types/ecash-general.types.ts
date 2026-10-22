@@ -51,20 +51,6 @@ export type EcashMintAddState = 'idle' | 'loading' | 'error' | 'found' | 'sign_i
 /** The icon beside the mint URL for a lookup state, with its colour class */
 export type EcashMintAddIcon = {icon: string; color: string};
 
-/** One method and unit a mint mints or melts, with its bounds in the unit's base units */
-export type EcashMintLimit = {
-	method: CashuMethodDisplay;
-	unit: string;
-	min: number | null;
-	max: number | null;
-};
-
-/** A mint's limits for minting or for melting */
-export type EcashMintLimitGroup = {
-	label: string;
-	limits: EcashMintLimit[];
-};
-
 /** A protocol feature and whether a mint offers it */
 export type EcashMintFeature = {
 	label: string;

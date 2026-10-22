@@ -9,14 +9,7 @@ import {MintNut} from '@client/modules/mint/types/nut.types';
 import {getMintMethods} from '@client/modules/mint/helpers/mint-method.helpers';
 import {isNutOffered} from '@client/modules/mint/helpers/mint-nut.helpers';
 /* Shared Dependencies */
-import {OrchardNut4Method, OrchardNut5Method, OrchardNuts} from '@shared/generated.types';
-
-type MethodLimit = {
-	method: string;
-	unit: string;
-	min_amount: number | null;
-	max_amount: number | null;
-};
+import {OrchardNuts} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-mint-general-config',
@@ -51,31 +44,6 @@ export class MintGeneralConfigComponent {
 		return nuts ? getMintMethods(nuts) : [];
 	});
 
-	/** Minting method limits from NUT4. */
-	public minting_limits = computed<MethodLimit[]>(() => {
-		return this.mapMethodLimits(this.info()?.nuts?.nut4?.methods);
-	});
-
-	/** Melting method limits from NUT5. */
-	public melting_limits = computed<MethodLimit[]>(() => {
-		return this.mapMethodLimits(this.info()?.nuts?.nut5?.methods);
-	});
-
-	/** Per-unit maximum max_amount across all minting and melting limits. Null means unlimited (skip scaling). */
-	private max_by_unit = computed<Map<string, number | null>>(() => {
-		const all_limits = [...this.minting_limits(), ...this.melting_limits()];
-		const result = new Map<string, number | null>();
-		all_limits.forEach((limit) => {
-			const current = result.get(limit.unit);
-			if (limit.max_amount === null) {
-				result.set(limit.unit, null);
-			} else if (current !== null) {
-				result.set(limit.unit, Math.max(current ?? 0, limit.max_amount));
-			}
-		});
-		return result;
-	});
-
 	/** Navigates to the mint config page and scrolls to the selected nut's section. */
 	public onNutClick(nut_number: number): void {
 		this.router.navigate(['mint', 'config'], {
@@ -83,29 +51,10 @@ export class MintGeneralConfigComponent {
 		});
 	}
 
-	/** Returns the track width percentage for a limit, scaled relative to the largest max_amount in its unit. */
-	public getTrackWidthPercent(limit: MethodLimit): number {
-		if (limit.max_amount === null) return 100;
-		const unit_max = this.max_by_unit().get(limit.unit);
-		if (unit_max === null || unit_max === undefined || unit_max === 0) return 100;
-		return Math.max(5, (limit.max_amount / unit_max) * 100);
-	}
-
 	/** Derives a status string from a nut number and its value. */
 	private getNutStatus(number: number, nut: OrchardNuts[MintNut]): GraphicStatusState {
 		const offered = isNutOffered(nut);
 		if (number === 4 || number === 5) return offered ? 'active' : 'inactive';
 		return offered ? 'enabled' : 'disabled';
-	}
-
-	/** Maps NUT4/NUT5 methods to MethodLimit rows. */
-	private mapMethodLimits(methods: (OrchardNut4Method | OrchardNut5Method)[] | undefined): MethodLimit[] {
-		if (!methods) return [];
-		return methods.map((m) => ({
-			method: m.method,
-			unit: m.unit,
-			min_amount: m.min_amount ?? null,
-			max_amount: m.max_amount ?? null,
-		}));
 	}
 }

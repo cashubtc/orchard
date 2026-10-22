@@ -62,6 +62,13 @@ describe('MintGeneralConfigComponent', () => {
 		expect(component).toBeTruthy();
 	});
 
+	it('shows the limits once the mint info has loaded', () => {
+		expect(fixture.nativeElement.querySelector('orc-cashu-limits')).toBeNull();
+		fixture.componentRef.setInput('info', buildMockInfo());
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('orc-cashu-limits')).not.toBeNull();
+	});
+
 	describe('nuts', () => {
 		it('should return empty array when info is null', () => {
 			expect(component.nuts()).toEqual([]);
@@ -154,107 +161,6 @@ describe('MintGeneralConfigComponent', () => {
 			component.onNutClick(4);
 
 			expect(navigate_spy).toHaveBeenCalledWith(['mint', 'config'], {state: {scroll_to: 'nav4'}});
-		});
-	});
-
-	describe('minting_limits', () => {
-		it('should return empty array when info is null', () => {
-			expect(component.minting_limits()).toEqual([]);
-		});
-
-		it('should map nut4 methods to MethodLimit rows', () => {
-			fixture.componentRef.setInput('info', buildMockInfo());
-			fixture.detectChanges();
-
-			const limits = component.minting_limits();
-			expect(limits.length).toBe(1);
-			expect(limits[0]).toEqual({method: 'bolt11', unit: 'sat', min_amount: 1, max_amount: 100000});
-		});
-
-		it('should handle methods with null min/max amounts', () => {
-			const info = buildMockInfo({
-				nuts: buildNuts({nut4: {disabled: false, methods: [{method: 'bolt11', unit: 'sat'}]}}),
-			});
-			fixture.componentRef.setInput('info', info);
-			fixture.detectChanges();
-
-			const limits = component.minting_limits();
-			expect(limits[0].min_amount).toBeNull();
-			expect(limits[0].max_amount).toBeNull();
-		});
-	});
-
-	describe('melting_limits', () => {
-		it('should return empty array when info is null', () => {
-			expect(component.melting_limits()).toEqual([]);
-		});
-
-		it('should map nut5 methods to MethodLimit rows', () => {
-			fixture.componentRef.setInput('info', buildMockInfo());
-			fixture.detectChanges();
-
-			const limits = component.melting_limits();
-			expect(limits.length).toBe(1);
-			expect(limits[0]).toEqual({method: 'bolt11', unit: 'sat', min_amount: 1, max_amount: 50000});
-		});
-	});
-
-	describe('getTrackWidthPercent', () => {
-		it('should return 100 for the largest max_amount in a unit', () => {
-			fixture.componentRef.setInput('info', buildMockInfo());
-			fixture.detectChanges();
-
-			const mint_limit = component.minting_limits()[0];
-			expect(component.getTrackWidthPercent(mint_limit)).toBe(100);
-		});
-
-		it('should return proportional width for smaller max_amount', () => {
-			fixture.componentRef.setInput('info', buildMockInfo());
-			fixture.detectChanges();
-
-			const melt_limit = component.melting_limits()[0];
-			expect(component.getTrackWidthPercent(melt_limit)).toBe(50);
-		});
-
-		it('should return 100 when max_amount is null', () => {
-			const info = buildMockInfo({
-				nuts: buildNuts({
-					nut4: {disabled: false, methods: [{method: 'bolt11', unit: 'sat', min_amount: 1, max_amount: null}]},
-				}),
-			});
-			fixture.componentRef.setInput('info', info);
-			fixture.detectChanges();
-
-			const mint_limit = component.minting_limits()[0];
-			expect(component.getTrackWidthPercent(mint_limit)).toBe(100);
-		});
-
-		it('should return 100 for all limits when any limit in the unit has null max_amount', () => {
-			const info = buildMockInfo({
-				nuts: buildNuts({
-					nut4: {disabled: false, methods: [{method: 'bolt11', unit: 'sat', min_amount: 1, max_amount: null}]},
-					nut5: {disabled: false, methods: [{method: 'bolt11', unit: 'sat', min_amount: 1, max_amount: 50000}]},
-				}),
-			});
-			fixture.componentRef.setInput('info', info);
-			fixture.detectChanges();
-
-			const melt_limit = component.melting_limits()[0];
-			expect(component.getTrackWidthPercent(melt_limit)).toBe(100);
-		});
-
-		it('should clamp small percentages to a minimum of 5', () => {
-			const info = buildMockInfo({
-				nuts: buildNuts({
-					nut4: {disabled: false, methods: [{method: 'bolt11', unit: 'sat', min_amount: 1, max_amount: 1000000}]},
-					nut5: {disabled: false, methods: [{method: 'bolt11', unit: 'sat', min_amount: 1, max_amount: 1}]},
-				}),
-			});
-			fixture.componentRef.setInput('info', info);
-			fixture.detectChanges();
-
-			const melt_limit = component.melting_limits()[0];
-			expect(component.getTrackWidthPercent(melt_limit)).toBe(5);
 		});
 	});
 });

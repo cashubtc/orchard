@@ -43,11 +43,7 @@
 							<span class="ecash-activity-time font-size-xs orc-outline-color">{{ row.time }}</span>
 							<span class="ecash-activity-rail">
 								<span class="ecash-activity-method" [title]="row.method.label">
-									@if (row.method.svg_icon) {
-										<mat-icon [svgIcon]="row.method.icon"></mat-icon>
-									} @else {
-										<mat-icon class="mat-symbol-fill">{{ row.method.icon }}</mat-icon>
-									}
+									<orc-cashu-method-icon [display]="row.method" [size]="null"></orc-cashu-method-icon>
 								</span>
 							</span>
 							<span class="flex flex-column flex-gap-0-25 w-min-0">

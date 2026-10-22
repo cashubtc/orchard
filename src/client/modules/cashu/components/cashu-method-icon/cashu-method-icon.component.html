@@ -1,0 +1,5 @@
+@if (display().svg_icon) {
+	<mat-icon [class]="size_class()" [svgIcon]="display().icon"></mat-icon>
+} @else {
+	<mat-icon [class]="size_class()">{{ display().icon }}</mat-icon>
+}

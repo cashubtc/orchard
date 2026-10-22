@@ -80,7 +80,7 @@ test.describe('Pecan — ora/branch compatibility', {tag: '@pecan'}, () => {
 				await next_page.click();
 				await expect(range).not.toHaveText(previous ?? '');
 			}
-			await expect(row.locator('orc-mint-general-payment-method')).toHaveText('branch');
+			await expect(row.getByTestId('cashu-payment-method-label')).toHaveText('BRANCH');
 			await expect(row.locator('.mat-column-unit .text-sm')).toHaveText('ora');
 			await row.click();
 			const detail = page.locator(`orc-mint-subsection-database-table-${kind}`);

@@ -31,15 +31,14 @@
  *   - chip set: 16 chips in schema order, dot palette per
  *     `getNutStatus()`'s rules (active for NUT-04/05 not-disabled,
  *     enabled for any other supported NUT, disabled for `null`)
- *   - supported methods: one mat-chip per distinct `method` across
- *     `nut4.methods` + `nut5.methods` (deduped, first-seen order),
- *     labelled by the `orc-mint-general-payment-method` badge
- *     (BOLT 11 / BOLT 12 / ONCHAIN, raw string fallback). Replaced
- *     the old "Minting/Melting enabled|disabled" pills, whose state
- *     was redundant with the NUT-04/05 chip dot palette.
- *   - limit rows: one row per `nut4.methods[]` / `nut5.methods[]` entry,
- *     each rendering `orc-graphic-asset` for the unit, an
- *     `orc-mint-general-payment-method` badge for the method, and the
+ *   - supported methods: one `orc-cashu-method-chips` chip per distinct
+ *     `method` across `nut4.methods` + `nut5.methods` (deduped, first-seen
+ *     order), labelled BOLT 11 / BOLT 12 / ONCHAIN, else the method in
+ *     capitals. Replaced the old "Minting/Melting enabled|disabled" pills,
+ *     whose state was redundant with the NUT-04/05 chip dot palette.
+ *   - limit rows (`orc-cashu-limits`): one row per `nut4.methods[]` /
+ *     `nut5.methods[]` entry, each rendering `orc-graphic-asset` for the
+ *     unit, an `orc-cashu-payment-method` badge for the method, and the
  *     min → max numeric range (with `1` / `∞` fallbacks for null).
  *     cdk fixtures publish multiple methods per direction (bolt11 +
  *     bolt12 + onchain, plus paypal and a usd unit on fake-cdk), so
@@ -61,6 +60,7 @@ import {test, expect, type Locator, type Page} from '@playwright/test';
 
 import {getConfig} from '@e2e/helpers/config';
 import {mint} from '@e2e/helpers/backend';
+import {methodLabel} from '@e2e/helpers/ui/payment-method';
 import type {MintNutLimitBlock, MintNutLimitMethod, MintNutsBlock} from '@e2e/types/mint';
 
 async function openConfigCard(page: Page): Promise<Locator> {
@@ -148,8 +148,8 @@ function amountFromText(text: string | null | undefined): number {
  *  `max_amount`; the assertions below feed `expected*Display(method)`
  *  to compare apples-to-apples. */
 async function readLimitRow(row: Locator): Promise<{min: number; max: number | '∞'}> {
-	const min_text = (await row.locator('.limit-range-min').textContent()) ?? '';
-	const max_text = (await row.locator('.limit-range-max').textContent()) ?? '';
+	const min_text = (await row.getByTestId('cashu-limits-min').textContent()) ?? '';
+	const max_text = (await row.getByTestId('cashu-limits-max').textContent()) ?? '';
 	return {
 		min: amountFromText(min_text),
 		max: max_text.trim() === '∞' ? '∞' : amountFromText(max_text),
@@ -175,17 +175,6 @@ function expectedMinDisplay(method: MintNutLimitMethod): number {
 }
 function expectedMaxDisplay(method: MintNutLimitMethod): number | '∞' {
 	return method.max_amount ?? '∞';
-}
-
-/** Map `bolt11` → `BOLT 11`, `bolt12` → `BOLT 12`, `onchain` → `ONCHAIN`,
- *  anything else (e.g. fakewallet's `paypal`) → the raw method string.
- *  Mirrors `mint-general-payment-method`'s template `@switch` so the
- *  assertion is unambiguous. */
-function expectedMethodLabel(method: string): string {
-	if (method === 'bolt11') return 'BOLT 11';
-	if (method === 'bolt12') return 'BOLT 12';
-	if (method === 'onchain') return 'ONCHAIN';
-	return method;
 }
 
 /** Map a unit string to the `orc-graphic-asset` class the disc carries.
@@ -335,7 +324,7 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 	});
 
 	test('supported-methods chip set lists the deduped union of nut4/nut5 methods', async ({page}, testInfo) => {
-		// The card renders one mat-chip per distinct `method` string across
+		// The card renders one method chip per distinct `method` string across
 		// `nut4.methods` then `nut5.methods`, in first-seen order (the
 		// component dedupes via `new Set`). This block replaced the old
 		// "Minting/Melting enabled" pills — the pill state was redundant
@@ -348,10 +337,10 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 		test.skip(expected.length === 0, 'daemon publishes no nut4/nut5 methods — chip set collapses');
 
 		const card = await openConfigCard(page);
-		const chips = card.getByText('Supported Methods', {exact: true}).locator('..').locator('mat-chip');
+		const chips = card.getByText('Supported Methods', {exact: true}).locator('..').getByTestId('cashu-method-chip');
 		await expect(chips).toHaveCount(expected.length);
 		for (let i = 0; i < expected.length; i++) {
-			await expect(chips.nth(i)).toContainText(expectedMethodLabel(expected[i]));
+			await expect(chips.nth(i)).toContainText(methodLabel(expected[i]));
 		}
 	});
 
@@ -364,9 +353,9 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 		const card = await openConfigCard(page);
 		await expect(card.getByText('Minting Limits', {exact: true})).toBeVisible();
 		// The two columns share the `.orc-high-card.p-0-5.p-h-1` row class
-		// inside `.flex-1`. Scope by the "Minting Limits" caption's parent.
+		// inside `.cashu-limits-column`. Scope by the "Minting Limits" caption's parent.
 		const minting_col = card.getByText('Minting Limits', {exact: true}).locator('..');
-		await expect(minting_col.locator('.limit-range')).toHaveCount(nut4!.methods.length);
+		await expect(minting_col.getByTestId('cashu-limits-row')).toHaveCount(nut4!.methods.length);
 	});
 
 	test('renders one melting-limit row per `nut5.methods[]` entry', async ({page}, testInfo) => {
@@ -378,7 +367,7 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 		const card = await openConfigCard(page);
 		await expect(card.getByText('Melting Limits', {exact: true})).toBeVisible();
 		const melting_col = card.getByText('Melting Limits', {exact: true}).locator('..');
-		await expect(melting_col.locator('.limit-range')).toHaveCount(nut5!.methods.length);
+		await expect(melting_col.getByTestId('cashu-limits-row')).toHaveCount(nut5!.methods.length);
 	});
 
 	test('minting-limit row badge matches the daemon method (BOLT 11 etc.)', async ({page}, testInfo) => {
@@ -389,9 +378,9 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 
 		const card = await openConfigCard(page);
 		const minting_col = card.getByText('Minting Limits', {exact: true}).locator('..');
-		const badges = minting_col.locator('orc-mint-general-payment-method');
+		const badges = minting_col.locator('orc-cashu-payment-method');
 		for (let i = 0; i < nut4!.methods.length; i++) {
-			await expect(badges.nth(i)).toContainText(expectedMethodLabel(nut4!.methods[i].method));
+			await expect(badges.nth(i)).toContainText(methodLabel(nut4!.methods[i].method));
 		}
 	});
 
@@ -403,9 +392,9 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 
 		const card = await openConfigCard(page);
 		const melting_col = card.getByText('Melting Limits', {exact: true}).locator('..');
-		const badges = melting_col.locator('orc-mint-general-payment-method');
+		const badges = melting_col.locator('orc-cashu-payment-method');
 		for (let i = 0; i < nut5!.methods.length; i++) {
-			await expect(badges.nth(i)).toContainText(expectedMethodLabel(nut5!.methods[i].method));
+			await expect(badges.nth(i)).toContainText(methodLabel(nut5!.methods[i].method));
 		}
 	});
 
@@ -449,7 +438,7 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 
 		const card = await openConfigCard(page);
 		const minting_col = card.getByText('Minting Limits', {exact: true}).locator('..');
-		const rows = minting_col.locator('.limit-range');
+		const rows = minting_col.getByTestId('cashu-limits-row');
 		for (let i = 0; i < nut4!.methods.length; i++) {
 			const {min, max} = await readLimitRow(rows.nth(i));
 			expect(min).toBe(expectedMinDisplay(nut4!.methods[i]));
@@ -465,7 +454,7 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 
 		const card = await openConfigCard(page);
 		const melting_col = card.getByText('Melting Limits', {exact: true}).locator('..');
-		const rows = melting_col.locator('.limit-range');
+		const rows = melting_col.getByTestId('cashu-limits-row');
 		for (let i = 0; i < nut5!.methods.length; i++) {
 			const {min, max} = await readLimitRow(rows.nth(i));
 			expect(min).toBe(expectedMinDisplay(nut5!.methods[i]));
@@ -491,7 +480,7 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 
 		// `== null` throughout: cdk publishes unbounded maxes as literal
 		// `null`, nutshell omits the key entirely (`undefined`). The
-		// component normalizes both to `null` in `mapMethodLimits` before
+		// component normalizes both to `null` in `toLimits` before
 		// `getTrackWidthPercent` runs, so the mirror must too.
 		const max_by_unit = new Map<string, number | null>();
 		for (const method of [...nut4!.methods, ...(nut5?.methods ?? [])]) {
@@ -510,7 +499,7 @@ test.describe('mint-general-config card', {tag: '@mint'}, () => {
 		const columns: {label: string; methods: MintNutLimitMethod[]}[] = [{label: 'Minting Limits', methods: nut4!.methods}];
 		if (nut5 && nut5.methods.length > 0) columns.push({label: 'Melting Limits', methods: nut5.methods});
 		for (const column of columns) {
-			const bars = card.getByText(column.label, {exact: true}).locator('..').locator('.limit-range-bar');
+			const bars = card.getByText(column.label, {exact: true}).locator('..').getByTestId('cashu-limits-bar');
 			for (let i = 0; i < column.methods.length; i++) {
 				const style = (await bars.nth(i).getAttribute('style')) ?? '';
 				const width = parseFloat(/width:\s*([\d.]+)%/.exec(style)?.[1] ?? 'NaN');

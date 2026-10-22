@@ -14,7 +14,6 @@ import {
 	buildAmountChars,
 	buildBalanceCells,
 	buildMintFeatures,
-	buildMintLimits,
 	buildUnitChips,
 	getBalanceCellsWidth,
 	getMintOnlineText,
@@ -172,18 +171,6 @@ describe('mint info helpers', () => {
 			nut17: {supported: [{method: 'bolt11', unit: 'sat', commands: ['bolt11_mint_quote']}]},
 			nut21: {openid_discovery: 'https://auth.example', client_id: 'cashu', protected_endpoints: []},
 		},
-	});
-
-	it('lists limits per method and unit under the NUT titles, skipping a side with no methods', () => {
-		expect(buildMintLimits(info)).toEqual([
-			{
-				label: 'Minting',
-				limits: [
-					{method: {label: 'BOLT 11', icon: 'bolt', svg_icon: false}, unit: 'sat', min: 1, max: 500000},
-					{method: {label: 'ONCHAIN', icon: 'deployed_code', svg_icon: false}, unit: 'sat', min: 10000, max: null},
-				],
-			},
-		]);
 	});
 
 	it('names every optional NUT as the config page does, offered whenever the mint lists it', () => {

@@ -45,43 +45,6 @@
 	}
 }
 
-.ecash-mint-details-limits {
-	@extend %grid;
-	@extend %flex-items-center;
-	@extend %font-size-s;
-	grid-template-columns: 4.625rem minmax(0, 1fr) 3.375rem auto;
-
-	&.mobile {
-		grid-template-columns: 3.625rem minmax(0, 1fr) auto;
-	}
-}
-
-.ecash-mint-details-head,
-.ecash-mint-details-cell {
-	@extend %h-full;
-	@extend %flex;
-	@extend %flex-items-center;
-	@extend %p-v-0-5;
-	@extend %p-l-0-75;
-
-	&.ecash-mint-details-end {
-		@extend %flex-justify-end;
-		@extend %p-r-0-75;
-	}
-}
-
-.ecash-mint-details-head {
-	@extend %font-size-xs;
-	@extend %orc-outline-color;
-	@extend %orc-surface-container-bg;
-}
-
-.ecash-mint-details-cell {
-	@extend %border-top;
-	@extend %border-top-solid;
-	@extend %orc-outline-variant-border;
-}
-
 .ecash-mint-details-features {
 	@extend %grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));

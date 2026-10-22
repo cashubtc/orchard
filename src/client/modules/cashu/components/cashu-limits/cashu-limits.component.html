@@ -1,0 +1,42 @@
+<div class="cashu-limits-column">
+	@if (minting_limits().length > 0) {
+		<div class="font-size-xs orc-outline-color">Minting Limits</div>
+		@for (limit of minting_limits(); track limit.method + limit.unit) {
+			<ng-container *ngTemplateOutlet="limit_card; context: {$implicit: limit}"></ng-container>
+		}
+	}
+</div>
+<div class="cashu-limits-column">
+	@if (melting_limits().length > 0) {
+		<div class="font-size-xs orc-outline-color">Melting Limits</div>
+		@for (limit of melting_limits(); track limit.method + limit.unit) {
+			<ng-container *ngTemplateOutlet="limit_card; context: {$implicit: limit}"></ng-container>
+		}
+	}
+</div>
+
+<ng-template #limit_card let-limit>
+	<div class="orc-high-card p-0-5 p-h-1" data-testid="cashu-limits-row">
+		<div class="flex flex-items-center flex-gap-0-5 p-b-0-25">
+			<orc-graphic-asset [unit]="limit.unit" [height]="'1rem'"></orc-graphic-asset>
+			<orc-cashu-payment-method class="orc-outline-color font-size-xs" [payment_method]="limit.method"></orc-cashu-payment-method>
+		</div>
+		<div class="cashu-limits-range">
+			<div
+				class="cashu-limits-end cashu-limits-min font-size-xs orc-outline-color"
+				data-testid="cashu-limits-min"
+				[innerHTML]="limit.min_amount ?? 1 | localAmount: limit.unit : 'mint'"
+			></div>
+			<div class="cashu-limits-fill">
+				<div class="cashu-limits-bar" data-testid="cashu-limits-bar" [style.width.%]="getTrackWidthPercent(limit)">
+					<div class="cashu-limits-track"></div>
+				</div>
+				<div
+					class="cashu-limits-end font-size-m font-weight-semi-bold"
+					data-testid="cashu-limits-max"
+					[innerHTML]="limit.max_amount !== null ? (limit.max_amount | localAmount: limit.unit : 'mint') : '∞'"
+				></div>
+			</div>
+		</div>
+	</div>
+</ng-template>

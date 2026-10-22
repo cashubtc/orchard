@@ -6,7 +6,6 @@ import {getNumberSeparator} from '@client/modules/local/helpers/local.helpers';
 import {oracleConvertToUSDCents} from '@client/modules/bitcoin/helpers/oracle.helpers';
 import {isNutOffered} from '@client/modules/mint/helpers/mint-nut.helpers';
 import {MINT_NUT_TITLES} from '@client/modules/mint/constants/mint.constants';
-import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
 import {MintNut} from '@client/modules/mint/types/nut.types';
 import {CashuUnitChip} from '@client/modules/cashu/types/cashu.types';
 import {getCashuMethodDisplay} from '@client/modules/cashu/helpers/cashu.helpers';
@@ -27,11 +26,10 @@ import {
 	EcashAmountChar,
 	EcashBalanceCell,
 	EcashMintFeature,
-	EcashMintLimitGroup,
 	EcashMintStatusPill,
 } from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
 /* Shared Dependencies */
-import {OrchardNut4Method, OrchardNut5Method, OrchardNuts, WalletOperationState} from '@shared/generated.types';
+import {OrchardNuts, WalletOperationState} from '@shared/generated.types';
 
 /**
  * A mint's status pill: online with latency or unreachable with the reason, checking while a mint with no status yet is being checked
@@ -174,26 +172,6 @@ function getActivityProgress(state: WalletOperationState): EcashActivityProgress
 	if (state === WalletOperationState.Finalized) return 'done';
 	if (state === WalletOperationState.Failed) return 'failed';
 	return 'open';
-}
-
-/**
- * A mint's minting and melting limits per method and unit, leaving out a side with no methods
- * @param {MintInfo} info - The mint's info
- * @returns {EcashMintLimitGroup[]} Minting then melting
- */
-export function buildMintLimits(info: MintInfo): EcashMintLimitGroup[] {
-	const group = (label: string, methods: (OrchardNut4Method | OrchardNut5Method)[]) => ({
-		label,
-		limits: methods.map((method) => ({
-			method: getCashuMethodDisplay(method.method),
-			unit: method.unit,
-			min: method.min_amount ?? null,
-			max: method.max_amount ?? null,
-		})),
-	});
-	return [group(MINT_NUT_TITLES.nut4, info.nuts.nut4.methods), group(MINT_NUT_TITLES.nut5, info.nuts.nut5.methods)].filter(
-		(limit_group) => limit_group.limits.length > 0,
-	);
 }
 
 /**

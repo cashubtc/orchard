@@ -1,6 +1,6 @@
 @use 'molecule/molecule';
 
-.mint-payment-method-container {
+:host {
 	@extend %font-weight-semi-bold;
 	@extend %flex;
 	@extend %flex-row;

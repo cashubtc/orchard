@@ -40,7 +40,7 @@ describe('CashuMethodChipsComponent', () => {
 		fixture.componentRef.setInput('selectable', false);
 		fixture.detectChanges();
 		expect(buttons().length).toBe(0);
-		expect(fixture.nativeElement.querySelectorAll('.cashu-method-chip').length).toBe(3);
+		expect(fixture.nativeElement.querySelectorAll('[data-testid="cashu-method-chip"]').length).toBe(3);
 	});
 
 	it('emits the method picked, unless disabled', () => {

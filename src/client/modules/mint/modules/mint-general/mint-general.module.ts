@@ -30,7 +30,6 @@ import {MintGeneralInfoComponent} from './components/mint-general-info/mint-gene
 import {MintGeneralBalanceStacksComponent} from './components/mint-general-balance-stacks/mint-general-balance-stacks.component';
 import {MintGeneralKeysetVersionComponent} from './components/mint-general-keyset-version/mint-general-keyset-version.component';
 import {MintGeneralConfigComponent} from './components/mint-general-config/mint-general-config.component';
-import {MintGeneralPaymentMethodComponent} from './components/mint-general-payment-method/mint-general-payment-method.component';
 import {MintGeneralKeysetsComponent} from './components/mint-general-keysets/mint-general-keysets.component';
 import {MintGeneralActivityComponent} from './components/mint-general-activity/mint-general-activity.component';
 
@@ -44,7 +43,6 @@ import {MintGeneralActivityComponent} from './components/mint-general-activity/m
 		MintGeneralBalanceStacksComponent,
 		MintGeneralKeysetVersionComponent,
 		MintGeneralConfigComponent,
-		MintGeneralPaymentMethodComponent,
 		MintGeneralKeysetsComponent,
 		MintGeneralActivityComponent,
 	],
@@ -77,7 +75,6 @@ import {MintGeneralActivityComponent} from './components/mint-general-activity/m
 		MintGeneralInfoComponent,
 		MintGeneralKeysetVersionComponent,
 		MintGeneralConfigComponent,
-		MintGeneralPaymentMethodComponent,
 		MintGeneralKeysetsComponent,
 		MintGeneralActivityComponent,
 	],

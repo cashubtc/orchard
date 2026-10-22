@@ -18,41 +18,9 @@
 		</div>
 	</div>
 }
-@if (limit_groups().length > 0) {
+@if (has_limits()) {
 	<div class="ecash-mint-details-section">
-		<span class="font-size-xs orc-outline-color">Limits</span>
-		<div class="ecash-mint-details-table ecash-mint-details-limits" [class.mobile]="mobile()">
-			<span class="ecash-mint-details-head"></span>
-			<span class="ecash-mint-details-head">Method</span>
-			@if (!mobile()) {
-				<span class="ecash-mint-details-head">Unit</span>
-			}
-			<span class="ecash-mint-details-head ecash-mint-details-end">Min – max</span>
-			@for (group of limit_groups(); track group.label) {
-				@for (limit of group.limits; track $index) {
-					<span class="ecash-mint-details-cell font-size-xs orc-outline-color">{{ $first ? group.label : '' }}</span>
-					<span class="ecash-mint-details-cell flex flex-items-center flex-gap-0-25">
-						<ng-container *ngTemplateOutlet="method_icon; context: {$implicit: limit.method}"></ng-container>
-						{{ limit.method.label }}
-					</span>
-					@if (!mobile()) {
-						<span class="ecash-mint-details-cell">{{ limit.unit | localUnit }}</span>
-					}
-					<span class="ecash-mint-details-cell ecash-mint-details-end flex-gap-0-25 text-nowrap">
-						<span [innerHTML]="limit.min ?? 0 | localAmount: limit.unit : undefined : false : true"></span>
-						–
-						@if (limit.max === null) {
-							∞
-						} @else {
-							<span [innerHTML]="limit.max | localAmount: limit.unit : undefined : false : true"></span>
-						}
-						@if (mobile()) {
-							<span class="orc-outline-color">{{ limit.unit | localUnit }}</span>
-						}
-					</span>
-				}
-			}
-		</div>
+		<orc-cashu-limits [nuts]="info().nuts" [stacked]="mobile()"></orc-cashu-limits>
 		@if (confirmations(); as confirmations) {
 			<span class="font-size-xs orc-outline-color">Onchain deposits need {{ confirmations }} confirmations.</span>
 		}
@@ -103,11 +71,3 @@
 		</span>
 	}
 </div>
-
-<ng-template #method_icon let-method>
-	@if (method.svg_icon) {
-		<mat-icon class="icon-sm orc-on-surface-variant-color" [svgIcon]="method.icon"></mat-icon>
-	} @else {
-		<mat-icon class="icon-sm orc-on-surface-variant-color mat-symbol-fill">{{ method.icon }}</mat-icon>
-	}
-</ng-template>

@@ -20,96 +20,9 @@
 					<orc-cashu-method-chips [methods]="supported_methods()" [selectable]="false"></orc-cashu-method-chips>
 				</div>
 
-				<div class="flex flex-row flex-gap-1">
-					<div class="flex-1 flex flex-column flex-gap-0-5">
-						@if (minting_limits().length > 0) {
-							<div class="font-size-xs orc-outline-color">Minting Limits</div>
-							@for (limit of minting_limits(); track limit.method + limit.unit) {
-								<div class="orc-high-card p-0-5 p-h-1">
-									<div class="flex flex-items-center flex-gap-0-5 p-b-0-25">
-										<orc-graphic-asset [unit]="limit.unit" [height]="'1rem'"></orc-graphic-asset>
-										<orc-mint-general-payment-method
-											class="orc-outline-color font-size-xs"
-											[payment_method]="limit.method"
-										></orc-mint-general-payment-method>
-									</div>
-
-									<div class="limit-range">
-										<div class="limit-range-end limit-range-min">
-											<div
-												class="font-size-xs orc-outline-color"
-												[innerHTML]="
-													limit.min_amount !== null
-														? (limit.min_amount | localAmount: limit.unit : 'mint')
-														: (1 | localAmount: limit.unit : 'mint')
-												"
-											></div>
-										</div>
-										<div class="limit-range-fill">
-											<div class="limit-range-bar" [style.width.%]="getTrackWidthPercent(limit)">
-												<div class="limit-range-track"></div>
-											</div>
-											<div class="limit-range-end limit-range-max">
-												<div
-													class="font-size-m font-weight-semi-bold"
-													[innerHTML]="
-														limit.max_amount !== null
-															? (limit.max_amount | localAmount: limit.unit : 'mint')
-															: '∞'
-													"
-												></div>
-											</div>
-										</div>
-									</div>
-								</div>
-							}
-						}
-					</div>
-
-					<div class="flex-1 flex flex-column flex-gap-0-5">
-						@if (melting_limits().length > 0) {
-							<div class="font-size-xs orc-outline-color">Melting Limits</div>
-							@for (limit of melting_limits(); track limit.method + limit.unit) {
-								<div class="orc-high-card p-0-5 p-h-1">
-									<div class="flex flex-items-center flex-gap-0-5 p-b-0-25">
-										<orc-graphic-asset [unit]="limit.unit" [height]="'1rem'"></orc-graphic-asset>
-										<orc-mint-general-payment-method
-											class="orc-outline-color font-size-xs"
-											[payment_method]="limit.method"
-										></orc-mint-general-payment-method>
-									</div>
-									<div class="limit-range">
-										<div class="limit-range-end limit-range-min">
-											<div
-												class="font-size-xs orc-outline-color"
-												[innerHTML]="
-													limit.min_amount !== null
-														? (limit.min_amount | localAmount: limit.unit : 'mint')
-														: (1 | localAmount: limit.unit : 'mint')
-												"
-											></div>
-										</div>
-										<div class="limit-range-fill">
-											<div class="limit-range-bar" [style.width.%]="getTrackWidthPercent(limit)">
-												<div class="limit-range-track"></div>
-											</div>
-											<div class="limit-range-end limit-range-max">
-												<div
-													class="font-size-m font-weight-semi-bold"
-													[innerHTML]="
-														limit.max_amount !== null
-															? (limit.max_amount | localAmount: limit.unit : 'mint')
-															: '∞'
-													"
-												></div>
-											</div>
-										</div>
-									</div>
-								</div>
-							}
-						}
-					</div>
-				</div>
+				@if (info()?.nuts; as nuts) {
+					<orc-cashu-limits [nuts]="nuts"></orc-cashu-limits>
+				}
 			</div>
 		</mat-card-content>
 	</mat-card>

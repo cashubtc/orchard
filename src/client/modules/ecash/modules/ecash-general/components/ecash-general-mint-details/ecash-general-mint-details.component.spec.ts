@@ -48,6 +48,14 @@ describe('EcashGeneralMintDetailsComponent', () => {
 		expect(component).toBeTruthy();
 	});
 
+	it('shows the minting and melting limits, stacked on mobile', () => {
+		const limits = () => fixture.nativeElement.querySelector('orc-cashu-limits');
+		expect(limits().classList).not.toContain('stacked');
+		fixture.componentRef.setInput('device_type', 'mobile');
+		fixture.detectChanges();
+		expect(limits().classList).toContain('stacked');
+	});
+
 	it('lists connections, onchain confirmations and contacts', () => {
 		expect(component.confirmations()).toBe(3);
 		expect(component.connections().map((connection) => connection.type)).toEqual(['clearnet', 'tor']);

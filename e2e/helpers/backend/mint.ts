@@ -107,7 +107,7 @@ export const mint = {
 	/** Count of mint/melt quote rows in the mint database within a
 	 *  `created_time` window, optionally narrowed to one payment method and unit — the
 	 *  differential oracle for the `/mint/database` quote tables (paginator
-	 *  length and per-row `orc-mint-general-payment-method` chips). Mirrors the
+	 *  length and per-row `orc-cashu-payment-method` chips). Mirrors the
 	 *  resolvers' count semantics (`countMintQuotes` / `countMeltQuotes`):
 	 *  cdk windows epoch `created_time` on `mint_quote` / `melt_quote`;
 	 *  nutshell uses `mint_quotes` / `melt_quotes` (datetime on postgres →
@@ -414,29 +414,29 @@ export const mint = {
 			sql =
 				config.mint === 'cdk'
 					? // cdk swap: one row per `operation_id` in `completed_operations` with `operation_kind='swap'`.
-					  // Unit comes via the keyset that issued the swap's blind signature(s), joined through
-					  // `blind_signature.operation_id`. Multiple blind sigs may share an operation_id (shared
-					  // unit per swap), so DISTINCT on operation_id is implicit via the subquery + GROUP BY.
-					  `SELECT COALESCE(SUM(co.total_redeemed), 0) FROM completed_operations co LEFT JOIN (SELECT operation_id, MIN(keyset_id) AS keyset_id FROM blind_signature GROUP BY operation_id) bs ON bs.operation_id = co.operation_id LEFT JOIN keyset k ON k.id = bs.keyset_id WHERE co.operation_kind = 'swap' AND k.unit = '${unit}' AND co.completed_at < ${effective_end}`
+						// Unit comes via the keyset that issued the swap's blind signature(s), joined through
+						// `blind_signature.operation_id`. Multiple blind sigs may share an operation_id (shared
+						// unit per swap), so DISTINCT on operation_id is implicit via the subquery + GROUP BY.
+						`SELECT COALESCE(SUM(co.total_redeemed), 0) FROM completed_operations co LEFT JOIN (SELECT operation_id, MIN(keyset_id) AS keyset_id FROM blind_signature GROUP BY operation_id) bs ON bs.operation_id = co.operation_id LEFT JOIN keyset k ON k.id = bs.keyset_id WHERE co.operation_kind = 'swap' AND k.unit = '${unit}' AND co.completed_at < ${effective_end}`
 					: // nutshell swap: rows in `proofs_used WHERE melt_quote IS NULL` are swap inputs;
-					  // grouped by `(pu.created, k.unit)` to recover one row per swap. The chart bucket is
-					  // SUM(pu.amount) per group, summed across groups.
-					  `SELECT COALESCE(SUM(g.amount), 0) FROM (SELECT SUM(pu.amount) AS amount FROM (SELECT * FROM proofs_used WHERE melt_quote IS NULL) pu LEFT JOIN keysets k ON k.id = pu.id WHERE k.unit = '${unit}' AND ${timeCol('pu.created')} < ${effective_end} GROUP BY pu.created, k.unit) g`;
+						// grouped by `(pu.created, k.unit)` to recover one row per swap. The chart bucket is
+						// SUM(pu.amount) per group, summed across groups.
+						`SELECT COALESCE(SUM(g.amount), 0) FROM (SELECT SUM(pu.amount) AS amount FROM (SELECT * FROM proofs_used WHERE melt_quote IS NULL) pu LEFT JOIN keysets k ON k.id = pu.id WHERE k.unit = '${unit}' AND ${timeCol('pu.created')} < ${effective_end} GROUP BY pu.created, k.unit) g`;
 		} else {
 			// fees_amount
 			sql =
 				config.mint === 'cdk'
 					? // cdk fee: `completed_operations.fee_collected` per op (>0). Cashu fees are charged on
-					  // inputs, so the unit comes from the proofs being spent — not the blind sigs. Mirrors
-					  // `listFees` (cdk.service.ts:534-544) which INNER JOINs `proof` then `keyset` and
-					  // GROUP BYs (operation_id, completed_at, fee_collected, unit) to dedupe the row
-					  // multiplication from N proofs per op. Mint ops are excluded by the `fee_collected > 0`
-					  // filter (mints don't charge fees); swap and melt ops both have proof rows, so the
-					  // inner join keeps every fee-bearing op without a NULL-unit fallback.
-					  `SELECT COALESCE(SUM(fee), 0) FROM (SELECT co.operation_id, co.fee_collected AS fee, k.unit FROM (SELECT * FROM completed_operations WHERE fee_collected > 0) co INNER JOIN proof p ON p.operation_id = co.operation_id INNER JOIN keyset k ON k.id = p.keyset_id WHERE k.unit = '${unit}' AND co.completed_at < ${effective_end} GROUP BY co.operation_id, co.fee_collected, k.unit) deduped`
+						// inputs, so the unit comes from the proofs being spent — not the blind sigs. Mirrors
+						// `listFees` (cdk.service.ts:534-544) which INNER JOINs `proof` then `keyset` and
+						// GROUP BYs (operation_id, completed_at, fee_collected, unit) to dedupe the row
+						// multiplication from N proofs per op. Mint ops are excluded by the `fee_collected > 0`
+						// filter (mints don't charge fees); swap and melt ops both have proof rows, so the
+						// inner join keeps every fee-bearing op without a NULL-unit fallback.
+						`SELECT COALESCE(SUM(fee), 0) FROM (SELECT co.operation_id, co.fee_collected AS fee, k.unit FROM (SELECT * FROM completed_operations WHERE fee_collected > 0) co INNER JOIN proof p ON p.operation_id = co.operation_id INNER JOIN keyset k ON k.id = p.keyset_id WHERE k.unit = '${unit}' AND co.completed_at < ${effective_end} GROUP BY co.operation_id, co.fee_collected, k.unit) deduped`
 					: // nutshell fee: `balance_log.keyset_fees_paid` is cumulative per unit; LAG-diff to recover
-					  // per-event deltas, filter positive, sum within the window. Mirrors nutshell.service.ts:565-575.
-					  `SELECT COALESCE(SUM(fee), 0) FROM (SELECT unit, time AS created_time, keyset_fees_paid - LAG(keyset_fees_paid, 1, 0) OVER (PARTITION BY unit ORDER BY time) AS fee FROM balance_log) deltas WHERE unit = '${unit}' AND fee > 0 AND ${timeCol('created_time')} < ${effective_end}`;
+						// per-event deltas, filter positive, sum within the window. Mirrors nutshell.service.ts:565-575.
+						`SELECT COALESCE(SUM(fee), 0) FROM (SELECT unit, time AS created_time, keyset_fees_paid - LAG(keyset_fees_paid, 1, 0) OVER (PARTITION BY unit ORDER BY time) AS fee FROM balance_log) deltas WHERE unit = '${unit}' AND fee > 0 AND ${timeCol('created_time')} < ${effective_end}`;
 		}
 
 		const amount = parseInt(mintDbQuery(config, sql), 10);
