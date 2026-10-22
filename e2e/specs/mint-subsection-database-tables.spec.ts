@@ -397,7 +397,7 @@ test.describe('mint-subsection-database — quote tables differential', {tag: '@
 			await expect(detail.getByText('Bolt 12 Offer', {exact: true})).toHaveCount(0);
 			await expect(detail.locator('.w-max-36 .mega-string')).toHaveText(address);
 			await expect(onchain_row.locator('.mat-column-request')).toContainText(address);
-			await expect(detail.locator('.qrcode-static svg')).toBeVisible();
+			await expect(detail.locator('orc-graphic-qr svg')).toBeVisible();
 
 			await context.grantPermissions(['clipboard-read', 'clipboard-write'], {origin: config.orchardUrl});
 			await detail.locator('.w-max-36 .button-copy-action').click();
