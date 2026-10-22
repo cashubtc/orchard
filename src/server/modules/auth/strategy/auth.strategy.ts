@@ -5,11 +5,15 @@ import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {ExtractJwt, Strategy} from 'passport-jwt';
 /* Native Dependencies */
+import {AuthService} from '#server/modules/auth/auth.service';
 import type {JwtPayload} from '#server/modules/auth/auth.types';
 
 @Injectable()
 export class AuthStrategy extends PassportStrategy(Strategy) {
-	constructor(private readonly configService: ConfigService) {
+	constructor(
+		private readonly configService: ConfigService,
+		private readonly authService: AuthService,
+	) {
 		super({
 			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
 			ignoreExpiration: false,
@@ -19,7 +23,7 @@ export class AuthStrategy extends PassportStrategy(Strategy) {
 	}
 
 	/**
-	 * Maps a verified JWT payload to the request user
+	 * Maps a verified JWT payload to the request user, using the stored user's name and role
 	 * Rejects refresh tokens so they cannot be used as long-lived bearer credentials
 	 * (revocation via the blacklist only applies to the refresh flow)
 	 * @param {any} req - The incoming HTTP request
@@ -28,11 +32,12 @@ export class AuthStrategy extends PassportStrategy(Strategy) {
 	 */
 	async validate(req: any, payload: JwtPayload) {
 		if (payload.type !== 'access') throw new UnauthorizedException('Invalid token type. Access token required');
+		const user = await this.authService.getAuthenticatedUser(payload);
 		const auth_token = req.get('Authorization').replace('Bearer', '').trim();
 		return {
-			id: payload.sub,
-			name: payload.username,
-			role: payload.role,
+			id: user.id,
+			name: user.name,
+			role: user.role,
 			auth_token,
 		};
 	}

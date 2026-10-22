@@ -9,6 +9,7 @@ import {Repository, LessThan} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {UserService} from '#server/modules/user/user.service';
+import type {User} from '#server/modules/user/user.entity';
 /* Local Dependencies */
 import type {OrchardAuthToken, JwtPayload, RefreshTokenPayload} from './auth.types.js';
 import {TokenBlacklist} from './token-blacklist.entity.js';
@@ -167,6 +168,19 @@ export class AuthService {
 			if (error instanceof UnauthorizedException) throw error;
 			throw new UnauthorizedException('Invalid access token');
 		}
+	}
+
+	/**
+	 * Loads the user an access token was issued to, as currently stored
+	 * @param {JwtPayload} payload - The verified access token payload
+	 * @returns {Promise<User>} The stored user, if it still exists and is active
+	 */
+	public async getAuthenticatedUser(payload: JwtPayload): Promise<User> {
+		if (!payload.sub) throw new UnauthorizedException('Invalid user');
+		const user = await this.userService.getUserById(payload.sub);
+		if (!user) throw new UnauthorizedException('Invalid user');
+		if (!user.active) throw new UnauthorizedException('User account has been deactivated');
+		return user;
 	}
 
 	public async getInitialization(): Promise<boolean> {

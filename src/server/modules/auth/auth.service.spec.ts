@@ -11,6 +11,7 @@ import {UserService} from '#server/modules/user/user.service';
 import {UserRole} from '#server/modules/user/user.enums';
 /* Local Dependencies */
 import {AuthService} from './auth.service.js';
+import type {JwtPayload} from './auth.types.js';
 import {TokenBlacklist} from './token-blacklist.entity.js';
 
 describe('AuthService', () => {
@@ -113,6 +114,33 @@ describe('AuthService', () => {
 		jwtService.verifyAsync.mockResolvedValue({type: 'access', sub: '1'} as any);
 		const payload = await authService.validateAccessToken('access');
 		expect(payload.sub).toBe('1');
+	});
+
+	describe('getAuthenticatedUser', () => {
+		const payload: JwtPayload = {sub: '1', username: 'Admin', role: UserRole.ADMIN, type: 'access'};
+
+		it('returns the stored user the token was issued to', async () => {
+			const stored_user = {id: '1', name: 'Admin', role: UserRole.READER, active: true};
+			userService.getUserById.mockImplementationOnce(async (id) => (id === '1' ? (stored_user as any) : null));
+
+			await expect(authService.getAuthenticatedUser(payload)).resolves.toBe(stored_user);
+		});
+
+		it.each([
+			['no longer exists', null],
+			['is deactivated', {id: '1', name: 'Admin', role: UserRole.ADMIN, active: false}],
+		])('rejects when the user %s', async (_case, stored_user) => {
+			userService.getUserById.mockResolvedValueOnce(stored_user as any);
+
+			await expect(authService.getAuthenticatedUser(payload)).rejects.toBeInstanceOf(UnauthorizedException);
+		});
+
+		it('rejects a token without a subject', async () => {
+			const no_sub_payload = {username: 'Admin', role: UserRole.READER, type: 'access'} as JwtPayload;
+
+			await expect(authService.getAuthenticatedUser(no_sub_payload)).rejects.toBeInstanceOf(UnauthorizedException);
+			expect(userService.getUserById).not.toHaveBeenCalled();
+		});
 	});
 
 	describe('Token Blacklist Security', () => {
