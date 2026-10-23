@@ -1,0 +1,15 @@
+# Local development only. No Bitcoin or Lightning service is needed.
+CDK_FEDERATION_COMMIT=d02c12c0703dea29fb88f0b463910ee2040b7e01
+NODE_ENV=production
+DOCKER_ENV=true
+SERVER_HOST=0.0.0.0
+SETUP_KEY=orchard-e2e-admin-key
+ADMIN_PASSWORD=orchard-e2e-admin-key
+LOG_LEVEL=debug
+BASE_PATH=api
+MINT_TYPE=cdk
+MINT_RPC_HOST=127.0.0.1
+MINT_RPC_MTLS=false
+MINT_DATABASE=/mint/cdk-mintd.sqlite
+THROTTLE_LIMIT=1000
+THROTTLE_TTL=60000

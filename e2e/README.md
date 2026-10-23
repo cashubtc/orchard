@@ -22,6 +22,10 @@ including a mint that has no SAT keyset.
 | `fake-cdk-postgres` | — | — (fake) | cdk | postgres | — | ✓ (sat + usd) |
 | `pecan-cdk-sqlite` | — | — (Pecan) | cdk | sqlite | — | ora only; branch method |
 
+The experimental `federation` branch also has a manual
+[federation development stack](docker/federation/README.md) with three setup-mode
+mintds and one Orchard per member. It lives outside `configs/`, so `e2e:* all` skips it.
+
 ## Directory structure
 
 ```

@@ -1,0 +1,121 @@
+# Local-only 2-of-3 federation; all members and Orchards share member1's loopback.
+name: orchard-e2e-federation-cdk-sqlite
+
+x-member: &member
+  image: orchard-e2e-federation-mintd:${CDK_FEDERATION_COMMIT}
+  pull_policy: never
+  restart: on-failure
+  command: ["sh", "/stack/member.sh"]
+  healthcheck:
+    test: ["CMD", "sh", "/stack/health.sh"]
+    interval: 5s
+    timeout: 10s
+    retries: 60
+    start_period: 120s
+    start_interval: 1s
+
+x-orchard: &orchard
+  image: orchard-e2e-federation-orchard:local
+  pull_policy: never
+  restart: on-failure
+  network_mode: service:member1
+  env_file: [./env]
+  healthcheck:
+    test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:$${SERVER_PORT}/"]
+    interval: 5s
+    timeout: 5s
+    retries: 60
+    start_period: 120s
+    start_interval: 1s
+
+services:
+  member1:
+    <<: *member
+    build:
+      context: .
+      additional_contexts:
+        cdk-git: ${CDK_FEDERATION_SOURCE_REPO:-../../../../cdk}/.git
+      args:
+        CDK_FEDERATION_COMMIT: ${CDK_FEDERATION_COMMIT}
+    environment:
+      MEMBER_ID: 1
+    volumes:
+      - member1-data:/data
+      - payments:/payments
+      - ./:/stack:ro
+    ports:
+      - "127.0.0.1:3351-3353:3351-3353"
+      - "127.0.0.1:8091-8093:8091-8093"
+      - "127.0.0.1:3361-3363:3361-3363"
+
+  member2:
+    <<: *member
+    environment:
+      MEMBER_ID: 2
+    volumes:
+      - member2-data:/data
+      - payments:/payments
+      - ./:/stack:ro
+    network_mode: service:member1
+    depends_on:
+      member1: {condition: service_healthy}
+
+  member3:
+    <<: *member
+    environment:
+      MEMBER_ID: 3
+    volumes:
+      - member3-data:/data
+      - payments:/payments
+      - ./:/stack:ro
+    network_mode: service:member1
+    depends_on:
+      member1: {condition: service_healthy}
+
+  orchard1:
+    <<: *orchard
+    build:
+      context: ../../..
+      target: final
+    environment:
+      SERVER_PORT: 3361
+      MINT_RPC_PORT: 8091
+      MINT_API: http://localhost:3351
+    depends_on:
+      member1: {condition: service_healthy}
+    volumes:
+      - orchard1-data:/app/data
+      - member1-data:/mint
+
+  orchard2:
+    <<: *orchard
+    environment:
+      SERVER_PORT: 3362
+      MINT_RPC_PORT: 8092
+      MINT_API: http://localhost:3352
+    depends_on:
+      member2: {condition: service_healthy}
+    volumes:
+      - orchard2-data:/app/data
+      - member2-data:/mint
+
+  orchard3:
+    <<: *orchard
+    environment:
+      SERVER_PORT: 3363
+      MINT_RPC_PORT: 8093
+      MINT_API: http://localhost:3353
+    depends_on:
+      member3: {condition: service_healthy}
+    volumes:
+      - orchard3-data:/app/data
+      - member3-data:/mint
+
+volumes:
+  payments:
+  member1-data:
+  orchard1-data:
+  member2-data:
+  orchard2-data:
+  member3-data:
+  orchard3-data:

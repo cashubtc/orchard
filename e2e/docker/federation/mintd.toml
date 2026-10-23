@@ -1,0 +1,52 @@
+# Substituted by member.sh on first boot; subsequent config lives in SQLite.
+[info]
+url = "http://localhost:@HTTP_PORT@"
+listen_host = "0.0.0.0"
+listen_port = @HTTP_PORT@
+seed = "file:/data/mint-seed"
+enable_info_page = false
+
+[mint_info]
+name = "Orchard federation member @MEMBER_ID@"
+description = "Local 2-of-3 federation development member"
+
+[database]
+engine = "sqlite"
+
+[[payment_backend]]
+backend = "fakewallet"
+unit = "sat"
+min_mint = 1
+max_mint = 500000
+min_melt = 1
+max_melt = 500000
+
+[fake_wallet]
+supported_units = ["sat"]
+fee_percent = 0.0
+reserve_fee_min = 1
+min_delay_time = 0
+max_delay_time = 0
+shared_incoming_payment_dir = "/payments"
+
+[mint_management_rpc]
+enabled = true
+address = "0.0.0.0"
+port = @RPC_PORT@
+allow_insecure = true
+
+[federation]
+enabled = true
+allow_development_payment_observation_policy = true
+
+[federation.setup]
+enabled = true
+
+[federation.dkg]
+max_ticks = 1200
+retry_delay_ms = 250
+ceremony_timeout_secs = 600
+
+[federation.peer_sync]
+aleph_bft_active_unit_interval_ms = 100
+operation_submission_timeout_secs = 180
