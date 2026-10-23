@@ -56,6 +56,14 @@ const error_messages: Readonly<Partial<Record<number, ErrorInfo>>> = {
 		title: 'MINT METRICS ERROR',
 		description: 'Orchard was unable to reach the mint metrics endpoint',
 	},
+	40015: {
+		title: 'MINT RPC PRECONDITION ERROR',
+		description: 'The mint is not in the required state for this operation.',
+	},
+	40016: {
+		title: 'MINT RPC BUSY',
+		description: 'The mint is busy. Wait briefly and retry.',
+	},
 	60001: {
 		title: 'TAPROOT ASSETS RPC ERROR',
 		description: 'Orchard was unable to connect to the taproot assets RPC',

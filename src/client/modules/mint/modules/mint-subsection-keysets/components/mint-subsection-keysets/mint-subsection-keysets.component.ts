@@ -1,5 +1,6 @@
 /* Core Dependencies */
 import {
+	inject,
 	ChangeDetectionStrategy,
 	ChangeDetectorRef,
 	Component,
@@ -17,6 +18,7 @@ import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 import {lastValueFrom, forkJoin, Subscription} from 'rxjs';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
+import {FederationService} from '@client/modules/federation/services/federation.service';
 import {ConfigService} from '@client/modules/config/services/config.service';
 import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 import {SettingDeviceService} from '@client/modules/settings/services/setting-device/setting-device.service';
@@ -51,6 +53,9 @@ import {AnalyticsInterval, AssistantToolName, AiAssistant} from '@shared/generat
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSubsectionKeysetsComponent implements ComponentCanDeactivate, OnInit, OnDestroy {
+	private readonly federationService = inject(FederationService);
+	public readonly standalone_actions = this.federationService.standalone_actions;
+
 	@HostListener('window:beforeunload')
 	canDeactivate(): boolean {
 		return this.active_event?.type !== 'PENDING';

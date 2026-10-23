@@ -20,6 +20,7 @@ import {MintSubsectionKeysetsTableRow} from '@client/modules/mint/modules/mint-s
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSubsectionKeysetsTableComponent {
+	readonly allow_rotation = input(true);
 	readonly sort = viewChild(MatSort);
 
 	readonly keysets = input.required<MintKeyset[]>();

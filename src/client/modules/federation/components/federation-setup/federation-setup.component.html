@@ -1,0 +1,25 @@
+<section class="federation-setup-container p-2">
+	<div class="federation-setup-card">
+		<mat-icon class="federation-icon">spa</mat-icon>
+		@if (error()) {
+			<h1>Mint status unavailable</h1>
+			<p role="alert">{{ error() }}</p>
+		} @else if (mode() === 'setup') {
+			<h1>Federation setup</h1>
+			<p>Your mint is in setup mode. Create or join a federation before opening the mint dashboard.</p>
+			<p>Once setup and activation are complete, check the status to continue.</p>
+		} @else if (mode() === 'unreachable') {
+			<h1>Mint connection unavailable</h1>
+			<p>Check that your mint is running and its management connection is configured.</p>
+			@if (details()) {
+				<p role="alert">{{ details() }}</p>
+			}
+		} @else {
+			<h1>Checking mint status</h1>
+		}
+		<button mat-flat-button (click)="refresh()" [disabled]="loading()">
+			<mat-icon>refresh</mat-icon>
+			Check status
+		</button>
+	</div>
+</section>

@@ -85,4 +85,21 @@ describe('MintSubsectionKeysetsTableComponent', () => {
 		const text = fixture.nativeElement.textContent;
 		expect(text).toContain('MISSING');
 	});
+	it('hides rotation controls for members on desktop and mobile', () => {
+		fixture.componentRef.setInput('keysets', [buildKeyset()]);
+		fixture.componentRef.setInput('loading', false);
+		for (const device of ['desktop', 'mobile']) {
+			fixture.componentRef.setInput('device_type', device);
+			fixture.componentRef.setInput('allow_rotation', true);
+			fixture.detectChanges();
+			const rotationVisible = (): boolean =>
+				device === 'desktop'
+					? fixture.nativeElement.querySelector('[matTooltip="Rotate Keyset"]') !== null
+					: fixture.nativeElement.textContent.includes('Rotate keyset');
+			expect(rotationVisible()).toBeTrue();
+			fixture.componentRef.setInput('allow_rotation', false);
+			fixture.detectChanges();
+			expect(rotationVisible()).toBeFalse();
+		}
+	});
 });

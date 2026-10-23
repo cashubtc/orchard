@@ -88,7 +88,7 @@
 					<th mat-header-cell *matHeaderCellDef class="data-table-sticky-header">Actions</th>
 					<td mat-cell *matCellDef="let entity">
 						<div class="flex flex-items-center flex-gap-0-5">
-							@if (entity.state === MintQuoteState.Unpaid || entity.state === MeltQuoteState.Unpaid) {
+							@if (allow_override() && (entity.state === MintQuoteState.Unpaid || entity.state === MeltQuoteState.Unpaid)) {
 								<button
 									mat-icon-button
 									class="orc-icon-button"
@@ -113,6 +113,7 @@
 											@case ('MintMints') {
 												<orc-mint-subsection-database-table-mint
 													[quote]="entity"
+													[allow_override]="allow_override()"
 													[loading]="loading_more()"
 													[lightning_request]="lightning_request()"
 													[bitcoin_oracle_data]="bitcoin_oracle_data()"
@@ -123,6 +124,7 @@
 											@case ('MintMelts') {
 												<orc-mint-subsection-database-table-melt
 													[quote]="entity"
+													[allow_override]="allow_override()"
 													[loading]="loading_more()"
 													[lightning_request]="lightning_request()"
 													[bitcoin_oracle_data]="bitcoin_oracle_data()"

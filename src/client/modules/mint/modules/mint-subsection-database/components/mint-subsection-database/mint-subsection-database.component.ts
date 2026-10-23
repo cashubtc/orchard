@@ -1,5 +1,6 @@
 /* Core Dependencies */
 import {
+	inject,
 	ChangeDetectionStrategy,
 	Component,
 	OnInit,
@@ -20,6 +21,7 @@ import {PageEvent} from '@angular/material/paginator';
 import {MatTableDataSource} from '@angular/material/table';
 import {MatDialog} from '@angular/material/dialog';
 /* Application Dependencies */
+import {FederationService} from '@client/modules/federation/services/federation.service';
 import {NonNullableMintDatabaseSettings} from '@client/modules/settings/types/setting.types';
 import {ConfigService} from '@client/modules/config/services/config.service';
 import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
@@ -63,6 +65,9 @@ enum FormMode {
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, OnInit, OnDestroy {
+	private readonly federationService = inject(FederationService);
+	public readonly standalone_actions = this.federationService.standalone_actions;
+
 	@HostListener('window:beforeunload')
 	canDeactivate(): boolean {
 		return this.active_event?.type !== 'PENDING';

@@ -4,7 +4,9 @@ import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {Metadata, type ServiceError, status} from '@grpc/grpc-js';
 /* Application Dependencies */
-import {CdkService} from '#server/modules/cashu/cdk/cdk.service';
+import {CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
+import type {CdkRpcMethods} from '#server/modules/cashu/cdk/cdkrpc.types';
+import {FederationService} from '#server/modules/federation/federation.service';
 import {NutshellService} from '#server/modules/cashu/nutshell/nutshell.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {MintType} from '#server/modules/cashu/cashu.enums';
@@ -20,8 +22,9 @@ export class CashuMintRpcService implements OnModuleInit {
 
 	constructor(
 		private configService: ConfigService,
-		private cdkService: CdkService,
+		private cdkRpcService: CdkRpcService,
 		private nutshellService: NutshellService,
+		private federationService: FederationService,
 	) {}
 
 	public onModuleInit() {
@@ -31,10 +34,6 @@ export class CashuMintRpcService implements OnModuleInit {
 	}
 
 	private initializeGrpcClient() {
-		if (this.type === 'cdk') {
-			this.grpc_client = this.cdkService.initializeGrpcClient();
-			this.grpc_metadata.set('x-cdk-protocol-version', '1.0.0');
-		}
 		if (this.type === 'nutshell') this.grpc_client = this.nutshellService.initializeGrpcClient();
 	}
 
@@ -70,51 +69,70 @@ export class CashuMintRpcService implements OnModuleInit {
 		});
 	}
 
+	/** CDK's split services keep the legacy method names and request shapes for these calls. */
+	private callRpc<M extends keyof CdkRpcMethods>(method: M, request: CdkRpcMethods[M]['request']): Promise<any> {
+		if (this.type === 'cdk') return this.cdkRpcService.request(method, request);
+		return this.makeGrpcRequest(method, request);
+	}
+
+	/** CDK splits method limits and the mint-wide disabled flag into separate calls. */
+	private async updateCdkMethod(method: 'UpdateMintMethod' | 'UpdateMeltMethod', {disabled, ...request}: any): Promise<{}> {
+		if (disabled === undefined || Object.keys(request).length > 2) await this.cdkRpcService.request(method, request);
+		if (disabled === undefined) return {};
+		const flag = method === 'UpdateMintMethod' ? {mint_disabled: disabled} : {melt_disabled: disabled};
+		return this.cdkRpcService.request('UpdateDisabled', flag);
+	}
+
 	async getMintInfo(): Promise<CashuMintInfoRpc> {
-		const info = await this.makeGrpcRequest('GetInfo', {});
+		const info = await this.callRpc('GetInfo', {});
 		info.description_long = info.long_description;
 		return info;
 	}
 
 	async getQuoteTtl(): Promise<{mint_ttl: number; melt_ttl: number}> {
-		if (this.type === 'cdk') return this.makeGrpcRequest('GetQuoteTtl', {});
+		if (this.type === 'cdk') {
+			const {mint_ttl, melt_ttl} = await this.cdkRpcService.request('GetQuoteTtl', {});
+			return {mint_ttl: Number(mint_ttl), melt_ttl: Number(melt_ttl)};
+		}
 		if (this.type === 'nutshell') return {mint_ttl: null, melt_ttl: null};
 	}
 
 	async updateName({name}: {name: string | null}): Promise<{}> {
+		if (this.type === 'cdk') return this.cdkRpcService.request('UpdateName', {name: name ?? ''});
 		return this.makeGrpcRequest('UpdateName', {name});
 	}
 
 	async updateMotd({motd}: {motd: string}): Promise<{}> {
-		return this.makeGrpcRequest('UpdateMotd', {motd});
+		return this.callRpc('UpdateMotd', {motd});
 	}
 
 	async updateShortDescription({description}: {description: string}): Promise<{}> {
-		return this.makeGrpcRequest('UpdateShortDescription', {description});
+		return this.callRpc('UpdateShortDescription', {description});
 	}
 
 	async updateLongDescription({description}: {description: string}): Promise<{}> {
+		if (this.type === 'cdk') return this.cdkRpcService.request('UpdateLongDescription', {long_description: description});
 		return this.makeGrpcRequest('UpdateLongDescription', {description});
 	}
 
 	async updateIconUrl({icon_url}: {icon_url: string}): Promise<{}> {
-		return this.makeGrpcRequest('UpdateIconUrl', {icon_url});
+		return this.callRpc('UpdateIconUrl', {icon_url});
 	}
 
 	async addUrl({url}: {url: string}): Promise<{}> {
-		return this.makeGrpcRequest('AddUrl', {url});
+		return this.callRpc('AddUrl', {url});
 	}
 
 	async removeUrl({url}: {url: string}): Promise<{}> {
-		return this.makeGrpcRequest('RemoveUrl', {url});
+		return this.callRpc('RemoveUrl', {url});
 	}
 
 	async addContact({method, info}: {method: string; info: string}): Promise<{}> {
-		return this.makeGrpcRequest('AddContact', {method, info});
+		return this.callRpc('AddContact', {method, info});
 	}
 
 	async removeContact({method, info}: {method: string; info: string}): Promise<{}> {
-		return this.makeGrpcRequest('RemoveContact', {method, info});
+		return this.callRpc('RemoveContact', {method, info});
 	}
 
 	async updateNut04({
@@ -139,6 +157,7 @@ export class CashuMintRpcService implements OnModuleInit {
 		if (description !== undefined) {
 			request.options = {description};
 		}
+		if (this.type === 'cdk') return this.updateCdkMethod('UpdateMintMethod', request);
 		return this.makeGrpcRequest('UpdateNut04', request);
 	}
 
@@ -164,6 +183,7 @@ export class CashuMintRpcService implements OnModuleInit {
 		if (amountless !== undefined) {
 			request.options = {amountless};
 		}
+		if (this.type === 'cdk') return this.updateCdkMethod('UpdateMeltMethod', request);
 		return this.makeGrpcRequest('UpdateNut05', request);
 	}
 
@@ -171,10 +191,20 @@ export class CashuMintRpcService implements OnModuleInit {
 		const request: any = {};
 		if (mint_ttl !== undefined) request.mint_ttl = mint_ttl;
 		if (melt_ttl !== undefined) request.melt_ttl = melt_ttl;
-		return this.makeGrpcRequest('UpdateQuoteTtl', request);
+		return this.callRpc('UpdateQuoteTtl', request);
 	}
 
 	async updateNut04Quote({quote_id, state}: {quote_id: string; state: string}): Promise<{quote_id: string; state: string}> {
+		if (this.type === 'cdk') {
+			await this.federationService.assertStandaloneOperation();
+			if (!['UNPAID', 'PAID', 'ISSUED'].includes(state))
+				throw {code: OrchardErrorCode.MintRpcInvalidArgumentError, details: 'Unknown mint quote state'};
+			const response = await this.cdkRpcService.request('UpdateMintQuoteState', {
+				quote_id,
+				state: `MINT_QUOTE_STATE_${state}` as 'MINT_QUOTE_STATE_UNPAID' | 'MINT_QUOTE_STATE_PAID' | 'MINT_QUOTE_STATE_ISSUED',
+			});
+			return {quote_id: response.quote_id, state: response.state.replace('MINT_QUOTE_STATE_', '')};
+		}
 		return this.makeGrpcRequest('UpdateNut04Quote', {quote_id, state});
 	}
 
@@ -203,6 +233,11 @@ export class CashuMintRpcService implements OnModuleInit {
 		if (keyset_v2 !== undefined) request.use_keyset_v2 = keyset_v2;
 		// Nullish, not undefined-only: an explicit null would encode as proto3 0 (epoch), stamping a bogus expiry.
 		if (final_expiry != null) request.final_expiry = final_expiry;
+		if (this.type === 'cdk') {
+			await this.federationService.assertStandaloneOperation();
+			const response = await this.cdkRpcService.request('RotateNextKeyset', request);
+			return {...response, amounts: response.amounts.map(Number), input_fee_ppk: Number(response.input_fee_ppk)};
+		}
 		return this.makeGrpcRequest('RotateNextKeyset', request);
 	}
 }

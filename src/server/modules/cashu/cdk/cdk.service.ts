@@ -1,12 +1,5 @@
 /* Core Dependencies */
-import {Injectable, Logger} from '@nestjs/common';
-import {ConfigService} from '@nestjs/config';
-import * as path from 'path';
-/* Vendor Dependencies */
-import * as grpc from '@grpc/grpc-js';
-import * as protoLoader from '@grpc/proto-loader';
-/* Application Dependencies */
-import {CredentialService} from '#server/modules/credential/credential.service';
+import {Injectable} from '@nestjs/common';
 /* Native Dependencies */
 import type {
 	CashuMintDatabase,
@@ -43,74 +36,6 @@ import type {CdkMintProof} from './cdk.types.js';
 
 @Injectable()
 export class CdkService {
-	private readonly logger = new Logger(CdkService.name);
-
-	constructor(
-		private configService: ConfigService,
-		private credentialService: CredentialService,
-	) {}
-
-	public initializeGrpcClient(): grpc.Client {
-		const rpc_key = this.configService.get('cashu.rpc_key');
-		const rpc_cert = this.configService.get('cashu.rpc_cert');
-		const rpc_mtls = this.configService.get('cashu.rpc_mtls');
-		const rpc_ca = this.configService.get('cashu.rpc_ca');
-		const rpc_host = this.configService.get('cashu.rpc_host');
-		const rpc_port = this.configService.get('cashu.rpc_port');
-		const rpc_url = `${rpc_host}:${rpc_port}`;
-
-		if (!rpc_host || !rpc_port) {
-			this.logger.warn('Missing RPC host or port, connection cannot be established');
-			return;
-		}
-
-		try {
-			const proto_path = path.join(process.cwd(), 'proto/cdk/cdk-mint-rpc.proto');
-			const package_definition = protoLoader.loadSync(proto_path, {
-				keepCase: true,
-				longs: String,
-				enums: String,
-				defaults: true,
-				oneofs: true,
-			});
-			const mint_proto: any = grpc.loadPackageDefinition(package_definition).cdk_mint_management_v1;
-			let credentials: grpc.ChannelCredentials;
-			let channel_options: Record<string, any> | undefined = undefined;
-
-			if (rpc_mtls) {
-				const key_content = this.credentialService.loadPemOrPath(rpc_key);
-				const cert_content = this.credentialService.loadPemOrPath(rpc_cert);
-				const ca_content = this.credentialService.loadPemOrPath(rpc_ca);
-
-				if (!key_content || !cert_content || !ca_content) {
-					const missing = [!ca_content && 'CA certificate', !cert_content && 'client certificate', !key_content && 'client key']
-						.filter(Boolean)
-						.join(', ');
-					this.logger.error(
-						`Failed to load CDK mTLS credential(s): ${missing} — check that the file paths exist and are readable`,
-					);
-					return undefined;
-				}
-
-				credentials = grpc.credentials.createSsl(ca_content, key_content, cert_content);
-				if (rpc_host?.includes('host.docker.internal')) {
-					channel_options = {
-						'grpc.ssl_target_name_override': 'localhost',
-						'grpc.default_authority': 'localhost',
-					};
-				}
-				this.logger.log('Mint gRPC client initialized with TLS certificate authentication');
-			} else {
-				credentials = grpc.credentials.createInsecure();
-				this.logger.log('Mint gRPC client initialized with INSECURE connection');
-			}
-
-			return new mint_proto.CdkMint(rpc_url, credentials, channel_options);
-		} catch (error) {
-			this.logger.error(`Failed to initialize gRPC client: ${error.message}`);
-		}
-	}
-
 	public async getBalances(client: CashuMintDatabase, keyset_id?: string): Promise<CashuMintBalance[]> {
 		const where_clause = keyset_id ? 'WHERE ka.keyset_id = ?' : '';
 		const sql = `

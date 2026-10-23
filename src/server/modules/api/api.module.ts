@@ -25,6 +25,7 @@ import {ApiLightningAnalyticsModule} from './lightning/analytics/lnanalytics.mod
 // Taproot Assets Endpoints
 import {TaprootAssetsInfoModule} from './tapass/info/tapinfo.module.js';
 import {TaprootAssetsAssetModule} from './tapass/asset/tapasset.module.js';
+import {ApiFederationModule} from './federation/federation.module.js';
 // Cashu Mint Endpoints
 import {MintInfoModule} from './mint/info/mintinfo.module.js';
 import {MintBalanceModule} from './mint/balance/mintbalance.module.js';
@@ -86,6 +87,7 @@ import './api.enums.js';
 		ApiLightningAnalyticsModule,
 		TaprootAssetsInfoModule,
 		TaprootAssetsAssetModule,
+		ApiFederationModule,
 		MintInfoModule,
 		MintBalanceModule,
 		MintKeysetModule,

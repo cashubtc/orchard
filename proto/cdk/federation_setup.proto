@@ -1,0 +1,277 @@
+syntax = "proto3";
+
+package cdk_mint_federation_setup_v1;
+
+// Sets up a new federation from a daemon running in setup mode, before any
+// mint exists. Requests that conflict with the current setup phase fail with
+// gRPC status FAILED_PRECONDITION; malformed requests fail with
+// INVALID_ARGUMENT.
+service FederationSetupService {
+    // Starts a new setup with this daemon as the coordinator and member 1.
+    // Returns one invitation per other member.
+    rpc CreateSetup(CreateSetupRequest) returns (CreateSetupResponse) {}
+    // Joins a setup started by another daemon, using the invitation the
+    // coordinator issued for this member.
+    rpc JoinSetup(JoinSetupRequest) returns (JoinSetupResponse) {}
+    // Builds the setup proposal once every member has enrolled. Coordinator
+    // only.
+    rpc ProposeSetup(ProposeSetupRequest) returns (ProposeSetupResponse) {}
+    // Returns the current proposal for the operator to review before
+    // approving it.
+    rpc ReviewProposal(ReviewProposalRequest) returns (ReviewProposalResponse) {}
+    // Approves the proposal with the given hash. Fails when the hash does not
+    // match the current proposal.
+    rpc ApproveProposal(ApproveProposalRequest) returns (ApproveProposalResponse) {}
+    // Returns the local setup state. Before CreateSetup or JoinSetup it
+    // returns initialized = false instead of an error.
+    rpc GetSetupStatus(GetSetupStatusRequest) returns (GetSetupStatusResponse) {}
+    // Activates the finished federation config once key generation is
+    // complete. The daemon then restarts as a federation member.
+    rpc ActivateSetup(ActivateSetupRequest) returns (ActivateSetupResponse) {}
+}
+
+// Initial keyset generated during setup.
+message SetupKeyset {
+    // Currency unit the keyset signs, e.g. "sat".
+    string unit = 1;
+    // Token denominations the keyset can sign, e.g. [1, 2, 4, 8].
+    repeated uint64 amounts = 2;
+    // Input fee charged per input, in parts per thousand.
+    uint64 input_fee_ppk = 3;
+    // Absolute expiry as seconds since the UNIX epoch. Absent for a keyset
+    // that never expires.
+    optional uint64 final_expiry = 4;
+}
+
+// Invitation for one joining member.
+message SetupInvitation {
+    // Member slot the invitation is for.
+    uint32 member_id = 1;
+    // Encoded invitation to pass to JoinSetup on that member. Treat it as a
+    // secret until the member has joined.
+    string invitation = 2;
+}
+
+message CreateSetupRequest {
+    // Number of federation members, including this one.
+    uint32 members = 1;
+    // Number of members whose signatures are needed to sign.
+    uint32 threshold = 2;
+    // Bitcoin network: "bitcoin", "testnet", "signet", or "regtest".
+    string network = 3;
+    // Number of members that must observe a payment before it counts.
+    // Defaults to the consensus threshold when absent.
+    optional uint32 payment_observation_threshold = 4;
+    // How long invitations stay valid, in seconds. Defaults to one day when
+    // absent.
+    optional uint64 invitation_lifetime_secs = 5;
+    // Initial keyset. When absent, the server uses a "sat" keyset with
+    // amounts 1 to 128 in powers of two and no input fee.
+    optional SetupKeyset keyset = 6;
+    // Wallet-facing URL of this mint. Defaults to the daemon's configured
+    // mint URL.
+    optional string public_mint_url = 7;
+    // URL other members use to reach this member's federation API. Must
+    // differ from the public mint URL unless both are the same Iroh endpoint;
+    // defaults to the public mint URL only for Iroh members.
+    optional string federation_api_url = 8;
+    // URL joining members use to reach this coordinator. Defaults to the
+    // federation API URL.
+    optional string coordinator_url = 9;
+    // Allows plain-HTTP localhost URLs, for local testing only.
+    bool allow_insecure_localhost = 10;
+}
+
+message CreateSetupResponse {
+    // Identifier of the new setup.
+    string setup_id = 1;
+    // Member slot of this daemon.
+    uint32 member_id = 2;
+    // One invitation per joining member, ordered by member_id.
+    repeated SetupInvitation invitations = 3;
+}
+
+message JoinSetupRequest {
+    // Invitation issued by the coordinator for this member.
+    string invitation = 1;
+    // Wallet-facing URL of this mint. Defaults to the daemon's configured
+    // mint URL.
+    optional string public_mint_url = 2;
+    // URL other members use to reach this member's federation API. Must
+    // differ from the public mint URL unless both are the same Iroh endpoint;
+    // defaults to the public mint URL only for Iroh members.
+    optional string federation_api_url = 3;
+    // Allows plain-HTTP localhost URLs, for local testing only.
+    bool allow_insecure_localhost = 4;
+}
+
+message JoinSetupResponse {
+    // Identifier of the joined setup.
+    string setup_id = 1;
+    // Member slot assigned to this daemon.
+    uint32 member_id = 2;
+}
+
+message ProposeSetupRequest {
+}
+
+message ProposeSetupResponse {
+    // Hash of the new proposal that members approve.
+    string proposal_hash = 1;
+}
+
+message ReviewProposalRequest {
+}
+
+// One member as listed in the proposal.
+message ReviewMember {
+    // Member slot.
+    uint32 member_id = 1;
+    // Wallet-facing URL of the member's mint.
+    string public_mint_url = 2;
+    // URL other members use to reach the member's federation API.
+    string federation_api_url = 3;
+    // First 16 lowercase hex characters of the SHA-256 fingerprint of the
+    // member's identity key. Compare it with the member out of band.
+    string identity_fingerprint = 4;
+}
+
+// The proposal to review. It holds no secrets.
+message ReviewProposalResponse {
+    // Identifier of the setup being reviewed.
+    string setup_id = 1;
+    // Federation identifier the proposal produces.
+    string proposed_federation_id = 2;
+    // Hash to pass to ApproveProposal.
+    string proposal_hash = 3;
+    // Bitcoin network committed by the proposal.
+    string network = 4;
+    // Number of federation members.
+    uint32 member_count = 5;
+    // Number of members whose signatures are needed to sign.
+    uint32 signature_threshold = 6;
+    // Number of members needed to reach consensus.
+    uint32 consensus_threshold = 7;
+    // Members, ordered by member_id.
+    repeated ReviewMember members = 8;
+    // Initial keysets the federation generates.
+    repeated SetupKeyset keysets = 9;
+    // The complete review as JSON, including the fields not typed above.
+    string details_json = 10;
+}
+
+message ApproveProposalRequest {
+    // Hash of the proposal being approved, as returned by ReviewProposal.
+    string proposal_hash = 1;
+}
+
+message ApproveProposalResponse {
+    // Hash of the approved proposal.
+    string proposal_hash = 1;
+}
+
+message GetSetupStatusRequest {
+}
+
+// Progress of the distributed key generation that follows approval.
+message SetupDkgProgress {
+    // Key generation phase.
+    string phase = 1;
+    // Number of member participant states recorded.
+    uint64 participant_states = 2;
+    // Number of commitments recorded.
+    uint64 commitments = 3;
+    // Number of reveals recorded.
+    uint64 reveals = 4;
+    // Number of secret share contributions recorded.
+    uint64 secret_share_contributions = 5;
+    // Number of keyset shares recorded.
+    uint64 keyset_shares = 6;
+    // Number of transcript signatures recorded.
+    uint64 transcript_signatures = 7;
+    // Number of final config confirmations recorded.
+    uint64 final_config_confirmations = 8;
+    // Number of FROST root public configs recorded.
+    uint64 frost_root_public_configs = 9;
+    // Members that have confirmed the result, ordered by member_id.
+    repeated uint32 confirmed_members = 10;
+    // Whether the final config is ready and ActivateSetup can run.
+    bool finalized_ready = 11;
+    // Digest of the key generation confirmation, once known.
+    optional string dkg_confirmation_digest = 12;
+    // Digest of the final federation config, once known.
+    optional string final_config_digest = 13;
+    // Hash of the key generation transcript, once known.
+    optional string transcript_hash = 14;
+    // Last key generation error, when one occurred.
+    optional string error = 15;
+}
+
+// Record of a completed local activation.
+message SetupActivation {
+    // Identifier of the activated setup.
+    string setup_id = 1;
+    // Member slot of this daemon.
+    uint32 member_id = 2;
+    // Hash of the certified manifest that authorized key generation.
+    string manifest_hash = 3;
+    // Identifier of the federation.
+    string federation_id = 4;
+    // Digest of the final federation config.
+    string final_config_digest = 5;
+    // Activation time as seconds since the UNIX epoch.
+    uint64 activated_at_unix = 6;
+}
+
+message GetSetupStatusResponse {
+    // Whether a setup exists. False before CreateSetup or JoinSetup, in which
+    // case every other field is empty.
+    bool initialized = 1;
+    // Identifier of the setup.
+    optional string setup_id = 2;
+    // Member slot of this daemon.
+    optional uint32 member_id = 3;
+    // "coordinator" or "member". Empty when not initialized.
+    string role = 4;
+    // Phase of this daemon as a setup participant.
+    string participant_phase = 5;
+    // Phase of the coordinator, when this daemon is the coordinator.
+    optional string coordinator_phase = 6;
+    // Number of federation members.
+    uint32 member_count = 7;
+    // Members that have enrolled, ordered by member_id.
+    repeated uint32 enrolled_members = 8;
+    // Members that have not enrolled yet, ordered by member_id.
+    repeated uint32 missing_enrollments = 9;
+    // Members that have approved the proposal, ordered by member_id.
+    repeated uint32 approved_members = 10;
+    // Members that have not approved the proposal yet, ordered by member_id.
+    repeated uint32 missing_approvals = 11;
+    // Hash of the current proposal, once proposed.
+    optional string proposal_hash = 12;
+    // Hash of the certified manifest, once every member has approved.
+    optional string manifest_hash = 13;
+    // Key generation progress, once key generation has started.
+    optional SetupDkgProgress dkg = 14;
+    // Activation record, once this daemon has activated.
+    optional SetupActivation activation = 15;
+}
+
+message ActivateSetupRequest {
+}
+
+message ActivateSetupResponse {
+    // Identifier of the activated setup.
+    string setup_id = 1;
+    // Member slot of this daemon.
+    uint32 member_id = 2;
+    // Identifier of the federation.
+    string federation_id = 3;
+    // Digest of the final federation config.
+    string final_config_digest = 4;
+    // Reminder for the operator to back up the federation config and keys.
+    string backup_warning = 5;
+    // Whether the daemon will restart as a federation member after this
+    // response.
+    bool restart_pending = 6;
+}

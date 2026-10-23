@@ -22,6 +22,7 @@ import {MintQuoteState, MeltQuoteState} from '@shared/generated.types';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSubsectionDatabaseTableComponent {
+	public readonly allow_override = input(true);
 	@ViewChild(MatSort) sort!: MatSort;
 
 	/* Inputs */

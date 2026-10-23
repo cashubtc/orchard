@@ -65,4 +65,13 @@ describe('MintSubsectionDatabaseTableMeltComponent', () => {
 			expect(qr.data()).toBe(request);
 		});
 	}
+	it('disables quote overrides for members', () => {
+		fixture.componentRef.setInput('quote', {request: 'lnbc1...', state: MeltQuoteState.Unpaid});
+		fixture.componentRef.setInput('allow_override', true);
+		fixture.detectChanges();
+		expect(fixture.componentInstance.can_set_paid()).toBeTrue();
+		fixture.componentRef.setInput('allow_override', false);
+		fixture.detectChanges();
+		expect(fixture.componentInstance.can_set_paid()).toBeFalse();
+	});
 });

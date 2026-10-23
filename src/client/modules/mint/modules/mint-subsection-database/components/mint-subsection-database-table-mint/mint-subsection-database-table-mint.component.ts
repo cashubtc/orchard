@@ -23,6 +23,7 @@ enum ExpiredState {
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSubsectionDatabaseTableMintComponent {
+	public readonly allow_override = input(true);
 	public quote = input.required<MintMintQuote>();
 	public loading = input.required<boolean>();
 	public lightning_request = input<LightningRequest | null>(null);
@@ -32,7 +33,7 @@ export class MintSubsectionDatabaseTableMintComponent {
 	public setStatePaid = output<MintMintQuote>();
 
 	public can_set_paid = computed(() => {
-		return this.quote().state === MintQuoteState.Unpaid;
+		return this.allow_override() && this.quote().state === MintQuoteState.Unpaid;
 	});
 
 	public request_label = computed(() => {

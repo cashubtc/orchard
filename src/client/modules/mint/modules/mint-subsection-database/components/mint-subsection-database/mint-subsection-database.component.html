@@ -128,6 +128,7 @@
 	<div class="mint-data-table">
 		<mat-card appearance="outlined">
 			<orc-mint-subsection-database-table
+				[allow_override]="standalone_actions()"
 				[data]="data"
 				[page_settings]="page_settings"
 				[keysets]="mint_keysets"

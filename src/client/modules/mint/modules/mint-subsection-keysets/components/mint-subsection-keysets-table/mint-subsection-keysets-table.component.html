@@ -92,7 +92,7 @@
 						<th mat-header-cell *matHeaderCellDef class="keyset-table-sticky-header">Actions</th>
 						<td mat-cell *matCellDef="let keyset">
 							<div class="flex flex-items-center">
-								@if (keyset.active) {
+								@if (keyset.active && allow_rotation()) {
 									<button
 										mat-icon-button
 										class="orc-icon-button"
@@ -159,7 +159,7 @@
 														<div class="orc-outline-color font-weight-extra-light">Promise count</div>
 														<div class="font-size-m w-min-10">{{ keyset.promise_count | number: '1.0-0' }}</div>
 													</div>
-													@if (keyset.active) {
+													@if (keyset.active && allow_rotation()) {
 														<div class="flex flex-gap-1">
 															<div class="flex flex-column flex-gap-0-5">
 																<div class="orc-outline-color font-weight-extra-light">Actions</div>

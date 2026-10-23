@@ -1,0 +1,68 @@
+/* Core Dependencies */
+import {computed, inject, Injectable, signal} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+
+/* Vendor Dependencies */
+import {catchError, map, of, shareReplay, tap, throwError, type Observable} from 'rxjs';
+
+/* Application Dependencies */
+import {ApiService} from '@client/modules/api/services/api/api.service';
+import {getApiQuery} from '@client/modules/api/helpers/api.helpers';
+import {ConfigService} from '@client/modules/config/services/config.service';
+import {OrchardErrors} from '@client/modules/error/classes/error.class';
+import type {OrchardRes} from '@client/modules/api/types/api.types';
+
+/* Native Dependencies */
+import {FEDERATION_MODE_QUERY} from '@client/modules/federation/services/federation.queries';
+import type {FederationModeResponse} from '@client/modules/federation/types/federation.types';
+
+/* Shared Dependencies */
+import type {OrchardFederationMode} from '@shared/generated.types';
+
+@Injectable({providedIn: 'root'})
+export class FederationService {
+	private readonly http = inject(HttpClient);
+	private readonly apiService = inject(ApiService);
+	private readonly configService = inject(ConfigService);
+
+	public readonly mode = signal<string | null>(null);
+	public readonly details = signal<string | null>(null);
+	public readonly standalone_actions = computed(() => this.configService.config.mint.type !== 'cdk' || this.mode() === 'standalone');
+
+	private mode_observable: Observable<OrchardFederationMode> | null = null;
+
+	/* *******************************************************
+        Mode
+    ******************************************************** */
+
+	/** Probe the mint daemon's mode. Member and standalone don't change on their own, so they're reused unless refreshed. */
+	public loadMode(refresh = false): Observable<OrchardFederationMode> {
+		if (this.configService.config.mint.type !== 'cdk') {
+			this.mode.set('standalone');
+			return of({mode: 'standalone', details: null});
+		}
+		const mode = this.mode();
+		if (!refresh && (mode === 'member' || mode === 'standalone')) return of({mode, details: this.details()});
+		if (this.mode_observable) return this.mode_observable;
+
+		this.mode_observable = this.http
+			.post<OrchardRes<FederationModeResponse>>(this.apiService.api, getApiQuery(FEDERATION_MODE_QUERY))
+			.pipe(
+				map((response) => {
+					if (response.errors) throw new OrchardErrors(response.errors);
+					return response.data.federation_mode;
+				}),
+				tap((result) => {
+					this.mode.set(result.mode);
+					this.details.set(result.details ?? null);
+					this.mode_observable = null;
+				}),
+				shareReplay(1),
+				catchError((error) => {
+					this.mode_observable = null;
+					return throwError(() => error);
+				}),
+			);
+		return this.mode_observable;
+	}
+}

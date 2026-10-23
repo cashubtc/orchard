@@ -14,6 +14,7 @@ import {isAuthRedirectError, toConnectionError} from '@client/modules/error/help
 import {OrcNavModule} from '@client/modules/nav/nav.module';
 import {OrcMintGeneralModule} from '@client/modules/mint/modules/mint-general/mint-general.module';
 import {provideChartConfig} from '@client/modules/chart/chart.providers';
+import {federationModeGuard} from '@client/modules/federation/guards/federation-mode.guard';
 /* Native Dependencies */
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 /* Local Dependencies */
@@ -92,8 +93,19 @@ const mintMetricsHealthResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot
 	imports: [
 		CoreRouterModule.forChild([
 			{
+				path: 'federation',
+				canActivate: [enabledGuard],
+				loadComponent: () =>
+					import('@client/modules/federation/components/federation-setup/federation-setup.component').then(
+						(m) => m.FederationSetupComponent,
+					),
+				title: 'Orchard | Federation Setup',
+				data: {section: 'mint', sub_section: 'federation'},
+			},
+			{
 				path: '',
 				component: MintSectionComponent,
+				canActivateChild: [federationModeGuard],
 				data: {
 					section: 'mint',
 				},

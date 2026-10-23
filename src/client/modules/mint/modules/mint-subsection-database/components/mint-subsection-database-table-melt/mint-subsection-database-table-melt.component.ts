@@ -27,6 +27,7 @@ enum ExpiredState {
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSubsectionDatabaseTableMeltComponent {
+	public readonly allow_override = input(true);
 	public setStatePaid = output<MintMeltQuote>();
 
 	public quote = input.required<MintMeltQuote>();
@@ -36,7 +37,7 @@ export class MintSubsectionDatabaseTableMeltComponent {
 	public device_desktop = input.required<boolean>();
 
 	public can_set_paid = computed(() => {
-		return this.quote().state === MeltQuoteState.Unpaid;
+		return this.allow_override() && this.quote().state === MeltQuoteState.Unpaid;
 	});
 
 	public request_label = computed(() => {

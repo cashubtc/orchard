@@ -21,7 +21,7 @@
 				></orc-mint-subsection-keysets-control>
 			}
 
-			@if (device_type() === 'desktop') {
+			@if (standalone_actions() && device_type() === 'desktop') {
 				<button
 					type="button"
 					class="text-nowrap orc-flat-fab"
@@ -33,7 +33,7 @@
 					<mat-icon>switch_access_shortcut_add</mat-icon>
 					Keyset Rotation
 				</button>
-			} @else {
+			} @else if (standalone_actions()) {
 				<button
 					type="button"
 					class="text-nowrap orc-flat-fab"
@@ -77,6 +77,7 @@
 	></orc-mint-subsection-keysets-chart>
 
 	<orc-mint-subsection-keysets-table
+		[allow_rotation]="standalone_actions()"
 		[keysets]="mint_keysets"
 		[keysets_analytics]="keysets_analytics"
 		[keysets_analytics_pre]="keysets_analytics_pre"

@@ -1,0 +1,22 @@
+.federation-setup-container {
+	display: flex;
+	justify-content: center;
+	padding-top: 4rem;
+}
+
+.federation-setup-card {
+	max-width: 38rem;
+	width: 100%;
+
+	p {
+		line-height: 1.6;
+		overflow-wrap: anywhere;
+		white-space: pre-wrap;
+	}
+}
+
+.federation-icon {
+	width: 3rem;
+	height: 3rem;
+	font-size: 3rem;
+}

@@ -1,11 +1,7 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
-import {ConfigService} from '@nestjs/config';
-import {Logger} from '@nestjs/common';
 /* Application Dependencies */
-import {mockGrpcModules} from '#server/test/grpc-esm-mocks';
-import {CredentialService} from '#server/modules/credential/credential.service';
 /* Local Dependencies */
 import type {CdkService as CdkServiceType} from './cdk.service.js';
 
@@ -18,155 +14,23 @@ jest.unstable_mockModule('#server/modules/cashu/mintdb/cashumintdb.helpers', () 
 	convertDateToUnixTimestamp: jest.fn((v: any) => (typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : null)),
 }));
 const helpers = (await import('#server/modules/cashu/mintdb/cashumintdb.helpers')) as any;
-const {proto_loader, grpc} = await mockGrpcModules();
 const {CdkService} = await import('./cdk.service.js');
 
 describe('CdkService', () => {
 	let cdkService: CdkServiceType;
-	let configService: jest.Mocked<ConfigService>;
-	let credentialService: jest.Mocked<CredentialService>;
 
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				CdkService,
-				{provide: ConfigService, useValue: {get: jest.fn()}},
-				{provide: CredentialService, useValue: {loadPemOrPath: jest.fn()}},
-			],
+			providers: [CdkService],
 		}).compile();
 
 		jest.clearAllMocks();
 
 		cdkService = module.get(CdkService);
-		configService = module.get(ConfigService);
-		credentialService = module.get(CredentialService);
 	});
 
 	it('should be defined', () => {
 		expect(cdkService).toBeDefined();
-	});
-
-	it('returns undefined client when credentials missing', () => {
-		const warn_spy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined as any);
-		const client = cdkService.initializeGrpcClient();
-		expect(client).toBeUndefined();
-		expect(warn_spy).toHaveBeenCalled();
-	});
-
-	it('initializes client when credentials present', () => {
-		configService.get.mockImplementation((key: string) => {
-			switch (key) {
-				case 'cashu.rpc_key':
-					return 'KEY';
-				case 'cashu.rpc_cert':
-					return 'CERT';
-				case 'cashu.rpc_ca':
-					return 'CA';
-				case 'cashu.rpc_mtls':
-					return true;
-				case 'cashu.rpc_host':
-					return 'localhost';
-				case 'cashu.rpc_port':
-					return 3333;
-				default:
-					return undefined as any;
-			}
-		});
-		credentialService.loadPemOrPath.mockReturnValue(Buffer.from('x'));
-		const createSsl = jest.spyOn(grpc.credentials, 'createSsl').mockReturnValue({} as any);
-		proto_loader.loadSync.mockReturnValue({});
-		grpc.loadPackageDefinition.mockReturnValue({cdk_mint_management_v1: {CdkMint: jest.fn()}});
-		cdkService.initializeGrpcClient();
-		expect(createSsl).toHaveBeenCalled();
-		expect(proto_loader.loadSync).toHaveBeenCalled();
-		expect(grpc.loadPackageDefinition).toHaveBeenCalled();
-	});
-
-	it('initializes client with docker channel options when host.docker.internal', () => {
-		const CdkMintMock = jest.fn();
-		configService.get.mockImplementation((key: string) => {
-			switch (key) {
-				case 'cashu.rpc_key':
-					return 'KEY';
-				case 'cashu.rpc_cert':
-					return 'CERT';
-				case 'cashu.rpc_ca':
-					return 'CA';
-				case 'cashu.rpc_mtls':
-					return true;
-				case 'cashu.rpc_host':
-					return 'host.docker.internal';
-				case 'cashu.rpc_port':
-					return 3333;
-				default:
-					return undefined as any;
-			}
-		});
-		credentialService.loadPemOrPath.mockReturnValue(Buffer.from('x'));
-		jest.spyOn(grpc.credentials, 'createSsl').mockReturnValue({} as any);
-		proto_loader.loadSync.mockReturnValue({});
-		grpc.loadPackageDefinition.mockReturnValue({cdk_mint_management_v1: {CdkMint: CdkMintMock}});
-		cdkService.initializeGrpcClient();
-		expect(CdkMintMock).toHaveBeenCalled();
-		const args = CdkMintMock.mock.calls[0];
-		expect(args[2]).toMatchObject({
-			'grpc.ssl_target_name_override': 'localhost',
-			'grpc.default_authority': 'localhost',
-		});
-	});
-
-	it('initializes client with insecure credentials when rpc_mtls is false', () => {
-		const CdkMintMock = jest.fn();
-		configService.get.mockImplementation((key: string) => {
-			switch (key) {
-				case 'cashu.rpc_mtls':
-					return false;
-				case 'cashu.rpc_host':
-					return 'localhost';
-				case 'cashu.rpc_port':
-					return 3333;
-				default:
-					return undefined as any;
-			}
-		});
-		const log_spy = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined as any);
-		const createInsecure = jest.spyOn(grpc.credentials, 'createInsecure').mockReturnValue({} as any);
-		const createSsl = jest.spyOn(grpc.credentials, 'createSsl').mockReturnValue({} as any);
-		proto_loader.loadSync.mockReturnValue({});
-		grpc.loadPackageDefinition.mockReturnValue({cdk_mint_management_v1: {CdkMint: CdkMintMock}});
-		const client = cdkService.initializeGrpcClient();
-		expect(client).toBeDefined();
-		expect(createInsecure).toHaveBeenCalled();
-		expect(createSsl).not.toHaveBeenCalled();
-		expect(credentialService.loadPemOrPath).not.toHaveBeenCalled();
-		expect(log_spy).toHaveBeenCalledWith('Mint gRPC client initialized with INSECURE connection');
-	});
-
-	it('logs error and returns undefined if proto load fails', () => {
-		const error_spy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined as any);
-		configService.get.mockImplementation((key: string) => {
-			switch (key) {
-				case 'cashu.rpc_key':
-					return 'KEY';
-				case 'cashu.rpc_cert':
-					return 'CERT';
-				case 'cashu.rpc_ca':
-					return 'CA';
-				case 'cashu.rpc_host':
-					return 'localhost';
-				case 'cashu.rpc_port':
-					return 3333;
-				default:
-					return undefined as any;
-			}
-		});
-		credentialService.loadPemOrPath.mockReturnValue(Buffer.from('x'));
-		proto_loader.loadSync.mockImplementation(() => {
-			throw new Error('boom');
-		});
-		const client = cdkService.initializeGrpcClient();
-		expect(client).toBeUndefined();
-		expect(error_spy).toHaveBeenCalled();
 	});
 
 	it('listMeltQuotes maps request using extractRequestString', async () => {

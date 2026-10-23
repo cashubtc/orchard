@@ -1,0 +1,781 @@
+syntax = "proto3";
+
+package cdk_mint_federation_v1;
+
+// Read-only status of a running federation member. Every call fails with
+// gRPC status FAILED_PRECONDITION when the daemon is not running as a
+// federation member, and with RESOURCE_EXHAUSTED when too many federation
+// status requests are already in progress.
+service FederationService {
+    // Returns the federation config this member runs: identity, thresholds,
+    // members, keysets, and payment observation policy.
+    rpc GetFederationInfo(GetFederationInfoRequest) returns (GetFederationInfoResponse) {}
+    // Returns this member's own status. Reads local state only and never
+    // contacts other members.
+    rpc GetLocalStatus(GetLocalStatusRequest) returns (GetLocalStatusResponse) {}
+    // Asks members for their status one at a time and compares their
+    // digests. Results are reused for about five seconds, so repeated calls
+    // within that window return the same answer.
+    rpc GetMemberStatuses(GetMemberStatusesRequest) returns (GetMemberStatusesResponse) {}
+    // Returns this member's custody status: on-chain wallet sources, wallet
+    // operator, recovery, and liveness state, and Bark when the daemon runs
+    // Bark custody.
+    rpc GetCustodyStatus(GetCustodyStatusRequest) returns (GetCustodyStatusResponse) {}
+}
+
+message GetFederationInfoRequest {
+}
+
+// Member and signing thresholds.
+message ThresholdParams {
+    // Number of federation members.
+    uint32 member_count = 1;
+    // Number of members whose signatures are needed to sign.
+    uint32 signature_threshold = 2;
+    // Number of members needed to reach consensus.
+    uint32 consensus_threshold = 3;
+}
+
+// One member of the federation.
+message FederationMember {
+    // Member slot.
+    uint32 member_id = 1;
+    // Wallet-facing URL of the member's mint.
+    string public_mint_url = 2;
+    // URL other members use to reach the member's federation API.
+    string federation_api_url = 3;
+    // Public identity key that signs the member's federation traffic, as hex.
+    string identity_public_key = 4;
+}
+
+// One keyset the federation signs with.
+message FederationKeyset {
+    // Keyset ID.
+    string id = 1;
+    // Currency unit the keyset signs, e.g. "sat".
+    string unit = 2;
+    // Whether members sign new outputs with this keyset.
+    bool active = 3;
+    // Input fee charged per input, in parts per thousand.
+    uint64 input_fee_ppk = 4;
+    // Absolute expiry as seconds since the UNIX epoch. Absent for a keyset
+    // that never expires.
+    optional uint64 final_expiry = 5;
+}
+
+enum PaymentVerificationPolicyKind {
+    PAYMENT_VERIFICATION_POLICY_KIND_UNSPECIFIED = 0;
+    // One observation is enough. For development and testing only.
+    PAYMENT_VERIFICATION_POLICY_KIND_DEVELOPMENT_SINGLE_OBSERVATION = 1;
+    // A number of members must report matching observations.
+    PAYMENT_VERIFICATION_POLICY_KIND_MEMBER_QUORUM = 2;
+}
+
+// How many members must observe a payment before it counts.
+message PaymentVerificationPolicy {
+    // Kind of policy.
+    PaymentVerificationPolicyKind kind = 1;
+    // Number of matching member observations required.
+    uint32 required_observations = 2;
+}
+
+// Payment observation policy for incoming and outgoing payments.
+message PaymentObservationPolicy {
+    // Policy for incoming payments to mint quotes.
+    PaymentVerificationPolicy mint_quotes = 1;
+    // Policy for outgoing payments from melt quotes.
+    PaymentVerificationPolicy melt_quotes = 2;
+}
+
+message GetFederationInfoResponse {
+    // Identifier of the federation.
+    string federation_id = 1;
+    // Member slot of this daemon.
+    uint32 local_member_id = 2;
+    // Digest of the public federation config in effect, including keyset
+    // rotations accepted by consensus. Every member reports the same value.
+    string config_digest = 3;
+    // Wallet-facing federation protocol version.
+    uint32 wallet_protocol_version = 4;
+    // Member count and thresholds.
+    ThresholdParams threshold_params = 5;
+    // Members, ordered by member_id.
+    repeated FederationMember members = 6;
+    // Keysets, in config order.
+    repeated FederationKeyset keysets = 7;
+    // When payments count as observed.
+    PaymentObservationPolicy payment_observation_policy = 8;
+}
+
+message GetLocalStatusRequest {
+    // Maximum payment observation reports to list. Zero uses the server
+    // default. The server rejects values above its maximum.
+    uint32 payment_report_limit = 1;
+}
+
+message GetLocalStatusResponse {
+    // Status of this member.
+    MemberStatus status = 1;
+}
+
+// Synchronization state of a member.
+message SyncStatus {
+    // State name: "healthy", "awaiting_quorum", "lagging", "catching_up", or
+    // "halted".
+    string state = 1;
+    // Whether the member currently serves wallet requests.
+    bool ready = 2;
+    // Detail for the operator, with secrets and paths removed.
+    string message = 3;
+    // Member involved in the current state, when there is one.
+    optional uint32 peer_member_id = 4;
+    // This member's operation count, while lagging.
+    optional uint64 local_operation_count = 5;
+    // The peer's operation count, while lagging.
+    optional uint64 peer_operation_count = 6;
+    // Operation count being checked after catching up.
+    optional uint64 operation_count = 7;
+}
+
+// Consensus position of a member.
+message PeerStatus {
+    // Number of operations accepted into the member's journal.
+    uint64 operation_count = 1;
+    // Index of the newest accepted operation, when there is one.
+    optional uint64 latest_index = 2;
+    // Current consensus session.
+    uint64 aleph_bft_session = 3;
+    // Next finalized consensus item the member expects, when known.
+    optional uint64 aleph_bft_next_item_index = 4;
+    // Digest of the accepted operation order.
+    string latest_order_digest = 5;
+    // Digest of the applied operation results, when known.
+    optional string application_digest = 6;
+    // Checkpoint whose state audit produced materialized_state_digest.
+    optional string latest_audited_checkpoint_id = 7;
+    // Digest of the audited database state, when the member has audited one.
+    optional string materialized_state_digest = 8;
+}
+
+// Request queue and response cache counters.
+message QueueCounters {
+    // Operations waiting to be proposed to consensus.
+    uint64 pending_mempool_items = 1;
+    // Wallet requests waiting for an operation result.
+    uint64 pending_response_waiters = 2;
+    // Cached operation responses.
+    uint64 response_cache_items = 3;
+    // Response cache lookups since start.
+    uint64 response_cache_lookups = 4;
+    // Response cache hits since start.
+    uint64 response_cache_hits = 5;
+    // Response cache hit rate, in basis points.
+    uint64 response_cache_hit_rate_bps = 6;
+    // Duplicate operation submissions since start.
+    uint64 duplicate_submissions = 7;
+    // Duplicate submissions that joined a request already waiting.
+    uint64 duplicate_pending_waiter_joins = 8;
+}
+
+// Counters from the local consensus runtime.
+message ConsensusRuntime {
+    // Session the runtime is in.
+    uint64 session = 1;
+    // Next finalized consensus item the runtime expects.
+    uint64 next_item_index = 2;
+    // Local items waiting to be proposed.
+    uint64 queued_item_count = 3;
+    // Proposed items waiting to be finalized.
+    uint64 pending_finalization_item_count = 4;
+    // Finalized items, including the trusted base.
+    uint64 finalized_item_count = 5;
+    // Accepted operations.
+    uint64 accepted_operation_count = 6;
+    // Index of the newest accepted operation, when there is one.
+    optional uint64 latest_accepted_operation_index = 7;
+}
+
+// Consensus health flags.
+message ConsensusStatus {
+    // Whether the live consensus session is running.
+    bool live_session_active = 1;
+    // Whether the member accepts consensus messages from other members.
+    bool network_inbound_active = 2;
+    // Runtime counters, when the runtime is running.
+    optional ConsensusRuntime runtime = 3;
+}
+
+// Size of the backup for the active consensus session.
+message ActiveSessionBackup {
+    // Session the backup covers.
+    uint64 session = 1;
+    // Number of stored backup chunks.
+    uint64 chunk_count = 2;
+    // Total stored backup bytes.
+    uint64 total_bytes = 3;
+}
+
+// Checkpoint summary of a member.
+message CheckpointStatus {
+    // First operation index not yet in the journal.
+    uint64 journal_next_index = 1;
+    // First finalized consensus item index not yet recorded.
+    uint64 finalized_next_item_index = 2;
+    // First operation index without an applied result.
+    uint64 application_next_index = 3;
+    // Whether a state audit found a digest mismatch. Once set it stays set
+    // and the member stops serving until an operator intervenes.
+    bool audit_mismatch = 4;
+    // Checkpoint the member trusts as its recovery base, when it has one.
+    optional string trusted_checkpoint_id = 5;
+    // Members that signed the trusted checkpoint, ordered by member_id.
+    repeated uint32 trusted_checkpoint_signers = 6;
+    // Number of operations the trusted checkpoint covers.
+    optional uint64 trusted_checkpoint_operation_count = 7;
+    // Operations accepted after the trusted checkpoint.
+    uint64 lag_from_trusted_checkpoint = 8;
+    // Newest scheduled checkpoint captured locally.
+    optional string latest_scheduled_checkpoint_id = 9;
+    // Newest scheduled checkpoint with a stored signature quorum.
+    optional string latest_scheduled_quorum_id = 10;
+    // Newest recovery checkpoint with a stored signature quorum.
+    optional string latest_recovery_quorum_id = 11;
+    // Backup of the active consensus session, when one exists.
+    optional ActiveSessionBackup active_session_backup = 12;
+}
+
+enum PaymentObservationContext {
+    PAYMENT_OBSERVATION_CONTEXT_UNSPECIFIED = 0;
+    // Incoming payment to a mint quote.
+    PAYMENT_OBSERVATION_CONTEXT_MINT_QUOTE = 1;
+    // Outgoing payment from a melt quote.
+    PAYMENT_OBSERVATION_CONTEXT_MELT_QUOTE = 2;
+}
+
+enum PaymentObservationReportStatus {
+    PAYMENT_OBSERVATION_REPORT_STATUS_UNSPECIFIED = 0;
+    // No observations were found.
+    PAYMENT_OBSERVATION_REPORT_STATUS_EMPTY = 1;
+    // Observations exist but not enough of them match yet.
+    PAYMENT_OBSERVATION_REPORT_STATUS_AWAITING_QUORUM = 2;
+    // Enough members reported matching observations.
+    PAYMENT_OBSERVATION_REPORT_STATUS_QUORUM_REACHED = 3;
+    // Members reported observations that contradict each other.
+    PAYMENT_OBSERVATION_REPORT_STATUS_CONFLICTING = 4;
+}
+
+enum PaymentObservationReportAction {
+    PAYMENT_OBSERVATION_REPORT_ACTION_UNSPECIFIED = 0;
+    // Nothing to do.
+    PAYMENT_OBSERVATION_REPORT_ACTION_NONE = 1;
+    // An operator should look at the quote.
+    PAYMENT_OBSERVATION_REPORT_ACTION_INSPECT = 2;
+}
+
+// Observations of one quote that all report the same evidence.
+message PaymentObservationGroup {
+    // Observed quote state, e.g. "PAID".
+    string state = 1;
+    // Members whose observations match, ordered by member_id.
+    repeated uint32 observers = 2;
+    // Whether enough members observed this evidence.
+    bool quorum_reached = 3;
+    // Whether the observed state is final for the quote.
+    bool terminal_state = 4;
+    // Members that reported different evidence for the same state.
+    repeated uint32 conflicting_observers = 5;
+    // Consensus indexes of the operations that carried these observations.
+    repeated uint64 operation_indices = 6;
+}
+
+// Payment observations for one quote, without payment proof material.
+message PaymentObservationReport {
+    // Mint or melt quote.
+    PaymentObservationContext context = 1;
+    // Quote ID.
+    string quote = 2;
+    // Overall state of the observations.
+    PaymentObservationReportStatus status = 3;
+    // What the operator should do.
+    PaymentObservationReportAction recommended_action = 4;
+    // Number of matching observations required.
+    uint32 required = 5;
+    // Number of observations counted.
+    uint64 total_observations = 6;
+    // Age of the quote in seconds. Absent when unknown. A member reading its
+    // own status skips the lookup for reports no longer waiting for
+    // observations, so those have no age in GetLocalStatus.
+    optional uint64 quote_age_secs = 7;
+    // Whether the report has waited too long without reaching quorum.
+    bool stale = 8;
+    // Members whose observations conflict with another group.
+    repeated uint32 conflicting_observers = 9;
+    // Members that reported competing final states.
+    repeated uint32 competing_terminal_state_observers = 10;
+    // Groups of matching observations.
+    repeated PaymentObservationGroup groups = 11;
+}
+
+// Payment observation reports. One report exists per observed quote, so the
+// list holds only reports that need attention.
+message PaymentObservationSummary {
+    // All reports, including resolved ones.
+    uint64 total_reports = 1;
+    // Reports with no observations.
+    uint64 empty = 2;
+    // Reports still waiting for matching observations.
+    uint64 awaiting_quorum = 3;
+    // Reports where enough members agree.
+    uint64 quorum_reached = 4;
+    // Reports with contradicting observations.
+    uint64 conflicting = 5;
+    // Reports that waited too long without reaching quorum.
+    uint64 stale = 6;
+    // Reports that recommend an operator look at them.
+    uint64 inspect = 7;
+    // Reports that are unresolved, conflicting, stale, or recommend
+    // inspection, newest first, up to the requested limit.
+    repeated PaymentObservationReport reports = 8;
+    // Whether more reports needed attention than are listed.
+    bool truncated = 9;
+}
+
+// Invalid-operation alert counters for one source category.
+message InvalidOperationAlert {
+    // Source category, e.g. "auth_token" or "client_ip".
+    string source = 1;
+    // Number of sources currently above the alert threshold.
+    uint64 alerting_buckets = 2;
+    // Highest invalid-operation count among alerting sources.
+    uint64 max_count = 3;
+    // Count at which one source alerts.
+    uint64 threshold = 4;
+    // Counting window, in seconds.
+    uint64 window_secs = 5;
+}
+
+// Status summary of one member.
+message MemberStatus {
+    // Member slot.
+    uint32 member_id = 1;
+    // Federation the member serves.
+    string federation_id = 2;
+    // Synchronization state.
+    SyncStatus sync = 3;
+    // Consensus position.
+    PeerStatus peer = 4;
+    // Queue and cache counters.
+    QueueCounters queues = 5;
+    // Consensus health.
+    ConsensusStatus consensus = 6;
+    // Checkpoint summary.
+    CheckpointStatus checkpoint = 7;
+    // Payment observation reports.
+    PaymentObservationSummary payment_observations = 8;
+    // Invalid-operation alerts.
+    repeated InvalidOperationAlert invalid_operation_alerts = 9;
+}
+
+message GetMemberStatusesRequest {
+    // Members to query. Empty queries every member.
+    repeated uint32 member_ids = 1;
+    // Maximum payment observation reports to list per member. Zero uses the
+    // server default. The server rejects values above its maximum.
+    uint32 payment_report_limit = 2;
+}
+
+// Result of asking one member for its status.
+message MemberStatusResult {
+    // Member slot.
+    uint32 member_id = 1;
+    // Whether this is the member serving the request. Its status is read
+    // locally rather than over the network.
+    bool local = 2;
+    // Whether the member answered with a valid status.
+    bool reachable = 3;
+    // Time the request took, in milliseconds.
+    uint64 latency_ms = 4;
+    // Why the member could not be read, when it could not.
+    optional string error = 5;
+    // Status of the member, when it answered.
+    optional MemberStatus status = 6;
+}
+
+enum DigestAgreementState {
+    DIGEST_AGREEMENT_STATE_UNSPECIFIED = 0;
+    // No member answered, so nothing was compared.
+    DIGEST_AGREEMENT_STATE_UNKNOWN = 1;
+    // Every member that answered is at the same point with the same digests.
+    DIGEST_AGREEMENT_STATE_CONVERGED = 2;
+    // Members differ in operation count, session, or are missing a digest,
+    // but nothing contradicts. Expected briefly while operations propagate.
+    DIGEST_AGREEMENT_STATE_CONVERGING = 3;
+    // A member reports a digest alert, or two members report different
+    // digests at the same operation count. Needs an operator.
+    DIGEST_AGREEMENT_STATE_DIVERGED = 4;
+}
+
+enum DigestConflictKind {
+    DIGEST_CONFLICT_KIND_UNSPECIFIED = 0;
+    // Different operation order at the same operation count.
+    DIGEST_CONFLICT_KIND_ORDER_DIGEST = 1;
+    // Different audited state for the same checkpoint.
+    DIGEST_CONFLICT_KIND_CHECKPOINT_AUDIT = 2;
+    // Different applied results at the same operation count.
+    DIGEST_CONFLICT_KIND_APPLICATION_DIGEST = 3;
+}
+
+// Two members that contradict each other.
+message DigestConflict {
+    // What differs.
+    DigestConflictKind kind = 1;
+    // First member.
+    uint32 first_member_id = 2;
+    // Second member.
+    uint32 second_member_id = 3;
+    // Operation count both members report.
+    uint64 operation_count = 4;
+}
+
+// Members that report the same consensus position.
+message DigestGroup {
+    // Operation count.
+    uint64 operation_count = 1;
+    // Consensus session.
+    uint64 aleph_bft_session = 2;
+    // Digest of the accepted operation order.
+    string order_digest = 3;
+    // Digest of the applied operation results, when reported.
+    optional string application_digest = 4;
+    // Members in the group, ordered by member_id.
+    repeated uint32 members = 5;
+    // Members in the group that serve wallet requests.
+    uint32 ready_count = 6;
+}
+
+// Comparison of the members that answered.
+message DigestAgreement {
+    // Overall result.
+    DigestAgreementState state = 1;
+    // Members compared, ordered by member_id. Unreachable members are left
+    // out.
+    repeated uint32 compared_members = 2;
+    // Members grouped by consensus position, lowest operation count first.
+    repeated DigestGroup groups = 3;
+    // Members whose state audit found a digest mismatch.
+    repeated uint32 digest_alert_members = 4;
+    // Members that did not report an application digest.
+    repeated uint32 missing_application_digest_members = 5;
+    // Pairs of members that contradict each other.
+    repeated DigestConflict conflicts = 6;
+}
+
+message GetMemberStatusesResponse {
+    // One result per requested member, ordered by member_id.
+    repeated MemberStatusResult members = 1;
+    // Digest comparison of the members that answered.
+    DigestAgreement digest_agreement = 2;
+    // When the members were asked, in seconds since the UNIX epoch.
+    uint64 queried_at_unix = 3;
+}
+
+message GetCustodyStatusRequest {
+}
+
+// Health of one on-chain data source used by the member's wallet.
+message OnchainWalletSource {
+    // Source implementation, e.g. "esplora".
+    string source = 1;
+    // "independent" or "shared", as declared by the operator.
+    string source_scope = 2;
+    // Opaque source identity. Never an endpoint or credential.
+    string source_id = 3;
+    // Whether other members use the same source on purpose.
+    bool correlated_source_warning = 4;
+    // "never_synced", "healthy", or "degraded".
+    string health = 5;
+    // Height of the newest locally stored block.
+    uint32 local_tip_height = 6;
+    // Hash of the newest locally stored block.
+    string local_tip_hash = 7;
+    // Time of the last successful sync, in seconds since the UNIX epoch.
+    optional uint64 last_success_unix = 8;
+    // Failed syncs since the last success.
+    uint32 consecutive_failures = 9;
+}
+
+enum WalletUtxoState {
+    WALLET_UTXO_STATE_UNSPECIFIED = 0;
+    // Seen, not confirmed.
+    WALLET_UTXO_STATE_OBSERVED = 1;
+    // Confirmed, but not deep enough or not seen by enough members.
+    WALLET_UTXO_STATE_CONFIRMED = 2;
+    // Ready to spend.
+    WALLET_UTXO_STATE_SPENDABLE = 3;
+    // Reserved by an accepted transaction.
+    WALLET_UTXO_STATE_RESERVED = 4;
+    // Spent by an accepted transaction.
+    WALLET_UTXO_STATE_SPENT = 5;
+    // Its block was reorganized away.
+    WALLET_UTXO_STATE_REORGED = 6;
+    // Contradicting evidence; needs an operator.
+    WALLET_UTXO_STATE_QUARANTINED = 7;
+}
+
+enum WalletOperationPhase {
+    WALLET_OPERATION_PHASE_UNSPECIFIED = 0;
+    // Deposits waiting for chain evidence or confirmations.
+    WALLET_OPERATION_PHASE_CHAIN_OBSERVATION = 1;
+    // Withdrawals waiting for a transaction proposal.
+    WALLET_OPERATION_PHASE_PROPOSAL = 2;
+    // Transactions waiting for threshold signatures.
+    WALLET_OPERATION_PHASE_SIGNING = 3;
+    // Signed transactions waiting for broadcast approval.
+    WALLET_OPERATION_PHASE_BROADCAST_AUTHORIZATION = 4;
+    // Transactions being broadcast.
+    WALLET_OPERATION_PHASE_BROADCAST = 5;
+    // Broadcast transactions waiting for confirmation.
+    WALLET_OPERATION_PHASE_CONFIRMATION = 6;
+    // Finished records.
+    WALLET_OPERATION_PHASE_TERMINAL = 7;
+}
+
+enum WalletBroadcastHealth {
+    WALLET_BROADCAST_HEALTH_UNSPECIFIED = 0;
+    // Nothing to broadcast.
+    WALLET_BROADCAST_HEALTH_IDLE = 1;
+    // Signed, waiting for broadcast approval.
+    WALLET_BROADCAST_HEALTH_AWAITING_AUTHORIZATION = 2;
+    // Broadcast not yet accepted by a backend.
+    WALLET_BROADCAST_HEALTH_BROADCASTING = 3;
+    // Accepted by a backend, waiting for confirmation.
+    WALLET_BROADCAST_HEALTH_CONFIRMING = 4;
+    // A member's latest broadcast attempt failed or is unclear.
+    WALLET_BROADCAST_HEALTH_DEGRADED = 5;
+}
+
+// UTXO count and value in one state.
+message WalletUtxoCount {
+    // UTXO state.
+    WalletUtxoState state = 1;
+    // Number of UTXOs.
+    uint64 count = 2;
+    // Total value in satoshis.
+    uint64 value_sat = 3;
+}
+
+// Number of wallet records in one phase.
+message WalletOperationPhaseCount {
+    // Phase.
+    WalletOperationPhase phase = 1;
+    // Number of records.
+    uint64 count = 2;
+}
+
+// Federated on-chain wallet state accepted by consensus.
+message WalletOperatorStatus {
+    // Root key epoch serving the wallet.
+    uint64 root_key_epoch = 1;
+    // Wallet application key epoch.
+    uint64 application_key_epoch = 2;
+    // Commitment to the wallet descriptors, as hex.
+    string descriptor_commitment = 3;
+    // Bitcoin network.
+    string network = 4;
+    // Confirmations required before funds count.
+    uint32 minimum_confirmations = 5;
+    // Fee policy version.
+    uint32 fee_policy_version = 6;
+    // Receive addresses handed out.
+    uint64 external_revealed_count = 7;
+    // Change addresses used.
+    uint64 internal_revealed_count = 8;
+    // UTXOs by state.
+    repeated WalletUtxoCount utxos = 9;
+    // Value locked by accepted transactions, in satoshis.
+    uint64 reserved_value_sat = 10;
+    // Records by phase.
+    repeated WalletOperationPhaseCount operation_phases = 11;
+    // Withdrawal batches waiting, as seen by this member.
+    uint64 pending_batches = 12;
+    // Signing attempts made by this member.
+    uint64 signing_attempts = 13;
+    // Signing failures seen by this member.
+    uint64 signing_failures = 14;
+    // Broadcast health.
+    WalletBroadcastHealth broadcast_health = 15;
+    // Failed broadcast observations.
+    uint64 broadcast_failures = 16;
+}
+
+enum WalletRecoveryPhase {
+    WALLET_RECOVERY_PHASE_UNSPECIFIED = 0;
+    // Addresses handed out.
+    WALLET_RECOVERY_PHASE_ADDRESS = 1;
+    // Chain observations and UTXOs.
+    WALLET_RECOVERY_PHASE_OBSERVATION = 2;
+    // Withdrawals waiting for a transaction proposal.
+    WALLET_RECOVERY_PHASE_PROPOSAL = 3;
+    // Inputs locked by accepted transactions.
+    WALLET_RECOVERY_PHASE_RESERVATION = 4;
+    // Signature collection.
+    WALLET_RECOVERY_PHASE_SIGNING = 5;
+    // Signed transactions.
+    WALLET_RECOVERY_PHASE_SIGNED = 6;
+    // Broadcast approval and rebroadcast.
+    WALLET_RECOVERY_PHASE_BROADCAST = 7;
+    // Confirmation evidence.
+    WALLET_RECOVERY_PHASE_CONFIRMATION = 8;
+    // Abandoned or replaced transactions.
+    WALLET_RECOVERY_PHASE_REPLACEMENT = 9;
+    // Finished records.
+    WALLET_RECOVERY_PHASE_TERMINAL = 10;
+}
+
+enum WalletRecoveryAction {
+    WALLET_RECOVERY_ACTION_UNSPECIFIED = 0;
+    // Raise the local wallet's address counters to the accepted ones.
+    WALLET_RECOVERY_ACTION_RECONCILE_BDK_INDEXES = 1;
+    // Keep collecting chain evidence.
+    WALLET_RECOVERY_ACTION_COLLECT_CHAIN_EVIDENCE = 2;
+    // Wait for a transaction proposal.
+    WALLET_RECOVERY_ACTION_AWAIT_PROPOSAL = 3;
+    // Keep the input locked.
+    WALLET_RECOVERY_ACTION_PRESERVE_STICKY_RESERVATION = 4;
+    // Start a new signing attempt.
+    WALLET_RECOVERY_ACTION_START_FRESH_SIGNING_ATTEMPT = 5;
+    // Re-add the stored signed transaction to the local wallet.
+    WALLET_RECOVERY_ACTION_REAPPLY_PERSISTED_TRANSACTION = 6;
+    // Record broadcast approval before broadcasting.
+    WALLET_RECOVERY_ACTION_PERSIST_BROADCAST_INTENT = 7;
+    // Broadcast the stored signed transaction again.
+    WALLET_RECOVERY_ACTION_REBROADCAST_PERSISTED_TRANSACTION = 8;
+    // Keep collecting confirmation evidence.
+    WALLET_RECOVERY_ACTION_COLLECT_CONFIRMATION_EVIDENCE = 9;
+    // Needs a person; custody stays locked meanwhile.
+    WALLET_RECOVERY_ACTION_OPERATOR_REVIEW = 10;
+    // Nothing to do.
+    WALLET_RECOVERY_ACTION_NO_OP = 11;
+}
+
+// Number of wallet records that recover the same way.
+message WalletRecoveryActionCount {
+    // Wallet area.
+    WalletRecoveryPhase phase = 1;
+    // Stored state name.
+    string state = 2;
+    // What recovery does with these records.
+    WalletRecoveryAction action = 3;
+    // Number of records.
+    uint64 count = 4;
+}
+
+// What the wallet would do with its stored records after a restart.
+message WalletRecoveryStatus {
+    // Addresses handed out.
+    uint64 address_allocations = 1;
+    // Wallet UTXOs.
+    uint64 wallet_utxos = 2;
+    // Outgoing payment intents.
+    uint64 payment_intents = 3;
+    // Accepted transactions.
+    uint64 transactions = 4;
+    // Input reservations that recovery never releases.
+    uint64 sticky_reservations = 5;
+    // Records grouped by recovery action.
+    repeated WalletRecoveryActionCount actions = 6;
+}
+
+enum WalletLivenessActivity {
+    WALLET_LIVENESS_ACTIVITY_UNSPECIFIED = 0;
+    // Nothing to do.
+    WALLET_LIVENESS_ACTIVITY_IDLE = 1;
+    // Another member acts first.
+    WALLET_LIVENESS_ACTIVITY_WAITING_FOR_LEASE = 2;
+    // Building or submitting a transaction proposal.
+    WALLET_LIVENESS_ACTIVITY_PROPOSING = 3;
+    // Collecting threshold signatures.
+    WALLET_LIVENESS_ACTIVITY_SIGNING = 4;
+    // Waiting before a retry.
+    WALLET_LIVENESS_ACTIVITY_BACKOFF = 5;
+}
+
+// Activity of this member's wallet proposer and signer.
+message WalletLivenessStatus {
+    // Withdrawal batches waiting in the last round.
+    uint64 pending_batches = 1;
+    // Transactions waiting for signatures in the last round.
+    uint64 awaiting_signatures = 2;
+    // Proposal submissions attempted.
+    uint64 proposal_attempts = 3;
+    // Signing runs attempted.
+    uint64 signing_attempts = 4;
+    // Signer or transport failures.
+    uint64 signer_failures = 5;
+    // Current activity.
+    WalletLivenessActivity activity = 6;
+}
+
+// UTXO-like Bark outputs (VTXOs) in one state.
+message BarkVtxoCount {
+    // VTXO state name.
+    string state = 1;
+    // Number of VTXOs.
+    uint64 count = 2;
+    // Total value in satoshis.
+    uint64 value_sat = 3;
+}
+
+// Bark custody status.
+message BarkOperatorStatus {
+    // "ready", "behind_consensus", or "degraded".
+    string readiness = 1;
+    // Why Bark is degraded, when it is.
+    optional string degraded_reason = 2;
+    // Newest consensus operation Bark has accepted.
+    uint64 accepted_frontier = 3;
+    // Newest operation applied to the local Bark state.
+    uint64 local_frontier = 4;
+    // Operations the local Bark state is behind.
+    uint64 projection_lag_operations = 5;
+    // Bitcoin network.
+    string network = 6;
+    // Chain tip height, when known.
+    optional uint32 chain_tip_height = 7;
+    // VTXOs by state.
+    repeated BarkVtxoCount vtxos = 8;
+    // VTXOs close to expiry, when known.
+    optional uint64 expiring_vtxo_count = 9;
+    // Value close to expiry in satoshis, when known.
+    optional uint64 expiring_value_sat = 10;
+    // Actions whose outcome is unclear.
+    uint64 ambiguous_action_count = 11;
+    // Value of actions whose outcome is unclear, in satoshis.
+    uint64 ambiguous_value_sat = 12;
+    // Actions that need recovery.
+    uint64 recovery_required_action_count = 13;
+    // Value of actions that need recovery, in satoshis.
+    uint64 recovery_required_value_sat = 14;
+    // Actions waiting to retry signing.
+    uint64 signer_retry_action_count = 15;
+    // Locally acknowledged receive secrets that are missing.
+    uint64 missing_acknowledged_receive_secrets = 16;
+    // The complete Bark status as JSON, including the fields not typed above.
+    // It holds no secrets.
+    string details_json = 17;
+}
+
+message GetCustodyStatusResponse {
+    // On-chain data sources, when the member runs an on-chain wallet.
+    repeated OnchainWalletSource onchain_wallets = 1;
+    // On-chain wallet state, when the federation has an on-chain wallet.
+    optional WalletOperatorStatus wallet_operator = 2;
+    // On-chain wallet recovery plan, when the federation has an on-chain
+    // wallet.
+    optional WalletRecoveryStatus wallet_recovery = 3;
+    // On-chain wallet proposer and signer activity, when the federation has
+    // an on-chain wallet.
+    optional WalletLivenessStatus wallet_liveness = 4;
+    // Bark custody status, when the daemon runs Bark custody.
+    optional BarkOperatorStatus bark = 5;
+}
