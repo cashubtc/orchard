@@ -1,0 +1,14 @@
+<section class="orc-low-card backup-card">
+	<h2>Back up before using real funds</h2>
+	@if (warning(); as text) {
+		<p class="orc-warning-card backup-warning">{{ text }}</p>
+	}
+	<p>
+		Your mint now holds its share of the federation keys. Make an encrypted backup on the mint's machine and check that it restores.
+		Orchard can't do this for you.
+	</p>
+	@for (item of items; track item; let i = $index) {
+		<mat-checkbox [checked]="!!checked()[i]" (change)="check(i, $event.checked)">{{ item }}</mat-checkbox>
+	}
+	<ng-content></ng-content>
+</section>

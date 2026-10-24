@@ -22,6 +22,8 @@ import {SettingAppService} from '@client/modules/settings/services/setting-app/s
 import {SettingDeviceService} from '@client/modules/settings/services/setting-device/setting-device.service';
 import {BitcoinService} from '@client/modules/bitcoin/services/bitcoin/bitcoin.service';
 import {LightningService} from '@client/modules/lightning/services/lightning/lightning.service';
+import {FederationService} from '@client/modules/federation/services/federation.service';
+import {isMintAvailable} from '@client/modules/federation/helpers/federation-setup.helpers';
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {AiService} from '@client/modules/ai/services/ai/ai.service';
 import {EventService} from '@client/modules/event/services/event/event.service';
@@ -58,6 +60,7 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	private readonly bitcoinService = inject(BitcoinService);
 	private readonly lightningService = inject(LightningService);
 	private readonly mintService = inject(MintService);
+	private readonly federation_service = inject(FederationService);
 	private readonly aiService = inject(AiService);
 	private readonly eventService = inject(EventService);
 	private readonly chartService = inject(ChartService);
@@ -167,7 +170,16 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 			this.subscriptions.add(this.getLightningInfoSubscription());
 		}
 		if (this.enabled_mint()) {
-			this.mintService.loadMintInfo().subscribe();
+			this.subscriptions.add(
+				this.federation_service
+					.loadMode()
+					.pipe(
+						filter(({mode}) => isMintAvailable(mode)),
+						switchMap(() => this.mintService.loadMintInfo()),
+						catchError(() => EMPTY),
+					)
+					.subscribe(),
+			);
 			this.subscriptions.add(this.getMintInfoSubscription());
 		}
 		// if taproot go get the ids

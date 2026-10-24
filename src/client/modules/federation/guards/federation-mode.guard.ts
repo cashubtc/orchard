@@ -10,13 +10,14 @@ import {isAuthRedirectError} from '@client/modules/error/helpers/error.helpers';
 
 /* Native Dependencies */
 import {FederationService} from '@client/modules/federation/services/federation.service';
+import {isMintAvailable} from '@client/modules/federation/helpers/federation-setup.helpers';
 
 /** Gate every mint child before its HTTP/database/RPC resolvers run. */
 export const federationModeGuard: CanActivateChildFn = () => {
 	const federationService = inject(FederationService);
 	const router = inject(Router);
 	return federationService.loadMode().pipe(
-		map(({mode}) => (mode === 'setup' || mode === 'unreachable' ? router.createUrlTree(['/mint/federation']) : true)),
+		map(({mode}) => (isMintAvailable(mode) ? true : router.createUrlTree(['/mint/federation']))),
 		catchError((error: unknown) => of(isAuthRedirectError(error) ? false : router.createUrlTree(['/mint/federation']))),
 	);
 };

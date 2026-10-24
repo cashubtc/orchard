@@ -1,25 +1,285 @@
-<section class="federation-setup-container p-2">
-	<div class="federation-setup-card">
-		<mat-icon class="federation-icon">spa</mat-icon>
-		@if (error()) {
-			<h1>Mint status unavailable</h1>
-			<p role="alert">{{ error() }}</p>
-		} @else if (mode() === 'setup') {
+<section class="section-container">
+	<orc-nav-secondary>
+		<div nav-secondary-header class="nav-secondary-header">
+			<mat-icon>spa</mat-icon><strong>Mint</strong
+			><span class="orc-warning-card setup-badge">{{ mode() === 'member' ? 'FEDERATION MEMBER' : 'SETUP MODE' }}</span>
+		</div>
+		<div nav-secondary-items>
+			<orc-nav-secondary-item name="Federation setup" navroute="mint/federation" [active]="true"></orc-nav-secondary-item>
+		</div>
+	</orc-nav-secondary>
+	<main class="setup-container">
+		@if (error(); as err) {
+			<div class="setup-error" role="alert">
+				<orc-error-resolve [error]="err"></orc-error-resolve>
+				<button mat-button (click)="refresh()" [disabled]="action_disabled()">Check status</button>
+			</div>
+		}
+		@if (loading()) {
+			<mat-progress-bar mode="indeterminate" aria-label="Loading federation setup"></mat-progress-bar>
+		}
+		@if (is_admin() === false) {
 			<h1>Federation setup</h1>
-			<p>Your mint is in setup mode. Create or join a federation before opening the mint dashboard.</p>
-			<p>Once setup and activation are complete, check the status to continue.</p>
+			<p>An administrator must create, join, review and activate this mint's federation.</p>
 		} @else if (mode() === 'unreachable') {
 			<h1>Mint connection unavailable</h1>
 			<p>Check that your mint is running and its management connection is configured.</p>
-			@if (details()) {
-				<p role="alert">{{ details() }}</p>
+			<p class="mega-string">{{ details() }}</p>
+		} @else if (!loading() && is_admin()) {
+			@if (status(); as s) {
+				@if (s.initialized && view() !== 'activated') {
+					<ol class="setup-progress" aria-label="Setup progress">
+						@for (step of steps; track step.title; let i = $index) {
+							<li [attr.aria-current]="current_step() === i ? 'step' : null" [class.current-step]="current_step() === i">
+								{{ i + 1 }}. {{ step.title }}
+							</li>
+						}
+					</ol>
+					<p class="mega-string">
+						Member {{ s.member_id }} · {{ phaseLabel(s.participant_phase) }}
+						@if (s.coordinator_phase) {
+							<span> · Coordinator: {{ phaseLabel(s.coordinator_phase) }}</span>
+						}
+					</p>
+				}
 			}
-		} @else {
-			<h1>Checking mint status</h1>
+			@switch (view()) {
+				@case ('start') {
+					<div class="setup-intro">
+						<mat-icon class="setup-icon">spa</mat-icon>
+						<h1>Your mint is ready to join a federation</h1>
+						<p>
+							This cdk-mintd is running in setup mode. It won't serve wallets until a federation is created, approved by every
+							member and activated.
+						</p>
+					</div>
+					<div class="setup-columns">
+						<section class="orc-low-card setup-card">
+							<h2>Create a federation</h2>
+							<p>Start a new federation and invite the other operators. You'll be member 1 and coordinate enrollment.</p>
+							<button mat-flat-button (click)="choice.set('create')">Create</button>
+						</section>
+						<section class="orc-low-card setup-card">
+							<h2>Join a federation</h2>
+							<p>A coordinator sent you an invitation. Paste or scan it to take your member slot.</p>
+							<button mat-stroked-button (click)="choice.set('join')">Join</button>
+						</section>
+					</div>
+					<h2>How setup works</h2>
+					<ol class="setup-how">
+						@for (step of steps; track step.title) {
+							<li class="orc-low-card setup-card">
+								<h3>{{ step.title }}</h3>
+								<p>{{ step.detail }}</p>
+							</li>
+						}
+					</ol>
+					<p>
+						Each operator runs their own mint and their own Orchard. Orchard never holds your mint's identity key, key shares or
+						seed.
+					</p>
+				}
+				@case ('create') {
+					<orc-federation-setup-create
+						[busy]="action_disabled()"
+						(create)="create($event)"
+						(cancel)="choice.set('start')"
+					></orc-federation-setup-create>
+				}
+				@case ('join') {
+					<orc-federation-setup-join
+						[busy]="action_disabled()"
+						(join)="join($event)"
+						(cancel)="choice.set('start')"
+					></orc-federation-setup-join>
+				}
+				@case ('waiting') {
+					@if (status(); as s) {
+						@let coordinator = s.role === 'coordinator';
+						@if (coordinator) {
+							<h1>Send each operator their invitation</h1>
+							<p>
+								An invitation is a secret until it's used. Send each one privately: whoever holds it takes that member slot.
+							</p>
+						} @else {
+							<h1>Waiting for the coordinator to propose</h1>
+							<p>
+								Your mint has joined as member {{ s.member_id }}. Keep this page open to check for the proposal, or return
+								later to resume.
+							</p>
+						}
+						<div class="setup-columns">
+							<section class="orc-low-card setup-card">
+								<h2>Member slots</h2>
+								@for (member of slots(); track member) {
+									@let joined = s.enrolled_members.includes(member);
+									<div class="member-slot">
+										<strong>Member {{ member }}{{ member === s.member_id ? ' · you' : '' }}</strong
+										><span>{{ joined ? 'Joined' : 'Waiting' }}</span>
+										@if (!joined && coordinator) {
+											<button mat-button (click)="selected_member.set(member)">Show invitation</button>
+										}
+									</div>
+								}
+								<p>{{ s.enrolled_members.length }} of {{ s.member_count }} enrolled</p>
+								@if (coordinator) {
+									<button mat-flat-button [disabled]="!can_propose() || action_disabled()" (click)="propose()">
+										{{ can_propose() ? 'Propose federation' : 'Propose once everyone has joined' }}
+									</button>
+								}
+								<p>Fingerprints and member URLs are available in the proposal.</p>
+							</section>
+							@if (coordinator) {
+								<aside class="orc-low-card setup-card">
+									@if (invitation(); as invite) {
+										<h2>Invitation for member {{ invite.member_id }}</h2>
+										<div class="invitation-qr">
+											<orc-graphic-qr
+												[data]="invite.invitation"
+												[size]="240"
+												[expandable]="true"
+												dialog_title="Secret federation invitation"
+											></orc-graphic-qr>
+										</div>
+										<label for="invitation-text">Invitation</label
+										><textarea
+											id="invitation-text"
+											readonly
+											rows="5"
+											[value]="invite.invitation"
+											spellcheck="false"
+										></textarea>
+										<div class="setup-actions">
+											<button
+												mat-stroked-button
+												[cdkCopyToClipboard]="invite.invitation"
+												(cdkCopyToClipboardCopied)="
+													copy_result.set(
+														$event ? 'Invitation copied' : 'Copy failed; select the invitation text to copy it'
+													)
+												"
+											>
+												Copy invitation</button
+											><button mat-stroked-button (click)="saveInvitation()">Save file</button>
+										</div>
+										@if (copy_result()) {
+											<p role="status">{{ copy_result() }}</p>
+										}
+										@if (s.invitations_expires_at) {
+											<p>Retained until {{ s.invitations_expires_at | localTime }} at the latest.</p>
+										}
+										<p class="orc-warning-card">
+											Unused invitations live only in this Orchard process until the slot joins or retention expires.
+											Save them privately before restarting Orchard.
+										</p>
+									} @else if (s.missing_enrollments.length) {
+										<h2>Invitation unavailable</h2>
+										<p>
+											Orchard no longer has these invitation secrets. Use a saved copy. If none is available, the
+											coordinator must replace the invitation with the mint's CLI; Orchard cannot reissue or abort
+											setup.
+										</p>
+									} @else {
+										<h2>Everyone has joined</h2>
+									}
+								</aside>
+							}
+						</div>
+					}
+				}
+				@case ('review') {
+					@if (proposal(); as review) {
+						<orc-federation-setup-review
+							[proposal]="review"
+							[member_id]="status()?.member_id ?? null"
+							[approved_members]="status()?.approved_members ?? []"
+							[busy]="action_disabled()"
+							(approve)="approve($event)"
+						></orc-federation-setup-review>
+					}
+				}
+				@case ('keygen') {
+					<h1>Generating the federation keys</h1>
+					<p>
+						The mints are creating the keys together. No single mint ever holds a whole key. Keep the mints running until
+						generation finishes.
+					</p>
+					@if (status()?.dkg; as dkg) {
+						<p>Key generation phase: {{ phaseLabel(dkg.phase) }}</p>
+						@if (dkg.error) {
+							<p class="orc-error-card" role="alert">{{ dkg.error }}</p>
+						}
+						<div class="setup-columns">
+							<section class="orc-low-card setup-card">
+								<h2>Progress on your mint</h2>
+								<dl>
+									@for (stage of stage_fields; track stage.field) {
+										<dt>{{ stage.label }}</dt>
+										<dd>{{ dkg[stage.field] }}</dd>
+									}
+								</dl>
+								<p>
+									Counts reported by your mint. Required totals depend on the federation's keysets and custody
+									configuration.
+								</p>
+							</section>
+							<aside class="setup-stack">
+								<section class="orc-low-card setup-card">
+									<h2>Members confirmed</h2>
+									<p>
+										{{ dkg.confirmed_members.length ? dkg.confirmed_members.join(', ') : 'Waiting for confirmations' }}
+									</p>
+									<dl>
+										<dt>Transcript</dt>
+										<dd class="mega-string">{{ dkg.transcript_hash || 'Pending' }}</dd>
+										<dt>Final config</dt>
+										<dd class="mega-string">{{ dkg.final_config_digest || 'Pending' }}</dd>
+										<dt>DKG confirmation</dt>
+										<dd class="mega-string">{{ dkg.dkg_confirmation_digest || 'Pending' }}</dd>
+									</dl>
+									<p>Every operator should see the same digests.</p>
+								</section>
+								<section class="orc-high-card setup-card">
+									<h2>{{ dkg.finalized_ready ? 'Ready to activate' : 'Waiting for final configuration' }}</h2>
+									<p>
+										Members can activate in any order. Your mint is ready only when key generation reports a finalized
+										configuration.
+									</p>
+									<button mat-flat-button [disabled]="!dkg.finalized_ready || action_disabled()" (click)="activate()">
+										Activate my mint
+									</button>
+								</section>
+							</aside>
+						</div>
+					} @else {
+						<p>All approvals are certified. Waiting for key generation progress.</p>
+					}
+				}
+				@case ('activated') {
+					<h1>{{ mode() === 'member' ? 'Your mint is a federation member' : 'Activation accepted' }}</h1>
+					@if (activation(); as active) {
+						<p>
+							Member {{ active.member_id }} · federation <span class="mega-string">{{ active.federation_id }}</span>
+						</p>
+						<p class="mega-string">Final config: {{ active.final_config_digest }}</p>
+					}
+					<orc-federation-backup [warning]="activation()?.backup_warning ?? null" (complete)="backup_complete.set($event)">
+						<p role="status">
+							{{ mode() === 'member' ? 'Member mode confirmed.' : 'Waiting for the mint to report member mode…' }}
+						</p>
+						<button mat-flat-button [disabled]="!backup_complete() || mode() !== 'member'" (click)="openMint()">
+							Open the mint
+						</button>
+					</orc-federation-backup>
+				}
+				@case ('aborted') {
+					<h1>Setup aborted</h1>
+					<p>
+						Your mint reports an aborted setup. Check its logs and resolve the setup on the mint's machine. Orchard cannot abort
+						or reset a ceremony.
+					</p>
+				}
+			}
 		}
-		<button mat-flat-button (click)="refresh()" [disabled]="loading()">
-			<mat-icon>refresh</mat-icon>
-			Check status
-		</button>
-	</div>
+	</main>
 </section>

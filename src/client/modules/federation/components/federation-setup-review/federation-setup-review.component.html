@@ -1,0 +1,68 @@
+<h1>Review the proposal</h1>
+<p>
+	Check the proposal hash and each member's fingerprint with that operator directly, over a call or chat you trust. Approve only if
+	everything matches.
+</p>
+<div class="setup-columns review-columns">
+	<section class="orc-low-card setup-card">
+		<h2>Proposal</h2>
+		<p>Proposal hash · compare with every operator</p>
+		<code class="mega-string">{{ proposal().proposal_hash }}</code>
+		<button mat-button [cdkCopyToClipboard]="proposal().proposal_hash" (cdkCopyToClipboardCopied)="copied.set($event)">
+			{{ copied() ? 'Copied' : 'Copy proposal hash' }}
+		</button>
+		<dl>
+			<dt>Federation</dt>
+			<dd class="mega-string">{{ proposal().proposed_federation_id }}</dd>
+			<dt>Network</dt>
+			<dd>{{ proposal().network }}</dd>
+			<dt>Members</dt>
+			<dd>{{ proposal().member_count }}</dd>
+			<dt>To sign</dt>
+			<dd>{{ proposal().signature_threshold }} of {{ proposal().member_count }}</dd>
+			<dt>To agree</dt>
+			<dd>{{ proposal().consensus_threshold }} of {{ proposal().member_count }}</dd>
+		</dl>
+		<h3>Initial keysets</h3>
+		@for (keyset of proposal().keysets; track $index) {
+			<p>
+				{{ keyset.unit }} · {{ keyset.input_fee_ppk }} ppk ·
+				{{ keyset.final_expiry ? 'Expiry (Unix seconds): ' + keyset.final_expiry : 'Never expires' }}
+			</p>
+			<p class="mega-string">Denominations: {{ keyset.amounts.join(', ') }}</p>
+		}
+		<details>
+			<summary>Full proposal as JSON, including payment policy</summary>
+			<pre>{{ proposal().details_json }}</pre>
+		</details>
+	</section>
+	<section class="setup-form">
+		<h2>Members</h2>
+		@for (member of proposal().members; track member.member_id) {
+			<article class="orc-low-card setup-card member-card" [class.checked-member]="isChecked(member.member_id)">
+				<h3>Member {{ member.member_id }}{{ member.member_id === member_id() ? ' · This is you' : '' }}</h3>
+				<p class="mega-string">{{ member.public_mint_url }}</p>
+				<p class="mega-string">{{ member.federation_api_url }}</p>
+				<span>Fingerprint</span><strong class="fingerprint mega-string">{{ member.identity_fingerprint }}</strong>
+				<mat-checkbox
+					[checked]="isChecked(member.member_id)"
+					[disabled]="busy() || already_approved()"
+					(change)="setChecked(member.member_id, $event.checked)"
+				>
+					Checked member {{ member.member_id }} with its operator
+				</mat-checkbox>
+			</article>
+		}
+		<div class="review-footer orc-low-card setup-card" aria-live="polite">
+			<p>{{ checked_count() }} of {{ proposal().members.length }} fingerprints checked</p>
+			<p>Approved so far: {{ approved_members().length ? approved_members().join(', ') : 'none' }}</p>
+			@if (already_approved()) {
+				<p>Your approval is recorded. Waiting for every member to approve.</p>
+			} @else {
+				<button mat-flat-button [disabled]="!ready() || busy()" (click)="submit()">
+					{{ ready() ? 'Approve proposal' : 'Check every member to approve' }}
+				</button>
+			}
+		</div>
+	</section>
+</div>

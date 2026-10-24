@@ -1,5 +1,7 @@
 /* Core Dependencies */
-import {Injectable} from '@angular/core';
+import {Injectable, inject} from '@angular/core';
+/* Application Dependencies */
+import {FederationService} from '@client/modules/federation/services/federation.service';
 /* Native Dependencies */
 import {NavSecondaryItem} from '@client/modules/nav/types/nav-secondary-item.type';
 
@@ -7,6 +9,7 @@ import {NavSecondaryItem} from '@client/modules/nav/types/nav-secondary-item.typ
 	providedIn: 'root',
 })
 export class NavService {
+	private readonly federation_service = inject(FederationService);
 	private menuItems: Record<string, NavSecondaryItem[]> = {
 		index: [
 			{
@@ -102,7 +105,10 @@ export class NavService {
 		],
 	};
 
+	/** Show only setup navigation while the daemon cannot serve normal mint requests. */
 	public getMenuItems(section: string): NavSecondaryItem[] {
+		if (section === 'mint' && this.federation_service.mode() === 'setup')
+			return [{name: 'Federation setup', navroute: 'mint/federation', subsection: 'federation'}];
 		return structuredClone(this.menuItems[section]);
 	}
 }

@@ -44,3 +44,21 @@ Orchard's setup key is `orchard-e2e-admin-key`.
 - The ceremony refuses an already initialized setup, and leaves the activated
   federation running. Its output stays in member1's `/tmp/ceremony` until the
   container is recreated. It checks federation startup, not paid mint, swap or melt.
+
+## Browser wizard smoke test
+
+With Chrome installed and repository dependencies available, run:
+
+```sh
+./e2e/docker/federation/dev.sh up
+./e2e/docker/federation/dev.sh reset
+node e2e/docker/federation/wizard-smoke.mjs
+```
+
+This creates three disposable Orchard accounts, checks that home and layout skip
+unavailable mint APIs, and completes create, join, proposal, fingerprint review,
+key generation and activation through three browser sessions. It checks desktop
+and phone layouts and writes review screenshots to `/tmp/orchard-m3-*-review.png`.
+It uses synthetic development data and tests backup acknowledgments only; it does
+not perform or verify a real backup. Reset before each run. Set `CHROME_CHANNEL`
+to use another installed Playwright Chromium channel.

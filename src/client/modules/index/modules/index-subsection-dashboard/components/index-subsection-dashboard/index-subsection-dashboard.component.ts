@@ -1,10 +1,10 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, OnInit, ChangeDetectorRef, OnDestroy, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnInit, ChangeDetectorRef, OnDestroy, signal, inject} from '@angular/core';
 import {Router} from '@angular/router';
 import {FormGroup, FormControl} from '@angular/forms';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 /* Vendor Dependencies */
-import {tap, catchError, finalize, EMPTY, forkJoin, Subscription, firstValueFrom, timer, switchMap, takeWhile} from 'rxjs';
+import {tap, catchError, finalize, EMPTY, forkJoin, Subscription, firstValueFrom, timer, switchMap, takeWhile, of} from 'rxjs';
 /* Application Dependencies */
 import {ConfigService} from '@client/modules/config/services/config.service';
 import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
@@ -12,6 +12,8 @@ import {SettingDeviceService} from '@client/modules/settings/services/setting-de
 import {BitcoinService} from '@client/modules/bitcoin/services/bitcoin/bitcoin.service';
 import {LightningService} from '@client/modules/lightning/services/lightning/lightning.service';
 import {TaprootAssetsService} from '@client/modules/tapass/services/taproot-assets.service';
+import {FederationService} from '@client/modules/federation/services/federation.service';
+import {isMintAvailable} from '@client/modules/federation/helpers/federation-setup.helpers';
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {PublicService} from '@client/modules/public/services/image/public.service';
 import {BitcoinBlockchainInfo} from '@client/modules/bitcoin/classes/bitcoin-blockchain-info.class';
@@ -47,6 +49,9 @@ import {MintActivityPeriod} from '@shared/generated.types';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IndexSubsectionDashboardComponent implements OnInit, OnDestroy {
+	private readonly federation_service = inject(FederationService);
+	public readonly mint_mode = this.federation_service.mode;
+	public readonly mint_unavailable = signal(false);
 	public enabled_bitcoin: boolean;
 	public enabled_bitcoin_oracle: boolean;
 	public enabled_lightning: boolean;
@@ -176,8 +181,23 @@ export class IndexSubsectionDashboardComponent implements OnInit, OnDestroy {
 		this.loading_mint = this.enabled_mint ? true : false;
 		this.loading_mint_icon = this.enabled_mint ? true : false;
 		if (this.enabled_mint) {
-			this.getMint();
-			this.loadMintActivitySummary(MintActivityPeriod.Day);
+			this.subscriptions.add(
+				this.federation_service
+					.loadMode()
+					.pipe(catchError(() => of({mode: 'unreachable'})))
+					.subscribe(({mode}) => {
+						this.mint_unavailable.set(!isMintAvailable(mode));
+						if (this.mint_unavailable()) {
+							this.loading_mint = false;
+							this.loading_mint_icon = false;
+							this.loading_mint_activity.set(false);
+						} else {
+							this.getMint();
+							this.loadMintActivitySummary(MintActivityPeriod.Day);
+						}
+						this.cdr.markForCheck();
+					}),
+			);
 		}
 		this.cdr.detectChanges();
 	}

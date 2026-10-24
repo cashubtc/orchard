@@ -1,0 +1,133 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+:host {
+	@extend %block;
+	min-width: 0;
+}
+.setup-columns {
+	display: grid;
+	grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+	gap: 1.5rem;
+	align-items: start;
+}
+.review-columns {
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+}
+.setup-form,
+.setup-fields-vertical {
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+	min-width: 0;
+}
+.setup-card {
+	padding: 1.5rem;
+	min-width: 0;
+}
+fieldset {
+	border: 0;
+	margin: 0;
+	min-width: 0;
+}
+legend {
+	float: left;
+	width: 100%;
+	font-size: 1.2rem;
+	font-weight: 600;
+	margin-bottom: 1.25rem;
+}
+fieldset > mat-form-field {
+	display: block;
+	margin-bottom: 0.75rem;
+}
+.setup-fields,
+.setup-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+}
+.setup-fields > * {
+	flex: 1 1 10rem;
+	min-width: 0;
+}
+.stepper {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	min-height: 3rem;
+}
+.stepper output,
+.threshold-value {
+	font-size: 1.6rem;
+	margin: 0;
+}
+.stepper output {
+	min-width: 2.5rem;
+	text-align: center;
+}
+.setup-summary {
+	position: sticky;
+	top: 1rem;
+}
+dl {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: 0.75rem 1rem;
+}
+dd {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+p {
+	line-height: 1.55;
+}
+h2,
+h3 {
+	margin-top: 0;
+}
+pre {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	font-size: 0.8rem;
+}
+summary {
+	cursor: pointer;
+	padding: 0.75rem 0;
+}
+.fingerprint {
+	display: block;
+	font-size: 1.25rem;
+	letter-spacing: 0.08em;
+	margin: 0.5rem 0;
+}
+.member-card {
+	border: 1px solid transparent;
+}
+.checked-member {
+	@extend %orc-outline-border;
+	border-style: solid;
+}
+.review-footer {
+	position: sticky;
+	bottom: 0;
+	z-index: 1;
+}
+button {
+	min-height: 2.75rem;
+}
+@media (max-width: 800px) {
+	.setup-columns,
+	.review-columns {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.setup-summary {
+		position: static;
+	}
+	.setup-card {
+		padding: 1rem;
+	}
+	.review-footer button {
+		width: 100%;
+	}
+}
