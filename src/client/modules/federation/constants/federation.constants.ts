@@ -48,3 +48,56 @@ export const FEDERATION_PHASE_LABELS: Record<string, string> = {
 	closed: 'Closed',
 	aborted: 'Aborted',
 };
+
+/** Dashboard poll cadence, just past the window in which cdk reuses member statuses. */
+export const FEDERATION_STATUS_INTERVAL_MS = 6000;
+
+/** Member dashboard sections, selected with the `view` query parameter. */
+export const FEDERATION_DASHBOARD_TABS = [
+	{view: 'overview', label: 'Overview'},
+	{view: 'consensus', label: 'Consensus'},
+	{view: 'custody', label: 'Custody'},
+] as const;
+
+/** Readable names for cdk status values; anything else is shown verbatim. */
+export const FEDERATION_STATUS_LABELS: Record<string, string> = {
+	healthy: 'Healthy',
+	awaiting_quorum: 'Awaiting quorum',
+	lagging: 'Lagging',
+	catching_up: 'Catching up',
+	halted: 'Halted',
+	ready: 'Ready',
+	behind_consensus: 'Behind consensus',
+	degraded: 'Degraded',
+	never_synced: 'Never synced',
+	DIGEST_AGREEMENT_STATE_UNKNOWN: 'Unknown',
+	DIGEST_AGREEMENT_STATE_CONVERGED: 'Converged',
+	DIGEST_AGREEMENT_STATE_CONVERGING: 'Converging',
+	DIGEST_AGREEMENT_STATE_DIVERGED: 'Diverged',
+	DIGEST_CONFLICT_KIND_ORDER_DIGEST: 'Operation order',
+	DIGEST_CONFLICT_KIND_CHECKPOINT_AUDIT: 'Checkpoint audit',
+	DIGEST_CONFLICT_KIND_APPLICATION_DIGEST: 'Applied results',
+	PAYMENT_OBSERVATION_CONTEXT_MINT_QUOTE: 'Incoming',
+	PAYMENT_OBSERVATION_CONTEXT_MELT_QUOTE: 'Outgoing',
+	PAYMENT_OBSERVATION_REPORT_STATUS_EMPTY: 'Empty',
+	PAYMENT_OBSERVATION_REPORT_STATUS_AWAITING_QUORUM: 'Awaiting quorum',
+	PAYMENT_OBSERVATION_REPORT_STATUS_QUORUM_REACHED: 'Quorum reached',
+	PAYMENT_OBSERVATION_REPORT_STATUS_CONFLICTING: 'Conflicting',
+	WALLET_UTXO_STATE_OBSERVED: 'Observed',
+	WALLET_UTXO_STATE_CONFIRMED: 'Confirming',
+	WALLET_UTXO_STATE_SPENDABLE: 'Spendable',
+	WALLET_UTXO_STATE_RESERVED: 'Reserved',
+	WALLET_UTXO_STATE_SPENT: 'Spent',
+	WALLET_UTXO_STATE_REORGED: 'Reorged',
+	WALLET_UTXO_STATE_QUARANTINED: 'Quarantined',
+	WALLET_BROADCAST_HEALTH_IDLE: 'Idle',
+	WALLET_BROADCAST_HEALTH_AWAITING_AUTHORIZATION: 'Awaiting authorization',
+	WALLET_BROADCAST_HEALTH_BROADCASTING: 'Broadcasting',
+	WALLET_BROADCAST_HEALTH_CONFIRMING: 'Confirming',
+	WALLET_BROADCAST_HEALTH_DEGRADED: 'Degraded',
+	WALLET_LIVENESS_ACTIVITY_IDLE: 'Idle',
+	WALLET_LIVENESS_ACTIVITY_WAITING_FOR_LEASE: 'Waiting for lease',
+	WALLET_LIVENESS_ACTIVITY_PROPOSING: 'Proposing',
+	WALLET_LIVENESS_ACTIVITY_SIGNING: 'Signing',
+	WALLET_LIVENESS_ACTIVITY_BACKOFF: 'Backoff',
+};

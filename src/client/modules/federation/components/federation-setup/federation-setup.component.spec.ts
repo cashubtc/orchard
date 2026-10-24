@@ -123,6 +123,6 @@ describe('FederationSetupComponent', () => {
 		expect(navigate).not.toHaveBeenCalled();
 		mode.set('member');
 		component.openMint();
-		expect(navigate).toHaveBeenCalledOnceWith(['/mint']);
+		expect(navigate).toHaveBeenCalledOnceWith(['/mint/federation'], {onSameUrlNavigation: 'reload'});
 	});
 });

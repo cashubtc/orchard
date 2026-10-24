@@ -293,10 +293,10 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 		setTimeout(() => URL.revokeObjectURL(url), 0);
 	}
 
-	/** Hand off to the mint once backups are acknowledged and member mode is confirmed. */
+	/** Re-match the same URL once member mode is confirmed, so it opens the member dashboard. */
 	public openMint(): void {
 		if (!this.backup_complete() || this.mode() !== 'member') return;
-		void this.router.navigate(['/mint']);
+		void this.router.navigate(['/mint/federation'], {onSameUrlNavigation: 'reload'});
 	}
 
 	/** Show the error, remembering whether a later successful poll may clear it. */

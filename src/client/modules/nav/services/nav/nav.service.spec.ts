@@ -18,5 +18,8 @@ describe('NavService', () => {
 		expect(service.getMenuItems('mint')).toEqual([{name: 'Federation setup', navroute: 'mint/federation', subsection: 'federation'}]);
 		mode.set('member');
 		expect(service.getMenuItems('mint').some((item) => item.name === 'Dashboard')).toBeTrue();
+		expect(service.getMenuItems('mint').some((item) => item.name === 'Federation')).toBeTrue();
+		mode.set('standalone');
+		expect(service.getMenuItems('mint').some((item) => item.name === 'Federation')).toBeFalse();
 	});
 });

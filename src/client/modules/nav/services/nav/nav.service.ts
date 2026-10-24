@@ -109,6 +109,9 @@ export class NavService {
 	public getMenuItems(section: string): NavSecondaryItem[] {
 		if (section === 'mint' && this.federation_service.mode() === 'setup')
 			return [{name: 'Federation setup', navroute: 'mint/federation', subsection: 'federation'}];
-		return structuredClone(this.menuItems[section]);
+		const items = structuredClone(this.menuItems[section]);
+		if (section === 'mint' && this.federation_service.mode() === 'member')
+			items.push({name: 'Federation', navroute: 'mint/federation', subsection: 'federation'});
+		return items;
 	}
 }

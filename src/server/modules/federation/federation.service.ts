@@ -6,6 +6,7 @@ import {ConfigService} from '@nestjs/config';
 import {status} from '@grpc/grpc-js';
 
 /* Application Dependencies */
+import type {CdkRpcMethods} from '#server/modules/cashu/cdk/cdkrpc.types';
 import {CdkRpcError, CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
 
 /* Local Dependencies */
@@ -36,6 +37,30 @@ export class FederationService {
 		if (error instanceof CdkRpcError && [status.UNAVAILABLE, status.DEADLINE_EXCEEDED].includes(error.grpc_code))
 			return {mode: 'unreachable', details: error.details};
 		throw error;
+	}
+
+	/* *******************************************************
+        Member status
+    ******************************************************** */
+
+	/** Read the current public federation configuration. */
+	public getInfo(): Promise<CdkRpcMethods['GetFederationInfo']['response']> {
+		return this.cdkRpcService.request('GetFederationInfo', {});
+	}
+
+	/** Read local consensus and checkpoint state without contacting peers. */
+	public getLocalStatus(): Promise<CdkRpcMethods['GetLocalStatus']['response']> {
+		return this.cdkRpcService.request('GetLocalStatus', {});
+	}
+
+	/** Read peer statuses and digest comparisons; CDK owns the short-lived snapshot cache. */
+	public getMemberStatuses(): Promise<CdkRpcMethods['GetMemberStatuses']['response']> {
+		return this.cdkRpcService.request('GetMemberStatuses', {});
+	}
+
+	/** Read optional custody backends without substituting missing sections. */
+	public getCustodyStatus(): Promise<CdkRpcMethods['GetCustodyStatus']['response']> {
+		return this.cdkRpcService.request('GetCustodyStatus', {});
 	}
 
 	/** Prevent standalone-only operations through GraphQL, agents, or other callers. */

@@ -1,0 +1,162 @@
+<h1>Federation custody</h1>
+<p>As seen by your mint. Custody backends are configured in each member's mintd config.</p>
+@if (no_custody()) {
+	<section class="orc-low-card panel">
+		<h2>No funds held</h2>
+		<p>
+			No on-chain or Bark custody is reported. A fake wallet moves no real bitcoin. Real custody uses federated BDK for on-chain and
+			federated Bark for Lightning.
+		</p>
+	</section>
+}
+@if (custody(); as data) {
+	<div class="panel-grid">
+		<section class="orc-low-card panel" [class.off-card]="!onchain()">
+			<h2>On-chain</h2>
+			@if (!onchain()) {
+				<strong>Off</strong>
+				<p>On-chain custody is not reported by this member. Federated BDK is configured in mintd.</p>
+			}
+			@if (data.wallet_operator; as wallet) {
+				<p>Federated BDK · {{ wallet.network }} · {{ statusLabel(wallet.broadcast_health) }}</p>
+				<p>Held jointly with FROST.</p>
+				@for (utxo of wallet.utxos; track utxo.state) {
+					<div class="entry">
+						<strong>{{ statusLabel(utxo.state) }}</strong>
+						<p>{{ utxo.count }} UTXOs · {{ utxo.value_sat }} sat</p>
+					</div>
+				}
+				<dl>
+					<dt>Reserved value</dt>
+					<dd>{{ wallet.reserved_value_sat }} sat</dd>
+					<dt>Minimum confirmations</dt>
+					<dd>{{ wallet.minimum_confirmations }}</dd>
+					<dt>Pending batches</dt>
+					<dd>{{ wallet.pending_batches }}</dd>
+					<dt>Signing attempts / failures</dt>
+					<dd>{{ wallet.signing_attempts }} / {{ wallet.signing_failures }}</dd>
+					<dt>Broadcast failures</dt>
+					<dd>{{ wallet.broadcast_failures }}</dd>
+				</dl>
+				<h3>Operation phases</h3>
+				@for (phase of wallet.operation_phases; track phase.phase) {
+					<p>{{ statusLabel(phase.phase) }}: {{ phase.count }}</p>
+				}
+				<details>
+					<summary>Wallet identity</summary>
+					<dl>
+						<dt>Root / application epoch</dt>
+						<dd>{{ wallet.root_key_epoch }} / {{ wallet.application_key_epoch }}</dd>
+						<dt>Descriptor commitment</dt>
+						<dd>{{ wallet.descriptor_commitment }}</dd>
+						<dt>Fee policy</dt>
+						<dd>{{ wallet.fee_policy_version }}</dd>
+					</dl>
+				</details>
+			}
+			@if (data.onchain_wallets.length) {
+				<h3>Chain sources</h3>
+			}
+			@for (source of data.onchain_wallets; track source.source_id) {
+				<article class="entry">
+					<h4>{{ source.source }} · {{ source.source_scope }}</h4>
+					<p>
+						{{ statusLabel(source.health) }} · Tip {{ source.local_tip_height }} · {{ source.consecutive_failures }} consecutive
+						failures
+					</p>
+					<code>{{ source.local_tip_hash }}</code>
+					<p>
+						Last success:
+						@if (timestamp(source.last_success_unix); as time) {
+							{{ time | localTime }}
+						} @else {
+							Not reported
+						}
+					</p>
+					@if (source.correlated_source_warning) {
+						<p class="orc-warning-card p-1">Other members intentionally share this chain source.</p>
+					}
+				</article>
+			}
+			@if (data.wallet_liveness; as live) {
+				<h3>Proposer and signer</h3>
+				<p>{{ statusLabel(live.activity) }}</p>
+				<dl>
+					<dt>Pending batches</dt>
+					<dd>{{ live.pending_batches }}</dd>
+					<dt>Awaiting signatures</dt>
+					<dd>{{ live.awaiting_signatures }}</dd>
+					<dt>Proposal attempts</dt>
+					<dd>{{ live.proposal_attempts }}</dd>
+					<dt>Signing attempts / failures</dt>
+					<dd>{{ live.signing_attempts }} / {{ live.signer_failures }}</dd>
+				</dl>
+			}
+			@if (data.wallet_recovery; as recovery) {
+				<h3>Recovery plan</h3>
+				<p>
+					{{ recovery.sticky_reservations }} sticky reservations · {{ recovery.transactions }} transactions ·
+					{{ recovery.payment_intents }} payment intents
+				</p>
+				@for (action of recovery.actions; track $index) {
+					<p [class.orc-warning-card]="action.action === 'WALLET_RECOVERY_ACTION_OPERATOR_REVIEW'">
+						{{ statusLabel(action.phase) }} · {{ action.state }} · {{ statusLabel(action.action) }}: {{ action.count }}
+					</p>
+				}
+			}
+		</section>
+		<section class="orc-low-card panel" [class.off-card]="!data.bark">
+			<h2>Lightning via Ark</h2>
+			@if (data.bark; as bark) {
+				<p>Federated Bark · {{ bark.network }} · {{ statusLabel(bark.readiness) }}</p>
+				@if (bark.degraded_reason) {
+					<p class="orc-warning-card p-1">{{ bark.degraded_reason }}</p>
+				}
+				@for (vtxo of bark.vtxos; track vtxo.state) {
+					<div class="entry">
+						<strong>{{ statusLabel(vtxo.state) }}</strong>
+						<p>{{ vtxo.count }} VTXOs · {{ vtxo.value_sat }} sat</p>
+					</div>
+				}
+				@if (bark.expiring_vtxo_count != null || bark.expiring_value_sat != null) {
+					<p class="orc-warning-card p-1">
+						Close to expiry: {{ bark.expiring_vtxo_count ?? 'Unknown count' }} VTXOs ·
+						{{ bark.expiring_value_sat ?? 'Unknown value' }} sat. CDK does not report an expiry window here.
+					</p>
+				}
+				<dl>
+					<dt>Accepted / local frontier</dt>
+					<dd>{{ bark.accepted_frontier }} / {{ bark.local_frontier }}</dd>
+					<dt>Projection lag</dt>
+					<dd>{{ bark.projection_lag_operations }} operations</dd>
+					<dt>Ambiguous actions</dt>
+					<dd>{{ bark.ambiguous_action_count }} · {{ bark.ambiguous_value_sat }} sat</dd>
+					<dt>Recovery required</dt>
+					<dd>{{ bark.recovery_required_action_count }} · {{ bark.recovery_required_value_sat }} sat</dd>
+					<dt>Signer retries</dt>
+					<dd>{{ bark.signer_retry_action_count }}</dd>
+					<dt>Missing acknowledged receive secrets</dt>
+					<dd>{{ bark.missing_acknowledged_receive_secrets }}</dd>
+					<dt>Chain tip</dt>
+					<dd>{{ bark.chain_tip_height ?? 'Not reported' }}</dd>
+				</dl>
+				<details>
+					<summary>Complete Bark status</summary>
+					<pre>{{ bark.details_json }}</pre>
+				</details>
+				<p>
+					The federation's Lightning custody is held through Ark inside your mint. A Lightning node connected to Orchard is
+					managed separately.
+				</p>
+			} @else {
+				<strong>Off</strong>
+				<p>
+					Bark custody is not reported by this member. Federated Bark supports Lightning (bolt11); an Orchard Lightning connection
+					is separate.
+				</p>
+			}
+		</section>
+	</div>
+} @else {
+	<p>Custody status has not been reported.</p>
+}

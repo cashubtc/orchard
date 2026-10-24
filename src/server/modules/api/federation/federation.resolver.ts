@@ -10,6 +10,12 @@ import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.cla
 
 /* Local Dependencies */
 import {OrchardFederationMode} from './federation.model.js';
+import {
+	OrchardFederationInfo,
+	OrchardFederationLocalStatus,
+	OrchardFederationMemberStatuses,
+	OrchardFederationCustodyStatus,
+} from './federation-status.model.js';
 
 @Resolver()
 export class FederationResolver {
@@ -22,11 +28,40 @@ export class FederationResolver {
 
 	/** Read the mode through the authenticated GraphQL API before loading mint pages. */
 	@Query(() => OrchardFederationMode, {description: 'Get the mode of the configured mint daemon'})
-	async federation_mode(): Promise<OrchardFederationMode> {
-		const tag = 'GET { federation_mode }';
+	federation_mode(): Promise<OrchardFederationMode> {
+		return this.read('federation_mode', () => this.federationService.getMode());
+	}
+
+	/** Read the federation config this member runs. */
+	@Query(() => OrchardFederationInfo, {description: 'Get the federation config of a member mint'})
+	federation_info(): Promise<OrchardFederationInfo> {
+		return this.read('federation_info', () => this.federationService.getInfo());
+	}
+
+	/** Read this member's own consensus, checkpoint and queue state. */
+	@Query(() => OrchardFederationLocalStatus, {description: 'Get the local status of a member mint'})
+	federation_local_status(): Promise<OrchardFederationLocalStatus> {
+		return this.read('federation_local_status', () => this.federationService.getLocalStatus());
+	}
+
+	/** Read peer statuses and digest agreement. */
+	@Query(() => OrchardFederationMemberStatuses, {description: 'Get the status of every federation member'})
+	federation_member_statuses(): Promise<OrchardFederationMemberStatuses> {
+		return this.read('federation_member_statuses', () => this.federationService.getMemberStatuses());
+	}
+
+	/** Read the custody backends this member reports. */
+	@Query(() => OrchardFederationCustodyStatus, {description: 'Get the custody status of a member mint'})
+	federation_custody_status(): Promise<OrchardFederationCustodyStatus> {
+		return this.read('federation_custody_status', () => this.federationService.getCustodyStatus());
+	}
+
+	/** Map RPC failures to an Orchard error without losing the upstream diagnostic. */
+	private async read<T>(field: string, request: () => Promise<T>): Promise<T> {
+		const tag = `GET { ${field} }`;
 		this.logger.debug(tag);
 		try {
-			return await this.federationService.getMode();
+			return await request();
 		} catch (error) {
 			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
 				errord: OrchardErrorCode.MintRpcActionError,

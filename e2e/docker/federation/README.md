@@ -45,7 +45,7 @@ Orchard's setup key is `orchard-e2e-admin-key`.
   federation running. Its output stays in member1's `/tmp/ceremony` until the
   container is recreated. It checks federation startup, not paid mint, swap or melt.
 
-## Browser wizard smoke test
+## Browser wizard and dashboard smoke test
 
 With Chrome installed and repository dependencies available, run:
 
@@ -62,3 +62,14 @@ and phone layouts and writes review screenshots to `/tmp/orchard-m3-*-review.png
 It uses synthetic development data and tests backup acknowledgments only; it does
 not perform or verify a real backup. Reset before each run. Set `CHROME_CHANNEL`
 to use another installed Playwright Chromium channel.
+
+After activation, the script runs `dashboard-smoke.mjs` on all three members. It
+checks Overview, Consensus, the empty Custody state, the backup checklist,
+peer polling intervals and cancellation, and the existing mint dashboard, info,
+keysets, database and analytics reads. Dashboard screenshots are written to
+`/tmp/orchard-m4-desktop.png` and `/tmp/orchard-m4-mobile.png`.
+
+The wizard uses a three-member payment observation quorum, so this fakewallet run
+does not show the DEVELOPMENT policy banner. Unit fixtures cover the explicit
+single-observation policy, BDK-only, Bark-only and combined custody; this stack
+does not exercise real BDK or Bark funds.

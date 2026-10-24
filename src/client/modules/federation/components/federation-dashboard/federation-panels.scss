@@ -1,0 +1,55 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+:host {
+	@extend %block;
+	min-width: 0;
+}
+.panel {
+	@extend %p-1;
+	margin-bottom: 1rem;
+	min-width: 0;
+}
+.panel-grid {
+	display: grid;
+	gap: 1rem;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+}
+code,
+pre,
+dd,
+p {
+	overflow-wrap: anywhere;
+}
+code,
+pre {
+	white-space: pre-wrap;
+}
+h2,
+h3,
+h4 {
+	margin-top: 0;
+}
+p {
+	line-height: 1.5;
+}
+dl {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 0.75rem;
+}
+dd {
+	margin: 0;
+}
+.entry {
+	padding: 1rem 0;
+	border-bottom: 1px solid;
+	@extend %orc-outline-variant-border;
+}
+.off-card {
+	border: 1px dashed;
+	@extend %orc-outline-variant-border;
+}
+summary {
+	cursor: pointer;
+	padding: 0.5rem 0;
+}

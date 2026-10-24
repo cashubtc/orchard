@@ -1,3 +1,4 @@
+import {checkMemberDashboard} from './dashboard-smoke.mjs';
 import assert from 'node:assert/strict';
 import {chromium, expect} from '@playwright/test';
 
@@ -128,6 +129,7 @@ try {
 		for (const checkbox of await page.getByRole('checkbox').all()) await checkbox.check();
 		await expect(page.getByRole('button', {name: 'Open the mint', exact: true})).toBeEnabled();
 	}
+	for (const [index, page] of pages.entries()) await checkMemberDashboard(page, index);
 	assert.deepEqual(failures, [], 'Unexpected browser errors');
 	console.log('PASS: all three members generated keys, activated, confirmed member mode and enforced backup acknowledgments');
 } finally {

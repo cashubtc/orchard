@@ -1,0 +1,198 @@
+<h1>Federation consensus</h1>
+@if (status(); as state) {
+	@if (state.checkpoint?.audit_mismatch) {
+		<section class="orc-error-card panel" role="alert">
+			<h2>Halted: checkpoint audit mismatch</h2>
+			<p>
+				Your mint found a state digest mismatch and has stopped serving wallets. Investigate the disagreement before restoring
+				service. This dashboard cannot clear the halt.
+			</p>
+		</section>
+	}
+	<section class="orc-low-card panel">
+		<h2>{{ syncLabel(state) }}</h2>
+		@if (!state.checkpoint?.audit_mismatch) {
+			<p>{{ state.sync?.message }}</p>
+		}
+		<p>{{ readinessLabel(state) }}</p>
+		@if (state.sync?.peer_member_id != null) {
+			<p>
+				Peer: {{ state.sync?.peer_member_id }} · Local operations: {{ state.sync?.local_operation_count ?? '—' }} · Peer operations:
+				{{ state.sync?.peer_operation_count ?? '—' }}
+			</p>
+		}
+	</section>
+	<div class="panel-grid">
+		<section class="orc-low-card panel">
+			<h2>Consensus and peer state</h2>
+			@if (state.consensus; as consensus) {
+				<p>
+					Live session: {{ consensus.live_session_active ? 'Active' : 'Inactive' }} · Inbound:
+					{{ consensus.network_inbound_active ? 'Active' : 'Inactive' }}
+				</p>
+				@if (consensus.runtime; as runtime) {
+					<dl>
+						<dt>Session</dt>
+						<dd>{{ runtime.session }}</dd>
+						<dt>Next item</dt>
+						<dd>{{ runtime.next_item_index }}</dd>
+						<dt>Queued</dt>
+						<dd>{{ runtime.queued_item_count }}</dd>
+						<dt>Awaiting finalization</dt>
+						<dd>{{ runtime.pending_finalization_item_count }}</dd>
+						<dt>Finalized items</dt>
+						<dd>{{ runtime.finalized_item_count }}</dd>
+						<dt>Accepted operations</dt>
+						<dd>{{ runtime.accepted_operation_count }}</dd>
+					</dl>
+				} @else {
+					<p>Runtime not reported.</p>
+				}
+			}
+			@if (state.peer; as peer) {
+				<dl>
+					<dt>Accepted operations</dt>
+					<dd>{{ peer.operation_count }}</dd>
+					<dt>Latest index</dt>
+					<dd>{{ peer.latest_index ?? 'None' }}</dd>
+					<dt>Peer session</dt>
+					<dd>{{ peer.aleph_bft_session }}</dd>
+					<dt>Order digest</dt>
+					<dd>
+						<code>{{ peer.latest_order_digest }}</code>
+					</dd>
+					<dt>Application digest</dt>
+					<dd>
+						<code>{{ peer.application_digest ?? 'Not reported' }}</code>
+					</dd>
+					<dt>Audited checkpoint</dt>
+					<dd>{{ peer.latest_audited_checkpoint_id ?? 'None' }}</dd>
+					<dt>Audited state digest</dt>
+					<dd>
+						<code>{{ peer.materialized_state_digest ?? 'Not reported' }}</code>
+					</dd>
+				</dl>
+			}
+		</section>
+		<section class="orc-low-card panel">
+			<h2>Checkpoints</h2>
+			@if (state.checkpoint; as checkpoint) {
+				<dl>
+					<dt>Audit mismatch</dt>
+					<dd>{{ checkpoint.audit_mismatch ? 'HALTED' : 'No mismatch reported' }}</dd>
+					<dt>Trusted checkpoint</dt>
+					<dd>{{ checkpoint.trusted_checkpoint_id ?? 'None' }}</dd>
+					<dt>Signed by</dt>
+					<dd>{{ checkpoint.trusted_checkpoint_signers.join(', ') || 'None' }}</dd>
+					<dt>Covered operations</dt>
+					<dd>{{ checkpoint.trusted_checkpoint_operation_count ?? 'Not reported' }}</dd>
+					<dt>Operations since</dt>
+					<dd>{{ checkpoint.lag_from_trusted_checkpoint }}</dd>
+					<dt>Journal next index</dt>
+					<dd>{{ checkpoint.journal_next_index }}</dd>
+					<dt>Finalized next item</dt>
+					<dd>{{ checkpoint.finalized_next_item_index }}</dd>
+					<dt>Application next index</dt>
+					<dd>{{ checkpoint.application_next_index }}</dd>
+					<dt>Latest scheduled</dt>
+					<dd>{{ checkpoint.latest_scheduled_checkpoint_id ?? 'None' }}</dd>
+					<dt>Scheduled quorum</dt>
+					<dd>{{ checkpoint.latest_scheduled_quorum_id ?? 'None' }}</dd>
+					<dt>Recovery quorum</dt>
+					<dd>{{ checkpoint.latest_recovery_quorum_id ?? 'None' }}</dd>
+				</dl>
+				@if (checkpoint.active_session_backup; as backup) {
+					<p>Session {{ backup.session }} backup: {{ backup.chunk_count }} chunks · {{ backup.total_bytes }} bytes</p>
+				} @else {
+					<p>Session backup not reported.</p>
+				}
+			} @else {
+				<p>Checkpoint status not reported.</p>
+			}
+		</section>
+		<section class="orc-low-card panel">
+			<h2>Queues</h2>
+			@if (state.queues; as queues) {
+				<dl>
+					<dt>Pending in mempool</dt>
+					<dd>{{ queues.pending_mempool_items }}</dd>
+					<dt>Wallets waiting</dt>
+					<dd>{{ queues.pending_response_waiters }}</dd>
+					<dt>Cached responses</dt>
+					<dd>{{ queues.response_cache_items }}</dd>
+					<dt>Cache hits / lookups</dt>
+					<dd>{{ queues.response_cache_hits }} / {{ queues.response_cache_lookups }}</dd>
+					<dt>Cache hit rate</dt>
+					<dd>{{ queues.response_cache_hit_rate_bps }} basis points</dd>
+					<dt>Duplicate submissions</dt>
+					<dd>{{ queues.duplicate_submissions }}</dd>
+					<dt>Joined pending requests</dt>
+					<dd>{{ queues.duplicate_pending_waiter_joins }}</dd>
+				</dl>
+			} @else {
+				<p>Queue counters not reported.</p>
+			}
+		</section>
+	</div>
+	<section class="orc-low-card panel">
+		<h2>Payment observations</h2>
+		@if (state.payment_observations; as observations) {
+			<p>
+				{{ observations.total_reports }} reports · {{ observations.inspect }} to inspect · {{ observations.stale }} stale ·
+				{{ observations.conflicting }} conflicting
+			</p>
+			@if (observations.truncated) {
+				<p class="orc-warning-card p-1">More reports need attention than CDK returned. The list is truncated.</p>
+			}
+			@for (report of inspections(); track report.quote + report.context) {
+				<article class="entry">
+					<h3>{{ report.quote }}</h3>
+					<p>
+						{{ statusLabel(report.context) }} · {{ statusLabel(report.status) }} · {{ report.total_observations }} observations
+						· {{ report.required }} matching members required
+					</p>
+					<p>
+						Age: {{ report.quote_age_secs == null ? 'Not reported' : report.quote_age_secs + ' seconds'
+						}}{{ report.stale ? ' · Stale' : '' }}
+					</p>
+					@for (group of report.groups; track $index) {
+						<p>
+							{{ group.state }} · Members {{ group.observers.join(', ') }} ·
+							{{ group.quorum_reached ? 'Quorum reached' : 'Awaiting quorum'
+							}}{{ group.terminal_state ? ' · Final state' : '' }}
+						</p>
+					}
+					@if (report.conflicting_observers.length) {
+						<p>Conflicting members: {{ report.conflicting_observers.join(', ') }}</p>
+					}
+					@if (report.competing_terminal_state_observers.length) {
+						<p>Competing final states: {{ report.competing_terminal_state_observers.join(', ') }}</p>
+					}
+				</article>
+			} @empty {
+				<p>No INSPECT reports returned.</p>
+			}
+			@for (report of unknown_actions(); track report.quote + report.context) {
+				<p>{{ report.quote }} · {{ report.recommended_action }} · {{ statusLabel(report.status) }}</p>
+			}
+		} @else {
+			<p>Payment observation status not reported.</p>
+		}
+	</section>
+	<section class="orc-low-card panel">
+		<h2>Invalid-operation alerts</h2>
+		@for (alert of state.invalid_operation_alerts; track alert.source) {
+			<article class="entry">
+				<h3>{{ alert.source }}</h3>
+				<p>
+					{{ alert.alerting_buckets }} alerting sources · highest count {{ alert.max_count }} · threshold {{ alert.threshold }} in
+					{{ alert.window_secs }} seconds
+				</p>
+			</article>
+		} @empty {
+			<p>No invalid-operation alerts reported by this mint.</p>
+		}
+	</section>
+} @else {
+	<p>Local status has not been reported.</p>
+}

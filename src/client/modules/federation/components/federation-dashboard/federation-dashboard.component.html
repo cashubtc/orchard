@@ -1,0 +1,66 @@
+<div class="dashboard-content">
+	<div class="dashboard-toolbar">
+		<nav aria-label="Federation sections">
+			@for (tab of tabs; track tab.view) {
+				<a
+					mat-button
+					routerLink="/mint/federation"
+					[queryParams]="{view: tab.view}"
+					[attr.aria-current]="view() === tab.view ? 'page' : null"
+					>{{ tab.label }}</a
+				>
+			}
+		</nav>
+		@if (development()) {
+			<span class="orc-warning-card">DEVELOPMENT</span>
+		}
+		<a
+			mat-button
+			routerLink="/mint/federation"
+			[queryParams]="{view: 'backup'}"
+			[attr.aria-current]="view() === 'backup' ? 'page' : null"
+			>Backup checklist</a
+		>
+	</div>
+	@if (updated() && view() !== 'backup') {
+		<p class="font-size-s">Last response: {{ updated() | localTime }} · Refreshes every {{ interval_seconds }} seconds</p>
+	}
+	@if (loading()) {
+		<mat-progress-bar mode="indeterminate" aria-label="Loading federation status"></mat-progress-bar>
+	}
+	@for (item of error_items(); track item.source) {
+		<section class="orc-error-card p-1">
+			<strong>{{ item.source }} could not be refreshed. Any retained values may be stale.</strong
+			><orc-error-resolve [error]="item.error"></orc-error-resolve>
+		</section>
+	}
+	@if (development()) {
+		<section class="orc-warning-card p-1" role="status">
+			<strong>DEVELOPMENT · Development federation</strong>
+			<p>
+				At least one payment direction accepts a single member's report under the development payment policy. For testing only;
+				never for real funds.
+			</p>
+		</section>
+	}
+	@switch (view()) {
+		@case ('overview') {
+			<orc-federation-overview
+				[info]="info()"
+				[members]="members()"
+				[local]="local()"
+				[custody]="custody()"
+				[mint_info]="mint_info()"
+			></orc-federation-overview>
+		}
+		@case ('consensus') {
+			<orc-federation-consensus [local]="local()"></orc-federation-consensus>
+		}
+		@case ('custody') {
+			<orc-federation-custody [custody]="custody()"></orc-federation-custody>
+		}
+		@case ('backup') {
+			<orc-federation-backup></orc-federation-backup>
+		}
+	}
+</div>

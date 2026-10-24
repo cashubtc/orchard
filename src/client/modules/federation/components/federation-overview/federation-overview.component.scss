@@ -1,0 +1,72 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+.health-grid,
+.identity {
+	display: grid;
+	gap: 1rem;
+}
+.health-grid {
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.health-grid h2 {
+	font-size: 1rem;
+}
+.identity {
+	grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+.identity span,
+.identity strong,
+.identity code {
+	display: block;
+}
+.metric {
+	font-size: 1.5rem;
+}
+.method-title {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+table {
+	width: 100%;
+	border-collapse: collapse;
+	table-layout: fixed;
+}
+th,
+td {
+	padding: 0.75rem 0.5rem;
+	text-align: left;
+	vertical-align: top;
+	overflow-wrap: anywhere;
+	border-bottom: 1px solid;
+	@extend %orc-outline-variant-border;
+}
+th:first-child {
+	width: 25%;
+}
+@media (max-width: 800px) {
+	.health-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+	.member-table,
+	.member-table tbody,
+	.member-table tr,
+	.member-table td {
+		display: block;
+	}
+	.member-table thead {
+		display: none;
+	}
+	.member-table tr {
+		padding: 0.75rem 0;
+	}
+	.member-table td {
+		padding: 0.35rem 0;
+		border: 0;
+	}
+	.member-table td::before {
+		content: attr(data-label) ': ';
+		font-weight: 600;
+	}
+}
