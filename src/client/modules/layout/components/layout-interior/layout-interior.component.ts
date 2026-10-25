@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, OnDestroy, OnInit, ViewChild, signal, computed, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnDestroy, OnInit, ViewChild, signal, effect, untracked, computed, inject} from '@angular/core';
 import {
 	Event,
 	Router,
@@ -90,9 +90,6 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	public pending_assistant = this.aiService.pending_assistant;
 	public staged_assistant_definition = this.aiService.staged_assistant_definition;
 	public active_event = signal<EventData | null>(null);
-	public enabled_bitcoin = signal<boolean>(false);
-	public enabled_lightning = signal<boolean>(false);
-	public enabled_mint = signal<boolean>(false);
 	public online_bitcoin = signal<boolean>(false);
 	public online_lightning = signal<boolean>(false);
 	public online_mint = signal<boolean>(false);
@@ -105,6 +102,9 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	public device_type = signal<DeviceType>('desktop');
 
 	// ── Public computed signals ──
+	public enabled_bitcoin = computed(() => this.configService.config.bitcoin.enabled);
+	public enabled_lightning = computed(() => this.configService.config.lightning.enabled);
+	public enabled_mint = computed(() => this.configService.config.mint.enabled);
 	public desktop_nav_open = computed(() => this.device_type() === 'desktop');
 	public ai_sidenav_mode = computed(() => (this.device_type() === 'desktop' ? 'side' : 'over'));
 	public show_mobile_nav = computed(() => !this.desktop_nav_open() && !this.show_mobile_assistant());
@@ -133,15 +133,26 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	// ── Private properties ──
 	private subscriptions: Subscription = new Subscription();
 	private ai_initialized: boolean = false;
+	private connection_subscriptions = new Subscription();
 	private bitcoin_polling_active: boolean = false;
 
 	constructor() {
 		this.ai_enabled.set(this.settingAppService.getSetting('ai_enabled').value);
 		this.ai_vendor.set(this.settingAppService.getSetting('ai_vendor').value);
 		this.ai_favorites.set(this.settingDeviceService.getAiFavorites());
-		this.enabled_bitcoin.set(this.configService.config.bitcoin.enabled);
-		this.enabled_lightning.set(this.configService.config.lightning.enabled);
-		this.enabled_mint.set(this.configService.config.mint.enabled);
+		// Restart connection polling whenever the server's service flags change
+		effect(() => {
+			this.configService.config;
+			untracked(() => {
+				this.connection_subscriptions.unsubscribe();
+				this.connection_subscriptions = new Subscription();
+				this.bitcoin_polling_active = false;
+				this.online_bitcoin.set(false);
+				this.online_lightning.set(false);
+				this.online_mint.set(false);
+				this.orchardOptionalInit();
+			});
+		});
 	}
 
 	/* *******************************************************
@@ -155,32 +166,41 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 		this.subscriptions.add(this.getEventSubscription());
 		this.subscriptions.add(this.getUserSubscription());
 		this.subscriptions.add(this.getBreakpointSubscription());
-		this.orchardOptionalInit();
 	}
 
 	private orchardOptionalInit(): void {
 		if (this.enabled_bitcoin()) {
 			this.bitcoin_polling_active = true;
-			this.bitcoinService.loadBitcoinBlockchainInfo().subscribe();
-			this.subscriptions.add(this.getBitcoinBlockchainInfoSubscription());
-			this.subscriptions.add(this.getBitcoinBlockCountSubscription());
+			this.connection_subscriptions.add(
+				this.bitcoinService
+					.loadBitcoinBlockchainInfo()
+					.pipe(catchError(() => EMPTY))
+					.subscribe(),
+			);
+			this.connection_subscriptions.add(this.getBitcoinBlockchainInfoSubscription());
+			this.connection_subscriptions.add(this.getBitcoinBlockCountSubscription());
 		}
 		if (this.enabled_lightning()) {
-			this.lightningService.loadLightningInfo().subscribe();
-			this.subscriptions.add(this.getLightningInfoSubscription());
+			this.connection_subscriptions.add(
+				this.lightningService
+					.loadLightningInfo()
+					.pipe(catchError(() => EMPTY))
+					.subscribe(),
+			);
+			this.connection_subscriptions.add(this.getLightningInfoSubscription());
 		}
 		if (this.enabled_mint()) {
-			this.subscriptions.add(
+			this.connection_subscriptions.add(
 				this.federation_service
 					.loadMode()
 					.pipe(
-						filter(({mode}) => isMintAvailable(mode)),
+						filter(({mode}) => isMintAvailable(mode) && this.configService.config.mint.public_api),
 						switchMap(() => this.mintService.loadMintInfo()),
 						catchError(() => EMPTY),
 					)
 					.subscribe(),
 			);
-			this.subscriptions.add(this.getMintInfoSubscription());
+			this.connection_subscriptions.add(this.getMintInfoSubscription());
 		}
 		// if taproot go get the ids
 		if (this.ai_enabled()) this.initAi();
@@ -514,6 +534,7 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	******************************************************** */
 
 	ngOnDestroy(): void {
+		this.connection_subscriptions.unsubscribe();
 		this.subscriptions.unsubscribe();
 	}
 }

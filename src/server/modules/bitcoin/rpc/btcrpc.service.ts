@@ -29,9 +29,20 @@ export class BitcoinRpcService implements OnModuleInit {
 
 	public async onModuleInit() {
 		if (process.env.SCHEMA_ONLY) return;
+		await this.reinitialize();
+	}
+
+	/** Replace the RPC configuration and invalidate the cached chain. */
+	public async reinitialize(): Promise<void> {
 		this.type = this.configService.get('bitcoin.type');
-		this.initializeRpc();
-		await this.initializeChain();
+		this.chain = undefined;
+		try {
+			this.initializeRpc();
+		} catch {
+			this.type = undefined;
+			this.logger.warn('Bitcoin RPC configuration could not be loaded');
+		}
+		if (this.type) await this.initializeChain();
 	}
 
 	private initializeRpc() {

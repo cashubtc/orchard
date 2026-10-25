@@ -4,6 +4,7 @@ import {Router, Event, ActivatedRoute, NavigationStart, NavigationEnd, Navigatio
 /* Vendor Dependencies */
 import {filter, Subscription} from 'rxjs';
 /* Application Dependencies */
+import {ConfigService} from '@client/modules/config/services/config.service';
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {PublicService} from '@client/modules/public/services/image/public.service';
 import {NavService} from '@client/modules/nav/services/nav/nav.service';
@@ -19,6 +20,7 @@ import {NavSecondaryItem} from '@client/modules/nav/types/nav-secondary-item.typ
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSectionComponent implements OnInit, OnDestroy {
+	private readonly configService = inject(ConfigService);
 	private readonly router = inject(Router);
 	private readonly route = inject(ActivatedRoute);
 	private readonly mintService = inject(MintService);
@@ -37,13 +39,15 @@ export class MintSectionComponent implements OnInit, OnDestroy {
 	private subscriptions: Subscription = new Subscription();
 
 	ngOnInit(): void {
-		this.mintService.loadMintInfo().subscribe({
-			error: (error) => {
-				console.error(error);
-				this.error.set(true);
-				this.loading.set(false);
-			},
-		});
+		if (this.configService.config.mint.public_api)
+			this.mintService.loadMintInfo().subscribe({
+				error: (error) => {
+					console.error(error);
+					this.error.set(true);
+					this.loading.set(false);
+				},
+			});
+		else this.loading.set(false);
 		this.subscriptions.add(this.getMintInfoSubscription());
 		this.subscriptions.add(this.getRouterSubscription());
 		this.subscriptions.add(this.getOverlaySubscription());

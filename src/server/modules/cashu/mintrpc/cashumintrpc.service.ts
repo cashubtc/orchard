@@ -1,9 +1,11 @@
 /* Core Dependencies */
-import {Injectable, Logger, type OnModuleInit} from '@nestjs/common';
+import {Injectable, Logger, type OnModuleInit, type OnModuleDestroy} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
-import {Metadata, type ServiceError, status} from '@grpc/grpc-js';
+import {Metadata, type Client, type ServiceError, status} from '@grpc/grpc-js';
 /* Application Dependencies */
+import {closeGrpcChannel} from '#server/modules/grpc/helpers/grpc-client.helpers';
+import {INTEGRATION_REQUEST_TIMEOUT_MS} from '#server/modules/integration/constants/integration.constants';
 import {CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
 import type {CdkRpcMethods} from '#server/modules/cashu/cdk/cdkrpc.types';
 import {FederationService} from '#server/modules/federation/federation.service';
@@ -14,7 +16,7 @@ import {MintType} from '#server/modules/cashu/cashu.enums';
 import type {CashuMintInfoRpc} from './cashumintrpc.types.js';
 
 @Injectable()
-export class CashuMintRpcService implements OnModuleInit {
+export class CashuMintRpcService implements OnModuleInit, OnModuleDestroy {
 	private readonly logger = new Logger(CashuMintRpcService.name);
 	private grpc_client: any = null;
 	private grpc_metadata: Metadata = new Metadata();
@@ -29,12 +31,27 @@ export class CashuMintRpcService implements OnModuleInit {
 
 	public onModuleInit() {
 		if (process.env.SCHEMA_ONLY) return;
-		this.type = this.configService.get('cashu.type');
-		this.initializeGrpcClient();
+		this.reinitialize();
 	}
 
-	private initializeGrpcClient() {
-		if (this.type === 'nutshell') this.grpc_client = this.nutshellService.initializeGrpcClient();
+	/** Replace the selected mint implementation and release its old transport. */
+	public reinitialize(): void {
+		const type = this.configService.get<MintType>('cashu.type');
+		let client: Client | null = null;
+		try {
+			if (type === MintType.NUTSHELL) client = this.nutshellService.initializeGrpcClient();
+		} catch (error) {
+			this.logger.warn(`Mint RPC credentials could not be loaded: ${(error as Error).message}`);
+		}
+		const previous = this.grpc_client;
+		this.grpc_client = client;
+		this.type = type;
+		closeGrpcChannel(previous);
+	}
+
+	/** Release the Nutshell transport on shutdown. */
+	public onModuleDestroy(): void {
+		closeGrpcChannel(this.grpc_client);
 	}
 
 	private makeGrpcRequest(method: string, request: any): Promise<any> {
@@ -42,30 +59,35 @@ export class CashuMintRpcService implements OnModuleInit {
 
 		return new Promise((resolve, reject) => {
 			if (!(method in this.grpc_client)) reject(OrchardErrorCode.MintSupportError);
-			this.grpc_client[method](request, this.grpc_metadata, (error: ServiceError | null, response: any) => {
-				if (error) {
-					this.logger.debug(`gRPC error: ${error.message}`);
+			this.grpc_client[method](
+				request,
+				this.grpc_metadata,
+				{deadline: Date.now() + INTEGRATION_REQUEST_TIMEOUT_MS},
+				(error: ServiceError | null, response: any) => {
+					if (error) {
+						this.logger.debug(`gRPC error: ${error.message}`);
 
-					switch (error.code) {
-						case status.INVALID_ARGUMENT:
-							reject({code: OrchardErrorCode.MintRpcInvalidArgumentError, details: error.details});
-							break;
-						case status.UNIMPLEMENTED:
-							reject({code: OrchardErrorCode.MintSupportError, details: error.details});
-							break;
-						case status.INTERNAL:
-							reject({code: OrchardErrorCode.MintRpcInternalError, details: error.details});
-							break;
-						case status.UNAVAILABLE:
-							reject({code: OrchardErrorCode.MintRpcConnectionError, details: error.details});
-							break;
-						default:
-							reject(error);
+						switch (error.code) {
+							case status.INVALID_ARGUMENT:
+								reject({code: OrchardErrorCode.MintRpcInvalidArgumentError, details: error.details});
+								break;
+							case status.UNIMPLEMENTED:
+								reject({code: OrchardErrorCode.MintSupportError, details: error.details});
+								break;
+							case status.INTERNAL:
+								reject({code: OrchardErrorCode.MintRpcInternalError, details: error.details});
+								break;
+							case status.UNAVAILABLE:
+								reject({code: OrchardErrorCode.MintRpcConnectionError, details: error.details});
+								break;
+							default:
+								reject(error);
+						}
+						return;
 					}
-					return;
-				}
-				resolve(response);
-			});
+					resolve(response);
+				},
+			);
 		});
 	}
 

@@ -46,8 +46,8 @@ describe('CoreService', () => {
 			}
 		});
 		// mock response of fetch
-		const fake_json = jest.fn().mockResolvedValue({result: 'ok'});
-		fetchService.fetchWithProxy.mockResolvedValue({json: fake_json} as any);
+		const fake_json = jest.fn().mockResolvedValue(JSON.stringify({result: 'ok'}));
+		fetchService.fetchWithProxy.mockResolvedValue({ok: true, text: fake_json} as any);
 
 		coreService.initializeRpc();
 		await coreService.makeRpcRequest('getblockcount', []);
@@ -70,8 +70,26 @@ describe('CoreService', () => {
 		configService.get.mockReturnValueOnce('http://h');
 		configService.get.mockReturnValueOnce(8332 as any);
 		coreService.initializeRpc();
-		fetchService.fetchWithProxy.mockResolvedValue({json: jest.fn().mockResolvedValue({result: 123})} as any);
+		fetchService.fetchWithProxy.mockResolvedValue({ok: true, text: jest.fn().mockResolvedValue(JSON.stringify({result: 123}))} as any);
 		const out = await coreService.makeRpcRequest('getblockcount', []);
 		expect(out).toBe(123);
+	});
+
+	it('makeRpcRequest surfaces the RPC error message or the raw HTTP failure', async () => {
+		configService.get.mockReturnValueOnce('user');
+		configService.get.mockReturnValueOnce('pass');
+		configService.get.mockReturnValueOnce('http://h');
+		configService.get.mockReturnValueOnce(8332 as any);
+		coreService.initializeRpc();
+		const rpc_error = JSON.stringify({result: null, error: {code: -28, message: 'Loading block index…'}});
+		fetchService.fetchWithProxy.mockResolvedValueOnce({ok: false, status: 500, text: jest.fn().mockResolvedValue(rpc_error)} as any);
+		await expect(coreService.makeRpcRequest('getblockcount', [])).rejects.toThrow('Loading block index…');
+		fetchService.fetchWithProxy.mockResolvedValueOnce({
+			ok: false,
+			status: 401,
+			statusText: 'Unauthorized',
+			text: jest.fn().mockResolvedValue(''),
+		} as any);
+		await expect(coreService.makeRpcRequest('getblockcount', [])).rejects.toThrow('401 Unauthorized');
 	});
 });

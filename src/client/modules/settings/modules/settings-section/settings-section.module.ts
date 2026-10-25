@@ -22,6 +22,15 @@ import {SettingsSectionComponent} from './components/settings-section/settings-s
 				},
 				children: [
 					{
+						path: 'services',
+						loadComponent: () =>
+							import('@client/modules/service-config/components/settings-services/settings-services.component').then(
+								(m) => m.SettingsServicesComponent,
+							),
+						title: 'Orchard | Services',
+						data: {section: 'settings', sub_section: 'services'},
+					},
+					{
 						path: '',
 						redirectTo: 'app',
 						pathMatch: 'full',

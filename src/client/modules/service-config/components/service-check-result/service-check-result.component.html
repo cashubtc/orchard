@@ -1,0 +1,21 @@
+<section
+	class="check-result"
+	[class.orc-low-card]="result().ok && !result().warning"
+	[class.orc-warning-card]="result().ok && result().warning"
+	[class.orc-error-card]="!result().ok"
+	role="status"
+	aria-live="polite"
+>
+	<h3>{{ result().title }}</h3>
+	<p>{{ result().context }}</p>
+	@if (result().diagnostic; as diagnostic) {
+		<pre>{{ diagnostic }}</pre>
+		<button matButton type="button" [cdkCopyToClipboard]="diagnostic"><mat-icon>content_copy</mat-icon>Copy diagnostic</button>
+	}
+	@if (result().chain) {
+		<p>Network: {{ result().chain }}{{ result().chain_match === true ? ' · Matches Bitcoin' : '' }}</p>
+	}
+	@if (result().mode) {
+		<p>Mint mode: {{ result().mode }}</p>
+	}
+</section>

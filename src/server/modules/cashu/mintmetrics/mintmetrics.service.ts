@@ -29,6 +29,7 @@ export class MintMetricsService {
 	private mint_reachable: boolean | null = null;
 	private warned_families = new Set<string>();
 	private collecting = false;
+	private configuration_version = 0;
 
 	constructor(
 		@InjectRepository(MintMetrics)
@@ -36,6 +37,13 @@ export class MintMetricsService {
 		private prometheusService: PrometheusService,
 		private configService: ConfigService,
 	) {}
+
+	/** Drop reachability/cardinality caches when a different mint is selected. */
+	public reinitialize(): void {
+		this.configuration_version++;
+		this.mint_reachable = null;
+		this.warned_families.clear();
+	}
 
 	/**
 	 * Determines whether Prometheus metrics are supported and configured for the active mint.
@@ -71,6 +79,7 @@ export class MintMetricsService {
 			return;
 		}
 		this.collecting = true;
+		const version = this.configuration_version;
 		try {
 			let families: PromFamily[];
 			try {
@@ -82,6 +91,7 @@ export class MintMetricsService {
 				this.mint_reachable = false;
 				return;
 			}
+			if (version !== this.configuration_version) return;
 			if (this.mint_reachable === false) this.logger.log('Mint metrics endpoint reachable again, resuming collection');
 			this.mint_reachable = true;
 			const rows = this.buildRows(families);

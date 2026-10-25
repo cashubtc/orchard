@@ -1,0 +1,51 @@
+<div [formGroup]="form()" class="service-fields">
+	<mat-form-field appearance="outline">
+		<mat-label>Implementation</mat-label>
+		<mat-select formControlName="type" (selectionChange)="onTypeChange()">
+			@for (type of descriptors[configuration().service].types; track type.value) {
+				<mat-option [value]="type.value">{{ type.label }}</mat-option>
+			}
+		</mat-select>
+	</mat-form-field>
+	@if (configuration().service === 'mint') {
+		<mat-form-field appearance="outline">
+			<mat-label>Transport</mat-label>
+			<mat-select formControlName="mtls" (selectionChange)="changed.emit()">
+				<mat-option value="false">Without mTLS</mat-option><mat-option value="true">Mutual TLS</mat-option>
+			</mat-select>
+		</mat-form-field>
+	}
+	@for (field of fields(); track field.key) {
+		<mat-form-field appearance="outline">
+			<mat-label>{{ field.label }}{{ field.optional ? ' (optional)' : '' }}</mat-label>
+			@if (field.multiline) {
+				<textarea
+					matInput
+					[errorStateMatcher]="error_matcher"
+					[formControlName]="field.key"
+					[placeholder]="placeholder(field)"
+					rows="2"
+					(input)="changed.emit()"
+					autocomplete="off"
+					spellcheck="false"
+				></textarea>
+			} @else {
+				<input
+					matInput
+					[errorStateMatcher]="error_matcher"
+					[formControlName]="field.key"
+					[placeholder]="placeholder(field)"
+					[type]="field.password ? 'password' : 'text'"
+					(input)="changed.emit()"
+					autocomplete="off"
+				/>
+			}
+			@if (field.credential || field.password) {
+				<mat-hint
+					>Leave unchanged to keep it.
+					<button type="button" class="clear-field" (click)="clearField(field.key)">Clear</button></mat-hint
+				>
+			}
+		</mat-form-field>
+	}
+</div>

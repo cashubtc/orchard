@@ -9,10 +9,10 @@ export class CredentialService {
 
 	constructor() {}
 
-	public loadPemOrPath(value?: string): Buffer | undefined {
+	public loadPemOrPath(value?: string, strict = false): Buffer | undefined {
 		if (!value) return undefined;
 		// File path
-		if (this.isProbablyPath(value)) return this.readPath(value) ?? undefined;
+		if (this.isProbablyPath(value)) return this.readPath(value, strict) ?? undefined;
 		// base64:... or b64:...
 		const b64_prefix = value.match(/^(base64|b64):/i);
 		if (b64_prefix) {
@@ -36,11 +36,11 @@ export class CredentialService {
 		return Buffer.from(normalized, 'utf8');
 	}
 
-	public loadMacaroonHex(value?: string): string | undefined {
+	public loadMacaroonHex(value?: string, strict = false): string | undefined {
 		if (!value) return undefined;
 		// File path
 		if (this.isProbablyPath(value)) {
-			const buf = this.readPath(value);
+			const buf = this.readPath(value, strict);
 			return buf ? buf.toString('hex') : undefined;
 		}
 		// hex:... prefix
@@ -88,11 +88,12 @@ export class CredentialService {
 		}
 	}
 
-	private readPath(value: string): Buffer | undefined {
+	private readPath(value: string, strict: boolean): Buffer | undefined {
 		const file_path = value.startsWith('file://') ? value.replace(/^file:\/\//, '') : value;
 		try {
 			return fs.readFileSync(file_path);
 		} catch (error) {
+			if (strict) throw error;
 			this.logger.warn(`Failed to read credential file "${file_path}": ${(error as Error).message}`);
 			return undefined;
 		}

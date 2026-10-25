@@ -87,6 +87,7 @@ export class NavService {
 			},
 		],
 		settings: [
+			{name: 'Services', navroute: 'settings/services', subsection: 'services'},
 			{
 				name: 'Application',
 				navroute: 'settings/app',

@@ -31,6 +31,9 @@ import {provideHttpClientTesting} from '@angular/common/http/testing';
 		type: 'cdk',
 		critical_path: '/v1/info',
 		database_type: 'sqlite',
+		database: true,
+		public_api: true,
+		metrics: false,
 	},
 	ai: {
 		enabled: false,

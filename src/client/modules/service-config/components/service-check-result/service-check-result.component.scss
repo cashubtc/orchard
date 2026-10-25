@@ -1,0 +1,14 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+.check-result {
+	@extend %p-1;
+}
+h3 {
+	margin-top: 0;
+}
+pre {
+	@extend %font-size-s;
+	@extend %orc-on-surface-variant-color;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}

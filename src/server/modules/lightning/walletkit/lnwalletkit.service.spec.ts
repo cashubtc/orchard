@@ -42,7 +42,7 @@ describe('LightningWalletKitService', () => {
 	});
 
 	it('delegates to LND and returns addresses', async () => {
-		const client = {ListAddresses: jest.fn((req: any, cb: any) => cb(null, {account_with_addresses: []}))};
+		const client = {ListAddresses: jest.fn((req: any, _options: unknown, cb: any) => cb(null, {account_with_addresses: []}))};
 		(lndService.initializeWalletKitClient as jest.Mock).mockReturnValue(client);
 		configService.get.mockReturnValue('lnd');
 		await lightningWalletKitService.onModuleInit();
@@ -51,8 +51,8 @@ describe('LightningWalletKitService', () => {
 
 	it('delegates to CLN and maps addresses', async () => {
 		const client = {
-			ListAddresses: jest.fn((req: any, cb: any) => cb(null, {addresses: []})),
-			ListFunds: jest.fn((req: any, cb: any) => cb(null, {outputs: []})),
+			ListAddresses: jest.fn((req: any, _options: unknown, cb: any) => cb(null, {addresses: []})),
+			ListFunds: jest.fn((req: any, _options: unknown, cb: any) => cb(null, {outputs: []})),
 		};
 		(clnService.initializeWalletKitClient as jest.Mock).mockReturnValue(client);
 		(clnService.mapClnAddresses as jest.Mock).mockReturnValue({account_with_addresses: []});
@@ -62,7 +62,7 @@ describe('LightningWalletKitService', () => {
 	});
 
 	it('maps UNAVAILABLE error to connection code', async () => {
-		const client = {ListAddresses: jest.fn((req: any, cb: any) => cb(new Error('14 UNAVAILABLE'), null))};
+		const client = {ListAddresses: jest.fn((req: any, _options: unknown, cb: any) => cb(new Error('14 UNAVAILABLE'), null))};
 		(lndService.initializeWalletKitClient as jest.Mock).mockReturnValue(client);
 		configService.get.mockReturnValue('lnd');
 		await lightningWalletKitService.onModuleInit();

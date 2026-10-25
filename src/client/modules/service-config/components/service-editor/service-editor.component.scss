@@ -1,0 +1,34 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+.service-editor {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %h-full;
+	@extend %overflow-hidden;
+}
+.editor-header {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-justify-between;
+	@extend %p-1;
+}
+h2 {
+	margin: 0;
+	font-size: 1.25rem;
+}
+.editor-content {
+	@extend %p-1;
+	@extend %overflow-y-auto;
+	flex: 1;
+}
+.editor-footer {
+	@extend %flex;
+	@extend %flex-gap-0-5;
+	@extend %p-1;
+	flex-wrap: wrap;
+}
+.environment-notice {
+	@extend %p-1;
+	@extend %orc-corner-small;
+	@extend %orc-secondary-container-bg;
+}

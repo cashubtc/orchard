@@ -253,6 +253,11 @@ registerEnumType(SettingKey, {
 	name: 'SettingKey',
 	description: 'Application setting configuration keys',
 	valuesMap: {
+		...Object.fromEntries(
+			Object.keys(SettingKey)
+				.filter((key) => key.startsWith('SERVICE_'))
+				.map((key) => [key, {description: 'Service connection override'}]),
+		),
 		BITCOIN_ORACLE: {description: 'Bitcoin price oracle toggle'},
 		AI_ENABLED: {description: 'AI features toggle'},
 		AI_VENDOR: {description: 'AI vendor selection'},

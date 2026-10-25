@@ -13,61 +13,67 @@
 				<span>Orchard</span>
 			</div>
 		</a>
-		<a
-			mat-list-item
-			routerLink="/bitcoin"
-			(click)="onItemClick('bitcoin')"
-			(mouseenter)="hovered.set('bitcoin')"
-			(mouseleave)="hovered.set('')"
-			[class.active]="active_section() === 'bitcoin'"
-		>
-			<div class="flex flex-items-center flex-justify-between">
-				<div class="flex flex-items-center flex-gap-1">
-					<mat-icon
-						class="w-1-5 h-1-5"
-						[svgIcon]="active_section() === 'bitcoin' || hovered() === 'bitcoin' ? 'bitcoin' : 'bitcoin_outline'"
-					></mat-icon>
-					<span>Bitcoin</span>
+		@if (data.enabled_bitcoin) {
+			<a
+				mat-list-item
+				routerLink="/bitcoin"
+				(click)="onItemClick('bitcoin')"
+				(mouseenter)="hovered.set('bitcoin')"
+				(mouseleave)="hovered.set('')"
+				[class.active]="active_section() === 'bitcoin'"
+			>
+				<div class="flex flex-items-center flex-justify-between">
+					<div class="flex flex-items-center flex-gap-1">
+						<mat-icon
+							class="w-1-5 h-1-5"
+							[svgIcon]="active_section() === 'bitcoin' || hovered() === 'bitcoin' ? 'bitcoin' : 'bitcoin_outline'"
+						></mat-icon>
+						<span>Bitcoin</span>
+					</div>
+					<orc-graphic-status [status]="bitcoin_status"></orc-graphic-status>
 				</div>
-				<orc-graphic-status [status]="bitcoin_status"></orc-graphic-status>
-			</div>
-		</a>
-		<a
-			mat-list-item
-			routerLink="/lightning"
-			(click)="onItemClick('lightning')"
-			(mouseenter)="hovered.set('lightning')"
-			(mouseleave)="hovered.set('')"
-			[class.active]="active_section() === 'lightning'"
-		>
-			<div class="flex flex-items-center flex-justify-between">
-				<div class="flex flex-items-center flex-gap-1">
-					<mat-icon class="icon-md" [class.mat-symbol-outline]="active_section() !== 'lightning' && hovered() !== 'lightning'"
-						>bolt</mat-icon
-					>
-					<span>Lightning</span>
+			</a>
+		}
+		@if (data.enabled_lightning) {
+			<a
+				mat-list-item
+				routerLink="/lightning"
+				(click)="onItemClick('lightning')"
+				(mouseenter)="hovered.set('lightning')"
+				(mouseleave)="hovered.set('')"
+				[class.active]="active_section() === 'lightning'"
+			>
+				<div class="flex flex-items-center flex-justify-between">
+					<div class="flex flex-items-center flex-gap-1">
+						<mat-icon class="icon-md" [class.mat-symbol-outline]="active_section() !== 'lightning' && hovered() !== 'lightning'"
+							>bolt</mat-icon
+						>
+						<span>Lightning</span>
+					</div>
+					<orc-graphic-status [status]="lightning_status"></orc-graphic-status>
 				</div>
-				<orc-graphic-status [status]="lightning_status"></orc-graphic-status>
-			</div>
-		</a>
-		<a
-			mat-list-item
-			routerLink="/mint"
-			(click)="onItemClick('mint')"
-			(mouseenter)="hovered.set('mint')"
-			(mouseleave)="hovered.set('')"
-			[class.active]="active_section() === 'mint'"
-		>
-			<div class="flex flex-items-center flex-justify-between">
-				<div class="flex flex-items-center flex-gap-1">
-					<mat-icon class="icon-md" [class.mat-symbol-outline]="active_section() !== 'mint' && hovered() !== 'mint'"
-						>account_balance</mat-icon
-					>
-					<span>Mint</span>
+			</a>
+		}
+		@if (data.enabled_mint) {
+			<a
+				mat-list-item
+				routerLink="/mint"
+				(click)="onItemClick('mint')"
+				(mouseenter)="hovered.set('mint')"
+				(mouseleave)="hovered.set('')"
+				[class.active]="active_section() === 'mint'"
+			>
+				<div class="flex flex-items-center flex-justify-between">
+					<div class="flex flex-items-center flex-gap-1">
+						<mat-icon class="icon-md" [class.mat-symbol-outline]="active_section() !== 'mint' && hovered() !== 'mint'"
+							>account_balance</mat-icon
+						>
+						<span>Mint</span>
+					</div>
+					<orc-graphic-status [status]="mint_status"></orc-graphic-status>
 				</div>
-				<orc-graphic-status [status]="mint_status"></orc-graphic-status>
-			</div>
-		</a>
+			</a>
+		}
 		<a
 			mat-list-item
 			routerLink="/ecash"

@@ -2,6 +2,7 @@
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
 import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
+import {bitcoinNetworksMatch} from '#server/modules/bitcoin/helpers/bitcoin-network.helpers';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
@@ -44,27 +45,12 @@ export class BitcoinNetworkService {
 			]);
 			const bitcoin_network = blockchain_info.chain;
 			const lightning_network = lightning_info.chains?.[0]?.network;
-			if (!this.networksMatch(bitcoin_network, lightning_network)) return false;
+			if (!bitcoinNetworksMatch(bitcoin_network, lightning_network)) return false;
 			const height_difference = Math.abs(blockchain_info.blocks - lightning_info.block_height);
 			if (height_difference > 10) return false;
 			return true;
 		} catch {
 			return false;
 		}
-	}
-
-	/**
-	 * Compares bitcoin and lightning network identifiers
-	 * Bitcoin uses: "main", "test", "regtest", "signet"
-	 * Lightning uses: "mainnet", "testnet", "signet", "bitcoin" (CLN)
-	 */
-	private networksMatch(bitcoin_network: string, lightning_network: string): boolean {
-		const network_map: Record<string, string[]> = {
-			main: ['mainnet', 'bitcoin'],
-			test: ['testnet'],
-			regtest: ['regtest'],
-			signet: ['signet'],
-		};
-		return network_map[bitcoin_network]?.includes(lightning_network) ?? false;
 	}
 }

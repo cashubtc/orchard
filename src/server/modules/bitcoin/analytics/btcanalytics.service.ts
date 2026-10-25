@@ -5,6 +5,7 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {Repository, Between, In, type FindOptionsWhere} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
+import {AnalyticsLifecycle} from '#server/modules/analytics/helpers/analytics-lifecycle';
 import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
 import {TaprootAssetsService} from '#server/modules/tapass/tapass/tapass.service';
 import {AnalyticsCheckpoint} from '#server/modules/analytics/analytics-checkpoint.entity';
@@ -21,6 +22,7 @@ const RESCAN_SECONDS = 86400 * 7; // Re-scan last 7 days on daily rescan
 @Injectable()
 export class BitcoinAnalyticsService implements OnApplicationBootstrap {
 	private readonly logger = new Logger(BitcoinAnalyticsService.name);
+	private readonly lifecycle = new AnalyticsLifecycle();
 	private backfill_status: AnalyticsBackfillStatus = {is_running: false};
 	private node_pubkey: string | null = null;
 
@@ -54,10 +56,12 @@ export class BitcoinAnalyticsService implements OnApplicationBootstrap {
 	 */
 	private async getNodePubkey(): Promise<string> {
 		if (this.node_pubkey) return this.node_pubkey;
+		const generation = this.lifecycle.generation;
 		const info = await this.lightningService.getLightningInfo();
 		if (!info.identity_pubkey) {
 			throw new Error('Could not get node pubkey from lightning info');
 		}
+		if (generation !== this.lifecycle.generation) return this.getNodePubkey();
 		this.node_pubkey = info.identity_pubkey;
 		return this.node_pubkey;
 	}
@@ -120,6 +124,7 @@ export class BitcoinAnalyticsService implements OnApplicationBootstrap {
 	 * Saves the checkpoint for a specific data type
 	 */
 	private async saveCheckpoint(data_type: string, index: number): Promise<void> {
+		this.lifecycle.assertActive();
 		const node_pubkey = await this.getNodePubkey();
 		await this.checkpointRepository.upsert(
 			{
@@ -201,10 +206,27 @@ export class BitcoinAnalyticsService implements OnApplicationBootstrap {
 		this.backfill_status.last_processed_at = hour;
 	}
 
+	/** Run a backfill within the current service configuration. */
+	public runStreamingBackfill(): Promise<void> {
+		return this.lifecycle.run(() => this.backfill());
+	}
+
+	/** Drain old work before replacing its connection. */
+	public pause(): Promise<void> {
+		return this.lifecycle.pause();
+	}
+
+	/** Invalidate identity and restart collection against the new node. */
+	public reinitialize(): void {
+		this.node_pubkey = null;
+		this.lifecycle.reset();
+		void this.onApplicationBootstrap();
+	}
+
 	/**
 	 * Runs all backfill streams: BTC transactions, asset transfers, asset receives
 	 */
-	async runStreamingBackfill(): Promise<void> {
+	private async backfill(): Promise<void> {
 		if (this.backfill_status.is_running) {
 			this.logger.warn('Bitcoin analytics backfill already running');
 			return;
@@ -546,7 +568,11 @@ export class BitcoinAnalyticsService implements OnApplicationBootstrap {
 	 * Re-scans recent records to catch late confirmations and status changes.
 	 * Resets checkpoints back by RESCAN_SECONDS to re-process recent data.
 	 */
-	async rescanRecentRecords(): Promise<void> {
+	rescanRecentRecords(): Promise<void> {
+		return this.lifecycle.run(() => this.rescan());
+	}
+
+	private async rescan(): Promise<void> {
 		if (this.backfill_status.is_running) {
 			this.logger.warn('Bitcoin analytics backfill already running, skipping rescan');
 			return;

@@ -5,6 +5,7 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {Repository, DataSource, EntityManager, Between, In} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
+import {AnalyticsLifecycle} from '#server/modules/analytics/helpers/analytics-lifecycle';
 import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
 import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
 import {AnalyticsCheckpoint} from '#server/modules/analytics/analytics-checkpoint.entity';
@@ -31,6 +32,7 @@ const RESCAN_RECORDS = 1000;
 @Injectable()
 export class LightningAnalyticsService implements OnApplicationBootstrap {
 	private readonly logger = new Logger(LightningAnalyticsService.name);
+	private readonly lifecycle = new AnalyticsLifecycle();
 	private backfill_status: AnalyticsBackfillStatus = {is_running: false};
 	private node_pubkey: string | null = null;
 
@@ -61,10 +63,12 @@ export class LightningAnalyticsService implements OnApplicationBootstrap {
 	 */
 	private async getNodePubkey(): Promise<string> {
 		if (this.node_pubkey) return this.node_pubkey;
+		const generation = this.lifecycle.generation;
 		const info = await this.lightningService.getLightningInfo();
 		if (!info.identity_pubkey) {
 			throw new Error('Could not get node pubkey from lightning info');
 		}
+		if (generation !== this.lifecycle.generation) return this.getNodePubkey();
 		this.node_pubkey = info.identity_pubkey;
 		return this.node_pubkey;
 	}
@@ -326,6 +330,7 @@ export class LightningAnalyticsService implements OnApplicationBootstrap {
 	 * Saves the checkpoint for a specific data type
 	 */
 	private async saveCheckpoint(data_type: string, index: number): Promise<void> {
+		this.lifecycle.assertActive();
 		const node_pubkey = await this.getNodePubkey();
 		await this.checkpointRepository.upsert(
 			{
@@ -345,10 +350,27 @@ export class LightningAnalyticsService implements OnApplicationBootstrap {
 		this.backfill_status.last_processed_at = hour;
 	}
 
+	/** Run a backfill within the current service configuration. */
+	public runStreamingBackfill(): Promise<void> {
+		return this.lifecycle.run(() => this.backfill());
+	}
+
+	/** Drain old work before replacing its connection. */
+	public pause(): Promise<void> {
+		return this.lifecycle.pause();
+	}
+
+	/** Invalidate identity and restart collection against the new node. */
+	public reinitialize(): void {
+		this.node_pubkey = null;
+		this.lifecycle.reset();
+		void this.onApplicationBootstrap();
+	}
+
 	/**
 	 * Runs the streaming backfill - fetches data in batches, buckets by hour, inserts when complete
 	 */
-	async runStreamingBackfill(): Promise<void> {
+	private async backfill(): Promise<void> {
 		if (this.backfill_status.is_running) {
 			this.logger.warn('Backfill already running');
 			return;
@@ -408,6 +430,7 @@ export class LightningAnalyticsService implements OnApplicationBootstrap {
 		const group_to_name = this.buildGroupKeyToNameMap(channels, closed_channels);
 
 		while (true) {
+			this.lifecycle.assertActive();
 			const result = await this.lightningService.getPayments({index_offset: offset, max_results: BATCH_SIZE});
 			const batch = result.data;
 
@@ -479,6 +502,7 @@ export class LightningAnalyticsService implements OnApplicationBootstrap {
 		const group_to_name = this.buildGroupKeyToNameMap(channels, closed_channels);
 
 		while (true) {
+			this.lifecycle.assertActive();
 			const result = await this.lightningService.getInvoices({index_offset: offset, max_results: BATCH_SIZE});
 			const batch = result.data;
 
@@ -550,6 +574,7 @@ export class LightningAnalyticsService implements OnApplicationBootstrap {
 		const pending_bucket: Map<number, LightningForward[]> = new Map();
 
 		while (true) {
+			this.lifecycle.assertActive();
 			const result = await this.lightningService.getForwards({index_offset: offset, max_results: BATCH_SIZE});
 			const batch = result.data;
 
@@ -940,7 +965,11 @@ export class LightningAnalyticsService implements OnApplicationBootstrap {
 	 * Resets checkpoints back by RESCAN_RECORDS to re-process recent data.
 	 * Call this daily to catch any lagging settlements.
 	 */
-	async rescanRecentRecords(): Promise<void> {
+	rescanRecentRecords(): Promise<void> {
+		return this.lifecycle.run(() => this.rescan());
+	}
+
+	private async rescan(): Promise<void> {
 		if (this.backfill_status.is_running) {
 			this.logger.warn('Backfill already running, skipping rescan');
 			return;

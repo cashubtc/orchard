@@ -3,6 +3,7 @@ import {Injectable} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
 import {FetchService} from '#server/modules/fetch/fetch.service';
+import {INTEGRATION_REQUEST_TIMEOUT_MS} from '#server/modules/integration/constants/integration.constants';
 
 @Injectable()
 export class CoreService {
@@ -25,8 +26,10 @@ export class CoreService {
 		const pass = this.configService.get('bitcoin.pass');
 		const host = this.configService.get('bitcoin.host');
 		const port = this.configService.get('bitcoin.port');
-		const clean_host = host.replace(/^https?:\/\//, '');
-		this.rpc_url = `http://${clean_host}:${port}/`;
+		if (!host || !port) throw new Error('Bitcoin RPC host or port is missing');
+		const url = new URL(/^https?:\/\//.test(host) ? host : `http://${host}`);
+		url.port = String(port);
+		this.rpc_url = url.toString();
 		const auth_string = Buffer.from(`${user}:${pass}`).toString('base64');
 		this.options = {
 			method: 'POST',
@@ -48,8 +51,17 @@ export class CoreService {
 			method: this.options.method,
 			headers: this.options.headers,
 			body: data_string,
+			signal: AbortSignal.timeout(INTEGRATION_REQUEST_TIMEOUT_MS),
 		});
-		const result = (await response.json()) as {result: any};
+		const body = await response.text();
+		let result: {result: unknown; error?: {message: string} | null} | null = null;
+		try {
+			result = JSON.parse(body);
+		} catch {
+			// Bitcoin Core answers authentication and transport failures without a JSON body
+		}
+		if (result?.error) throw new Error(result.error.message);
+		if (!response.ok || !result) throw new Error(body || `${response.status} ${response.statusText}`);
 		return result.result;
 	}
 }

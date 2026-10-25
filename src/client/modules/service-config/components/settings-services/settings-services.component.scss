@@ -1,0 +1,59 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+.services-page {
+	@extend %p-2;
+	max-width: 68rem;
+	margin: 0 auto;
+}
+.service-list {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-1;
+	margin-top: 2rem;
+}
+.service-row {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-1;
+	@extend %p-1;
+	@extend %orc-corner-small;
+	@extend %orc-surface-container-bg;
+}
+.service-description {
+	@extend %flex-1;
+	min-width: 0;
+}
+h2 {
+	@extend %font-size-l;
+	margin: 0;
+}
+p {
+	margin: 0.5rem 0;
+}
+.source-label {
+	@extend %font-size-xs;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+.connection-status {
+	@extend %font-size-s;
+	display: block;
+	margin-top: 0.25rem;
+}
+.service-actions {
+	@extend %flex;
+	@extend %flex-gap-0-5;
+	flex-wrap: wrap;
+}
+@media (max-width: 600px) {
+	.services-page {
+		padding: 1rem;
+	}
+	.service-row {
+		flex-wrap: wrap;
+	}
+	.service-actions {
+		width: 100%;
+		justify-content: flex-end;
+	}
+}

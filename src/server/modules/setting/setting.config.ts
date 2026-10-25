@@ -1,8 +1,16 @@
+/* Application Dependencies */
+import {SERVICE_SETTING_KEYS} from '#server/modules/service-config/constants/service-config.constants';
 /* local Dependencies */
 import {Setting} from './setting.entity.js';
 import {SettingKey, SettingValue} from './setting.enums.js';
 
 export const DEFAULT_SETTINGS: Setting[] = [
+	...Array.from(SERVICE_SETTING_KEYS, (key): Setting => ({
+		key,
+		value: '',
+		value_type: SettingValue.STRING,
+		description: 'Service connection override',
+	})),
 	{
 		key: SettingKey.BITCOIN_ORACLE,
 		value: 'false',

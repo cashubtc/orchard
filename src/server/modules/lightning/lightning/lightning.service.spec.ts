@@ -54,8 +54,8 @@ describe('LightningService', () => {
 
 	it('delegates to LND when type is lnd', async () => {
 		const client = {
-			GetInfo: jest.fn((req: any, cb: any) => cb(null, {version: 'v'})),
-			DecodePayReq: jest.fn((req: any, cb: any) => cb(null, {valid: true})),
+			GetInfo: jest.fn((req: any, _options: unknown, cb: any) => cb(null, {version: 'v'})),
+			DecodePayReq: jest.fn((req: any, _options: unknown, cb: any) => cb(null, {valid: true})),
 		};
 		(lndService.initializeLightningClient as jest.Mock).mockReturnValue(client);
 		configService.get.mockReturnValue('lnd');
@@ -68,10 +68,10 @@ describe('LightningService', () => {
 
 	it('delegates to CLN and maps responses', async () => {
 		const client = {
-			Getinfo: jest.fn((req: any, cb: any) => cb(null, {id: 'aa'})),
-			ListFunds: jest.fn((req: any, cb: any) => cb(null, {channels: []})),
-			ListPeerChannels: jest.fn((req: any, cb: any) => cb(null, {channels: []})),
-			Decode: jest.fn((req: any, cb: any) => cb(null, {valid: true})),
+			Getinfo: jest.fn((req: any, _options: unknown, cb: any) => cb(null, {id: 'aa'})),
+			ListFunds: jest.fn((req: any, _options: unknown, cb: any) => cb(null, {channels: []})),
+			ListPeerChannels: jest.fn((req: any, _options: unknown, cb: any) => cb(null, {channels: []})),
+			Decode: jest.fn((req: any, _options: unknown, cb: any) => cb(null, {valid: true})),
 		};
 		(clnService.initializeLightningClient as jest.Mock).mockReturnValue(client);
 		(clnService.mapClnInfo as jest.Mock).mockResolvedValue({version: 'v2'});
@@ -85,7 +85,7 @@ describe('LightningService', () => {
 	});
 
 	it('maps UNAVAILABLE error to connection code', async () => {
-		const client = {GetInfo: jest.fn((req: any, cb: any) => cb(new Error('14 UNAVAILABLE'), null))};
+		const client = {GetInfo: jest.fn((req: any, _options: unknown, cb: any) => cb(new Error('14 UNAVAILABLE'), null))};
 		(lndService.initializeLightningClient as jest.Mock).mockReturnValue(client);
 		configService.get.mockReturnValue('lnd');
 		await lightningService.onModuleInit();

@@ -27,9 +27,9 @@ describe('NavMobileSheetMenuSectionComponent', () => {
 					provide: MAT_BOTTOM_SHEET_DATA,
 					useValue: {
 						active_section: 'index',
-						enabled_bitcoin: true,
-						enabled_lightning: true,
-						enabled_mint: true,
+						enabled_bitcoin: false,
+						enabled_lightning: false,
+						enabled_mint: false,
 						online_bitcoin: true,
 						online_lightning: true,
 						online_mint: true,
@@ -47,5 +47,10 @@ describe('NavMobileSheetMenuSectionComponent', () => {
 
 	it('should create', () => {
 		expect(component).toBeTruthy();
+	});
+
+	it('leaves home and settings available when no services are configured', () => {
+		const links = Array.from(fixture.nativeElement.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>);
+		expect(links.map((link) => link.getAttribute('href'))).toEqual(['/', '/ecash', '/settings']);
 	});
 });

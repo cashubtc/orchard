@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Injectable, Logger} from '@nestjs/common';
+import {Injectable, Logger, BadRequestException} from '@nestjs/common';
 /* Application Dependencies */
 import {SettingService} from '#server/modules/setting/setting.service';
 import {ErrorService} from '#server/modules/error/error.service';
@@ -9,6 +9,7 @@ import {SettingKey} from '#server/modules/setting/setting.enums';
 import {Setting} from '#server/modules/setting/setting.entity';
 import {isSettingSensitive, maskSensitiveValue} from '#server/modules/setting/setting.helpers';
 import {MessageService} from '#server/modules/message/message.service';
+import {SERVICE_SETTING_KEYS} from '#server/modules/service-config/constants/service-config.constants';
 /* Local Dependencies */
 import {OrchardSetting} from './setting.model.js';
 
@@ -28,7 +29,9 @@ export class ApiSettingService {
 	async getSettings(tag: string): Promise<OrchardSetting[]> {
 		try {
 			const settings = await this.settingService.getSettings();
-			return settings.map((setting) => this.toMaskedOrchardSetting(setting));
+			return settings
+				.filter((setting) => !SERVICE_SETTING_KEYS.has(setting.key))
+				.map((setting) => this.toMaskedOrchardSetting(setting));
 		} catch (error) {
 			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
 				errord: OrchardErrorCode.SettingError,
@@ -39,6 +42,8 @@ export class ApiSettingService {
 
 	async updateSettings(tag: string, keys: SettingKey[], values: string[]): Promise<OrchardSetting[]> {
 		try {
+			if (keys.some((key) => SERVICE_SETTING_KEYS.has(key)))
+				throw new BadRequestException('Use service configuration to update connections');
 			if (keys.length !== values.length) throw OrchardErrorCode.SettingError;
 			const settings = await this.settingService.updateSettings(keys, values);
 			if (keys.some((key) => MESSAGE_KEYS.has(key))) {

@@ -55,6 +55,7 @@ import {PublicPortModule} from './public/port/port.module.js';
 // Crew Endpoints
 import {CrewUserModule} from './crew/crewuser/crewuser.module.js';
 import {CrewInviteModule} from './crew/crewinvite/crewinvite.module.js';
+import {ApiServiceConfigModule} from './service-config/service-config.module.js';
 // Setting Endpoints
 import {ApiSettingModule} from './setting/setting.module.js';
 // Event Endpoints
@@ -114,6 +115,7 @@ import './api.enums.js';
 		CrewUserModule,
 		CrewInviteModule,
 		ApiSettingModule,
+		ApiServiceConfigModule,
 		ApiEventLogModule,
 		ApiSystemMetricsModule,
 		ApiSystemInfoModule,

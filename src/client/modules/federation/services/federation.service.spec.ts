@@ -12,7 +12,7 @@ import {FederationService} from './federation.service';
 describe('FederationService', () => {
 	let service: FederationService;
 	let http: HttpTestingController;
-	const config = {mint: {type: 'cdk'}};
+	const config = {mint: {enabled: true, type: 'cdk'}};
 	beforeEach(() => {
 		config.mint.type = 'cdk';
 		TestBed.configureTestingModule({

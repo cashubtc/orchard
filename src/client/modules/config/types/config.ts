@@ -22,6 +22,8 @@ export type Config = {
 		type: string;
 		critical_path: string;
 		database_type: string;
+		database: boolean;
+		public_api: boolean;
 		metrics: boolean;
 	};
 	constants: {

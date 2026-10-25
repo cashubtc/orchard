@@ -29,6 +29,7 @@ export class FederationService {
 	public readonly details = signal<string | null>(null);
 	public readonly standalone_actions = computed(() => this.configService.config.mint.type !== 'cdk' || this.mode() === 'standalone');
 
+	private request_version = 0;
 	private mode_observable: Observable<OrchardFederationMode> | null = null;
 
 	/* *******************************************************
@@ -37,7 +38,14 @@ export class FederationService {
 
 	/** Probe the mint daemon's mode. Member and standalone don't change on their own, so they're reused unless refreshed. */
 	public loadMode(refresh = false): Observable<OrchardFederationMode> {
-		if (this.configService.config.mint.type !== 'cdk') {
+		if (refresh) {
+			this.request_version++;
+			this.mode_observable = null;
+			this.mode.set(null);
+			this.details.set(null);
+		}
+		const version = this.request_version;
+		if (!this.configService.config.mint.enabled || this.configService.config.mint.type !== 'cdk') {
 			this.mode.set('standalone');
 			return of({mode: 'standalone', details: null});
 		}
@@ -53,13 +61,14 @@ export class FederationService {
 					return response.data.federation_mode;
 				}),
 				tap((result) => {
+					if (version !== this.request_version) return;
 					this.mode.set(result.mode);
 					this.details.set(result.details ?? null);
 					this.mode_observable = null;
 				}),
 				shareReplay(1),
 				catchError((error) => {
-					this.mode_observable = null;
+					if (version === this.request_version) this.mode_observable = null;
 					return throwError(() => error);
 				}),
 			);

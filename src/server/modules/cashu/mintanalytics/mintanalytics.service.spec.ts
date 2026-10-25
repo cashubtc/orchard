@@ -81,6 +81,7 @@ describe('CashuMintAnalyticsService', () => {
 		configService.get.mockImplementation((key: string) => {
 			if (key === 'cashu.type') return 'cdk';
 			if (key === 'cashu.database') return '/tmp/test.db';
+			if (key === 'cashu.api') return 'http://localhost:3338';
 			return undefined;
 		});
 

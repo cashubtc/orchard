@@ -1,0 +1,49 @@
+<div class="service-editor">
+	<header class="editor-header">
+		<h2>{{ configuration.enabled ? 'Edit' : 'Add' }} {{ descriptor.name }}</h2>
+		<button mat-icon-button type="button" aria-label="Close service editor" (click)="close()" [disabled]="busy()">
+			<mat-icon>close</mat-icon>
+		</button>
+	</header>
+	@if (busy()) {
+		<mat-progress-bar mode="indeterminate" aria-label="Testing connection"></mat-progress-bar>
+	}
+	<div class="editor-content">
+		@if (configuration.source === 'environment') {
+			<p class="environment-notice">
+				These values come from the environment. Saving stores a copy in Orchard, which takes precedence from then on.
+			</p>
+		}
+		<p>Changes apply as soon as you save. No restart needed.</p>
+		<orc-service-fields
+			[configuration]="configuration"
+			[form]="form"
+			[flagged]="result()?.fields ?? []"
+			(changed)="changed()"
+		></orc-service-fields>
+		@if (result(); as check) {
+			<orc-service-check-result [result]="check"></orc-service-check-result>
+		}
+		@if (error()) {
+			<p role="alert" class="orc-error-color">{{ error() }}</p>
+		}
+		@if (saved()) {
+			<p role="status" class="orc-status-active-color">
+				{{ descriptor.name }} saved{{ result()?.ok ? ' and reconnected' : '' }}. No restart needed.
+			</p>
+		}
+	</div>
+	<footer class="editor-footer">
+		@if (saved()) {
+			<button matButton="filled" type="button" (click)="close()">Done</button>
+		} @else {
+			<button matButton type="button" [disabled]="busy()" (click)="submit(false)">Test connection</button>
+			<button matButton="filled" type="button" [disabled]="busy()" (click)="submit(true)">
+				{{ configuration.source === 'environment' ? 'Save to Orchard' : 'Save connection' }}
+			</button>
+			@if (result() && !result()!.ok) {
+				<button matButton type="button" [disabled]="busy()" (click)="submit(true, true)">Save without a working connection</button>
+			}
+		}
+	</footer>
+</div>

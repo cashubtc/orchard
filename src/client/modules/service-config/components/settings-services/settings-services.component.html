@@ -1,0 +1,79 @@
+<section class="services-page">
+	<h1 class="title-l">Services</h1>
+	<p>Connect Orchard to the services you run. Changes apply as soon as you save.</p>
+	<p class="orc-outline-color">Values saved here override your environment. Each connection is independent.</p>
+	@if (loading()) {
+		<mat-progress-bar mode="indeterminate" aria-label="Loading services"></mat-progress-bar>
+	}
+	@if (error()) {
+		<p class="orc-error-color" role="alert">{{ error() }}</p>
+		<button matButton (click)="load()">Retry</button>
+	}
+	@if (confirmation()) {
+		<p role="status">{{ confirmation() }}</p>
+	}
+	@if (!loading() && !is_admin()) {
+		<p>Service configuration is available to administrators.</p>
+	}
+	@if (is_admin()) {
+		<div class="service-list">
+			@for (service of services(); track service.service) {
+				<article class="service-row">
+					<mat-icon>{{ descriptors[service.service].icon }}</mat-icon>
+					<div class="service-description">
+						<h2>{{ descriptors[service.service].name }}</h2>
+						<p>{{ service.enabled ? (service.type | uppercase) : descriptors[service.service].description }}</p>
+						@if (service.source !== 'none') {
+							<span class="source-label">{{ sources[service.source] }}</span>
+						}
+						<span class="connection-status">{{ statuses[service.status] }}</span>
+					</div>
+					<div class="service-actions">
+						<button matButton="tonal" [disabled]="loading()" (click)="edit(service)">
+							{{ service.enabled ? 'Edit' : 'Add' }} {{ descriptors[service.service].name }}
+						</button>
+						@if (service.enabled) {
+							<button matButton [disabled]="loading()" (click)="confirmRemove(service)">Remove</button>
+						}
+					</div>
+				</article>
+			}
+			<article class="service-row">
+				<mat-icon>deployed_code</mat-icon>
+				<div class="service-description">
+					<h2>Taproot Assets</h2>
+					<p>Set by environment variables only</p>
+					<span class="source-label">{{ taproot_enabled ? 'From environment' : 'Not configured' }}</span>
+				</div>
+			</article>
+			<article class="service-row">
+				<mat-icon>smart_toy</mat-icon>
+				<div class="service-description">
+					<h2>AI</h2>
+					<p>Managed in application settings</p>
+				</div>
+				<a matButton routerLink="/settings/app">AI settings</a>
+			</article>
+		</div>
+	}
+</section>
+<ng-template #removeDialog>
+	@if (removing(); as service) {
+		<h2 mat-dialog-title>Remove {{ descriptors[service.service].name }}?</h2>
+		<mat-dialog-content>
+			<p>Orchard will disconnect and hide the {{ descriptors[service.service].name }} section.</p>
+			<ul>
+				<li>Analytics already collected stay in Orchard.</li>
+				<li>Your node, its data and its configuration are not changed.</li>
+				<li>Environment values for this service are ignored until you add it again.</li>
+				<li>Your other service connections keep working.</li>
+			</ul>
+		</mat-dialog-content>
+		<mat-dialog-actions align="end"
+			><button matButton [mat-dialog-close]="false">Keep {{ descriptors[service.service].name }}</button
+			><button matButton="filled" [mat-dialog-close]="true">
+				Remove {{ descriptors[service.service].name }}
+			</button></mat-dialog-actions
+		>
+	}
+</ng-template>

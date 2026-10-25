@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import fs from 'node:fs/promises';
 import {config} from 'dotenv';
-config({ path: '.env', override: false, quiet: true });
+config({path: '.env', override: false, quiet: true});
 
 const mode = {
 	production: process.env['NODE_ENV'] === 'production',
@@ -14,12 +14,13 @@ const api = {
 	path: process.env['BASE_PATH'] || 'api',
 };
 
+// Editable service flags are loaded from the authenticated server before section navigation.
 const bitcoin = {
-	enabled: process.env['BITCOIN_TYPE'] ? true : false,
+	enabled: false,
 };
 
 const lightning = {
-	enabled: process.env['LIGHTNING_TYPE'] ? true : false,
+	enabled: false,
 };
 
 const taproot_assets = {
@@ -27,11 +28,13 @@ const taproot_assets = {
 };
 
 const mint = {
-	enabled: process.env['MINT_TYPE'] ? true : false,
-	type: process.env['MINT_TYPE'] || 'cdk',
+	enabled: false,
+	type: 'cdk',
 	critical_path: '/v1/info',
-	database_type: process.env['MINT_DATABASE']?.match(/postgres(ql)?:\/\//) ? 'postgres' : 'sqlite',
-	metrics: process.env['MINT_TYPE'] === 'cdk' && !!process.env['MINT_METRICS_API'],
+	database_type: 'sqlite',
+	database: false,
+	public_api: false,
+	metrics: false,
 };
 
 const constants = {

@@ -70,16 +70,14 @@ function validation(app: INestApplication, configService: ConfigService, logger:
 	// validate MINT_TYPE
 	const mint_type = configService.get<MintType>('cashu.type');
 	if (mint_type && !Object.values(MintType).includes(mint_type)) shutdown(app, logger, `Invalid MINT_TYPE: ${mint_type}`);
-	// validate MINT_DATABASE
+	// the mint database is optional, but a configured sqlite path that doesn't exist is worth flagging
 	const mint_database = configService.get<string>('cashu.database');
-	if (mint_type && !mint_database) shutdown(app, logger, 'MINT_DATABASE not configured');
-	const mint_database_type = configService.get<string>('cashu.database_type');
-	if (mint_type && mint_database && mint_database_type === 'sqlite' && !existsSync(mint_database)) {
+	if (mint_type && mint_database && configService.get<string>('cashu.database_type') === 'sqlite' && !existsSync(mint_database)) {
 		const is_docker = configService.get<boolean>('mode.docker') ?? false;
 		const hint = is_docker
 			? ' Host paths are not visible inside the container — set MINT_DATANAME (filename) and MINT_DATADIR (host directory) so the sqlite file is mounted automatically.'
 			: '';
-		shutdown(app, logger, `MINT_DATABASE file not found at "${mint_database}".${hint}`);
+		logger.warn(`Mint database file not found at "${mint_database}"; pages that read it stay empty.${hint}`);
 	}
 }
 

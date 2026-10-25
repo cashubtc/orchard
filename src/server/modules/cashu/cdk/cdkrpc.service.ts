@@ -97,6 +97,14 @@ export class CdkRpcService implements OnModuleDestroy {
 		return this.client;
 	}
 
+	/** Drop the channel so the next request connects with the current configuration. */
+	public reinitialize(): void {
+		const previous = this.client;
+		this.client = null;
+		this.methods = null;
+		previous?.close();
+	}
+
 	/** Call the vendored service path with a deadline and no retired protocol header. */
 	public request<M extends keyof CdkRpcMethods>(
 		method: M,

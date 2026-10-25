@@ -4,6 +4,8 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {EntityManager, Repository} from 'typeorm';
+/* Application Dependencies */
+import {SERVICE_SETTING_KEYS} from '#server/modules/service-config/constants/service-config.constants';
 /* Local Dependencies */
 import {Setting} from './setting.entity.js';
 import {DEFAULT_SETTINGS} from './setting.config.js';
@@ -22,6 +24,7 @@ import {
 @Injectable()
 export class SettingService implements OnModuleInit {
 	private readonly logger = new Logger(SettingService.name);
+	private initialized = false;
 	private encryption_key: Buffer | null = null;
 
 	constructor(
@@ -35,10 +38,11 @@ export class SettingService implements OnModuleInit {
 	 * This ensures all required settings exist in the database
 	 */
 	async onModuleInit(): Promise<void> {
-		if (process.env.SCHEMA_ONLY) return;
+		if (process.env.SCHEMA_ONLY || this.initialized) return;
 		this.initializeEncryption();
 		await this.migrateEncryptionIfNeeded();
 		await this.initializeDefaults();
+		this.initialized = true;
 	}
 
 	/* *******************************************************
@@ -223,7 +227,11 @@ export class SettingService implements OnModuleInit {
 		if (!setting) throw new Error(`Setting with key ${key} not found`);
 		setting.value = this.encryptIfSensitive(key, value);
 		const updated_setting = await repo.save(setting);
-		const log_value = isSettingSensitive(key, value) ? maskSensitiveValue(value) : value;
+		const log_value = SERVICE_SETTING_KEYS.has(key)
+			? '[configured]'
+			: isSettingSensitive(key, value)
+				? maskSensitiveValue(value)
+				: value;
 		this.logger.debug(`Updated setting: ${key} = ${log_value}`);
 		return this.decryptSetting(updated_setting);
 	}

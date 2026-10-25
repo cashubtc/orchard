@@ -5,6 +5,7 @@ import {RouterModule as CoreRouterModule, Router, ResolveFn, ActivatedRouteSnaps
 import {catchError, EMPTY, of, type OperatorFunction} from 'rxjs';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 /* Application Dependencies */
+import {mintDataGuard} from '@client/modules/mint/guards/mint-data.guard';
 import {errorResolveGuard} from '@client/modules/error/guards/error-resolve.guard';
 import {enabledGuard} from '@client/modules/routing/guards/enabled/enabled.guard';
 import {mintMetricsGuard} from '@client/modules/routing/guards/mint-metrics/mint-metrics.guard';
@@ -102,6 +103,14 @@ const mintMetricsHealthResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot
 				},
 				children: [
 					{
+						path: 'data-unavailable',
+						loadComponent: () =>
+							import('@client/modules/mint/components/mint-data-unavailable/mint-data-unavailable.component').then(
+								(m) => m.MintDataUnavailableComponent,
+							),
+						data: {section: 'mint'},
+					},
+					{
 						path: '',
 						loadChildren: () =>
 							import('@client/modules/mint/modules/mint-subsection-dashboard/mint-subsection-dashboard.module').then(
@@ -115,10 +124,12 @@ const mintMetricsHealthResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot
 							mint_keyset_counts: mintKeysetCountsResolver,
 							mint_database_info: mintDatabaseInfoResolver,
 						},
-						canActivate: [enabledGuard],
+						canActivate: [enabledGuard, mintDataGuard],
 						data: {
 							section: 'mint',
 							sub_section: 'dashboard',
+							requires_database: true,
+							requires_public_api: true,
 							assistant: AiAssistant.MintDashboard,
 						},
 					},
@@ -154,10 +165,11 @@ const mintMetricsHealthResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot
 									.loadMintKeysets()
 									.pipe(catchError(() => of([]))),
 						},
-						canActivate: [enabledGuard],
+						canActivate: [enabledGuard, mintDataGuard],
 						data: {
 							section: 'mint',
 							sub_section: 'config',
+							requires_public_api: true,
 							assistant: AiAssistant.MintConfig,
 						},
 					},
@@ -172,10 +184,12 @@ const mintMetricsHealthResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot
 							mint_keysets: mintKeysetsResolver,
 							mint_keyset_counts: mintKeysetCountsResolver,
 						},
-						canActivate: [enabledGuard],
+						canActivate: [enabledGuard, mintDataGuard],
 						data: {
 							section: 'mint',
 							sub_section: 'keysets',
+							requires_database: true,
+							requires_public_api: true,
 							assistant: AiAssistant.MintKeysets,
 						},
 					},
@@ -189,10 +203,11 @@ const mintMetricsHealthResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot
 						resolve: {
 							mint_keysets: mintKeysetsResolver,
 						},
-						canActivate: [enabledGuard],
+						canActivate: [enabledGuard, mintDataGuard],
 						data: {
 							section: 'mint',
 							sub_section: 'database',
+							requires_database: true,
 							assistant: AiAssistant.MintDatabase,
 						},
 					},

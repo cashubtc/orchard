@@ -11,6 +11,7 @@ import {OrcLayoutModule} from '@client/modules/layout/layout.module';
 import {OrcEventGeneralModule} from '@client/modules/event/modules/event-general/event-general.module';
 import {authenticationGuard} from '@client/modules/auth/guards/authentication/authentication.guard';
 import {initializationGuard} from '@client/modules/auth/guards/initialization/initialization.guard';
+import {serviceStatusGuard} from '@client/modules/routing/guards/service-status/service-status.guard';
 import {LayoutInteriorComponent} from '@client/modules/layout/components/layout-interior/layout-interior.component';
 import {LayoutExteriorComponent} from '@client/modules/layout/components/layout-exterior/layout-exterior.component';
 /* Native Dependencies */
@@ -61,6 +62,7 @@ const routes: Routes = [
 	{
 		path: '',
 		component: LayoutInteriorComponent,
+		canMatch: [serviceStatusGuard],
 		canActivate: [initializationGuard, authenticationGuard],
 		canActivateChild: [initializationGuard, authenticationGuard],
 		children: interior_routes,

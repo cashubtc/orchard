@@ -2,7 +2,7 @@
 import type {Config} from './configuration.type.js';
 import {loadOrCreateCryptoKey, generateEphemeralJwtSecret} from './crypto-key.js';
 
-const replaceLocalhostInDocker = (host: string | undefined): string | undefined => {
+export const replaceLocalhostInDocker = (host: string | undefined): string | undefined => {
 	if (!host) return host;
 	if (!process.env.DOCKER_ENV) return host;
 	return host

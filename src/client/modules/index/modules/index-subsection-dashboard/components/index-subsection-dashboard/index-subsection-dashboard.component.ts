@@ -392,9 +392,9 @@ export class IndexSubsectionDashboardComponent implements OnInit, OnDestroy {
 
 	private getMint(): void {
 		forkJoin({
-			info: this.mintService.loadMintInfo(),
-			balances: this.mintService.loadMintBalances(),
-			keysets: this.mintService.loadMintKeysets(),
+			info: this.configService.config.mint.public_api ? this.mintService.loadMintInfo() : of(null),
+			balances: this.configService.config.mint.database ? this.mintService.loadMintBalances() : of([]),
+			keysets: this.configService.config.mint.database ? this.mintService.loadMintKeysets() : of([]),
 		})
 			.pipe(
 				tap(({info, balances, keysets}) => {
@@ -418,6 +418,10 @@ export class IndexSubsectionDashboardComponent implements OnInit, OnDestroy {
 
 	/** Loads the mint activity summary for the given period */
 	private loadMintActivitySummary(period: MintActivityPeriod): void {
+		if (!this.configService.config.mint.database || !this.configService.config.mint.public_api) {
+			this.loading_mint_activity.set(false);
+			return;
+		}
 		this.loading_mint_activity.set(true);
 		this.error_mint_activity.set(false);
 		const timezone = this.settingDeviceService.getTimezone();

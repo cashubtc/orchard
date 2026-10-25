@@ -9,6 +9,15 @@ import {SettingKey, SettingSensitivity, SettingValue} from './setting.enums.js';
  * Settings not listed here default to NONE.
  */
 export const SETTING_SENSITIVITY: Partial<Record<SettingKey, SettingSensitivity>> = {
+	[SettingKey.SERVICE_BITCOIN_PASSWORD]: SettingSensitivity.ALWAYS,
+	[SettingKey.SERVICE_LIGHTNING_MACAROON]: SettingSensitivity.CONTENT,
+	[SettingKey.SERVICE_LIGHTNING_CERT]: SettingSensitivity.CONTENT,
+	[SettingKey.SERVICE_LIGHTNING_KEY]: SettingSensitivity.CONTENT,
+	[SettingKey.SERVICE_LIGHTNING_CA]: SettingSensitivity.CONTENT,
+	[SettingKey.SERVICE_MINT_CA]: SettingSensitivity.CONTENT,
+	[SettingKey.SERVICE_MINT_CERT]: SettingSensitivity.CONTENT,
+	[SettingKey.SERVICE_MINT_KEY]: SettingSensitivity.CONTENT,
+	[SettingKey.SERVICE_MINT_DATABASE]: SettingSensitivity.CONTENT,
 	[SettingKey.AI_OPENROUTER_KEY]: SettingSensitivity.ALWAYS,
 	[SettingKey.MESSAGES_TELEGRAM_BOT_TOKEN]: SettingSensitivity.ALWAYS,
 };

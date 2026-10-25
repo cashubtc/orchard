@@ -1,0 +1,89 @@
+/* Core Dependencies */
+import {Field, ObjectType, InputType, registerEnumType} from '@nestjs/graphql';
+/* Native Dependencies */
+import type {ServiceName} from '#server/modules/service-config/types/service-config.types';
+
+export enum ServiceKind {
+	bitcoin = 'bitcoin',
+	lightning = 'lightning',
+	mint = 'mint',
+}
+registerEnumType(ServiceKind, {name: 'ServiceKind'});
+
+@ObjectType()
+export class OrchardServiceStatus {
+	@Field(() => ServiceKind)
+	service: ServiceName;
+	@Field(() => Boolean)
+	enabled: boolean;
+	@Field(() => String, {nullable: true})
+	type: string | null;
+	@Field(() => String)
+	source: string;
+	@Field(() => String)
+	status: string;
+	@Field(() => Boolean)
+	public_api: boolean;
+	@Field(() => Boolean)
+	database: boolean;
+	@Field(() => String)
+	database_type: string;
+	@Field(() => Boolean)
+	metrics: boolean;
+}
+
+@ObjectType()
+export class OrchardServiceField {
+	@Field(() => String)
+	key: string;
+	@Field(() => String, {nullable: true})
+	value: string | null;
+	@Field(() => Boolean)
+	secret: boolean;
+	@Field(() => Boolean)
+	set: boolean;
+}
+
+@ObjectType()
+export class OrchardConnectionCheck {
+	@Field(() => Boolean)
+	ok: boolean;
+	@Field(() => Boolean)
+	warning: boolean;
+	@Field(() => String)
+	title: string;
+	@Field(() => String)
+	context: string;
+	@Field(() => String, {nullable: true})
+	diagnostic: string | null;
+	@Field(() => [String])
+	fields: string[];
+	@Field(() => String, {nullable: true})
+	chain: string | null;
+	@Field(() => Boolean, {nullable: true})
+	chain_match: boolean | null;
+	@Field(() => String, {nullable: true})
+	mode: string | null;
+}
+
+@ObjectType()
+export class OrchardServiceConfiguration extends OrchardServiceStatus {
+	@Field(() => [OrchardServiceField])
+	fields: OrchardServiceField[];
+}
+
+@InputType()
+export class ServiceFieldInput {
+	@Field(() => String)
+	key: string;
+	@Field(() => String)
+	value: string;
+}
+
+@InputType()
+export class ServiceConnectionInput {
+	@Field(() => ServiceKind)
+	service: ServiceName;
+	@Field(() => [ServiceFieldInput])
+	values: ServiceFieldInput[];
+}

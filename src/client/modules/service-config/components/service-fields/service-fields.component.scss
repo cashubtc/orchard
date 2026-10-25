@@ -1,0 +1,17 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+.service-fields {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-0-5;
+}
+.clear-field {
+	color: inherit;
+	background: none;
+	border: 0;
+	text-decoration: underline;
+	cursor: pointer;
+}
+textarea {
+	font-family: monospace;
+}

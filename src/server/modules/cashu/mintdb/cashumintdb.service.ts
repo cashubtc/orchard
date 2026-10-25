@@ -9,6 +9,7 @@ import DatabaseConstructor from 'better-sqlite3';
 import {spawn} from 'child_process';
 /* Application Dependencies */
 import {MintType} from '#server/modules/cashu/cashu.enums';
+import {INTEGRATION_REQUEST_TIMEOUT_MS} from '#server/modules/integration/constants/integration.constants';
 import {CredentialService} from '#server/modules/credential/credential.service';
 import {NutshellService} from '#server/modules/cashu/nutshell/nutshell.service';
 import {CdkService} from '#server/modules/cashu/cdk/cdk.service';
@@ -52,18 +53,25 @@ export class CashuMintDatabaseService implements OnModuleInit {
 
 	public async onModuleInit() {
 		if (process.env.SCHEMA_ONLY) return;
+		this.reinitialize();
+	}
+
+	/** Refresh the configuration used to open each short-lived database handle. */
+	public reinitialize(): void {
 		this.type = this.configService.get('cashu.type');
 		this.database = this.configService.get('cashu.database');
 	}
 
-	public async getMintDatabase(): Promise<CashuMintDatabase> {
+	public async getMintDatabase(raw_error = false): Promise<CashuMintDatabase> {
 		try {
+			if (!this.database) throw new Error('Mint database is not configured');
 			if (this.configService.get('cashu.database_type') === 'sqlite') {
 				return this.createSqliteDatabase();
 			} else {
 				return this.createPostgresDatabase();
 			}
 		} catch (error) {
+			if (raw_error) throw error;
 			this.logger.debug(error);
 			throw OrchardErrorCode.MintDatabaseConnectionError;
 		}
@@ -82,6 +90,8 @@ export class CashuMintDatabaseService implements OnModuleInit {
 		const connection_string = this.cleanConnectionString(this.database, ssl_config);
 		const client = new Client({
 			connectionString: connection_string,
+			connectionTimeoutMillis: 5000,
+			query_timeout: INTEGRATION_REQUEST_TIMEOUT_MS,
 			ssl: ssl_config,
 		});
 		return {type: MintDatabaseType.postgres, database: client};

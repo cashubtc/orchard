@@ -6,6 +6,7 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {Repository, type FindOptionsWhere, Between, In} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
+import {AnalyticsLifecycle} from '#server/modules/analytics/helpers/analytics-lifecycle';
 import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
 import {CashuMintApiService} from '#server/modules/cashu/mintapi/cashumintapi.service';
 import {AnalyticsCheckpoint} from '#server/modules/analytics/analytics-checkpoint.entity';
@@ -37,6 +38,7 @@ const CHECKPOINT_DATA_TYPES: CheckpointDataType[] = ['mint_quotes', 'melt_quotes
 @Injectable()
 export class CashuMintAnalyticsService implements OnApplicationBootstrap {
 	private readonly logger = new Logger(CashuMintAnalyticsService.name);
+	private readonly lifecycle = new AnalyticsLifecycle();
 	private backfill_status: AnalyticsBackfillStatus = {is_running: false};
 	private mint_pubkey: string | null = null;
 
@@ -52,8 +54,7 @@ export class CashuMintAnalyticsService implements OnApplicationBootstrap {
 
 	async onApplicationBootstrap() {
 		if (process.env.SCHEMA_ONLY) return;
-		const cashu_type = this.configService.get<string>('cashu.type');
-		if (!cashu_type) {
+		if (!this.isConfigured()) {
 			this.logger.log('Cashu not configured, skipping auto-backfill');
 			return;
 		}
@@ -94,8 +95,33 @@ export class CashuMintAnalyticsService implements OnApplicationBootstrap {
 		return this.mintAnalyticsRepository.find({where, order: {date: 'ASC'}});
 	}
 
+	/** Run a backfill within the current service configuration. */
+	public runBackfill(): Promise<void> {
+		return this.lifecycle.run(() => this.backfill());
+	}
+
+	/** Drain old work before replacing its connection. */
+	public pause(): Promise<void> {
+		return this.lifecycle.pause();
+	}
+
+	/** Invalidate identity and restart collection against the new node. */
+	public reinitialize(): void {
+		this.mint_pubkey = null;
+		this.lifecycle.reset();
+		void this.onApplicationBootstrap();
+	}
+
+	/** Collection reads the mint database and takes the mint's identity from its public API. */
+	private isConfigured(): boolean {
+		return (
+			!!this.configService.get('cashu.type') && !!this.configService.get('cashu.database') && !!this.configService.get('cashu.api')
+		);
+	}
+
 	/** Runs the streaming backfill - opens ONE external DB connection, runs 5 streams, closes */
-	async runBackfill(): Promise<void> {
+	private async backfill(): Promise<void> {
+		if (!this.isConfigured()) return;
 		if (this.backfill_status.is_running) {
 			this.logger.warn('Backfill already running');
 			return;
@@ -188,7 +214,11 @@ export class CashuMintAnalyticsService implements OnApplicationBootstrap {
 	}
 
 	/** Re-scans recent records to catch state changes (UNPAID → PAID → ISSUED) */
-	async rescanRecentRecords(): Promise<void> {
+	rescanRecentRecords(): Promise<void> {
+		return this.lifecycle.run(() => this.rescan());
+	}
+
+	private async rescan(): Promise<void> {
 		if (this.backfill_status.is_running) {
 			this.logger.warn('Backfill already running, skipping rescan');
 			return;
@@ -233,6 +263,7 @@ export class CashuMintAnalyticsService implements OnApplicationBootstrap {
 		const pending_bucket: Map<number, T[]> = new Map();
 
 		while (true) {
+			this.lifecycle.assertActive();
 			const batch = await fetcher({page_size: BATCH_SIZE, sort_order: 'ASC', date_start: cursor});
 			if (batch.length === 0) break;
 			has_data = true;
@@ -512,6 +543,7 @@ export class CashuMintAnalyticsService implements OnApplicationBootstrap {
 	 * complete replacement.
 	 */
 	private async saveCheckpoint(data_type: CheckpointDataType, timestamp: number): Promise<void> {
+		this.lifecycle.assertActive();
 		const mint_pubkey = await this.getMintPubkey();
 		const aligned_ts = timestamp > 0 ? DateTime.fromSeconds(timestamp, {zone: 'UTC'}).startOf('hour').toUnixInteger() : timestamp;
 		await this.checkpointRepository.upsert(
@@ -533,10 +565,12 @@ export class CashuMintAnalyticsService implements OnApplicationBootstrap {
 	/** Gets the mint pubkey from config, falling back to mint API */
 	private async getMintPubkey(): Promise<string> {
 		if (this.mint_pubkey) return this.mint_pubkey;
+		const generation = this.lifecycle.generation;
 		const info = await this.cashuMintApiService.getMintInfo();
 		if (!info.pubkey) {
 			throw new Error('Could not get mint pubkey from mint info');
 		}
+		if (generation !== this.lifecycle.generation) return this.getMintPubkey();
 		this.mint_pubkey = info.pubkey;
 		return this.mint_pubkey;
 	}

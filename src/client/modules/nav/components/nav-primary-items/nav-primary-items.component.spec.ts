@@ -33,4 +33,15 @@ describe('NavPrimaryItemsComponent', () => {
 	it('should create', () => {
 		expect(component).toBeTruthy();
 	});
+
+	it('only renders configured services and responds to hot changes', () => {
+		const mint_items = (): number => fixture.nativeElement.querySelectorAll('orc-nav-primary-item[navroute="mint"]').length;
+		expect(mint_items()).toBe(0);
+		fixture.componentRef.setInput('enabled_mint', true);
+		fixture.detectChanges();
+		expect(mint_items()).toBe(1);
+		fixture.componentRef.setInput('enabled_mint', false);
+		fixture.detectChanges();
+		expect(mint_items()).toBe(0);
+	});
 });

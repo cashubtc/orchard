@@ -1,7 +1,11 @@
 /* Core Dependencies */
-import {Injectable, Logger, type OnModuleInit} from '@nestjs/common';
+import {Injectable, Logger, type OnModuleInit, type OnModuleDestroy} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
+/* Vendor Dependencies */
+import type {Client} from '@grpc/grpc-js';
 /* Application Dependencies */
+import {closeGrpcChannel} from '#server/modules/grpc/helpers/grpc-client.helpers';
+import {INTEGRATION_REQUEST_TIMEOUT_MS} from '#server/modules/integration/constants/integration.constants';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
 import {LightningType} from '#server/modules/lightning/lightning.enums';
@@ -42,7 +46,7 @@ import {
 } from '#server/modules/lightning/cln/cln.helpers';
 
 @Injectable()
-export class LightningService implements OnModuleInit {
+export class LightningService implements OnModuleInit, OnModuleDestroy {
 	private readonly logger = new Logger(LightningService.name);
 
 	private grpc_client: any = null;
@@ -57,13 +61,28 @@ export class LightningService implements OnModuleInit {
 
 	public async onModuleInit() {
 		if (process.env.SCHEMA_ONLY) return;
-		this.type = this.configService.get('lightning.type');
-		this.initializeGrpcClients();
+		this.reinitialize();
 	}
 
-	private initializeGrpcClients() {
-		if (this.type === 'lnd') this.grpc_client = this.lndService.initializeLightningClient();
-		if (this.type === 'cln') this.grpc_client = this.clnService.initializeLightningClient();
+	/** Build the replacement before releasing the previous channel. */
+	public reinitialize(): void {
+		const type = this.configService.get<LightningType>('lightning.type');
+		let client: Client | null = null;
+		try {
+			if (type === LightningType.LND) client = this.lndService.initializeLightningClient();
+			if (type === LightningType.CLN) client = this.clnService.initializeLightningClient();
+		} catch (error) {
+			this.logger.warn(`Lightning credentials could not be loaded: ${(error as Error).message}`);
+		}
+		const previous = this.grpc_client;
+		this.type = type;
+		this.grpc_client = client;
+		closeGrpcChannel(previous);
+	}
+
+	/** Release this service's channel on shutdown. */
+	public onModuleDestroy(): void {
+		closeGrpcChannel(this.grpc_client);
 	}
 
 	private makeGrpcRequest(method: string, request: any): Promise<any> {
@@ -71,7 +90,7 @@ export class LightningService implements OnModuleInit {
 
 		return new Promise((resolve, reject) => {
 			if (!(method in this.grpc_client)) reject(OrchardErrorCode.LightningSupportError);
-			this.grpc_client[method](request, (error: Error | null, response: any) => {
+			this.grpc_client[method](request, {deadline: Date.now() + INTEGRATION_REQUEST_TIMEOUT_MS}, (error: Error | null, response: any) => {
 				if (error) this.logger.debug('error', error);
 				if (error && error?.message?.includes('14 UNAVAILABLE')) reject(OrchardErrorCode.LightningRpcConnectionError);
 				if (error) reject(error);
