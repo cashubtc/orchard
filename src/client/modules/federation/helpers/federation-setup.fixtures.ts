@@ -24,19 +24,15 @@ export function setupStatus(): OrchardFederationSetupStatus {
 	return {
 		initialized: true,
 		setup_id: 'setup',
-		role: 'coordinator',
+		role: 'SETUP_ROLE_COORDINATOR',
 		member_id: 1,
 		member_count: 3,
-		participant_phase: 'enrolled',
-		coordinator_phase: 'collecting_enrollments',
+		participant_phase: 'SETUP_PARTICIPANT_PHASE_ENROLLED',
+		coordinator_phase: 'SETUP_COORDINATOR_PHASE_COLLECTING_ENROLLMENTS',
 		enrolled_members: [1],
 		missing_enrollments: [2, 3],
 		approved_members: [],
 		missing_approvals: [1, 2, 3],
-		invitations_expires_at: 1792886400,
-		invitations: [
-			{member_id: 2, invitation: 'secret-2'},
-			{member_id: 3, invitation: 'secret-3'},
-		],
+		identity_fingerprint: '0123456789abcdef',
 	};
 }

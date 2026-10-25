@@ -1,6 +1,6 @@
 /* Core Dependencies */
 import {Logger} from '@nestjs/common';
-import {Args, Mutation, Query, Resolver} from '@nestjs/graphql';
+import {Args, Int, Mutation, Query, Resolver} from '@nestjs/graphql';
 
 /* Application Dependencies */
 import {FederationSetupService} from '#server/modules/federation/federation-setup.service';
@@ -10,10 +10,12 @@ import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 
-/* Native Dependencies */
+/* Local Dependencies */
 import {FederationSetupCreateInput, FederationSetupJoinInput} from './federation-setup.input.js';
 import {
 	OrchardFederationSetupCreated,
+	OrchardFederationSetupInvitationReplaced,
+	OrchardFederationSetupAborted,
 	OrchardFederationSetupJoined,
 	OrchardFederationSetupProposalHash,
 	OrchardFederationSetupReview,
@@ -61,10 +63,22 @@ export class FederationSetupResolver {
 		return this.call(() => this.federationSetupService.approve(proposal_hash));
 	}
 
-	/** Read local setup progress and any unused invitations in this process. */
+	/** Read local setup progress. */
 	@Query(() => OrchardFederationSetupStatus, {name: 'federation_setup_status'})
 	public getStatus(): Promise<OrchardFederationSetupStatus> {
 		return this.call(() => this.federationSetupService.getStatus());
+	}
+
+	/** Replace an unused invitation without retaining its secret. */
+	@Mutation(() => OrchardFederationSetupInvitationReplaced, {name: 'federation_setup_replace_invitation'})
+	public replaceInvitation(@Args('member_id', {type: () => Int}) member_id: number): Promise<OrchardFederationSetupInvitationReplaced> {
+		return this.call(() => this.federationSetupService.replaceInvitation(member_id));
+	}
+
+	/** Abandon this daemon's setup before certification. */
+	@Mutation(() => OrchardFederationSetupAborted, {name: 'federation_setup_abort'})
+	public abort(@Args('setup_id') setup_id: string): Promise<OrchardFederationSetupAborted> {
+		return this.call(() => this.federationSetupService.abort(setup_id));
 	}
 
 	/** Activate the finalized configuration on this mint. */

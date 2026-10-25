@@ -68,7 +68,7 @@ describe('FederationService', () => {
 	] as const)('forwards %s unchanged, including optional sections and exact counters', async (method, rpc_method) => {
 		const response = {onchain_wallets: [], bark: undefined, counter: '18446744073709551615'};
 		request.mockResolvedValue(response);
-		await expect(service[method]()).resolves.toBe(response);
+		await expect(service[method]()).resolves.toEqual(response);
 		expect(request).toHaveBeenCalledWith(rpc_method, {});
 		const error = new CdkRpcError(status.RESOURCE_EXHAUSTED, 'Status requests busy');
 		request.mockRejectedValue(error);

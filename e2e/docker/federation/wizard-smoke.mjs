@@ -1,3 +1,4 @@
+import {checkSetupLifecycle, createSetup, joinSetup} from './setup-lifecycle-smoke.mjs';
 import {checkMemberDashboard} from './dashboard-smoke.mjs';
 import assert from 'node:assert/strict';
 import {chromium, expect} from '@playwright/test';
@@ -56,36 +57,19 @@ try {
 	await coordinator.setViewportSize({width: 390, height: 844});
 	await checkWidth(coordinator);
 	await coordinator.setViewportSize({width: 1440, height: 1000});
-	await coordinator.getByRole('button', {name: 'Create', exact: true}).click();
-	await coordinator.getByRole('button', {name: 'Fewer members', exact: true}).click({clickCount: 2});
-	await expect(coordinator.getByTestId('members-count')).toHaveText('3');
-	await coordinator.getByRole('button', {name: 'Lower signing threshold'}).click();
-	await coordinator.getByRole('button', {name: 'regtest', exact: true}).click();
-	await coordinator.getByLabel('Federation API URL, for other members', {exact: true}).fill('http://127.0.0.1:3351');
-	await coordinator.getByLabel('Allow local HTTP for development').check();
-	const created_response = coordinator.waitForResponse(
-		(response) => response.request().postData()?.includes('federation_setup_create') ?? false,
-	);
-	await coordinator.getByRole('button', {name: 'Create and get invitations'}).click();
-	const created = (await (await created_response).json()).data?.federation_setup_create;
-	assert(created?.invitations?.length === 2, 'Create did not return two invitations');
-	await expect(coordinator.getByRole('heading', {name: 'Send each operator their invitation'})).toBeVisible();
+	const aborted_setup_id = await checkSetupLifecycle(pages);
+	const created = await createSetup(coordinator);
+	assert.notEqual(created.setup_id, aborted_setup_id, 'A new ceremony reused the aborted setup ID');
 	await expect(coordinator.getByRole('button', {name: 'Propose once everyone has joined'})).toBeDisabled();
-	await coordinator.reload();
-	await expect(coordinator.locator('#invitation-text')).toHaveValue(created.invitations[0].invitation);
-	console.log('PASS: create and invitation retention across page refresh');
+	const fingerprints = [await coordinator.getByTestId('identity-fingerprint').innerText()];
 	for (let index = 1; index < 3; index++) {
-		const page = pages[index];
-		await page.getByRole('button', {name: 'Join', exact: true}).click();
-		await page
-			.getByLabel('Invitation', {exact: true})
-			.fill(created.invitations.find((invitation) => invitation.member_id === index + 1).invitation);
-		await page.getByLabel('Your federation API URL, for other members').fill(`http://127.0.0.1:${3351 + index}`);
-		await page.getByLabel('Allow local HTTP for development').check();
-		await page.getByRole('button', {name: 'Join federation', exact: true}).click();
-		await expect(page.getByRole('heading', {name: 'Waiting for the coordinator to propose', exact: true})).toBeVisible({
-			timeout: 30000,
-		});
+		fingerprints.push(
+			await joinSetup(
+				pages[index],
+				index + 1,
+				created.invitations.find((invitation) => invitation.member_id === index + 1).invitation,
+			),
+		);
 	}
 	await expect(coordinator.getByRole('button', {name: 'Propose federation', exact: true})).toBeEnabled({timeout: 30000});
 	await expect(coordinator.locator('#invitation-text')).toHaveCount(0);
@@ -94,6 +78,7 @@ try {
 	for (const [index, page] of pages.entries()) {
 		await expect(page.getByRole('heading', {name: 'Review the proposal', exact: true})).toBeVisible({timeout: 30000});
 		hashes.push(await page.locator('orc-federation-setup-review code').innerText());
+		for (const fingerprint of fingerprints) await expect(page.locator('orc-federation-setup-review')).toContainText(fingerprint);
 		await expect(page.getByRole('button', {name: 'Check every member to approve'})).toBeDisabled();
 		if (index === 1) {
 			await expect(page.locator('orc-nav-secondary')).toHaveClass(/collapsed/);
@@ -119,6 +104,7 @@ try {
 	for (const page of pages)
 		await expect(page.getByRole('button', {name: 'Activate my mint', exact: true})).toBeEnabled({timeout: 180000});
 	for (const page of pages) {
+		await expect(page.getByRole('button', {name: 'Abort setup', exact: true})).toHaveCount(0);
 		await page.getByRole('button', {name: 'Activate my mint', exact: true}).click();
 		await expect(page.getByRole('heading', {name: 'Back up before using real funds'})).toBeVisible({timeout: 30000});
 		await expect(page.getByRole('button', {name: 'Open the mint', exact: true})).toBeDisabled();

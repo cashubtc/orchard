@@ -118,11 +118,24 @@ message GetLocalStatusResponse {
     MemberStatus status = 1;
 }
 
+enum SyncState {
+    SYNC_STATE_UNSPECIFIED = 0;
+    // In step with the federation and serving wallet requests.
+    SYNC_STATE_HEALTHY = 1;
+    // Waiting for enough members to agree on the next operations.
+    SYNC_STATE_AWAITING_QUORUM = 2;
+    // Behind another member.
+    SYNC_STATE_LAGGING = 3;
+    // Fetching missed operations from another member.
+    SYNC_STATE_CATCHING_UP = 4;
+    // Stopped; needs an operator.
+    SYNC_STATE_HALTED = 5;
+}
+
 // Synchronization state of a member.
 message SyncStatus {
-    // State name: "healthy", "awaiting_quorum", "lagging", "catching_up", or
-    // "halted".
-    string state = 1;
+    // Synchronization state.
+    SyncState state = 1;
     // Whether the member currently serves wallet requests.
     bool ready = 2;
     // Detail for the operator, with secrets and paths removed.
@@ -482,6 +495,16 @@ message GetMemberStatusesResponse {
 message GetCustodyStatusRequest {
 }
 
+enum OnchainSourceHealth {
+    ONCHAIN_SOURCE_HEALTH_UNSPECIFIED = 0;
+    // The source has not synced yet.
+    ONCHAIN_SOURCE_HEALTH_NEVER_SYNCED = 1;
+    // The last sync succeeded.
+    ONCHAIN_SOURCE_HEALTH_HEALTHY = 2;
+    // Recent syncs failed.
+    ONCHAIN_SOURCE_HEALTH_DEGRADED = 3;
+}
+
 // Health of one on-chain data source used by the member's wallet.
 message OnchainWalletSource {
     // Source implementation, e.g. "esplora".
@@ -492,8 +515,8 @@ message OnchainWalletSource {
     string source_id = 3;
     // Whether other members use the same source on purpose.
     bool correlated_source_warning = 4;
-    // "never_synced", "healthy", or "degraded".
-    string health = 5;
+    // Sync health.
+    OnchainSourceHealth health = 5;
     // Height of the newest locally stored block.
     uint32 local_tip_height = 6;
     // Hash of the newest locally stored block.
@@ -726,10 +749,20 @@ message BarkVtxoCount {
     uint64 value_sat = 3;
 }
 
+enum BarkReadiness {
+    BARK_READINESS_UNSPECIFIED = 0;
+    // Bark state matches every accepted operation.
+    BARK_READINESS_READY = 1;
+    // Local Bark state has not applied every accepted operation yet.
+    BARK_READINESS_BEHIND_CONSENSUS = 2;
+    // Bark needs an operator; see degraded_reason.
+    BARK_READINESS_DEGRADED = 3;
+}
+
 // Bark custody status.
 message BarkOperatorStatus {
-    // "ready", "behind_consensus", or "degraded".
-    string readiness = 1;
+    // Readiness.
+    BarkReadiness readiness = 1;
     // Why Bark is degraded, when it is.
     optional string degraded_reason = 2;
     // Newest consensus operation Bark has accepted.

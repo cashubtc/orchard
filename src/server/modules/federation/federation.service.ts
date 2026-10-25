@@ -9,6 +9,9 @@ import {status} from '@grpc/grpc-js';
 import type {CdkRpcMethods} from '#server/modules/cashu/cdk/cdkrpc.types';
 import {CdkRpcError, CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
 
+/* Native Dependencies */
+import {normalizeFederationEnums, type NormalizedFederation} from '#server/modules/federation/helpers/federation-enums.helpers';
+
 /* Local Dependencies */
 import type {FederationModeResult} from './federation.types.js';
 
@@ -49,18 +52,18 @@ export class FederationService {
 	}
 
 	/** Read local consensus and checkpoint state without contacting peers. */
-	public getLocalStatus(): Promise<CdkRpcMethods['GetLocalStatus']['response']> {
-		return this.cdkRpcService.request('GetLocalStatus', {});
+	public async getLocalStatus(): Promise<NormalizedFederation<CdkRpcMethods['GetLocalStatus']['response']>> {
+		return normalizeFederationEnums(await this.cdkRpcService.request('GetLocalStatus', {}));
 	}
 
 	/** Read peer statuses and digest comparisons; CDK owns the short-lived snapshot cache. */
-	public getMemberStatuses(): Promise<CdkRpcMethods['GetMemberStatuses']['response']> {
-		return this.cdkRpcService.request('GetMemberStatuses', {});
+	public async getMemberStatuses(): Promise<NormalizedFederation<CdkRpcMethods['GetMemberStatuses']['response']>> {
+		return normalizeFederationEnums(await this.cdkRpcService.request('GetMemberStatuses', {}));
 	}
 
 	/** Read optional custody backends without substituting missing sections. */
-	public getCustodyStatus(): Promise<CdkRpcMethods['GetCustodyStatus']['response']> {
-		return this.cdkRpcService.request('GetCustodyStatus', {});
+	public async getCustodyStatus(): Promise<NormalizedFederation<CdkRpcMethods['GetCustodyStatus']['response']>> {
+		return normalizeFederationEnums(await this.cdkRpcService.request('GetCustodyStatus', {}));
 	}
 
 	/** Prevent standalone-only operations through GraphQL, agents, or other callers. */

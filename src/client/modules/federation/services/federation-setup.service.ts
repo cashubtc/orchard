@@ -19,6 +19,8 @@ import type {
 	FederationSetupCreateInput,
 	FederationSetupJoinInput,
 	OrchardFederationSetupCreated,
+	OrchardFederationSetupInvitationReplaced,
+	OrchardFederationSetupAborted,
 	OrchardFederationSetupJoined,
 	OrchardFederationSetupProposalHash,
 	OrchardFederationSetupReview,
@@ -35,12 +37,12 @@ export class FederationSetupService {
         Setup
     ******************************************************** */
 
-	/** Read current setup and unused invitations without any browser persistence. */
+	/** Read current setup progress. */
 	public getStatus(): Observable<OrchardFederationSetupStatus> {
 		return this.request(queries.FEDERATION_SETUP_STATUS_QUERY, 'federation_setup_status');
 	}
 
-	/** Create on this mint; the server retains unused invitations across page refreshes. */
+	/** Create on this mint and return invitation secrets to the current page only. */
 	public create(input: FederationSetupCreateInput): Observable<OrchardFederationSetupCreated> {
 		return this.request(queries.FEDERATION_SETUP_CREATE_MUTATION, 'federation_setup_create', {input});
 	}
@@ -63,6 +65,16 @@ export class FederationSetupService {
 	/** Approve only the hash shown during review. */
 	public approve(proposal_hash: string): Observable<OrchardFederationSetupProposalHash> {
 		return this.request(queries.FEDERATION_SETUP_APPROVE_MUTATION, 'federation_setup_approve', {proposal_hash});
+	}
+
+	/** Replace an unjoined slot's invitation, invalidating its previous secret. */
+	public replaceInvitation(member_id: number): Observable<OrchardFederationSetupInvitationReplaced> {
+		return this.request(queries.FEDERATION_SETUP_REPLACE_INVITATION_MUTATION, 'federation_setup_replace_invitation', {member_id});
+	}
+
+	/** Abort this daemon's setup without contacting the other operators. */
+	public abort(setup_id: string): Observable<OrchardFederationSetupAborted> {
+		return this.request(queries.FEDERATION_SETUP_ABORT_MUTATION, 'federation_setup_abort', {setup_id});
 	}
 
 	/** Activate the mint and retain the backup warning in the current page. */

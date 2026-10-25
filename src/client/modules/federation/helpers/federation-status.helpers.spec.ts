@@ -53,4 +53,15 @@ describe('Federation status helpers', () => {
 		expect(timestamp('18446744073709551615')).toBeNull();
 		expect(timestamp('1700000000')).toBe(1700000000);
 	});
+	it('labels sync, chain-source and Bark enums while leaving absent status neutral', () => {
+		expect(statusLabel('SYNC_STATE_HALTED')).toBe('Halted');
+		expect(statusLabel('SYNC_STATE_AWAITING_QUORUM')).toBe('Awaiting quorum');
+		expect(statusLabel('ONCHAIN_SOURCE_HEALTH_HEALTHY')).toBe('Healthy');
+		expect(statusLabel('ONCHAIN_SOURCE_HEALTH_DEGRADED')).toBe('Degraded');
+		expect(statusLabel('BARK_READINESS_READY')).toBe('Ready');
+		expect(statusLabel('BARK_READINESS_BEHIND_CONSENSUS')).toBe('Behind consensus');
+		expect(statusLabel('SETUP_COORDINATOR_PHASE_CERTIFIED')).toBe('All approvals certified');
+		expect(statusLabel('SETUP_DKG_PHASE_COMPLETE')).toBe('Complete');
+		expect(statusLabel(null)).toBe('Not reported');
+	});
 });

@@ -87,6 +87,13 @@ describe('CdkRpcService wire contracts', () => {
 		expect(disabled.request).toMatchObject({mint_disabled: false});
 		expect(disabled.request).not.toHaveProperty('melt_disabled');
 	});
+	it('decodes omitted optional enums as absent and omitted ordinary enums as their zero names', async () => {
+		const response = await service.request('GetSetupStatus', {});
+		expect(response.role).toBe('SETUP_ROLE_UNSPECIFIED');
+		expect(response.participant_phase).toBe('SETUP_PARTICIPANT_PHASE_UNSPECIFIED');
+		expect(response).not.toHaveProperty('coordinator_phase');
+		expect(response).not.toHaveProperty('identity_fingerprint');
+	});
 	it('preserves the exact upstream diagnostic and maps precondition status', async () => {
 		await expect(service.request('UpdateName', {name: 'mint'})).rejects.toMatchObject({
 			code: OrchardErrorCode.MintRpcPreconditionError,

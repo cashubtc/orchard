@@ -56,12 +56,22 @@ node e2e/docker/federation/wizard-smoke.mjs
 ```
 
 This creates three disposable Orchard accounts, checks that home and layout skip
-unavailable mint APIs, and completes create, join, proposal, fingerprint review,
+unavailable mint APIs, and exercises invitation replacement and independent
+coordinator/member aborts before completing create, join, proposal, fingerprint review,
 key generation and activation through three browser sessions. It checks desktop
 and phone layouts and writes review screenshots to `/tmp/orchard-m3-*-review.png`.
 It uses synthetic development data and tests backup acknowledgments only; it does
 not perform or verify a real backup. Reset before each run. Set `CHROME_CHANNEL`
 to use another installed Playwright Chromium channel.
+
+The lifecycle checks also read raw setup status from each mint to confirm how
+absent enums decode, check invitation expiry and fingerprints, and verify that a
+fresh ceremony has a new setup ID. Invitations are held only by the page that
+created or replaced them; after refresh, replace any still needed invitation. A
+member who joins with a replaced invitation sees the mint's refusal. cdk then
+can't report that member's setup status (it asks the coordinator, which refuses
+the old invitation), so the wizard can't offer abort; the script cleans up with
+AbortSetup over RPC using the known setup ID.
 
 After activation, the script runs `dashboard-smoke.mjs` on all three members. It
 checks Overview, Consensus, the empty Custody state, the backup checklist,

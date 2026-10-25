@@ -1,0 +1,21 @@
+<mat-dialog-content>
+	<div class="flex flex-column flex-gap-1 flex-items-center p-2">
+		<mat-icon class="mat-symbol-outline orc-status-warning-color icon-lg">warning</mat-icon>
+		@if (data.action === 'abort') {
+			<div class="text-center">
+				<p>Abort this setup? This cannot be undone. This mint will leave the current setup.</p>
+				<p>Other operators are not notified. Each operator must abort on their own mint.</p>
+				<p>A new setup gets a new setup ID.</p>
+			</div>
+		} @else {
+			<div class="text-center">
+				<p>Replace the invitation for member {{ data.member_id }}?</p>
+				<p>The old invitation for member {{ data.member_id }} stops working. Send the replacement privately to that operator.</p>
+			</div>
+		}
+	</div>
+</mat-dialog-content>
+<mat-dialog-actions>
+	<button mat-button mat-dialog-close cdkFocusInitial>Cancel</button>
+	<button mat-button [mat-dialog-close]="true">{{ data.action === 'abort' ? 'Abort setup' : 'Replace invitation' }}</button>
+</mat-dialog-actions>

@@ -17,10 +17,15 @@ export async function checkMemberDashboard(page, index) {
 	const on_response = (response) => {
 		if (!response.url().endsWith('/api') || response.request().method() !== 'POST') return;
 		pending.push(
-			response.json().then((result) => {
-				for (const error of result.errors ?? [])
-					errors.push({code: error.extensions?.code, message: error.message, details: error.extensions?.details});
-			}),
+			response
+				.json()
+				.then((result) => {
+					for (const error of result.errors ?? [])
+						errors.push({code: error.extensions?.code, message: error.message, details: error.extensions?.details});
+				})
+				.catch((error) => {
+					errors.push({message: error.message});
+				}),
 		);
 	};
 	page.on('request', on_request);
@@ -57,15 +62,15 @@ export async function checkMemberDashboard(page, index) {
 			operations.some((query) => query.includes('mint_analytics')),
 			'Existing mint analytics were not exercised',
 		);
-		await Promise.all(pending);
-		assert.deepEqual(errors, [], `Member ${index + 1} returned GraphQL errors`);
 		await page.goto(`${base}/mint/federation`);
 		await expect(page.getByRole('heading', {name: 'Federation overview', exact: true})).toBeVisible();
-		console.log(
-			`PASS: member ${index + 1} Overview, Consensus, Custody, backup checklist, mint dashboard/info/keysets/database and analytics`,
-		);
 	} finally {
 		page.off('request', on_request);
 		page.off('response', on_response);
+		await Promise.all(pending);
 	}
+	assert.deepEqual(errors, [], `Member ${index + 1} returned GraphQL errors`);
+	console.log(
+		`PASS: member ${index + 1} Overview, Consensus, Custody, backup checklist, mint dashboard/info/keysets/database and analytics`,
+	);
 }

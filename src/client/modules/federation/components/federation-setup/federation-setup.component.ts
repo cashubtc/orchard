@@ -20,6 +20,7 @@ import {
 	timer,
 	type Observable,
 } from 'rxjs';
+import {MatDialog} from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatProgressBarModule} from '@angular/material/progress-bar';
@@ -35,12 +36,15 @@ import {OrcNavModule} from '@client/modules/nav/nav.module';
 /* Native Dependencies */
 import {FederationService} from '@client/modules/federation/services/federation.service';
 import {FederationSetupService} from '@client/modules/federation/services/federation-setup.service';
-import {phaseLabel, toOrchardError} from '@client/modules/federation/helpers/federation-setup.helpers';
+import {toOrchardError} from '@client/modules/federation/helpers/federation-setup.helpers';
+import {statusLabel, timestamp} from '@client/modules/federation/helpers/federation-status.helpers';
+import type {FederationSetupConfirm} from '@client/modules/federation/types/federation-setup.types';
 import {FEDERATION_DKG_STAGES, FEDERATION_SETUP_STEPS} from '@client/modules/federation/constants/federation.constants';
 import {FederationBackupComponent} from '@client/modules/federation/components/federation-backup/federation-backup.component';
 import {FederationSetupCreateComponent} from '@client/modules/federation/components/federation-setup-create/federation-setup-create.component';
 import {FederationSetupJoinComponent} from '@client/modules/federation/components/federation-setup-join/federation-setup-join.component';
 import {FederationSetupReviewComponent} from '@client/modules/federation/components/federation-setup-review/federation-setup-review.component';
+import {FederationSetupConfirmDialogComponent} from '@client/modules/federation/components/federation-setup-confirm-dialog/federation-setup-confirm-dialog.component';
 
 /* Shared Dependencies */
 import {
@@ -48,6 +52,7 @@ import {
 	type FederationSetupCreateInput,
 	type FederationSetupJoinInput,
 	type OrchardFederationSetupStatus,
+	type OrchardFederationSetupInvitation,
 	type OrchardFederationSetupReview,
 	type OrchardFederationSetupActivated,
 } from '@shared/generated.types';
@@ -79,14 +84,16 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 	private readonly setup_service = inject(FederationSetupService);
 	private readonly crew_service = inject(CrewService);
 	private readonly router = inject(Router);
+	private readonly dialog = inject(MatDialog);
 
-	public readonly phaseLabel = phaseLabel;
+	public readonly statusLabel = statusLabel;
 	public readonly steps = FEDERATION_SETUP_STEPS;
 	public readonly stage_fields = FEDERATION_DKG_STAGES;
 
 	public readonly mode = this.federation_service.mode;
 	public readonly details = this.federation_service.details;
 	public readonly is_admin = signal<boolean | null>(null);
+	public readonly invitations = signal<OrchardFederationSetupInvitation[]>([]);
 	public readonly status = signal<OrchardFederationSetupStatus | null>(null);
 	public readonly proposal = signal<OrchardFederationSetupReview | null>(null);
 	public readonly activation = signal<OrchardFederationSetupActivated | null>(null);
@@ -103,17 +110,30 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 		const status = this.status();
 		if (this.activation() || this.mode() === 'member' || status?.activation) return 'activated';
 		if (!status?.initialized) return this.choice();
-		if (status.participant_phase === 'aborted' || status.coordinator_phase === 'aborted') return 'aborted';
-		if (status.dkg || ['certified', 'dkg_running', 'ready_to_activate'].includes(status.participant_phase)) return 'keygen';
+		if (
+			status.participant_phase === 'SETUP_PARTICIPANT_PHASE_ABORTED' ||
+			status.coordinator_phase === 'SETUP_COORDINATOR_PHASE_ABORTED'
+		)
+			return 'aborted';
+		if (
+			status.dkg ||
+			[
+				'SETUP_PARTICIPANT_PHASE_CERTIFIED',
+				'SETUP_PARTICIPANT_PHASE_DKG_RUNNING',
+				'SETUP_PARTICIPANT_PHASE_READY_TO_ACTIVATE',
+			].includes(status.participant_phase ?? '')
+		)
+			return 'keygen';
 		if (this.proposal() && this.proposal()?.proposal_hash === status.proposal_hash) return 'review';
 		return 'waiting';
 	});
 	public readonly current_step = computed(
 		() => ({start: 0, create: 0, join: 0, waiting: 1, review: 2, keygen: 3, activated: 4, aborted: 1})[this.view()],
 	);
+	public readonly is_coordinator = computed(() => this.status()?.role === 'SETUP_ROLE_COORDINATOR');
 	public readonly can_propose = computed(
 		() =>
-			this.status()?.role === 'coordinator' &&
+			this.is_coordinator() &&
 			(this.status()?.member_count ?? 0) > 0 &&
 			this.status()?.missing_enrollments.length === 0 &&
 			this.status()?.enrolled_members.length === this.status()?.member_count &&
@@ -122,11 +142,15 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 	public readonly slots = computed(() => Array.from({length: this.status()?.member_count ?? 0}, (_, index) => index + 1));
 	public readonly invitation = computed(() =>
 		this.selected_member() === null
-			? (this.status()?.invitations[0] ?? null)
-			: (this.status()?.invitations.find((item) => item.member_id === this.selected_member()) ?? null),
+			? (this.invitations()[0] ?? null)
+			: (this.invitations().find((item) => item.member_id === this.selected_member()) ?? null),
 	);
+	public readonly invitation_expires_at = computed(() => timestamp(this.invitation()?.expires_at_unix));
+	/** Offer abort before key generation; cdk decides and refuses verbatim if the window has closed. */
+	public readonly can_abort = computed(() => ['waiting', 'review', 'aborted'].includes(this.view()));
 	public readonly action_disabled = computed(() => this.busy() || this.polling());
 
+	private invitation_setup_id: string | null = null;
 	private polling_error = false;
 	private readonly refresh_requested = new Subject<void>();
 	private readonly subscriptions = new Subscription();
@@ -205,7 +229,7 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 		);
 	}
 
-	/** Refresh invitations and progress, fetching a proposal only when its hash changes. */
+	/** Refresh progress and discard enrolled invitations, fetching a proposal only when its hash changes. */
 	private readSetup(): Observable<unknown> {
 		return this.setup_service.getStatus().pipe(
 			switchMap((status) => {
@@ -214,6 +238,11 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 					this.polling_error = false;
 				}
 				if (this.status()?.setup_id !== status.setup_id) this.proposal.set(null);
+				this.invitations.update((invitations) =>
+					status.initialized && status.setup_id === this.invitation_setup_id
+						? invitations.filter((invitation) => !status.enrolled_members.includes(invitation.member_id))
+						: [],
+				);
 				this.status.set(status);
 				if (!status.proposal_hash || status.proposal_hash === this.proposal()?.proposal_hash || status.dkg) return of(status);
 				return this.setup_service.review().pipe(
@@ -256,9 +285,13 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 		);
 	}
 
-	/** Create and immediately show the coordinator's invitations, without storing them in the browser. */
+	/** Keep creation invitations only in this page's state. */
 	public create(input: FederationSetupCreateInput): void {
-		this.perform(this.setup_service.create(input));
+		this.perform(this.setup_service.create(input), (response) => {
+			this.invitation_setup_id = response.setup_id;
+			this.invitations.set(response.invitations);
+			this.selected_member.set(null);
+		});
 	}
 
 	/** Join and discard the invitation form when status confirms enrollment. */
@@ -269,6 +302,41 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 	/** Propose only when every member slot is enrolled. */
 	public propose(): void {
 		if (this.can_propose()) this.perform(this.setup_service.propose());
+	}
+
+	/** Abort this daemon's setup; polling then shows the fresh start the daemon reports. */
+	public abort(): void {
+		const setup_id = this.status()?.setup_id;
+		if (!setup_id) return;
+		this.confirm({action: 'abort'}, () => this.perform(this.setup_service.abort(setup_id), () => this.choice.set('start')));
+	}
+
+	/** Replace an unjoined slot's invitation; the old one stops working. */
+	public replaceInvitation(member_id: number): void {
+		this.confirm({action: 'replace', member_id}, () =>
+			this.perform(this.setup_service.replaceInvitation(member_id), ({invitation}) => {
+				if (!invitation) return;
+				this.invitation_setup_id = this.status()?.setup_id ?? null;
+				this.invitations.update((invitations) => [...invitations.filter((item) => item.member_id !== member_id), invitation]);
+				this.selected_member.set(member_id);
+				this.copy_result.set(null);
+			}),
+		);
+	}
+
+	/** Ask before an irreversible change, holding polling off while the dialog is open. */
+	private confirm(data: FederationSetupConfirm, confirmed: () => void): void {
+		if (this.action_disabled()) return;
+		this.busy.set(true);
+		this.subscriptions.add(
+			this.dialog
+				.open(FederationSetupConfirmDialogComponent, {data})
+				.afterClosed()
+				.subscribe((result: boolean) => {
+					this.busy.set(false);
+					if (result) confirmed();
+				}),
+		);
 	}
 
 	/** Submit the proposal hash emitted by the fingerprint review component. */

@@ -46,7 +46,7 @@ export function localStatus(): OrchardFederationLocalStatus {
 			member_id: 1,
 			federation_id: 'federation',
 			sync: {
-				state: 'healthy',
+				state: 'SYNC_STATE_HEALTHY',
 				ready: true,
 				message: 'Serving wallets',
 			},
@@ -146,7 +146,7 @@ export function bdkWallet(): OrchardFederationWalletOperatorStatus {
 /** A fresh typed status fixture for isolated rendering tests. */
 export function barkWallet(): OrchardFederationBarkOperatorStatus {
 	return {
-		readiness: 'ready',
+		readiness: 'BARK_READINESS_READY',
 		accepted_frontier: '0',
 		local_frontier: '0',
 		projection_lag_operations: '0',

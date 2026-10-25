@@ -36,9 +36,9 @@
 						}
 					</ol>
 					<p class="mega-string">
-						Member {{ s.member_id }} · {{ phaseLabel(s.participant_phase) }}
+						Member {{ s.member_id }} · {{ statusLabel(s.role) }} · {{ statusLabel(s.participant_phase) }}
 						@if (s.coordinator_phase) {
-							<span> · Coordinator: {{ phaseLabel(s.coordinator_phase) }}</span>
+							<span> · Coordinator: {{ statusLabel(s.coordinator_phase) }}</span>
 						}
 					</p>
 				}
@@ -95,7 +95,7 @@
 				}
 				@case ('waiting') {
 					@if (status(); as s) {
-						@let coordinator = s.role === 'coordinator';
+						@let coordinator = is_coordinator();
 						@if (coordinator) {
 							<h1>Send each operator their invitation</h1>
 							<p>
@@ -118,6 +118,9 @@
 										><span>{{ joined ? 'Joined' : 'Waiting' }}</span>
 										@if (!joined && coordinator) {
 											<button mat-button (click)="selected_member.set(member)">Show invitation</button>
+											<button mat-button [disabled]="action_disabled()" (click)="replaceInvitation(member)">
+												Replace invitation
+											</button>
 										}
 									</div>
 								}
@@ -127,7 +130,13 @@
 										{{ can_propose() ? 'Propose federation' : 'Propose once everyone has joined' }}
 									</button>
 								}
-								<p>Fingerprints and member URLs are available in the proposal.</p>
+								@if (s.identity_fingerprint) {
+									<p>
+										Your identity fingerprint:
+										<strong class="mega-string" data-testid="identity-fingerprint">{{ s.identity_fingerprint }}</strong>
+									</p>
+									<p>Share it with the other operators so they can match your identity in the proposal.</p>
+								}
 							</section>
 							@if (coordinator) {
 								<aside class="orc-low-card setup-card">
@@ -165,20 +174,16 @@
 										@if (copy_result()) {
 											<p role="status">{{ copy_result() }}</p>
 										}
-										@if (s.invitations_expires_at) {
-											<p>Retained until {{ s.invitations_expires_at | localTime }} at the latest.</p>
+										@if (invitation_expires_at(); as expires_at) {
+											<p>Expires {{ expires_at | localTime }}.</p>
 										}
 										<p class="orc-warning-card">
-											Unused invitations live only in this Orchard process until the slot joins or retention expires.
-											Save them privately before restarting Orchard.
+											These invitations are held only on this page. After a refresh, replace any invitation you still
+											need.
 										</p>
 									} @else if (s.missing_enrollments.length) {
 										<h2>Invitation unavailable</h2>
-										<p>
-											Orchard no longer has these invitation secrets. Use a saved copy. If none is available, the
-											coordinator must replace the invitation with the mint's CLI; Orchard cannot reissue or abort
-											setup.
-										</p>
+										<p>This page has no invitation for that slot. Use a saved copy or replace the invitation.</p>
 									} @else {
 										<h2>Everyone has joined</h2>
 									}
@@ -205,7 +210,7 @@
 						generation finishes.
 					</p>
 					@if (status()?.dkg; as dkg) {
-						<p>Key generation phase: {{ phaseLabel(dkg.phase) }}</p>
+						<p>Key generation phase: {{ statusLabel(dkg.phase) }}</p>
 						@if (dkg.error) {
 							<p class="orc-error-card" role="alert">{{ dkg.error }}</p>
 						}
@@ -274,11 +279,11 @@
 				}
 				@case ('aborted') {
 					<h1>Setup aborted</h1>
-					<p>
-						Your mint reports an aborted setup. Check its logs and resolve the setup on the mint's machine. Orchard cannot abort
-						or reset a ceremony.
-					</p>
+					<p>Your mint reports an aborted setup. Other operators must abort on their own mints. A new setup gets a new ID.</p>
 				}
+			}
+			@if (can_abort()) {
+				<button mat-button [disabled]="action_disabled()" (click)="abort()">Abort setup</button>
 			}
 		}
 	</main>

@@ -33,7 +33,7 @@ describe('FederationSetupService', () => {
 	it('never caches status or invitation responses', () => {
 		for (let index = 0; index < 2; index++) {
 			service.getStatus().subscribe();
-			http.expectOne('/graphql').flush({data: {federation_setup_status: {invitations: []}}});
+			http.expectOne('/graphql').flush({data: {federation_setup_status: {initialized: false}}});
 		}
 	});
 	it('preserves actionable RPC diagnostics', () => {
@@ -43,5 +43,16 @@ describe('FederationSetupService', () => {
 		expect(request.request.body.variables).toEqual({proposal_hash: 'hash'});
 		request.flush({errors: [{message: 'Invalid argument', extensions: {code: 40008, details: 'Proposal hash mismatch'}}]});
 		expect(received?.errors[0].details).toBe('Proposal hash mismatch');
+	});
+	it('sends replacement and abort arguments without caching their responses', () => {
+		service.replaceInvitation(2).subscribe();
+		const replace = http.expectOne('/graphql');
+		expect(replace.request.body.variables).toEqual({member_id: 2});
+		expect(replace.request.body.query).toContain('expires_at_unix');
+		replace.flush({data: {federation_setup_replace_invitation: {invitation: null}}});
+		service.abort('setup').subscribe();
+		const abort = http.expectOne('/graphql');
+		expect(abort.request.body.variables).toEqual({setup_id: 'setup'});
+		abort.flush({data: {federation_setup_abort: {setup_id: 'setup'}}});
 	});
 });

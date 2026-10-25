@@ -1,9 +1,6 @@
 /* Core Dependencies */
 import {Field, Int, ObjectType} from '@nestjs/graphql';
 
-/* Application Dependencies */
-import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
-
 @ObjectType()
 export class OrchardFederationSetupKeyset {
 	@Field(() => String)
@@ -26,6 +23,9 @@ export class OrchardFederationSetupInvitation {
 
 	@Field(() => String)
 	invitation: string;
+
+	@Field(() => String)
+	expires_at_unix: string;
 }
 
 @ObjectType()
@@ -105,8 +105,8 @@ export class OrchardFederationSetupReview {
 
 @ObjectType()
 export class OrchardFederationSetupDkg {
-	@Field(() => String)
-	phase: string;
+	@Field(() => String, {nullable: true})
+	phase?: string;
 
 	@Field(() => String)
 	participant_states: string;
@@ -183,11 +183,11 @@ export class OrchardFederationSetupStatus {
 	@Field(() => Int, {nullable: true})
 	member_id?: number;
 
-	@Field(() => String)
-	role: string;
+	@Field(() => String, {nullable: true})
+	role?: string;
 
-	@Field(() => String)
-	participant_phase: string;
+	@Field(() => String, {nullable: true})
+	participant_phase?: string;
 
 	@Field(() => String, {nullable: true})
 	coordinator_phase?: string;
@@ -219,11 +219,8 @@ export class OrchardFederationSetupStatus {
 	@Field(() => OrchardFederationSetupActivation, {nullable: true})
 	activation?: OrchardFederationSetupActivation;
 
-	@Field(() => [OrchardFederationSetupInvitation], {description: 'Unused invitations retained only in this Orchard process'})
-	invitations: OrchardFederationSetupInvitation[];
-
-	@Field(() => UnixTimestamp, {nullable: true, description: 'Local invitation retention deadline'})
-	invitations_expires_at?: number;
+	@Field(() => String, {nullable: true})
+	identity_fingerprint?: string;
 }
 
 @ObjectType()
@@ -245,4 +242,16 @@ export class OrchardFederationSetupActivated {
 
 	@Field(() => Boolean)
 	restart_pending: boolean;
+}
+
+@ObjectType()
+export class OrchardFederationSetupInvitationReplaced {
+	@Field(() => OrchardFederationSetupInvitation, {nullable: true})
+	invitation?: OrchardFederationSetupInvitation;
+}
+
+@ObjectType()
+export class OrchardFederationSetupAborted {
+	@Field(() => String)
+	setup_id: string;
 }

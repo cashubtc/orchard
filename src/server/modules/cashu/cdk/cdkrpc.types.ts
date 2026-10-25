@@ -111,7 +111,13 @@ export interface cdk_mint_federation_v1_GetLocalStatusResponseOutput {
 }
 
 export interface cdk_mint_federation_v1_SyncStatus {
-	state?: string;
+	state?:
+		| 'SYNC_STATE_UNSPECIFIED'
+		| 'SYNC_STATE_HEALTHY'
+		| 'SYNC_STATE_AWAITING_QUORUM'
+		| 'SYNC_STATE_LAGGING'
+		| 'SYNC_STATE_CATCHING_UP'
+		| 'SYNC_STATE_HALTED';
 	ready?: boolean;
 	message?: string;
 	peer_member_id?: number;
@@ -121,7 +127,13 @@ export interface cdk_mint_federation_v1_SyncStatus {
 }
 
 export interface cdk_mint_federation_v1_SyncStatusOutput {
-	state: string;
+	state:
+		| 'SYNC_STATE_UNSPECIFIED'
+		| 'SYNC_STATE_HEALTHY'
+		| 'SYNC_STATE_AWAITING_QUORUM'
+		| 'SYNC_STATE_LAGGING'
+		| 'SYNC_STATE_CATCHING_UP'
+		| 'SYNC_STATE_HALTED';
 	ready: boolean;
 	message: string;
 	peer_member_id?: number;
@@ -493,7 +505,11 @@ export interface cdk_mint_federation_v1_OnchainWalletSource {
 	source_scope?: string;
 	source_id?: string;
 	correlated_source_warning?: boolean;
-	health?: string;
+	health?:
+		| 'ONCHAIN_SOURCE_HEALTH_UNSPECIFIED'
+		| 'ONCHAIN_SOURCE_HEALTH_NEVER_SYNCED'
+		| 'ONCHAIN_SOURCE_HEALTH_HEALTHY'
+		| 'ONCHAIN_SOURCE_HEALTH_DEGRADED';
 	local_tip_height?: number;
 	local_tip_hash?: string;
 	last_success_unix?: string | number;
@@ -505,7 +521,11 @@ export interface cdk_mint_federation_v1_OnchainWalletSourceOutput {
 	source_scope: string;
 	source_id: string;
 	correlated_source_warning: boolean;
-	health: string;
+	health:
+		| 'ONCHAIN_SOURCE_HEALTH_UNSPECIFIED'
+		| 'ONCHAIN_SOURCE_HEALTH_NEVER_SYNCED'
+		| 'ONCHAIN_SOURCE_HEALTH_HEALTHY'
+		| 'ONCHAIN_SOURCE_HEALTH_DEGRADED';
 	local_tip_height: number;
 	local_tip_hash: string;
 	last_success_unix?: string;
@@ -737,7 +757,7 @@ export interface cdk_mint_federation_v1_BarkVtxoCountOutput {
 }
 
 export interface cdk_mint_federation_v1_BarkOperatorStatus {
-	readiness?: string;
+	readiness?: 'BARK_READINESS_UNSPECIFIED' | 'BARK_READINESS_READY' | 'BARK_READINESS_BEHIND_CONSENSUS' | 'BARK_READINESS_DEGRADED';
 	degraded_reason?: string;
 	accepted_frontier?: string | number;
 	local_frontier?: string | number;
@@ -757,7 +777,7 @@ export interface cdk_mint_federation_v1_BarkOperatorStatus {
 }
 
 export interface cdk_mint_federation_v1_BarkOperatorStatusOutput {
-	readiness: string;
+	readiness: 'BARK_READINESS_UNSPECIFIED' | 'BARK_READINESS_READY' | 'BARK_READINESS_BEHIND_CONSENSUS' | 'BARK_READINESS_DEGRADED';
 	degraded_reason?: string;
 	accepted_frontier: string;
 	local_frontier: string;
@@ -809,11 +829,13 @@ export interface cdk_mint_federation_setup_v1_SetupKeysetOutput {
 export interface cdk_mint_federation_setup_v1_SetupInvitation {
 	member_id?: number;
 	invitation?: string;
+	expires_at_unix?: string | number;
 }
 
 export interface cdk_mint_federation_setup_v1_SetupInvitationOutput {
 	member_id: number;
 	invitation: string;
+	expires_at_unix: string;
 }
 
 export interface cdk_mint_federation_setup_v1_CreateSetupRequest {
@@ -852,6 +874,22 @@ export interface cdk_mint_federation_setup_v1_CreateSetupResponseOutput {
 	setup_id: string;
 	member_id: number;
 	invitations: cdk_mint_federation_setup_v1_SetupInvitationOutput[];
+}
+
+export interface cdk_mint_federation_setup_v1_ReplaceInvitationRequest {
+	member_id?: number;
+}
+
+export interface cdk_mint_federation_setup_v1_ReplaceInvitationRequestOutput {
+	member_id: number;
+}
+
+export interface cdk_mint_federation_setup_v1_ReplaceInvitationResponse {
+	invitation?: cdk_mint_federation_setup_v1_SetupInvitation;
+}
+
+export interface cdk_mint_federation_setup_v1_ReplaceInvitationResponseOutput {
+	invitation: cdk_mint_federation_setup_v1_SetupInvitationOutput | null;
 }
 
 export interface cdk_mint_federation_setup_v1_JoinSetupRequest {
@@ -955,7 +993,20 @@ export interface cdk_mint_federation_setup_v1_GetSetupStatusRequest {}
 export interface cdk_mint_federation_setup_v1_GetSetupStatusRequestOutput {}
 
 export interface cdk_mint_federation_setup_v1_SetupDkgProgress {
-	phase?: string;
+	phase?:
+		| 'SETUP_DKG_PHASE_UNSPECIFIED'
+		| 'SETUP_DKG_PHASE_NOT_STARTED'
+		| 'SETUP_DKG_PHASE_COMMITMENT'
+		| 'SETUP_DKG_PHASE_REVEAL'
+		| 'SETUP_DKG_PHASE_SHARE_DELIVERY'
+		| 'SETUP_DKG_PHASE_LOCAL_KEYSET_SHARE'
+		| 'SETUP_DKG_PHASE_TRANSCRIPT_SIGNATURE'
+		| 'SETUP_DKG_PHASE_ACTIVATION'
+		| 'SETUP_DKG_PHASE_FROST_ROUND_1'
+		| 'SETUP_DKG_PHASE_FROST_ROUND_2'
+		| 'SETUP_DKG_PHASE_FROST_CONFIRMATION'
+		| 'SETUP_DKG_PHASE_COMPLETE'
+		| 'SETUP_DKG_PHASE_INVALID';
 	participant_states?: string | number;
 	commitments?: string | number;
 	reveals?: string | number;
@@ -973,7 +1024,20 @@ export interface cdk_mint_federation_setup_v1_SetupDkgProgress {
 }
 
 export interface cdk_mint_federation_setup_v1_SetupDkgProgressOutput {
-	phase: string;
+	phase:
+		| 'SETUP_DKG_PHASE_UNSPECIFIED'
+		| 'SETUP_DKG_PHASE_NOT_STARTED'
+		| 'SETUP_DKG_PHASE_COMMITMENT'
+		| 'SETUP_DKG_PHASE_REVEAL'
+		| 'SETUP_DKG_PHASE_SHARE_DELIVERY'
+		| 'SETUP_DKG_PHASE_LOCAL_KEYSET_SHARE'
+		| 'SETUP_DKG_PHASE_TRANSCRIPT_SIGNATURE'
+		| 'SETUP_DKG_PHASE_ACTIVATION'
+		| 'SETUP_DKG_PHASE_FROST_ROUND_1'
+		| 'SETUP_DKG_PHASE_FROST_ROUND_2'
+		| 'SETUP_DKG_PHASE_FROST_CONFIRMATION'
+		| 'SETUP_DKG_PHASE_COMPLETE'
+		| 'SETUP_DKG_PHASE_INVALID';
 	participant_states: string;
 	commitments: string;
 	reveals: string;
@@ -1012,9 +1076,25 @@ export interface cdk_mint_federation_setup_v1_GetSetupStatusResponse {
 	initialized?: boolean;
 	setup_id?: string;
 	member_id?: number;
-	role?: string;
-	participant_phase?: string;
-	coordinator_phase?: string;
+	role?: 'SETUP_ROLE_UNSPECIFIED' | 'SETUP_ROLE_COORDINATOR' | 'SETUP_ROLE_MEMBER';
+	participant_phase?:
+		| 'SETUP_PARTICIPANT_PHASE_UNSPECIFIED'
+		| 'SETUP_PARTICIPANT_PHASE_IDENTITY_CREATED'
+		| 'SETUP_PARTICIPANT_PHASE_ENROLLED'
+		| 'SETUP_PARTICIPANT_PHASE_PROPOSAL_REVIEWED'
+		| 'SETUP_PARTICIPANT_PHASE_APPROVED'
+		| 'SETUP_PARTICIPANT_PHASE_CERTIFIED'
+		| 'SETUP_PARTICIPANT_PHASE_DKG_RUNNING'
+		| 'SETUP_PARTICIPANT_PHASE_READY_TO_ACTIVATE'
+		| 'SETUP_PARTICIPANT_PHASE_ACTIVATED'
+		| 'SETUP_PARTICIPANT_PHASE_ABORTED';
+	coordinator_phase?:
+		| 'SETUP_COORDINATOR_PHASE_UNSPECIFIED'
+		| 'SETUP_COORDINATOR_PHASE_COLLECTING_ENROLLMENTS'
+		| 'SETUP_COORDINATOR_PHASE_PROPOSAL_PUBLISHED'
+		| 'SETUP_COORDINATOR_PHASE_CERTIFIED'
+		| 'SETUP_COORDINATOR_PHASE_CLOSED'
+		| 'SETUP_COORDINATOR_PHASE_ABORTED';
 	member_count?: number;
 	enrolled_members?: number[];
 	missing_enrollments?: number[];
@@ -1024,15 +1104,32 @@ export interface cdk_mint_federation_setup_v1_GetSetupStatusResponse {
 	manifest_hash?: string;
 	dkg?: cdk_mint_federation_setup_v1_SetupDkgProgress;
 	activation?: cdk_mint_federation_setup_v1_SetupActivation;
+	identity_fingerprint?: string;
 }
 
 export interface cdk_mint_federation_setup_v1_GetSetupStatusResponseOutput {
 	initialized: boolean;
 	setup_id?: string;
 	member_id?: number;
-	role: string;
-	participant_phase: string;
-	coordinator_phase?: string;
+	role: 'SETUP_ROLE_UNSPECIFIED' | 'SETUP_ROLE_COORDINATOR' | 'SETUP_ROLE_MEMBER';
+	participant_phase:
+		| 'SETUP_PARTICIPANT_PHASE_UNSPECIFIED'
+		| 'SETUP_PARTICIPANT_PHASE_IDENTITY_CREATED'
+		| 'SETUP_PARTICIPANT_PHASE_ENROLLED'
+		| 'SETUP_PARTICIPANT_PHASE_PROPOSAL_REVIEWED'
+		| 'SETUP_PARTICIPANT_PHASE_APPROVED'
+		| 'SETUP_PARTICIPANT_PHASE_CERTIFIED'
+		| 'SETUP_PARTICIPANT_PHASE_DKG_RUNNING'
+		| 'SETUP_PARTICIPANT_PHASE_READY_TO_ACTIVATE'
+		| 'SETUP_PARTICIPANT_PHASE_ACTIVATED'
+		| 'SETUP_PARTICIPANT_PHASE_ABORTED';
+	coordinator_phase?:
+		| 'SETUP_COORDINATOR_PHASE_UNSPECIFIED'
+		| 'SETUP_COORDINATOR_PHASE_COLLECTING_ENROLLMENTS'
+		| 'SETUP_COORDINATOR_PHASE_PROPOSAL_PUBLISHED'
+		| 'SETUP_COORDINATOR_PHASE_CERTIFIED'
+		| 'SETUP_COORDINATOR_PHASE_CLOSED'
+		| 'SETUP_COORDINATOR_PHASE_ABORTED';
 	member_count: number;
 	enrolled_members: number[];
 	missing_enrollments: number[];
@@ -1042,6 +1139,23 @@ export interface cdk_mint_federation_setup_v1_GetSetupStatusResponseOutput {
 	manifest_hash?: string;
 	dkg?: cdk_mint_federation_setup_v1_SetupDkgProgressOutput | null;
 	activation?: cdk_mint_federation_setup_v1_SetupActivationOutput | null;
+	identity_fingerprint?: string;
+}
+
+export interface cdk_mint_federation_setup_v1_AbortSetupRequest {
+	setup_id?: string;
+}
+
+export interface cdk_mint_federation_setup_v1_AbortSetupRequestOutput {
+	setup_id: string;
+}
+
+export interface cdk_mint_federation_setup_v1_AbortSetupResponse {
+	setup_id?: string;
+}
+
+export interface cdk_mint_federation_setup_v1_AbortSetupResponseOutput {
+	setup_id: string;
 }
 
 export interface cdk_mint_federation_setup_v1_ActivateSetupRequest {}
@@ -1630,6 +1744,10 @@ export interface CdkRpcMethods {
 		request: cdk_mint_federation_setup_v1_CreateSetupRequest;
 		response: cdk_mint_federation_setup_v1_CreateSetupResponseOutput;
 	};
+	ReplaceInvitation: {
+		request: cdk_mint_federation_setup_v1_ReplaceInvitationRequest;
+		response: cdk_mint_federation_setup_v1_ReplaceInvitationResponseOutput;
+	};
 	JoinSetup: {request: cdk_mint_federation_setup_v1_JoinSetupRequest; response: cdk_mint_federation_setup_v1_JoinSetupResponseOutput};
 	ProposeSetup: {
 		request: cdk_mint_federation_setup_v1_ProposeSetupRequest;
@@ -1647,6 +1765,7 @@ export interface CdkRpcMethods {
 		request: cdk_mint_federation_setup_v1_GetSetupStatusRequest;
 		response: cdk_mint_federation_setup_v1_GetSetupStatusResponseOutput;
 	};
+	AbortSetup: {request: cdk_mint_federation_setup_v1_AbortSetupRequest; response: cdk_mint_federation_setup_v1_AbortSetupResponseOutput};
 	ActivateSetup: {
 		request: cdk_mint_federation_setup_v1_ActivateSetupRequest;
 		response: cdk_mint_federation_setup_v1_ActivateSetupResponseOutput;

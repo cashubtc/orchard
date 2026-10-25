@@ -1,3 +1,4 @@
+import {MatDialog} from '@angular/material/dialog';
 import {signal} from '@angular/core';
 import {TestBed, fakeAsync, tick} from '@angular/core/testing';
 import {Router} from '@angular/router';
@@ -16,15 +17,28 @@ describe('FederationSetupComponent', () => {
 	let setup: jasmine.SpyObj<FederationSetupService>;
 	let load_user: jasmine.Spy;
 	let navigate: jasmine.Spy;
+	let confirm: Subject<boolean>;
 	beforeEach(() => {
 		mode.set('setup');
-		setup = jasmine.createSpyObj('setup', ['getStatus', 'create', 'join', 'propose', 'review', 'approve', 'activate']);
+		confirm = new Subject<boolean>();
+		setup = jasmine.createSpyObj('setup', [
+			'getStatus',
+			'create',
+			'join',
+			'propose',
+			'review',
+			'approve',
+			'activate',
+			'abort',
+			'replaceInvitation',
+		]);
 		setup.getStatus.and.returnValue(of(setupStatus()));
 		setup.review.and.returnValue(of(setupProposal()));
 		load_user = jasmine.createSpy().and.returnValue(of({role: UserRole.Admin}));
 		navigate = jasmine.createSpy().and.resolveTo(true);
 		TestBed.configureTestingModule({
 			providers: [
+				{provide: MatDialog, useValue: {open: () => ({afterClosed: () => confirm})}},
 				{provide: FederationService, useValue: {mode, details, loadMode: () => of({mode: mode()})}},
 				{provide: FederationSetupService, useValue: setup},
 				{provide: CrewService, useValue: {loadUser: load_user}},
@@ -124,5 +138,62 @@ describe('FederationSetupComponent', () => {
 		mode.set('member');
 		component.openMint();
 		expect(navigate).toHaveBeenCalledOnceWith(['/mint/federation'], {onSameUrlNavigation: 'reload'});
+	});
+	it('holds create and replace invitations only on the current page and discards enrolled slots', fakeAsync(() => {
+		const invitation = {member_id: 2, invitation: 'secret', expires_at_unix: '1792886400'};
+		setup.create.and.returnValue(of({setup_id: 'setup', member_id: 1, invitations: [invitation]}));
+		setup.replaceInvitation.and.returnValue(of({invitation: {...invitation, invitation: 'replacement'}}));
+		const fixture = TestBed.createComponent(FederationSetupComponent);
+		fixture.detectChanges();
+		tick(0);
+		const component = fixture.componentInstance;
+		expect(component.invitation()).toBeNull();
+		component.create({members: 3, threshold: 2, network: 'regtest'});
+		expect(component.invitation()?.invitation).toBe('secret');
+		component.replaceInvitation(2);
+		expect(setup.replaceInvitation).not.toHaveBeenCalled();
+		confirm.next(true);
+		expect(component.invitation()?.invitation).toBe('replacement');
+		setup.getStatus.and.returnValue(of({...setupStatus(), enrolled_members: [1, 2]}));
+		tick(3000);
+		expect(component.invitation()).toBeNull();
+		fixture.destroy();
+		expect(TestBed.createComponent(FederationSetupComponent).componentInstance.invitations()).toEqual([]);
+	}));
+	it('requires confirmation and follows the uninitialized status after abort', fakeAsync(() => {
+		setup.abort.and.returnValue(of({setup_id: 'setup'}));
+		const fixture = TestBed.createComponent(FederationSetupComponent);
+		fixture.detectChanges();
+		tick(0);
+		const component = fixture.componentInstance;
+		component.abort();
+		tick(3000);
+		expect(setup.getStatus).toHaveBeenCalledTimes(1);
+		expect(setup.abort).not.toHaveBeenCalled();
+		confirm.next(false);
+		confirm.complete();
+		expect(setup.abort).not.toHaveBeenCalled();
+		confirm = new Subject<boolean>();
+		component.abort();
+		setup.getStatus.and.returnValue(
+			of({...setupStatus(), initialized: false, setup_id: null, role: null, participant_phase: null, coordinator_phase: null}),
+		);
+		confirm.next(true);
+		expect(setup.abort).toHaveBeenCalledOnceWith('setup');
+		expect(component.view()).toBe('start');
+		expect(component.can_abort()).toBeFalse();
+		fixture.destroy();
+	}));
+	it('selects views from the new enum names and offers abort only before key generation', () => {
+		const component = TestBed.createComponent(FederationSetupComponent).componentInstance;
+		component.status.set(setupStatus());
+		expect(component.view()).toBe('waiting');
+		expect(component.can_abort()).toBeTrue();
+		component.status.set({...setupStatus(), participant_phase: 'SETUP_PARTICIPANT_PHASE_DKG_RUNNING'});
+		expect(component.view()).toBe('keygen');
+		expect(component.can_abort()).toBeFalse();
+		component.status.set({...setupStatus(), coordinator_phase: 'SETUP_COORDINATOR_PHASE_ABORTED'});
+		expect(component.view()).toBe('aborted');
+		expect(component.can_abort()).toBeTrue();
 	});
 });

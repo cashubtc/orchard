@@ -93,8 +93,8 @@ export class OrchardFederationInfo {
 
 @ObjectType()
 export class OrchardFederationSyncStatus {
-	@Field(() => String)
-	state: string;
+	@Field(() => String, {nullable: true})
+	state?: string;
 
 	@Field(() => Boolean)
 	ready: boolean;
@@ -501,8 +501,8 @@ export class OrchardFederationOnchainWalletSource {
 	@Field(() => Boolean)
 	correlated_source_warning: boolean;
 
-	@Field(() => String)
-	health: string;
+	@Field(() => String, {nullable: true})
+	health?: string;
 
 	@Field(() => Int)
 	local_tip_height: number;
@@ -660,8 +660,8 @@ export class OrchardFederationBarkVtxoCount {
 
 @ObjectType()
 export class OrchardFederationBarkOperatorStatus {
-	@Field(() => String)
-	readiness: string;
+	@Field(() => String, {nullable: true})
+	readiness?: string;
 
 	@Field(() => String, {nullable: true})
 	degraded_reason?: string | null;

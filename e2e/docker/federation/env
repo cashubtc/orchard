@@ -1,5 +1,5 @@
 # Local development only. No Bitcoin or Lightning service is needed.
-CDK_FEDERATION_COMMIT=d02c12c0703dea29fb88f0b463910ee2040b7e01
+CDK_FEDERATION_COMMIT=e2619ed666f5ef153ac38d4fe43f0677eeb5ec25
 NODE_ENV=production
 DOCKER_ENV=true
 SERVER_HOST=0.0.0.0

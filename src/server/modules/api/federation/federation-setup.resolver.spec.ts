@@ -4,10 +4,13 @@ import {UserRole} from '#server/modules/user/user.enums';
 import {FederationSetupResolver} from './federation-setup.resolver.js';
 
 describe('FederationSetupResolver authorization', () => {
-	it.each(['create', 'join', 'propose', 'review', 'approve', 'getStatus', 'activate'] as const)('requires ADMIN for %s', (method) => {
-		const targets = [FederationSetupResolver.prototype[method], FederationSetupResolver];
-		const reflector = new Reflector();
-		expect(reflector.getAllAndOverride(ROLES_KEY, targets)).toEqual([UserRole.ADMIN]);
-		expect(reflector.getAllAndOverride(PUBLIC_KEY, targets)).not.toBe(true);
-	});
+	it.each(['create', 'join', 'propose', 'review', 'approve', 'getStatus', 'activate', 'abort', 'replaceInvitation'] as const)(
+		'requires ADMIN for %s',
+		(method) => {
+			const targets = [FederationSetupResolver.prototype[method], FederationSetupResolver];
+			const reflector = new Reflector();
+			expect(reflector.getAllAndOverride(ROLES_KEY, targets)).toEqual([UserRole.ADMIN]);
+			expect(reflector.getAllAndOverride(PUBLIC_KEY, targets)).not.toBe(true);
+		},
+	);
 });

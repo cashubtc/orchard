@@ -33,22 +33,6 @@ export const FEDERATION_DKG_STAGES: Array<{field: keyof OrchardFederationSetupDk
 /** Bitcoin networks CreateSetup accepts. */
 export const FEDERATION_NETWORKS = ['bitcoin', 'signet', 'testnet', 'regtest'];
 
-/** Readable names for cdk's snake_case setup phases. */
-export const FEDERATION_PHASE_LABELS: Record<string, string> = {
-	identity_created: 'Identity created',
-	enrolled: 'Enrolled',
-	proposal_reviewed: 'Proposal reviewed',
-	approved: 'Approved',
-	certified: 'All approvals certified',
-	dkg_running: 'Generating keys',
-	ready_to_activate: 'Ready to activate',
-	activated: 'Activated',
-	collecting_enrollments: 'Collecting enrollments',
-	proposal_published: 'Proposal published',
-	closed: 'Closed',
-	aborted: 'Aborted',
-};
-
 /** Dashboard poll cadence, just past the window in which cdk reuses member statuses. */
 export const FEDERATION_STATUS_INTERVAL_MS = 6000;
 
@@ -59,17 +43,47 @@ export const FEDERATION_DASHBOARD_TABS = [
 	{view: 'custody', label: 'Custody'},
 ] as const;
 
-/** Readable names for cdk status values; anything else is shown verbatim. */
+/** Readable names for cdk setup and status enums; anything else is shown verbatim. */
 export const FEDERATION_STATUS_LABELS: Record<string, string> = {
-	healthy: 'Healthy',
-	awaiting_quorum: 'Awaiting quorum',
-	lagging: 'Lagging',
-	catching_up: 'Catching up',
-	halted: 'Halted',
-	ready: 'Ready',
-	behind_consensus: 'Behind consensus',
-	degraded: 'Degraded',
-	never_synced: 'Never synced',
+	SETUP_ROLE_COORDINATOR: 'Coordinator',
+	SETUP_ROLE_MEMBER: 'Member',
+	SETUP_PARTICIPANT_PHASE_IDENTITY_CREATED: 'Identity created',
+	SETUP_PARTICIPANT_PHASE_ENROLLED: 'Enrolled',
+	SETUP_PARTICIPANT_PHASE_PROPOSAL_REVIEWED: 'Proposal reviewed',
+	SETUP_PARTICIPANT_PHASE_APPROVED: 'Approved',
+	SETUP_PARTICIPANT_PHASE_CERTIFIED: 'All approvals certified',
+	SETUP_PARTICIPANT_PHASE_DKG_RUNNING: 'Generating keys',
+	SETUP_PARTICIPANT_PHASE_READY_TO_ACTIVATE: 'Ready to activate',
+	SETUP_PARTICIPANT_PHASE_ACTIVATED: 'Activated',
+	SETUP_PARTICIPANT_PHASE_ABORTED: 'Aborted',
+	SETUP_COORDINATOR_PHASE_COLLECTING_ENROLLMENTS: 'Collecting enrollments',
+	SETUP_COORDINATOR_PHASE_PROPOSAL_PUBLISHED: 'Proposal published',
+	SETUP_COORDINATOR_PHASE_CERTIFIED: 'All approvals certified',
+	SETUP_COORDINATOR_PHASE_CLOSED: 'Closed',
+	SETUP_COORDINATOR_PHASE_ABORTED: 'Aborted',
+	SETUP_DKG_PHASE_NOT_STARTED: 'Not started',
+	SETUP_DKG_PHASE_COMMITMENT: 'Exchanging commitments',
+	SETUP_DKG_PHASE_REVEAL: 'Revealing public polynomials',
+	SETUP_DKG_PHASE_SHARE_DELIVERY: 'Delivering secret shares',
+	SETUP_DKG_PHASE_LOCAL_KEYSET_SHARE: 'Storing local keyset share',
+	SETUP_DKG_PHASE_TRANSCRIPT_SIGNATURE: 'Signing transcript',
+	SETUP_DKG_PHASE_ACTIVATION: 'Confirming final configuration',
+	SETUP_DKG_PHASE_FROST_ROUND_1: 'FROST round one',
+	SETUP_DKG_PHASE_FROST_ROUND_2: 'FROST round two',
+	SETUP_DKG_PHASE_FROST_CONFIRMATION: 'Confirming FROST result',
+	SETUP_DKG_PHASE_COMPLETE: 'Complete',
+	SETUP_DKG_PHASE_INVALID: 'Inconsistent key generation records',
+	SYNC_STATE_HEALTHY: 'Healthy',
+	SYNC_STATE_AWAITING_QUORUM: 'Awaiting quorum',
+	SYNC_STATE_LAGGING: 'Lagging',
+	SYNC_STATE_CATCHING_UP: 'Catching up',
+	SYNC_STATE_HALTED: 'Halted',
+	ONCHAIN_SOURCE_HEALTH_NEVER_SYNCED: 'Never synced',
+	ONCHAIN_SOURCE_HEALTH_HEALTHY: 'Healthy',
+	ONCHAIN_SOURCE_HEALTH_DEGRADED: 'Degraded',
+	BARK_READINESS_READY: 'Ready',
+	BARK_READINESS_BEHIND_CONSENSUS: 'Behind consensus',
+	BARK_READINESS_DEGRADED: 'Degraded',
 	DIGEST_AGREEMENT_STATE_UNKNOWN: 'Unknown',
 	DIGEST_AGREEMENT_STATE_CONVERGED: 'Converged',
 	DIGEST_AGREEMENT_STATE_CONVERGING: 'Converging',

@@ -10,11 +10,11 @@ describe('FederationSetupService', () => {
 	const created = {
 		setup_id: 'setup',
 		invitations: [
-			{member_id: 2, invitation: 'secret-2'},
-			{member_id: 3, invitation: 'secret-3'},
+			{member_id: 2, invitation: 'secret-2', expires_at_unix: '1792886400'},
+			{member_id: 3, invitation: 'secret-3', expires_at_unix: '1792886400'},
 		],
 	};
-	const progress = {initialized: true, setup_id: 'setup', enrolled_members: [1], participant_phase: 'enrolled'};
+	const progress = {initialized: true, setup_id: 'setup', enrolled_members: [1], participant_phase: 'SETUP_PARTICIPANT_PHASE_ENROLLED'};
 	beforeEach(async () => {
 		request.mockReset();
 		const module = await Test.createTestingModule({
@@ -22,62 +22,16 @@ describe('FederationSetupService', () => {
 		}).compile();
 		service = module.get(FederationSetupService);
 	});
-	afterEach(() => jest.useRealTimers());
-	it('retains invitations across refreshes and permanently removes enrolled slots', async () => {
-		request.mockResolvedValueOnce(structuredClone(created));
-		await service.create(input);
-		request.mockResolvedValue(progress);
-		expect((await service.getStatus()).invitations).toEqual(created.invitations);
-		expect((await service.getStatus()).invitations).toEqual(created.invitations);
-		request.mockResolvedValue({...progress, enrolled_members: [1, 2]});
-		expect((await service.getStatus()).invitations).toEqual([created.invitations[1]]);
-		request.mockResolvedValue(progress);
-		expect((await service.getStatus()).invitations).toEqual([created.invitations[1]]);
-	});
-	it('does not clear newly created invitations when an older status request finishes late', async () => {
-		let finish_status!: (value: object) => void;
-		request.mockReturnValueOnce(
-			new Promise((resolve) => {
-				finish_status = resolve;
-			}),
-		);
-		const pending = service.getStatus();
+	it('returns creation secrets only from create, not status polling', async () => {
 		request.mockResolvedValueOnce(created);
-		await service.create(input);
-		finish_status({initialized: false});
-		expect((await pending).invitations).toEqual([]);
+		expect(await service.create(input)).toEqual(created);
 		request.mockResolvedValue(progress);
-		expect((await service.getStatus()).invitations).toEqual(created.invitations);
+		expect(await service.getStatus()).toEqual(progress);
+		expect(await service.getStatus()).not.toHaveProperty('invitations');
 	});
-	it('stops returning invitations once they expire', async () => {
-		jest.useFakeTimers({now: new Date('2026-10-23T00:00:00Z')});
-		request.mockResolvedValueOnce(created);
-		await service.create(input);
-		request.mockResolvedValue(progress);
-		expect((await service.getStatus()).invitations_expires_at).toBe(Date.parse('2026-10-24T00:00:00Z') / 1000);
-		jest.setSystemTime(new Date('2026-10-24T00:00:00Z'));
-		expect((await service.getStatus()).invitations).toEqual([]);
-	});
-	it.each([{initialized: false}, {setup_id: 'another'}, {participant_phase: 'aborted'}, {activation: {restart_pending: true}}])(
-		'forgets obsolete secrets: %s',
-		async (update) => {
-			request.mockResolvedValueOnce(created);
-			await service.create(input);
-			request.mockResolvedValue({...progress, ...update});
-			expect((await service.getStatus()).invitations).toEqual([]);
-		},
-	);
-	it('cannot recover invitations after process state is gone', async () => {
-		request.mockResolvedValue(progress);
-		expect((await service.getStatus()).invitations).toEqual([]);
-	});
-	it('does not discard invitations when create fails', async () => {
-		request.mockResolvedValueOnce(created);
-		await service.create(input);
-		request.mockRejectedValueOnce(new CdkRpcError(status.FAILED_PRECONDITION, 'Already initialized'));
-		await expect(service.create(input)).rejects.toThrow('Already initialized');
-		request.mockResolvedValue(progress);
-		expect((await service.getStatus()).invitations).toEqual(created.invitations);
+	it('normalizes absent enum values without changing known phases', async () => {
+		request.mockResolvedValue({...progress, role: 'SETUP_ROLE_UNSPECIFIED', participant_phase: 'SETUP_PARTICIPANT_PHASE_UNSPECIFIED'});
+		expect(await service.getStatus()).toMatchObject({role: undefined, participant_phase: undefined});
 	});
 	it('passes uint64 strings through without rounding', async () => {
 		request.mockResolvedValue(created);
@@ -98,15 +52,21 @@ describe('FederationSetupService', () => {
 		await service.review();
 		await service.approve('exact-hash');
 		await service.activate();
+		await service.replaceInvitation(2);
+		await service.abort('setup');
 		expect(request.mock.calls).toEqual([
 			['JoinSetup', {invitation: 'secret'}, 120000],
 			['ProposeSetup', {}, 120000],
 			['ReviewProposal', {}],
 			['ApproveProposal', {proposal_hash: 'exact-hash'}, 120000],
 			['ActivateSetup', {}, 120000],
+			['ReplaceInvitation', {member_id: 2}, 120000],
+			['AbortSetup', {setup_id: 'setup'}, 120000],
 		]);
 		const error = new CdkRpcError(status.INVALID_ARGUMENT, 'Invitation expired');
 		request.mockRejectedValue(error);
 		await expect(service.join({invitation: 'expired'})).rejects.toBe(error);
+		await expect(service.abort('wrong-setup')).rejects.toBe(error);
+		await expect(service.replaceInvitation(1)).rejects.toBe(error);
 	});
 });
