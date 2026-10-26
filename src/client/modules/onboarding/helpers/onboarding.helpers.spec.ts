@@ -42,7 +42,7 @@ describe('onboarding helpers', () => {
 	});
 	it('lists the ecash wallet last, as enabled or skipped', () => {
 		expect(onboardingReview([], {}, true).at(-1)).toEqual(
-			jasmine.objectContaining({service: 'ecash', status: 'Enabled', tone: 'success', enabled: true, detail: 'Uses your mint'}),
+			jasmine.objectContaining({service: 'ecash', status: 'Enabled', tone: 'success', enabled: true, detail: 'Works with any mint'}),
 		);
 		expect(onboardingReview([], {}, false).at(-1)).toEqual(
 			jasmine.objectContaining({service: 'ecash', status: 'Skipped', tone: 'neutral', enabled: false}),

@@ -43,8 +43,8 @@ export const ONBOARDING_COPY: Record<OnboardingChoice, OnboardingServiceCopy> = 
 	},
 	lightning: {
 		description: 'A Lightning node to manage here. Channels, liquidity and payments.',
-		note: 'LND or Core Lightning · not needed to run a mint',
-		tile: 'LND or Core Lightning. Not needed to run a mint.',
+		note: 'LND or Core Lightning · not needed to connect a mint',
+		tile: 'LND or Core Lightning. Not needed to connect a mint.',
 		configure:
 			"Connect a Lightning node to manage its channels, liquidity and payments in Orchard. Your mint keeps its own connection to its payment backend, so it doesn't depend on this one.",
 		skipped: 'Optional · your mint takes payments through its own backend',
@@ -57,10 +57,11 @@ export const ONBOARDING_COPY: Record<OnboardingChoice, OnboardingServiceCopy> = 
 		skipped: 'Optional · add this service whenever you need it',
 	},
 	ecash: {
-		description: 'An operator wallet for issuing and sending ecash.',
+		description: 'A hosted ecash wallet that works with any mint. Connecting your own mint adds advanced features.',
 		note: ECASH_WALLET.note,
-		tile: 'An operator wallet that uses your mint.',
-		configure: "An operator wallet for issuing and sending ecash. It uses your mint's connection, so there's nothing to connect here.",
+		tile: 'A hosted ecash wallet for any mint.',
+		configure:
+			"A hosted ecash wallet that works with any mint, so there's nothing to connect here. Connecting your own mint adds advanced features.",
 		skipped: 'Optional · add it whenever you need it',
 	},
 };
