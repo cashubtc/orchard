@@ -30,6 +30,7 @@ describe('NavMobileSheetMenuSectionComponent', () => {
 						enabled_bitcoin: false,
 						enabled_lightning: false,
 						enabled_mint: false,
+						enabled_ecash: false,
 						online_bitcoin: true,
 						online_lightning: true,
 						online_mint: true,
@@ -45,13 +46,14 @@ describe('NavMobileSheetMenuSectionComponent', () => {
 		fixture.detectChanges();
 	});
 
-	it('shows the coming-soon Ecash entry only when the mint is configured', () => {
+	it('shows the coming-soon Ecash entry only when the ecash wallet is selected', () => {
+		expect(fixture.nativeElement.querySelector('a[href="/ecash"]')).toBeNull();
 		const data = TestBed.inject(MAT_BOTTOM_SHEET_DATA);
-		data.enabled_mint = true;
-		const configured = TestBed.createComponent(NavMobileSheetMenuSectionComponent);
-		configured.detectChanges();
-		expect(configured.nativeElement.querySelector('a[href="/ecash"]').title).toContain('coming soon');
-		configured.destroy();
+		data.enabled_ecash = true;
+		const selected = TestBed.createComponent(NavMobileSheetMenuSectionComponent);
+		selected.detectChanges();
+		expect(selected.nativeElement.querySelector('a[href="/ecash"]').title).toContain('coming soon');
+		selected.destroy();
 	});
 
 	it('should create', () => {

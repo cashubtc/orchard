@@ -73,6 +73,8 @@
 					<orc-graphic-status [status]="mint_status"></orc-graphic-status>
 				</div>
 			</a>
+		}
+		@if (data.enabled_ecash) {
 			<a
 				mat-list-item
 				routerLink="/ecash"

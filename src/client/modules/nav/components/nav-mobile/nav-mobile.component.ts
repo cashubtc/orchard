@@ -33,6 +33,7 @@ export class NavMobileComponent {
 	public enabled_bitcoin = input.required<boolean>();
 	public enabled_lightning = input.required<boolean>();
 	public enabled_mint = input.required<boolean>();
+	public enabled_ecash = input.required<boolean>();
 	public online_bitcoin = input.required<boolean>();
 	public online_lightning = input.required<boolean>();
 	public online_mint = input.required<boolean>();
@@ -69,6 +70,7 @@ export class NavMobileComponent {
 				enabled_bitcoin: this.enabled_bitcoin(),
 				enabled_lightning: this.enabled_lightning(),
 				enabled_mint: this.enabled_mint(),
+				enabled_ecash: this.enabled_ecash(),
 				online_bitcoin: this.online_bitcoin(),
 				online_lightning: this.online_lightning(),
 				online_mint: this.online_mint(),
@@ -114,6 +116,8 @@ export class NavMobileComponent {
 				return this.enabled_lightning();
 			case 'mint':
 				return this.enabled_mint();
+			case 'ecash':
+				return this.enabled_ecash();
 			default:
 				return false;
 		}

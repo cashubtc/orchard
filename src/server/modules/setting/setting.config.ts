@@ -24,6 +24,12 @@ export const DEFAULT_SETTINGS: Setting[] = [
 		description: 'Whether AI features are enabled',
 	},
 	{
+		key: SettingKey.ECASH_ENABLED,
+		value: 'false',
+		value_type: SettingValue.BOOLEAN,
+		description: 'Whether the ecash wallet is enabled',
+	},
+	{
 		key: SettingKey.AI_VENDOR,
 		value: 'ollama',
 		value_type: SettingValue.STRING,

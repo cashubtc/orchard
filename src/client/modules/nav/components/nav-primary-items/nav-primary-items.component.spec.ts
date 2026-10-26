@@ -22,6 +22,7 @@ describe('NavPrimaryItemsComponent', () => {
 		fixture.componentRef.setInput('enabled_bitcoin', false);
 		fixture.componentRef.setInput('enabled_lightning', false);
 		fixture.componentRef.setInput('enabled_mint', false);
+		fixture.componentRef.setInput('enabled_ecash', false);
 		fixture.componentRef.setInput('online_bitcoin', false);
 		fixture.componentRef.setInput('online_lightning', false);
 		fixture.componentRef.setInput('online_mint', false);
@@ -34,17 +35,22 @@ describe('NavPrimaryItemsComponent', () => {
 		expect(component).toBeTruthy();
 	});
 
-	it('only renders configured services and responds to hot changes', () => {
+	it('only renders selected services and responds to hot changes', () => {
 		const mint_items = (): number => fixture.nativeElement.querySelectorAll('orc-nav-primary-item[navroute="mint"]').length;
+		const ecash_items = (): number => fixture.nativeElement.querySelectorAll('orc-nav-primary-item[navroute="ecash"]').length;
 		expect(mint_items()).toBe(0);
-		expect(fixture.nativeElement.querySelectorAll('orc-nav-primary-item[navroute="ecash"]').length).toBe(0);
+		expect(ecash_items()).toBe(0);
 		fixture.componentRef.setInput('enabled_mint', true);
 		fixture.detectChanges();
 		expect(mint_items()).toBe(1);
-		expect(fixture.nativeElement.querySelectorAll('orc-nav-primary-item[navroute="ecash"]').length).toBe(1);
+		// The ecash wallet is its own selection, not implied by a mint
+		expect(ecash_items()).toBe(0);
+		fixture.componentRef.setInput('enabled_ecash', true);
+		fixture.detectChanges();
+		expect(ecash_items()).toBe(1);
 		fixture.componentRef.setInput('enabled_mint', false);
 		fixture.detectChanges();
 		expect(mint_items()).toBe(0);
-		expect(fixture.nativeElement.querySelectorAll('orc-nav-primary-item[navroute="ecash"]').length).toBe(0);
+		expect(ecash_items()).toBe(1);
 	});
 });

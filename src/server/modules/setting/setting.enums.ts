@@ -21,6 +21,7 @@ export enum SettingSensitivity {
 export enum SettingKey {
 	BITCOIN_ORACLE = 'bitcoin.oracle',
 	AI_ENABLED = 'ai.enabled',
+	ECASH_ENABLED = 'ecash.enabled',
 	AI_VENDOR = 'ai.vendor',
 	AI_OLLAMA_API = 'ai.ollama.api',
 	AI_OPENROUTER_KEY = 'ai.openrouter.key',

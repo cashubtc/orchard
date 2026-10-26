@@ -32,6 +32,7 @@ export class NavMobileSheetMenuSectionComponent {
 			enabled_bitcoin: boolean;
 			enabled_lightning: boolean;
 			enabled_mint: boolean;
+			enabled_ecash: boolean;
 			online_bitcoin: boolean;
 			online_lightning: boolean;
 			online_mint: boolean;

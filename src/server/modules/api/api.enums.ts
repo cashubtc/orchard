@@ -260,6 +260,7 @@ registerEnumType(SettingKey, {
 		),
 		BITCOIN_ORACLE: {description: 'Bitcoin price oracle toggle'},
 		AI_ENABLED: {description: 'AI features toggle'},
+		ECASH_ENABLED: {description: 'Ecash wallet toggle'},
 		AI_VENDOR: {description: 'AI vendor selection'},
 		AI_OLLAMA_API: {description: 'Ollama API endpoint'},
 		AI_OPENROUTER_KEY: {description: 'OpenRouter API key'},

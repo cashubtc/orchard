@@ -26,6 +26,7 @@ describe('NavPrimaryComponent', () => {
 		fixture.componentRef.setInput('enabled_bitcoin', true);
 		fixture.componentRef.setInput('enabled_lightning', true);
 		fixture.componentRef.setInput('enabled_mint', true);
+		fixture.componentRef.setInput('enabled_ecash', false);
 		fixture.componentRef.setInput('online_bitcoin', true);
 		fixture.componentRef.setInput('online_lightning', true);
 		fixture.componentRef.setInput('online_mint', true);

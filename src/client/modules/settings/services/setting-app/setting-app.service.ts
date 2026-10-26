@@ -22,6 +22,7 @@ const defaultSetting = <T>(value: T): ParsedSetting<T> => ({value, description: 
 const SETTING_DEFAULTS: ParsedAppSettings = {
 	bitcoin_oracle: defaultSetting(false),
 	ai_enabled: defaultSetting(false),
+	ecash_enabled: defaultSetting(false),
 	ai_vendor: defaultSetting('ollama'),
 	ai_ollama_api: defaultSetting('http://localhost:11434'),
 	ai_openrouter_key: defaultSetting(''),
@@ -140,6 +141,7 @@ export class SettingAppService {
 		const find = (key: SettingKey): Setting | undefined => settings.find((s) => s.key === key);
 		const bitcoin_oracle = find(SettingKey.BitcoinOracle);
 		const ai_enabled = find(SettingKey.AiEnabled);
+		const ecash_enabled = find(SettingKey.EcashEnabled);
 		const ai_vendor = find(SettingKey.AiVendor);
 		const ai_ollama_api = find(SettingKey.AiOllamaApi);
 		const ai_openrouter_key = find(SettingKey.AiOpenrouterKey);
@@ -149,6 +151,7 @@ export class SettingAppService {
 		const system_metrics = find(SettingKey.SystemMetrics);
 		if (bitcoin_oracle) this.parsed_settings.bitcoin_oracle = this.toParsedSetting<boolean>(bitcoin_oracle);
 		if (ai_enabled) this.parsed_settings.ai_enabled = this.toParsedSetting<boolean>(ai_enabled);
+		if (ecash_enabled) this.parsed_settings.ecash_enabled = this.toParsedSetting<boolean>(ecash_enabled);
 		if (ai_vendor) this.parsed_settings.ai_vendor = this.toParsedSetting<string>(ai_vendor);
 		if (ai_ollama_api) this.parsed_settings.ai_ollama_api = this.toParsedSetting<string>(ai_ollama_api);
 		if (ai_openrouter_key) this.parsed_settings.ai_openrouter_key = this.toParsedSetting<string>(ai_openrouter_key);

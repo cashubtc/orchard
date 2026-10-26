@@ -76,6 +76,7 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	public user_name = signal<string>('');
 	public user_error = signal<boolean>(false);
 	public ai_enabled = signal<boolean>(false);
+	public enabled_ecash = signal<boolean>(false);
 	public ai_models = signal<AiModel[]>([]);
 	public ai_conversation = signal<AiChatConversation | null>(null);
 	public ai_revision = signal<number>(0);
@@ -149,6 +150,7 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 
 	constructor() {
 		this.ai_enabled.set(this.settingAppService.getSetting('ai_enabled').value);
+		this.enabled_ecash.set(this.settingAppService.getSetting('ecash_enabled').value);
 		this.ai_vendor.set(this.settingAppService.getSetting('ai_vendor').value);
 		this.ai_favorites.set(this.settingDeviceService.getAiFavorites());
 		// Restart connection polling whenever the server's service flags change
@@ -392,6 +394,7 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 				this.ai_model.set(this.settingDeviceService.getModel());
 				this.ai_vendor.set(this.settingAppService.getSetting('ai_vendor').value);
 				this.ai_enabled.set(this.settingAppService.getSetting('ai_enabled').value);
+				this.enabled_ecash.set(this.settingAppService.getSetting('ecash_enabled').value);
 				if (this.ai_enabled()) {
 					if (this.ai_initialized) this.getModels();
 					else this.initAi();

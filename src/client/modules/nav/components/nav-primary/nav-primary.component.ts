@@ -19,6 +19,7 @@ export class NavPrimaryComponent {
 	public enabled_bitcoin = input.required<boolean>();
 	public enabled_lightning = input.required<boolean>();
 	public enabled_mint = input.required<boolean>();
+	public enabled_ecash = input.required<boolean>();
 	public online_bitcoin = input.required<boolean>();
 	public online_lightning = input.required<boolean>();
 	public online_mint = input.required<boolean>();

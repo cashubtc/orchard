@@ -31,6 +31,8 @@
 			[enabled]="enabled_mint()"
 			[online]="online_mint()"
 		></orc-nav-primary-item>
+	}
+	@if (enabled_ecash()) {
 		<orc-nav-primary-item
 			title="Ecash · coming soon"
 			navroute="ecash"
