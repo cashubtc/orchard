@@ -57,11 +57,15 @@ export class LightningWalletKitService implements OnModuleInit, OnModuleDestroy 
 
 		return new Promise((resolve, reject) => {
 			if (!(method in this.grpc_client)) reject(OrchardErrorCode.LightningSupportError);
-			this.grpc_client[method](request, {deadline: Date.now() + INTEGRATION_REQUEST_TIMEOUT_MS}, (error: Error | null, response: any) => {
-				if (error && error?.message?.includes('14 UNAVAILABLE')) reject(OrchardErrorCode.LightningRpcConnectionError);
-				if (error) reject(error);
-				resolve(response);
-			});
+			this.grpc_client[method](
+				request,
+				{deadline: Date.now() + INTEGRATION_REQUEST_TIMEOUT_MS},
+				(error: Error | null, response: any) => {
+					if (error && error?.message?.includes('14 UNAVAILABLE')) reject(OrchardErrorCode.LightningRpcConnectionError);
+					if (error) reject(error);
+					resolve(response);
+				},
+			);
 		});
 	}
 
