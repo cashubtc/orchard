@@ -1,10 +1,7 @@
 <section class="section-container">
 	<orc-nav-secondary>
 		<div nav-secondary-header class="nav-secondary-header">
-			<mat-icon class="orc-primary-color">account_balance</mat-icon><strong>Mint</strong
-			><span class="label-state label-xs" [class.label-warning]="mode() !== 'member'" [class.label-success]="mode() === 'member'">{{
-				mode() === 'member' ? 'FEDERATION MEMBER' : 'SETUP MODE'
-			}}</span>
+			<mat-icon class="orc-primary-color">account_balance</mat-icon><strong>Mint</strong>
 		</div>
 		<div nav-secondary-items>
 			<orc-nav-secondary-item name="Federation setup" navroute="mint/federation" [active]="true"></orc-nav-secondary-item>

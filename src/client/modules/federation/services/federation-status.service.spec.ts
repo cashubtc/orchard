@@ -48,16 +48,7 @@ describe('FederationStatusService', () => {
 		http.expectNone('/graphql');
 		expect(waiting.closed).toBeTrue();
 	});
-	it('loads the header summary once, info before custody', () => {
-		service.loadSummary().subscribe();
-		http.expectOne((request) => request.body.query.includes('federation_info')).flush({data: {federation_info: federationInfo()}});
-		http.expectOne((request) => request.body.query.includes('federation_custody_status')).flush({
-			data: {federation_custody_status: {onchain_wallets: []}},
-		});
-		service.loadSummary().subscribe();
-		http.expectNone('/graphql');
-	});
-	it('shares development custody with the mint header and clears it when the federation changes', () => {
+	it('derives development from custody and clears it when the federation changes', () => {
 		service.loadInfo().subscribe();
 		http.expectOne('/graphql').flush({data: {federation_info: federationInfo()}});
 		service.loadCustodyStatus().subscribe();

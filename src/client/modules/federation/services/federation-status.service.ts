@@ -3,7 +3,7 @@ import {computed, inject, Injectable, signal, type WritableSignal} from '@angula
 import {HttpClient} from '@angular/common/http';
 
 /* Vendor Dependencies */
-import {BehaviorSubject, EMPTY, catchError, concat, defer, filter, finalize, map, share, switchMap, take, tap, type Observable} from 'rxjs';
+import {BehaviorSubject, EMPTY, catchError, defer, filter, finalize, map, share, switchMap, take, tap, type Observable} from 'rxjs';
 import {DateTime} from 'luxon';
 
 /* Application Dependencies */
@@ -86,11 +86,6 @@ export class FederationStatusService {
 			this.custody_error,
 			(custody) => this.custody.set(custody),
 		);
-	}
-
-	/** Read info, then custody, once for the mint header; sources already loaded are skipped. */
-	public loadSummary(): Observable<unknown> {
-		return concat(...(this.info() ? [] : [this.loadInfo()]), ...(this.custody() ? [] : [this.loadCustodyStatus()]));
 	}
 
 	/* *******************************************************
