@@ -4,21 +4,15 @@
 	@extend %block;
 }
 .backup-card {
-	max-width: 44rem;
-	margin: auto;
-	padding: 1.5rem;
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
+	@extend %w-max-54;
+	@extend %p-1;
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-1;
 }
 .backup-warning {
 	white-space: pre-wrap;
 }
 p {
-	line-height: 1.55;
-}
-@media (max-width: 800px) {
-	.backup-card {
-		padding: 1rem;
-	}
+	@extend %line-height-1-4;
 }

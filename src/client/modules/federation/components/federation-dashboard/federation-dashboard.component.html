@@ -11,9 +11,6 @@
 				>
 			}
 		</nav>
-		@if (development()) {
-			<span class="orc-warning-card">DEVELOPMENT</span>
-		}
 		<a
 			mat-button
 			routerLink="/mint/federation"
@@ -23,25 +20,19 @@
 		>
 	</div>
 	@if (updated() && view() !== 'backup') {
-		<p class="font-size-s">Last response: {{ updated() | localTime }} · Refreshes every {{ interval_seconds }} seconds</p>
+		<p class="font-size-s">Last response: {{ updated() | localTimeAgo }} · Refreshes every {{ interval_seconds }} seconds</p>
 	}
 	@if (loading()) {
 		<mat-progress-bar mode="indeterminate" aria-label="Loading federation status"></mat-progress-bar>
 	}
-	@for (item of error_items(); track item.source) {
-		<section class="orc-error-card p-1">
-			<strong>{{ item.source }} could not be refreshed. Any retained values may be stale.</strong
-			><orc-error-resolve [error]="item.error"></orc-error-resolve>
-		</section>
-	}
 	@if (development()) {
 		<section class="orc-warning-card p-1" role="status">
-			<strong>DEVELOPMENT · Development federation</strong>
-			<p>
-				At least one payment direction accepts a single member's report under the development payment policy. For testing only;
-				never for real funds.
-			</p>
+			<strong>Development federation</strong>
+			<p>This federation uses a test payment backend or a development payment policy. For testing only; never for real funds.</p>
 		</section>
+	}
+	@if (view() === 'consensus' || view() === 'custody') {
+		<orc-federation-status-error source="Federation info" [error]="info_error()"></orc-federation-status-error>
 	}
 	@switch (view()) {
 		@case ('overview') {
@@ -51,16 +42,28 @@
 				[local]="local()"
 				[custody]="custody()"
 				[mint_info]="mint_info()"
+				[info_error]="info_error()"
+				[members_error]="members_error()"
+				[local_error]="local_error()"
+				[custody_error]="custody_error()"
+				[public_api]="public_api()"
 			></orc-federation-overview>
 		}
 		@case ('consensus') {
-			<orc-federation-consensus [local]="local()"></orc-federation-consensus>
+			<orc-federation-consensus [local]="local()" [loading]="local_loading()" [error]="local_error()"></orc-federation-consensus>
 		}
 		@case ('custody') {
-			<orc-federation-custody [custody]="custody()"></orc-federation-custody>
+			<orc-federation-custody
+				[custody]="custody()"
+				[info]="info()"
+				[loading]="custody_loading()"
+				[error]="custody_error()"
+			></orc-federation-custody>
 		}
 		@case ('backup') {
-			<orc-federation-backup></orc-federation-backup>
+			<h1>Federation backup checklist</h1>
+			<orc-federation-status-error source="Federation info" [error]="info_error()"></orc-federation-status-error>
+			<orc-federation-backup [federation_id]="info()?.federation_id ?? null" [warning]="backup_warning()"></orc-federation-backup>
 		}
 	}
 </div>

@@ -1,9 +1,12 @@
 /* Core Dependencies */
-import {Component, ChangeDetectionStrategy, OnInit, OnDestroy, signal, inject} from '@angular/core';
+import {Component, ChangeDetectionStrategy, OnInit, OnDestroy, signal, computed, inject} from '@angular/core';
+import {toObservable} from '@angular/core/rxjs-interop';
 import {Router, Event, ActivatedRoute, NavigationStart, NavigationEnd, NavigationCancel, NavigationError} from '@angular/router';
 /* Vendor Dependencies */
-import {filter, Subscription} from 'rxjs';
+import {filter, Subscription, switchMap, take} from 'rxjs';
 /* Application Dependencies */
+import {FederationService} from '@client/modules/federation/services/federation.service';
+import {FederationStatusService} from '@client/modules/federation/services/federation-status.service';
 import {ConfigService} from '@client/modules/config/services/config.service';
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 import {PublicService} from '@client/modules/public/services/image/public.service';
@@ -26,8 +29,8 @@ export class MintSectionComponent implements OnInit, OnDestroy {
 	private readonly mintService = inject(MintService);
 	private readonly publicService = inject(PublicService);
 	private readonly navService = inject(NavService);
-
-	public readonly menu_items: NavSecondaryItem[] = this.navService.getMenuItems('mint');
+	private readonly federation_service = inject(FederationService);
+	private readonly federation_status_service = inject(FederationStatusService);
 
 	public readonly mint_info = signal<MintInfo | null>(null);
 	public readonly icon_data = signal<string | null>(null);
@@ -36,6 +39,10 @@ export class MintSectionComponent implements OnInit, OnDestroy {
 	public readonly error = signal<boolean>(false);
 	public readonly overlayed = signal(false);
 
+	public readonly menu_items = computed<NavSecondaryItem[]>(() => this.navService.getMenuItems('mint'));
+	public readonly development = computed(() => this.federation_service.is_member() && this.federation_status_service.development());
+
+	private readonly member$ = toObservable(this.federation_service.is_member);
 	private subscriptions: Subscription = new Subscription();
 
 	ngOnInit(): void {
@@ -51,6 +58,18 @@ export class MintSectionComponent implements OnInit, OnDestroy {
 		this.subscriptions.add(this.getMintInfoSubscription());
 		this.subscriptions.add(this.getRouterSubscription());
 		this.subscriptions.add(this.getOverlaySubscription());
+		this.subscriptions.add(this.getFederationSubscription());
+	}
+
+	/** Load federation info and custody once on a member, so the header's development badge needs no dashboard visit. */
+	private getFederationSubscription(): Subscription {
+		return this.member$
+			.pipe(
+				filter(Boolean),
+				take(1),
+				switchMap(() => this.federation_status_service.loadSummary()),
+			)
+			.subscribe();
 	}
 
 	private getMintInfoSubscription(): Subscription {

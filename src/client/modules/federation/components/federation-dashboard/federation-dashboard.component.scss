@@ -4,25 +4,20 @@
 	@extend %block;
 }
 .dashboard-content {
-	padding: 1.5rem;
-	min-width: 0;
+	@extend %p-1;
+	@extend %w-min-0;
 }
 .dashboard-toolbar,
 .dashboard-toolbar nav {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: 0.25rem;
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-wrap;
+	@extend %flex-gap-0-25;
 }
 .dashboard-toolbar {
-	justify-content: space-between;
+	@extend %flex-justify-between;
 }
 a[aria-current='page'] {
 	@extend %orc-primary-container-bg;
 	@extend %orc-on-primary-container-color;
-}
-@media (max-width: 800px) {
-	.dashboard-content {
-		padding: 1rem;
-	}
 }

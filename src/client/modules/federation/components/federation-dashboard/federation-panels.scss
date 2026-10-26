@@ -2,16 +2,16 @@
 @use 'nucleus/nucleus';
 :host {
 	@extend %block;
-	min-width: 0;
+	@extend %w-min-0;
 }
 .panel {
 	@extend %p-1;
-	margin-bottom: 1rem;
-	min-width: 0;
+	@extend %m-b-1-25;
+	@extend %w-min-0;
 }
 .panel-grid {
-	display: grid;
-	gap: 1rem;
+	@extend %grid;
+	@extend %flex-gap-1;
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
 }
 code,
@@ -27,21 +27,22 @@ pre {
 h2,
 h3,
 h4 {
-	margin-top: 0;
+	@extend %m-0;
+	@extend %p-b-0-5;
 }
 p {
-	line-height: 1.5;
+	@extend %line-height-1-4;
 }
 dl {
-	display: grid;
+	@extend %grid;
+	@extend %flex-gap-0-5;
 	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-	gap: 0.75rem;
 }
 dd {
-	margin: 0;
+	@extend %m-0;
 }
 .entry {
-	padding: 1rem 0;
+	@extend %p-v-1;
 	border-bottom: 1px solid;
 	@extend %orc-outline-variant-border;
 }
@@ -50,6 +51,6 @@ dd {
 	@extend %orc-outline-variant-border;
 }
 summary {
-	cursor: pointer;
-	padding: 0.5rem 0;
+	@extend %cursor-pointer;
+	@extend %p-v-0-5;
 }

@@ -1,5 +1,7 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
+/* Application Dependencies */
+import {FederationService} from '@client/modules/federation/services/federation.service';
 /* Native Dependencies */
 import {OrcMintSubsectionKeysetsModule} from '@client/modules/mint/modules/mint-subsection-keysets/mint-subsection-keysets.module';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
@@ -100,6 +102,17 @@ describe('MintSubsectionKeysetsTableComponent', () => {
 			fixture.componentRef.setInput('allow_rotation', false);
 			fixture.detectChanges();
 			expect(rotationVisible()).toBeFalse();
+		}
+	});
+	it('shows neutral unused member keysets on desktop and in phone details', () => {
+		TestBed.inject(FederationService).mode.set('member');
+		fixture.componentRef.setInput('keysets', [buildKeyset({valid_from: null})]);
+		fixture.componentRef.setInput('loading', false);
+		for (const device of ['desktop', 'mobile']) {
+			fixture.componentRef.setInput('device_type', device);
+			fixture.detectChanges();
+			expect(fixture.nativeElement.textContent).toContain('Not used yet');
+			expect(fixture.nativeElement.textContent).not.toContain('MISSING');
 		}
 	});
 });

@@ -43,6 +43,8 @@
 						<td mat-cell *matCellDef="let keyset">
 							@if (keyset.valid_from !== null) {
 								<span class="text-nowrap">{{ keyset.valid_from | localTime: 'date-only' }}</span>
+							} @else if (member()) {
+								<span class="orc-outline-color">Not used yet</span>
 							} @else {
 								<div class="font-size-s font-weight-bold orc-status-warning-color flex flex-items-center flex-gap-0-5">
 									<div class="flex"><mat-icon>warning</mat-icon></div>
@@ -97,6 +99,8 @@
 										mat-icon-button
 										class="orc-icon-button"
 										matTooltip="Rotate Keyset"
+										aria-label="Rotate keyset"
+										data-testid="rotate-keyset"
 										matTooltipPosition="left"
 										(click)="$event.stopPropagation(); $event.preventDefault(); rotateKeyset.emit(keyset.unit)"
 									>
@@ -266,6 +270,8 @@
 		<div class="text-nowrap">
 			@if (keyset.valid_from !== null) {
 				{{ keyset.valid_from | localTime: 'medium' }}
+			} @else if (member()) {
+				<span class="orc-outline-color">Not used yet</span>
 			} @else {
 				<span class="font-size-xs font-weight-bold orc-status-warning-color">MISSING</span>
 			}

@@ -1,42 +1,51 @@
+@use '@angular/cdk' as cdk;
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
 .health-grid,
 .identity {
-	display: grid;
-	gap: 1rem;
+	@extend %grid;
+	@extend %flex-gap-1;
 }
 .health-grid {
 	grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .health-grid h2 {
-	font-size: 1rem;
+	@extend %font-size-m;
 }
 .identity {
-	grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
 }
 .identity span,
-.identity strong,
-.identity code {
-	display: block;
+.identity strong {
+	@extend %block;
 }
 .metric {
-	font-size: 1.5rem;
+	@extend %font-size-xl;
+}
+.health-status[data-tone='active'] {
+	@extend %orc-status-active-color;
+}
+.health-status[data-tone='warning'] {
+	@extend %orc-status-warning-color;
+}
+.health-status[data-tone='inactive'] {
+	@extend %orc-status-inactive-color;
 }
 .method-title {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: 0.5rem;
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-wrap;
+	@extend %flex-gap-0-5;
 }
 table {
-	width: 100%;
+	@extend %w-full;
 	border-collapse: collapse;
 	table-layout: fixed;
 }
 th,
 td {
-	padding: 0.75rem 0.5rem;
-	text-align: left;
+	@extend %p-0-5;
+	@extend %text-left;
 	vertical-align: top;
 	overflow-wrap: anywhere;
 	border-bottom: 1px solid;
@@ -45,7 +54,11 @@ td {
 th:first-child {
 	width: 25%;
 }
+.member-table td::before {
+	@extend %font-weight-semi-bold;
+}
 @media (max-width: 800px) {
+	@include cdk.a11y-visually-hidden();
 	.health-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
@@ -56,17 +69,20 @@ th:first-child {
 		display: block;
 	}
 	.member-table thead {
-		display: none;
+		@extend .cdk-visually-hidden;
 	}
 	.member-table tr {
-		padding: 0.75rem 0;
+		padding: 0.5rem 0;
 	}
 	.member-table td {
-		padding: 0.35rem 0;
+		padding: 0.25rem 0;
 		border: 0;
 	}
 	.member-table td::before {
 		content: attr(data-label) ': ';
-		font-weight: 600;
 	}
+}
+
+.health-error {
+	grid-column: 1 / -1;
 }

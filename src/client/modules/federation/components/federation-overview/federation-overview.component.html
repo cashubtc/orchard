@@ -1,8 +1,56 @@
 <h1>Federation overview</h1>
 @if (info(); as identity) {
+	<p class="member-heading">
+		Member {{ identity.local_member_id }} of {{ identity.threshold_params?.member_count ?? identity.members.length
+		}}{{ network() ? ' · ' + network() : '' }}
+	</p>
+}
+@if (local()?.status?.checkpoint?.audit_mismatch) {
+	<section class="orc-error-card panel" role="alert">
+		<h2>Halted: checkpoint audit mismatch</h2>
+		<p>
+			Your mint found a state digest mismatch and has stopped serving wallets. Investigate the disagreement before restoring service.
+			This dashboard cannot clear the halt.
+		</p>
+	</section>
+}
+<section class="health-grid" aria-label="Federation health">
+	<article class="orc-low-card panel">
+		<h2>Members reachable</h2>
+		<strong class="metric"
+			>{{ reachable() ?? '—' }} of {{ info()?.threshold_params?.member_count ?? info()?.members?.length ?? '—' }}</strong
+		>
+		<p class="health-status" [attr.data-tone]="member_health().tone">{{ member_health().text }}</p>
+	</article>
+	<article class="orc-low-card panel">
+		<h2>Digest agreement</h2>
+		<strong class="metric">{{ members_loaded() ? statusLabel(members()?.digest_agreement?.state) : '—' }}</strong>
+		<p class="health-status" [attr.data-tone]="digest_health().tone">{{ digest_health().text }}</p>
+	</article>
+	<article class="orc-low-card panel" [class.health-error]="!!local_error()">
+		<h2>Your mint</h2>
+		<strong class="metric">{{ local_loaded() ? syncLabel(local()?.status) : '—' }}</strong>
+		<p class="health-status" [attr.data-tone]="local_health().tone">{{ local_health().text }}</p>
+		<orc-federation-status-error source="Local status" [error]="local_error()"></orc-federation-status-error>
+	</article>
+	<article class="orc-low-card panel">
+		<h2>Payment checks</h2>
+		<strong class="metric">{{
+			local()?.status?.payment_observations?.inspect != null
+				? (local()?.status?.payment_observations?.inspect | federationCount)
+				: '—'
+		}}</strong>
+		<p class="health-status" [attr.data-tone]="payment_health().tone">{{ payment_health().text }}</p>
+	</article>
+</section>
+<orc-federation-status-error source="Federation info" [error]="info_error()"></orc-federation-status-error>
+@if (info(); as identity) {
 	<section class="orc-low-card panel identity" aria-label="Federation identity">
 		<div>
-			<span>Federation</span><code>{{ identity.federation_id }}</code>
+			<span>Federation</span>
+			<orc-button-copy [text]="identity.federation_id" size="sm">
+				<code [title]="identity.federation_id">{{ identity.federation_id | dataTruncate: 24 : 8 : 8 }}</code>
+			</orc-button-copy>
 		</div>
 		<div>
 			<span>You</span
@@ -10,9 +58,11 @@
 				>Member {{ identity.local_member_id }} of {{ identity.threshold_params?.member_count ?? identity.members.length }}</strong
 			>
 		</div>
-		<div>
-			<span>Network</span><strong>{{ network() }}</strong>
-		</div>
+		@if (network(); as chain) {
+			<div>
+				<span>Network</span><strong>{{ chain }}</strong>
+			</div>
+		}
 		<div>
 			<span>Thresholds</span
 			><strong
@@ -21,31 +71,22 @@
 			>
 		</div>
 		<div>
-			<span>Config digest</span><code>{{ identity.config_digest }}</code>
+			<span>Config digest</span>
+			<orc-button-copy [text]="identity.config_digest" size="sm">
+				<code [title]="identity.config_digest">{{ identity.config_digest | dataTruncate: 24 : 8 : 8 }}</code>
+			</orc-button-copy>
 		</div>
 	</section>
 }
-<section class="health-grid" aria-label="Federation health">
-	<article class="orc-low-card panel">
-		<h2>Members reachable</h2>
-		<strong class="metric">{{ reachable() ?? '—' }} of {{ info()?.members?.length ?? '—' }}</strong>
-		<p>{{ members() ? 'Members that answered the latest check' : 'Waiting for member statuses' }}</p>
-	</article>
-	<article class="orc-low-card panel">
-		<h2>Digest agreement</h2>
-		<strong class="metric">{{ statusLabel(members()?.digest_agreement?.state) }}</strong>
-		<p>Compared members: {{ members()?.digest_agreement?.compared_members?.join(', ') || 'None reported' }}</p>
-	</article>
-	<article class="orc-low-card panel">
-		<h2>Your mint</h2>
-		<strong class="metric">{{ syncLabel(local()?.status) }}</strong>
-		<p>{{ local()?.status?.checkpoint?.audit_mismatch ? 'Checkpoint audit mismatch' : readinessLabel(local()?.status) }}</p>
-	</article>
-	<article class="orc-low-card panel">
-		<h2>Payment checks</h2>
-		<strong class="metric">{{ local()?.status?.payment_observations?.inspect ?? '—' }}</strong>
-		<p>Reports to inspect</p>
-	</article>
+<section class="orc-low-card panel" aria-label="Member settings comparison" data-testid="federation-settings-summary">
+	<h2>Settings</h2>
+	<p role="status">{{ settings_loading() ? 'Comparing…' : settings_summary() }}</p>
+	<orc-federation-status-error source="Settings comparison" [error]="settings_error()" />
+	<p>Changes apply to this member only.</p>
+	<div class="flex flex-gap-0-5">
+		<a matButton routerLink="/mint/info">Info</a>
+		<a matButton routerLink="/mint/config">Config</a>
+	</div>
 </section>
 @if (members()?.digest_agreement; as agreement) {
 	@if (agreement.conflicts.length || agreement.digest_alert_members.length) {
@@ -54,7 +95,7 @@
 			@for (conflict of agreement.conflicts; track $index) {
 				<p>
 					{{ statusLabel(conflict.kind) }}: members {{ conflict.first_member_id }} and {{ conflict.second_member_id }}, operation
-					{{ conflict.operation_count }}
+					{{ conflict.operation_count | federationCount }}
 				</p>
 			}
 			@if (agreement.digest_alert_members.length) {
@@ -65,6 +106,7 @@
 }
 <section class="orc-low-card panel">
 	<h2>Members</h2>
+	<orc-federation-status-error source="Members" [error]="members_error()"></orc-federation-status-error>
 	@if (members(); as snapshot) {
 		<p>
 			Snapshot:
@@ -75,45 +117,65 @@
 			}
 		</p>
 	}
-	<table class="member-table">
-		<thead>
-			<tr>
-				<th>Member</th>
-				<th>Reachability</th>
-				<th>Latency</th>
-				<th>Sync</th>
-				<th>Operations</th>
-				<th>Digest</th>
+	<table class="member-table" role="table" aria-label="Federation members">
+		<thead role="rowgroup">
+			<tr role="row">
+				<th scope="col" role="columnheader">Member</th>
+				<th scope="col" role="columnheader">Reachability</th>
+				<th scope="col" role="columnheader">Latency</th>
+				<th scope="col" role="columnheader">Sync</th>
+				<th scope="col" role="columnheader">Operations</th>
+				<th scope="col" role="columnheader">Digest</th>
 			</tr>
 		</thead>
-		<tbody>
+		<tbody role="rowgroup">
 			@for (member of rows(); track member.member_id) {
-				<tr>
-					<td data-label="Member">
+				<tr role="row">
+					<td role="cell" data-label="Member">
 						<strong>{{ member.member_id }}{{ member.member_id === info()?.local_member_id ? ' · You' : '' }}</strong>
 						<p>{{ member.public_mint_url }}</p>
 						<details>
 							<summary>Member identity</summary>
 							<p>{{ member.federation_api_url }}</p>
-							<code>{{ member.identity_public_key }}</code>
+							<orc-button-copy [text]="member.identity_public_key" size="sm">
+								<code [title]="member.identity_public_key">{{
+									member.identity_public_key | dataTruncate: 24 : 8 : 8
+								}}</code>
+							</orc-button-copy>
 						</details>
 					</td>
-					<td data-label="Reachability">
+					<td role="cell" data-label="Reachability">
 						{{ member.result ? (member.result.reachable ? 'Online' : 'Unreachable') : 'Not checked' }}
 						@if (member.result?.error) {
 							<p class="orc-error-color">{{ member.result?.error }}</p>
 						}
 					</td>
-					<td data-label="Latency">
-						{{ member.result?.local ? 'Local' : member.result?.reachable ? member.result?.latency_ms + ' ms' : '—' }}
-					</td>
-					<td data-label="Sync">
+					<td role="cell" data-label="Latency">
 						{{
-							member.result?.status?.checkpoint?.audit_mismatch ? 'Halted · audit mismatch' : syncLabel(member.result?.status)
+							member.result?.local
+								? 'Local'
+								: member.result?.reachable
+									? (member.result?.latency_ms | federationDuration: 'milliseconds')
+									: '—'
 						}}
 					</td>
-					<td data-label="Operations">{{ member.result?.status?.peer?.operation_count ?? '—' }}</td>
-					<td data-label="Digest">{{ member.digest }}</td>
+					<td role="cell" data-label="Sync">
+						{{
+							!members_loaded()
+								? '—'
+								: member.result?.status?.checkpoint?.audit_mismatch
+									? 'Halted · audit mismatch'
+									: syncLabel(member.result?.status)
+						}}
+					</td>
+					<td role="cell" data-label="Operations">
+						{{
+							member.result?.status?.peer?.operation_count != null
+								? (member.result?.status?.peer?.operation_count | federationCount)
+								: '—'
+						}}
+					</td>
+					<td role="cell" data-label="Digest">{{ member.digest }}</td>
 				</tr>
 			}
 		</tbody>
@@ -124,8 +186,10 @@
 		<h2>Keysets</h2>
 		@for (keyset of info()?.keysets ?? []; track keyset.id) {
 			<article class="entry">
-				<code>{{ keyset.id }}</code>
-				<p>{{ keyset.unit }} · {{ keyset.input_fee_ppk }} ppk · {{ keyset.active ? 'Active' : 'Inactive' }}</p>
+				<orc-button-copy [text]="keyset.id" size="sm">
+					<code [title]="keyset.id">{{ keyset.id | dataTruncate: 24 : 8 : 8 }}</code>
+				</orc-button-copy>
+				<p>{{ keyset.unit }} · {{ keyset.input_fee_ppk | federationCount }} ppk · {{ keyset.active ? 'Active' : 'Inactive' }}</p>
 				<p>
 					@if (keyset.final_expiry) {
 						Expires:
@@ -143,7 +207,10 @@
 	</section>
 	<section class="orc-low-card panel">
 		<h2>Payments</h2>
-		@if (!mint_info()) {
+		<orc-federation-status-error source="Custody" [error]="custody_error()"></orc-federation-status-error>
+		@if (!public_api()) {
+			<p>The mint's public URL isn't configured.</p>
+		} @else if (!mint_info()) {
 			<p>Payment methods have not been loaded from mint info.</p>
 		}
 		@for (method of methods(); track $index) {
@@ -153,11 +220,23 @@
 					}}<orc-mint-general-payment-method [payment_method]="method.method"></orc-mint-general-payment-method>{{ method.unit
 					}}{{ method.disabled ? ' · Disabled' : '' }}
 				</h3>
-				<p>{{ paymentBackend(method.method, custody()) }}</p>
-				<p>Minimum: {{ method.min_amount ?? 'Not set' }} · Maximum: {{ method.max_amount ?? 'Not set' }}</p>
-				<p>{{ paymentRule(method.policy) }}</p>
+				<p>{{ custody_loaded() ? paymentBackend(method.method, custody()) : 'Loading payment backend…' }}</p>
+				<p>
+					Minimum:
+					@if (method.min_amount == null) {
+						Not set
+					} @else {
+						<span [innerHTML]="method.min_amount | localAmount: method.unit"></span>
+					}
+					· Maximum:
+					@if (method.max_amount == null) {
+						Not set
+					} @else {
+						<span [innerHTML]="method.max_amount | localAmount: method.unit"></span>
+					}
+				</p>
+				<p>{{ info_loaded() ? paymentRule(method.policy) : 'Loading payment rule…' }}</p>
 			</article>
 		}
-		<p>Backend labels use the custody reported by this member. Mint info does not identify its payment processor.</p>
 	</section>
 </div>

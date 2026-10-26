@@ -1,6 +1,8 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {provideRouter} from '@angular/router';
+/* Application Dependencies */
+import {FederationService} from '@client/modules/federation/services/federation.service';
 /* Native Dependencies */
 import {OrcIndexSubsectionDashboardModule} from '@client/modules/index/modules/index-subsection-dashboard/index-subsection-dashboard.module';
 /* Local Dependencies */
@@ -38,5 +40,12 @@ describe('IndexSubsectionDashboardMintEnabledComponent', () => {
 
 	it('should create', () => {
 		expect(component).toBeTruthy();
+	});
+	it('adds the Federation menu item after a cold member mode probe resolves', () => {
+		const federation = TestBed.inject(FederationService);
+		federation.mode.set(null);
+		expect(component.items().some((item) => item.name === 'Federation')).toBeFalse();
+		federation.mode.set('member');
+		expect(component.items().some((item) => item.name === 'Federation')).toBeTrue();
 	});
 });

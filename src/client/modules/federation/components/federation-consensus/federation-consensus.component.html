@@ -1,4 +1,5 @@
 <h1>Federation consensus</h1>
+<orc-federation-status-error source="Local status" [error]="error()"></orc-federation-status-error>
 @if (status(); as state) {
 	@if (state.checkpoint?.audit_mismatch) {
 		<section class="orc-error-card panel" role="alert">
@@ -17,8 +18,9 @@
 		<p>{{ readinessLabel(state) }}</p>
 		@if (state.sync?.peer_member_id != null) {
 			<p>
-				Peer: {{ state.sync?.peer_member_id }} · Local operations: {{ state.sync?.local_operation_count ?? '—' }} · Peer operations:
-				{{ state.sync?.peer_operation_count ?? '—' }}
+				Peer: {{ state.sync?.peer_member_id }} · Local operations: {{ state.sync?.local_operation_count | federationCount }} · Peer
+				operations:
+				{{ state.sync?.peer_operation_count | federationCount }}
 			</p>
 		}
 	</section>
@@ -33,17 +35,17 @@
 				@if (consensus.runtime; as runtime) {
 					<dl>
 						<dt>Session</dt>
-						<dd>{{ runtime.session }}</dd>
+						<dd>{{ runtime.session | federationCount }}</dd>
 						<dt>Next item</dt>
-						<dd>{{ runtime.next_item_index }}</dd>
+						<dd>{{ runtime.next_item_index | federationCount }}</dd>
 						<dt>Queued</dt>
-						<dd>{{ runtime.queued_item_count }}</dd>
+						<dd>{{ runtime.queued_item_count | federationCount }}</dd>
 						<dt>Awaiting finalization</dt>
-						<dd>{{ runtime.pending_finalization_item_count }}</dd>
+						<dd>{{ runtime.pending_finalization_item_count | federationCount }}</dd>
 						<dt>Finalized items</dt>
-						<dd>{{ runtime.finalized_item_count }}</dd>
-						<dt>Accepted operations</dt>
-						<dd>{{ runtime.accepted_operation_count }}</dd>
+						<dd>{{ runtime.finalized_item_count | federationCount }}</dd>
+						<dt>Accepted operations this session</dt>
+						<dd>{{ runtime.accepted_operation_count | federationCount }}</dd>
 					</dl>
 				} @else {
 					<p>Runtime not reported.</p>
@@ -52,24 +54,50 @@
 			@if (state.peer; as peer) {
 				<dl>
 					<dt>Accepted operations</dt>
-					<dd>{{ peer.operation_count }}</dd>
+					<dd>{{ peer.operation_count | federationCount }}</dd>
 					<dt>Latest index</dt>
-					<dd>{{ peer.latest_index ?? 'None' }}</dd>
+					<dd>{{ peer.latest_index | federationCount }}</dd>
 					<dt>Peer session</dt>
-					<dd>{{ peer.aleph_bft_session }}</dd>
+					<dd>{{ peer.aleph_bft_session | federationCount }}</dd>
 					<dt>Order digest</dt>
 					<dd>
-						<code>{{ peer.latest_order_digest }}</code>
+						@if (peer.latest_order_digest; as digest) {
+							<orc-button-copy [text]="digest" size="sm">
+								<code [title]="digest">{{ digest | dataTruncate: 24 : 8 : 8 }}</code>
+							</orc-button-copy>
+						} @else {
+							Not reported
+						}
 					</dd>
 					<dt>Application digest</dt>
 					<dd>
-						<code>{{ peer.application_digest ?? 'Not reported' }}</code>
+						@if (peer.application_digest; as digest) {
+							<orc-button-copy [text]="digest" size="sm">
+								<code [title]="digest">{{ digest | dataTruncate: 24 : 8 : 8 }}</code>
+							</orc-button-copy>
+						} @else {
+							Not reported
+						}
 					</dd>
 					<dt>Audited checkpoint</dt>
-					<dd>{{ peer.latest_audited_checkpoint_id ?? 'None' }}</dd>
+					<dd>
+						@if (peer.latest_audited_checkpoint_id; as checkpoint_id) {
+							<orc-button-copy [text]="checkpoint_id" size="sm">
+								<code [title]="checkpoint_id">{{ checkpoint_id | dataTruncate: 24 : 8 : 8 }}</code>
+							</orc-button-copy>
+						} @else {
+							None
+						}
+					</dd>
 					<dt>Audited state digest</dt>
 					<dd>
-						<code>{{ peer.materialized_state_digest ?? 'Not reported' }}</code>
+						@if (peer.materialized_state_digest; as digest) {
+							<orc-button-copy [text]="digest" size="sm">
+								<code [title]="digest">{{ digest | dataTruncate: 24 : 8 : 8 }}</code>
+							</orc-button-copy>
+						} @else {
+							Not reported
+						}
 					</dd>
 				</dl>
 			}
@@ -81,28 +109,63 @@
 					<dt>Audit mismatch</dt>
 					<dd>{{ checkpoint.audit_mismatch ? 'HALTED' : 'No mismatch reported' }}</dd>
 					<dt>Trusted checkpoint</dt>
-					<dd>{{ checkpoint.trusted_checkpoint_id ?? 'None' }}</dd>
+					<dd>
+						@if (checkpoint.trusted_checkpoint_id; as checkpoint_id) {
+							<orc-button-copy [text]="checkpoint_id" size="sm">
+								<code [title]="checkpoint_id">{{ checkpoint_id | dataTruncate: 24 : 8 : 8 }}</code>
+							</orc-button-copy>
+						} @else {
+							None
+						}
+					</dd>
 					<dt>Signed by</dt>
 					<dd>{{ checkpoint.trusted_checkpoint_signers.join(', ') || 'None' }}</dd>
 					<dt>Covered operations</dt>
-					<dd>{{ checkpoint.trusted_checkpoint_operation_count ?? 'Not reported' }}</dd>
+					<dd>{{ checkpoint.trusted_checkpoint_operation_count | federationCount }}</dd>
 					<dt>Operations since</dt>
-					<dd>{{ checkpoint.lag_from_trusted_checkpoint }}</dd>
+					<dd>{{ checkpoint.lag_from_trusted_checkpoint | federationCount }}</dd>
 					<dt>Journal next index</dt>
-					<dd>{{ checkpoint.journal_next_index }}</dd>
+					<dd>{{ checkpoint.journal_next_index | federationCount }}</dd>
 					<dt>Finalized next item</dt>
-					<dd>{{ checkpoint.finalized_next_item_index }}</dd>
+					<dd>{{ checkpoint.finalized_next_item_index | federationCount }}</dd>
 					<dt>Application next index</dt>
-					<dd>{{ checkpoint.application_next_index }}</dd>
-					<dt>Latest scheduled</dt>
-					<dd>{{ checkpoint.latest_scheduled_checkpoint_id ?? 'None' }}</dd>
-					<dt>Scheduled quorum</dt>
-					<dd>{{ checkpoint.latest_scheduled_quorum_id ?? 'None' }}</dd>
-					<dt>Recovery quorum</dt>
-					<dd>{{ checkpoint.latest_recovery_quorum_id ?? 'None' }}</dd>
+					<dd>{{ checkpoint.application_next_index | federationCount }}</dd>
+					<dt>Latest scheduled checkpoint</dt>
+					<dd>
+						@if (checkpoint.latest_scheduled_checkpoint_id; as checkpoint_id) {
+							<orc-button-copy [text]="checkpoint_id" size="sm">
+								<code [title]="checkpoint_id">{{ checkpoint_id | dataTruncate: 24 : 8 : 8 }}</code>
+							</orc-button-copy>
+						} @else {
+							Not reported
+						}
+					</dd>
+					<dt>Latest scheduled quorum</dt>
+					<dd>
+						@if (checkpoint.latest_scheduled_quorum_id; as quorum_id) {
+							<orc-button-copy [text]="quorum_id" size="sm">
+								<code [title]="quorum_id">{{ quorum_id | dataTruncate: 24 : 8 : 8 }}</code>
+							</orc-button-copy>
+						} @else {
+							Not reported
+						}
+					</dd>
+					<dt>Latest recovery quorum</dt>
+					<dd>
+						@if (checkpoint.latest_recovery_quorum_id; as quorum_id) {
+							<orc-button-copy [text]="quorum_id" size="sm">
+								<code [title]="quorum_id">{{ quorum_id | dataTruncate: 24 : 8 : 8 }}</code>
+							</orc-button-copy>
+						} @else {
+							Not reported
+						}
+					</dd>
 				</dl>
 				@if (checkpoint.active_session_backup; as backup) {
-					<p>Session {{ backup.session }} backup: {{ backup.chunk_count }} chunks · {{ backup.total_bytes }} bytes</p>
+					<p>
+						Session {{ backup.session | federationCount }} backup: {{ backup.chunk_count | federationCount }} chunks ·
+						{{ +backup.total_bytes | dataBytes }}
+					</p>
 				} @else {
 					<p>Session backup not reported.</p>
 				}
@@ -115,19 +178,19 @@
 			@if (state.queues; as queues) {
 				<dl>
 					<dt>Pending in mempool</dt>
-					<dd>{{ queues.pending_mempool_items }}</dd>
+					<dd>{{ queues.pending_mempool_items | federationCount }}</dd>
 					<dt>Wallets waiting</dt>
-					<dd>{{ queues.pending_response_waiters }}</dd>
+					<dd>{{ queues.pending_response_waiters | federationCount }}</dd>
 					<dt>Cached responses</dt>
-					<dd>{{ queues.response_cache_items }}</dd>
+					<dd>{{ queues.response_cache_items | federationCount }}</dd>
 					<dt>Cache hits / lookups</dt>
-					<dd>{{ queues.response_cache_hits }} / {{ queues.response_cache_lookups }}</dd>
+					<dd>{{ queues.response_cache_hits | federationCount }} / {{ queues.response_cache_lookups | federationCount }}</dd>
 					<dt>Cache hit rate</dt>
-					<dd>{{ queues.response_cache_hit_rate_bps }} basis points</dd>
+					<dd>{{ queues.response_cache_hit_rate_bps | federationCount: 'bps' }}</dd>
 					<dt>Duplicate submissions</dt>
-					<dd>{{ queues.duplicate_submissions }}</dd>
+					<dd>{{ queues.duplicate_submissions | federationCount }}</dd>
 					<dt>Joined pending requests</dt>
-					<dd>{{ queues.duplicate_pending_waiter_joins }}</dd>
+					<dd>{{ queues.duplicate_pending_waiter_joins | federationCount }}</dd>
 				</dl>
 			} @else {
 				<p>Queue counters not reported.</p>
@@ -138,8 +201,8 @@
 		<h2>Payment observations</h2>
 		@if (state.payment_observations; as observations) {
 			<p>
-				{{ observations.total_reports }} reports · {{ observations.inspect }} to inspect · {{ observations.stale }} stale ·
-				{{ observations.conflicting }} conflicting
+				{{ observations.total_reports | federationCount }} reports · {{ observations.inspect | federationCount }} to inspect ·
+				{{ observations.stale | federationCount }} stale · {{ observations.conflicting | federationCount }} conflicting
 			</p>
 			@if (observations.truncated) {
 				<p class="orc-warning-card p-1">More reports need attention than CDK returned. The list is truncated.</p>
@@ -148,13 +211,10 @@
 				<article class="entry">
 					<h3>{{ report.quote }}</h3>
 					<p>
-						{{ statusLabel(report.context) }} · {{ statusLabel(report.status) }} · {{ report.total_observations }} observations
-						· {{ report.required }} matching members required
+						{{ statusLabel(report.context) }} · {{ statusLabel(report.status) }} ·
+						{{ report.total_observations | federationCount }} observations · {{ report.required }} matching members required
 					</p>
-					<p>
-						Age: {{ report.quote_age_secs == null ? 'Not reported' : report.quote_age_secs + ' seconds'
-						}}{{ report.stale ? ' · Stale' : '' }}
-					</p>
+					<p>Age: {{ report.quote_age_secs | federationDuration }}{{ report.stale ? ' · Stale' : '' }}</p>
 					@for (group of report.groups; track $index) {
 						<p>
 							{{ group.state }} · Members {{ group.observers.join(', ') }} ·
@@ -185,8 +245,9 @@
 			<article class="entry">
 				<h3>{{ alert.source }}</h3>
 				<p>
-					{{ alert.alerting_buckets }} alerting sources · highest count {{ alert.max_count }} · threshold {{ alert.threshold }} in
-					{{ alert.window_secs }} seconds
+					{{ alert.alerting_buckets | federationCount }} alerting sources · highest count
+					{{ alert.max_count | federationCount }} · threshold {{ alert.threshold | federationCount }} in
+					{{ alert.window_secs | federationDuration }}
 				</p>
 			</article>
 		} @empty {
@@ -194,5 +255,5 @@
 		}
 	</section>
 } @else {
-	<p>Local status has not been reported.</p>
+	<p>{{ loading() ? 'Loading local status…' : 'Local status has not been reported.' }}</p>
 }

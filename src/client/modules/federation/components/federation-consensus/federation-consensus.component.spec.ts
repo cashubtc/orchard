@@ -39,4 +39,37 @@ describe('FederationConsensusComponent', () => {
 		for (const text of ['quote', 'future_status', 'FUTURE_ACTION', 'truncated', 'client_ip', '200'])
 			expect(fixture.nativeElement.textContent).toContain(text);
 	});
+	it('labels quorum checkpoints and reports absent ones with the page wording', () => {
+		const fixture = TestBed.createComponent(FederationConsensusComponent);
+		const local = localStatus();
+		local.status!.checkpoint!.latest_scheduled_quorum_id = 'ab'.repeat(32);
+		fixture.componentRef.setInput('local', local);
+		fixture.detectChanges();
+		const labels: string[] = Array.from(fixture.nativeElement.querySelectorAll('dt'), (dt: HTMLElement) => dt.textContent ?? '');
+		const value = (label: string): HTMLElement => fixture.nativeElement.querySelectorAll('dd')[labels.indexOf(label)];
+		expect(value('Latest scheduled quorum').querySelector('code')?.textContent).toBe('abababab...abababab');
+		expect(value('Latest scheduled checkpoint').textContent?.trim()).toBe('Not reported');
+		expect(value('Latest recovery quorum').textContent?.trim()).toBe('Not reported');
+	});
+	it('keeps absent recommended actions out of unknown-action warnings', () => {
+		const fixture = TestBed.createComponent(FederationConsensusComponent);
+		const local = localStatus();
+		local.status!.payment_observations!.reports = [
+			{
+				quote: 'quote',
+				recommended_action: null,
+				context: null,
+				status: null,
+				required: 0,
+				total_observations: '0',
+				stale: false,
+				conflicting_observers: [],
+				competing_terminal_state_observers: [],
+				groups: [],
+			},
+		];
+		fixture.componentRef.setInput('local', local);
+		fixture.detectChanges();
+		expect(fixture.componentInstance.unknown_actions()).toEqual([]);
+	});
 });

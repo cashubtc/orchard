@@ -1,9 +1,10 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, effect, input, output, signal, computed, viewChild} from '@angular/core';
+import {ChangeDetectionStrategy, Component, effect, input, output, signal, computed, viewChild, inject} from '@angular/core';
 /* Vendor Dependencies */
 import {MatSort} from '@angular/material/sort';
 import {MatTableDataSource} from '@angular/material/table';
 /* Application Dependencies */
+import {FederationService} from '@client/modules/federation/services/federation.service';
 import {NonNullableMintKeysetsSettings} from '@client/modules/settings/types/setting.types';
 import {DeviceType} from '@client/modules/layout/types/device.types';
 /* Native Dependencies */
@@ -20,6 +21,9 @@ import {MintSubsectionKeysetsTableRow} from '@client/modules/mint/modules/mint-s
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSubsectionKeysetsTableComponent {
+	private readonly federation_service = inject(FederationService);
+
+	public readonly member = this.federation_service.is_member;
 	readonly allow_rotation = input(true);
 	readonly sort = viewChild(MatSort);
 

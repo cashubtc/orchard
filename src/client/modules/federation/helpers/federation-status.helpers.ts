@@ -22,7 +22,8 @@ export function syncLabel(status: OrchardFederationMemberStatus | null | undefin
 
 /** Whether the mint serves wallets; a halted mint never does. */
 export function readinessLabel(status: OrchardFederationMemberStatus | null | undefined): string {
-	if (status?.checkpoint?.audit_mismatch || status?.sync?.ready === false) return 'Not serving wallets';
+	if (status?.checkpoint?.audit_mismatch || status?.sync?.state === 'SYNC_STATE_HALTED' || status?.sync?.ready === false)
+		return 'Not serving wallets';
 	return status?.sync?.ready ? 'Serving wallets' : 'Readiness not reported';
 }
 
@@ -31,8 +32,18 @@ export function hasOnchainCustody(custody: OrchardFederationCustodyStatus | null
 	return !!(custody?.wallet_operator || custody?.wallet_recovery || custody?.wallet_liveness || custody?.onchain_wallets.length);
 }
 
-/** Development policy is explicit and independent of which custody backends are present. */
-export function isDevelopment(info: OrchardFederationInfo | null): boolean {
+/** Reported custody with neither BDK nor Bark means a fake wallet; unreported custody is not evidence. */
+export function hasNoCustody(custody: OrchardFederationCustodyStatus | null | undefined): boolean {
+	return !!custody && !hasOnchainCustody(custody) && !custody.bark;
+}
+
+/** Explicit single-report policies and a reported absence of real custody identify development mints. */
+export function isDevelopment(info: OrchardFederationInfo | null, custody?: OrchardFederationCustodyStatus | null): boolean {
+	return hasNoCustody(custody) || hasDevelopmentPolicy(info);
+}
+
+/** Distinguish single-report payment checks from fake-wallet custody with a quorum policy. */
+export function hasDevelopmentPolicy(info: OrchardFederationInfo | null): boolean {
 	return [info?.payment_observation_policy?.mint_quotes, info?.payment_observation_policy?.melt_quotes].some(
 		(policy) => policy?.kind === 'PAYMENT_VERIFICATION_POLICY_KIND_DEVELOPMENT_SINGLE_OBSERVATION',
 	);
@@ -40,7 +51,7 @@ export function isDevelopment(info: OrchardFederationInfo | null): boolean {
 
 /** Describe the reported payment rule without assuming incoming and outgoing thresholds match. */
 export function paymentRule(policy: OrchardFederationPaymentVerificationPolicy | null | undefined): string {
-	if (!policy) return 'Payment rule not reported';
+	if (!policy?.kind) return 'Payment rule not reported';
 	if (policy.kind === 'PAYMENT_VERIFICATION_POLICY_KIND_DEVELOPMENT_SINGLE_OBSERVATION')
 		return '1 member’s report is enough · development policy';
 	if (policy.kind === 'PAYMENT_VERIFICATION_POLICY_KIND_MEMBER_QUORUM')
@@ -52,8 +63,8 @@ export function paymentRule(policy: OrchardFederationPaymentVerificationPolicy |
 export function paymentBackend(method: string, custody: OrchardFederationCustodyStatus | null): string {
 	if (!custody) return 'Backend not reported';
 	if (method === 'bolt11' && custody.bark) return 'Federated Bark, through Ark';
-	if (method === 'onchain' && (custody.wallet_operator || custody.onchain_wallets.length)) return 'Federated BDK';
-	if (!custody.bark && !hasOnchainCustody(custody)) return 'No custody reported · fake wallet or another test backend';
+	if (method === 'onchain' && hasOnchainCustody(custody)) return 'Federated BDK';
+	if (hasNoCustody(custody)) return 'Fake wallet · testing only, moves no bitcoin';
 	return 'Backend not reported';
 }
 

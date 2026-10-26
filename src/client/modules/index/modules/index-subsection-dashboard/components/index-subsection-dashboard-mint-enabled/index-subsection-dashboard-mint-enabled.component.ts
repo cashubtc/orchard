@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, input, output, effect, signal, viewChild, inject} from '@angular/core';
+import {ChangeDetectionStrategy, Component, input, output, effect, signal, viewChild, computed, inject} from '@angular/core';
 /* Vendor Dependencies */
 import {MatMenuTrigger} from '@angular/material/menu';
 import {MatBottomSheet} from '@angular/material/bottom-sheet';
@@ -33,8 +33,8 @@ type Liabilities = {
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IndexSubsectionDashboardMintEnabledComponent {
-	private bottomSheet = inject(MatBottomSheet);
-	private navService = inject(NavService);
+	private readonly bottomSheet = inject(MatBottomSheet);
+	private readonly navService = inject(NavService);
 
 	public loading = input.required<boolean>();
 	public loading_icon = input.required<boolean>();
@@ -60,7 +60,7 @@ export class IndexSubsectionDashboardMintEnabledComponent {
 	public navigate = output<string>();
 	public period_change = output<MintActivityPeriod>();
 
-	public items = signal<NavSecondaryItem[]>([]);
+	public readonly items = computed<NavSecondaryItem[]>(() => this.navService.getMenuItems('mint'));
 	public liabilities = signal<Liabilities[] | null>(null);
 
 	constructor() {
@@ -68,11 +68,6 @@ export class IndexSubsectionDashboardMintEnabledComponent {
 			if (!this.loading()) return;
 			this.init();
 		});
-	}
-
-	ngOnInit(): void {
-		const items = this.navService.getMenuItems('mint');
-		this.items.set(items);
 	}
 
 	private init(): void {

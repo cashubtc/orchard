@@ -1,9 +1,8 @@
 import {TestBed} from '@angular/core/testing';
 import {HttpTestingController} from '@angular/common/http/testing';
 import {ApiService} from '@client/modules/api/services/api/api.service';
-import {OrchardErrors} from '@client/modules/error/classes/error.class';
 import {FederationStatusService} from '@client/modules/federation/services/federation-status.service';
-import {memberStatuses} from '@client/modules/federation/helpers/federation-status.fixtures';
+import {federationInfo, memberStatuses} from '@client/modules/federation/helpers/federation-status.fixtures';
 
 describe('FederationStatusService', () => {
 	let service: FederationStatusService;
@@ -14,17 +13,59 @@ describe('FederationStatusService', () => {
 		http = TestBed.inject(HttpTestingController);
 	});
 	afterEach(() => http.verify());
-	it('returns the requested field', () => {
-		let result: unknown;
-		service.getMemberStatuses().subscribe((value) => (result = value));
+	it('stores the requested field and stamps the response time', () => {
+		service.loadMemberStatuses().subscribe();
 		http.expectOne('/graphql').flush({data: {federation_member_statuses: memberStatuses()}});
-		expect(result).toEqual(memberStatuses());
+		expect(service.members()).toEqual(memberStatuses());
+		expect(service.updated()).not.toBeNull();
 	});
-	it('keeps the Orchard error code and the daemon diagnostic', () => {
-		let error: unknown;
-		service.getCustodyStatus().subscribe({error: (value: unknown) => (error = value)});
+	it('keeps the Orchard error code and the daemon diagnostic, and clears it on the next success', () => {
+		let completed = false;
+		service.loadCustodyStatus().subscribe({complete: () => (completed = true)});
 		http.expectOne('/graphql').flush({errors: [{message: 'Busy', extensions: {code: 40016, details: 'too many status requests'}}]});
-		expect(error).toEqual(jasmine.any(OrchardErrors));
-		expect((error as OrchardErrors).errors[0]).toEqual(jasmine.objectContaining({code: 40016, details: 'too many status requests'}));
+		expect(completed).toBeTrue();
+		expect(service.custody_error()).toEqual(jasmine.objectContaining({code: 40016, details: 'too many status requests'}));
+		service.loadCustodyStatus().subscribe();
+		http.expectOne('/graphql').flush({data: {federation_custody_status: {onchain_wallets: []}}});
+		expect(service.custody_error()).toBeNull();
+	});
+	it('shares a read already in flight', () => {
+		service.loadInfo().subscribe();
+		service.loadInfo().subscribe();
+		http.expectOne('/graphql').flush({data: {federation_info: federationInfo()}});
+		service.loadInfo().subscribe();
+		http.expectOne('/graphql').flush({data: {federation_info: federationInfo()}});
+	});
+	it('sends one status request at a time across callers', () => {
+		service.loadLocalStatus().subscribe();
+		const waiting = service.loadMemberStatuses().subscribe();
+		const cancelled = service.loadCustodyStatus().subscribe();
+		cancelled.unsubscribe();
+		http.expectOne('/graphql').flush({errors: [{message: 'Busy', extensions: {code: 40016}}]});
+		http.expectOne((request) => request.body.query.includes('federation_member_statuses')).flush({
+			data: {federation_member_statuses: memberStatuses()},
+		});
+		http.expectNone('/graphql');
+		expect(waiting.closed).toBeTrue();
+	});
+	it('loads the header summary once, info before custody', () => {
+		service.loadSummary().subscribe();
+		http.expectOne((request) => request.body.query.includes('federation_info')).flush({data: {federation_info: federationInfo()}});
+		http.expectOne((request) => request.body.query.includes('federation_custody_status')).flush({
+			data: {federation_custody_status: {onchain_wallets: []}},
+		});
+		service.loadSummary().subscribe();
+		http.expectNone('/graphql');
+	});
+	it('shares development custody with the mint header and clears it when the federation changes', () => {
+		service.loadInfo().subscribe();
+		http.expectOne('/graphql').flush({data: {federation_info: federationInfo()}});
+		service.loadCustodyStatus().subscribe();
+		http.expectOne('/graphql').flush({data: {federation_custody_status: {onchain_wallets: []}}});
+		expect(service.development()).toBeTrue();
+		service.loadInfo().subscribe();
+		http.expectOne('/graphql').flush({data: {federation_info: {...federationInfo(), federation_id: 'other'}}});
+		expect(service.custody()).toBeNull();
+		expect(service.development()).toBeFalse();
 	});
 });

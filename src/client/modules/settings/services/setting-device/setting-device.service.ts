@@ -150,6 +150,21 @@ export class SettingDeviceService {
 		};
 	}
 
+	/** Read only acknowledged checklist item text for this federation on this device. */
+	public getFederationBackupAcknowledgements(federation_id: string): string[] {
+		try {
+			const stored = this.localStorageService.getItem<unknown>(`v0.federation.backup.acknowledgements.${federation_id}`);
+			return Array.isArray(stored) ? stored.filter((item): item is string => typeof item === 'string') : [];
+		} catch {
+			return [];
+		}
+	}
+
+	/** Persist acknowledgements locally without recording or claiming that Orchard made a backup. */
+	public setFederationBackupAcknowledgements(federation_id: string, items: string[]): void {
+		this.localStorageService.setItem(`v0.federation.backup.acknowledgements.${federation_id}`, items);
+	}
+
 	/* Page: Mint Dashboard */
 	public getMintDashboardSettings(): AllMintDashboardSettings {
 		const long_term_settings = this.localStorageService.getMintDashboardSettings();

@@ -1,4 +1,5 @@
 <h1>Federation custody</h1>
+<orc-federation-status-error source="Custody" [error]="error()"></orc-federation-status-error>
 <p>As seen by your mint. Custody backends are configured in each member's mintd config.</p>
 @if (no_custody()) {
 	<section class="orc-low-card panel">
@@ -7,11 +8,19 @@
 			No on-chain or Bark custody is reported. A fake wallet moves no real bitcoin. Real custody uses federated BDK for on-chain and
 			federated Bark for Lightning.
 		</p>
+		<dl>
+			<dt>Payment backend</dt>
+			<dd>Fake wallet{{ units() ? ' · ' + units() : '' }}</dd>
+			<dt>Payment checks</dt>
+			<dd>
+				Incoming: {{ paymentRule(info()?.payment_observation_policy?.mint_quotes) }}<br />Outgoing:
+				{{ paymentRule(info()?.payment_observation_policy?.melt_quotes) }}
+			</dd>
+		</dl>
 	</section>
-}
-@if (custody(); as data) {
+} @else if (custody(); as data) {
 	<div class="panel-grid">
-		<section class="orc-low-card panel" [class.off-card]="!onchain()">
+		<section class="orc-low-card panel" [class.off-card]="!onchain()" [attr.data-testid]="onchain() ? null : 'federation-custody-off'">
 			<h2>On-chain</h2>
 			@if (!onchain()) {
 				<strong>Off</strong>
@@ -20,37 +29,45 @@
 			@if (data.wallet_operator; as wallet) {
 				<p>Federated BDK · {{ wallet.network }} · {{ statusLabel(wallet.broadcast_health) }}</p>
 				<p>Held jointly with FROST.</p>
-				@for (utxo of wallet.utxos; track utxo.state) {
+				@for (utxo of wallet.utxos; track $index) {
 					<div class="entry">
 						<strong>{{ statusLabel(utxo.state) }}</strong>
-						<p>{{ utxo.count }} UTXOs · {{ utxo.value_sat }} sat</p>
+						<p>{{ utxo.count | federationCount }} UTXOs · <span [innerHTML]="+utxo.value_sat | localAmount: 'sat'"></span></p>
 					</div>
 				}
 				<dl>
 					<dt>Reserved value</dt>
-					<dd>{{ wallet.reserved_value_sat }} sat</dd>
+					<dd [innerHTML]="+wallet.reserved_value_sat | localAmount: 'sat'"></dd>
 					<dt>Minimum confirmations</dt>
-					<dd>{{ wallet.minimum_confirmations }}</dd>
+					<dd>{{ wallet.minimum_confirmations | federationCount }}</dd>
 					<dt>Pending batches</dt>
-					<dd>{{ wallet.pending_batches }}</dd>
+					<dd>{{ wallet.pending_batches | federationCount }}</dd>
 					<dt>Signing attempts / failures</dt>
-					<dd>{{ wallet.signing_attempts }} / {{ wallet.signing_failures }}</dd>
+					<dd>{{ wallet.signing_attempts | federationCount }} / {{ wallet.signing_failures | federationCount }}</dd>
 					<dt>Broadcast failures</dt>
-					<dd>{{ wallet.broadcast_failures }}</dd>
+					<dd>{{ wallet.broadcast_failures | federationCount }}</dd>
 				</dl>
 				<h3>Operation phases</h3>
-				@for (phase of wallet.operation_phases; track phase.phase) {
-					<p>{{ statusLabel(phase.phase) }}: {{ phase.count }}</p>
+				@for (phase of wallet.operation_phases; track $index) {
+					<p>{{ statusLabel(phase.phase) }}: {{ phase.count | federationCount }}</p>
 				}
 				<details>
 					<summary>Wallet identity</summary>
 					<dl>
 						<dt>Root / application epoch</dt>
-						<dd>{{ wallet.root_key_epoch }} / {{ wallet.application_key_epoch }}</dd>
+						<dd>{{ wallet.root_key_epoch | federationCount }} / {{ wallet.application_key_epoch | federationCount }}</dd>
 						<dt>Descriptor commitment</dt>
-						<dd>{{ wallet.descriptor_commitment }}</dd>
+						<dd>
+							@if (wallet.descriptor_commitment; as commitment) {
+								<orc-button-copy [text]="commitment" size="sm">
+									<code [title]="commitment">{{ commitment | dataTruncate: 24 : 8 : 8 }}</code>
+								</orc-button-copy>
+							} @else {
+								Not reported
+							}
+						</dd>
 						<dt>Fee policy</dt>
-						<dd>{{ wallet.fee_policy_version }}</dd>
+						<dd>{{ wallet.fee_policy_version | federationCount }}</dd>
 					</dl>
 				</details>
 			}
@@ -61,14 +78,18 @@
 				<article class="entry">
 					<h4>{{ source.source }} · {{ source.source_scope }}</h4>
 					<p>
-						{{ statusLabel(source.health) }} · Tip {{ source.local_tip_height }} · {{ source.consecutive_failures }} consecutive
-						failures
+						{{ statusLabel(source.health) }} · Tip {{ source.local_tip_height | bitcoinGeneralBlock }} ·
+						{{ source.consecutive_failures | federationCount }} consecutive failures
 					</p>
-					<code>{{ source.local_tip_hash }}</code>
+					@if (source.local_tip_hash; as tip_hash) {
+						<orc-button-copy [text]="tip_hash" size="sm">
+							<code [title]="tip_hash">{{ tip_hash | dataTruncate: 24 : 8 : 8 }}</code>
+						</orc-button-copy>
+					}
 					<p>
 						Last success:
 						@if (timestamp(source.last_success_unix); as time) {
-							{{ time | localTime }}
+							{{ time | localTimeAgo }}
 						} @else {
 							Not reported
 						}
@@ -83,29 +104,31 @@
 				<p>{{ statusLabel(live.activity) }}</p>
 				<dl>
 					<dt>Pending batches</dt>
-					<dd>{{ live.pending_batches }}</dd>
+					<dd>{{ live.pending_batches | federationCount }}</dd>
 					<dt>Awaiting signatures</dt>
-					<dd>{{ live.awaiting_signatures }}</dd>
+					<dd>{{ live.awaiting_signatures | federationCount }}</dd>
 					<dt>Proposal attempts</dt>
-					<dd>{{ live.proposal_attempts }}</dd>
+					<dd>{{ live.proposal_attempts | federationCount }}</dd>
 					<dt>Signing attempts / failures</dt>
-					<dd>{{ live.signing_attempts }} / {{ live.signer_failures }}</dd>
+					<dd>{{ live.signing_attempts | federationCount }} / {{ live.signer_failures | federationCount }}</dd>
 				</dl>
 			}
 			@if (data.wallet_recovery; as recovery) {
 				<h3>Recovery plan</h3>
 				<p>
-					{{ recovery.sticky_reservations }} sticky reservations · {{ recovery.transactions }} transactions ·
-					{{ recovery.payment_intents }} payment intents
+					{{ recovery.sticky_reservations | federationCount }} sticky reservations ·
+					{{ recovery.transactions | federationCount }} transactions · {{ recovery.payment_intents | federationCount }} payment
+					intents
 				</p>
 				@for (action of recovery.actions; track $index) {
 					<p [class.orc-warning-card]="action.action === 'WALLET_RECOVERY_ACTION_OPERATOR_REVIEW'">
-						{{ statusLabel(action.phase) }} · {{ action.state }} · {{ statusLabel(action.action) }}: {{ action.count }}
+						{{ statusLabel(action.phase) }} · {{ action.state }} · {{ statusLabel(action.action) }}:
+						{{ action.count | federationCount }}
 					</p>
 				}
 			}
 		</section>
-		<section class="orc-low-card panel" [class.off-card]="!data.bark">
+		<section class="orc-low-card panel" [class.off-card]="!data.bark" [attr.data-testid]="data.bark ? null : 'federation-custody-off'">
 			<h2>Lightning via Ark</h2>
 			@if (data.bark; as bark) {
 				<p>Federated Bark · {{ bark.network }} · {{ statusLabel(bark.readiness) }}</p>
@@ -115,30 +138,41 @@
 				@for (vtxo of bark.vtxos; track vtxo.state) {
 					<div class="entry">
 						<strong>{{ statusLabel(vtxo.state) }}</strong>
-						<p>{{ vtxo.count }} VTXOs · {{ vtxo.value_sat }} sat</p>
+						<p>{{ vtxo.count | federationCount }} VTXOs · <span [innerHTML]="+vtxo.value_sat | localAmount: 'sat'"></span></p>
 					</div>
 				}
 				@if (bark.expiring_vtxo_count != null || bark.expiring_value_sat != null) {
 					<p class="orc-warning-card p-1">
-						Close to expiry: {{ bark.expiring_vtxo_count ?? 'Unknown count' }} VTXOs ·
-						{{ bark.expiring_value_sat ?? 'Unknown value' }} sat. CDK does not report an expiry window here.
+						Close to expiry: {{ bark.expiring_vtxo_count | federationCount }} VTXOs ·
+						@if (bark.expiring_value_sat != null) {
+							<span [innerHTML]="+bark.expiring_value_sat | localAmount: 'sat'"></span>
+						} @else {
+							value not reported
+						}
+						<br />CDK does not report an expiry window here.
 					</p>
 				}
 				<dl>
 					<dt>Accepted / local frontier</dt>
-					<dd>{{ bark.accepted_frontier }} / {{ bark.local_frontier }}</dd>
+					<dd>{{ bark.accepted_frontier | federationCount }} / {{ bark.local_frontier | federationCount }}</dd>
 					<dt>Projection lag</dt>
-					<dd>{{ bark.projection_lag_operations }} operations</dd>
+					<dd>{{ bark.projection_lag_operations | federationCount }} operations</dd>
 					<dt>Ambiguous actions</dt>
-					<dd>{{ bark.ambiguous_action_count }} · {{ bark.ambiguous_value_sat }} sat</dd>
+					<dd>
+						{{ bark.ambiguous_action_count | federationCount }} ·
+						<span [innerHTML]="+bark.ambiguous_value_sat | localAmount: 'sat'"></span>
+					</dd>
 					<dt>Recovery required</dt>
-					<dd>{{ bark.recovery_required_action_count }} · {{ bark.recovery_required_value_sat }} sat</dd>
+					<dd>
+						{{ bark.recovery_required_action_count | federationCount }} ·
+						<span [innerHTML]="+bark.recovery_required_value_sat | localAmount: 'sat'"></span>
+					</dd>
 					<dt>Signer retries</dt>
-					<dd>{{ bark.signer_retry_action_count }}</dd>
+					<dd>{{ bark.signer_retry_action_count | federationCount }}</dd>
 					<dt>Missing acknowledged receive secrets</dt>
-					<dd>{{ bark.missing_acknowledged_receive_secrets }}</dd>
+					<dd>{{ bark.missing_acknowledged_receive_secrets | federationCount }}</dd>
 					<dt>Chain tip</dt>
-					<dd>{{ bark.chain_tip_height ?? 'Not reported' }}</dd>
+					<dd>{{ bark.chain_tip_height != null ? (bark.chain_tip_height | bitcoinGeneralBlock) : 'Not reported' }}</dd>
 				</dl>
 				<details>
 					<summary>Complete Bark status</summary>
@@ -158,5 +192,5 @@
 		</section>
 	</div>
 } @else {
-	<p>Custody status has not been reported.</p>
+	<p>{{ loading() ? 'Loading custody status…' : 'Custody status has not been reported.' }}</p>
 }

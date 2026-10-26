@@ -36,6 +36,9 @@ export const FEDERATION_NETWORKS = ['bitcoin', 'signet', 'testnet', 'regtest'];
 /** Dashboard poll cadence, just past the window in which cdk reuses member statuses. */
 export const FEDERATION_STATUS_INTERVAL_MS = 6000;
 
+/** Shortest gap between member status reads; cdk reuses its snapshot for about this long. */
+export const FEDERATION_MEMBERS_MIN_INTERVAL_MS = 5000;
+
 /** Member dashboard sections, selected with the `view` query parameter. */
 export const FEDERATION_DASHBOARD_TABS = [
 	{view: 'overview', label: 'Overview'},
@@ -97,6 +100,34 @@ export const FEDERATION_STATUS_LABELS: Record<string, string> = {
 	PAYMENT_OBSERVATION_REPORT_STATUS_AWAITING_QUORUM: 'Awaiting quorum',
 	PAYMENT_OBSERVATION_REPORT_STATUS_QUORUM_REACHED: 'Quorum reached',
 	PAYMENT_OBSERVATION_REPORT_STATUS_CONFLICTING: 'Conflicting',
+	WALLET_OPERATION_PHASE_CHAIN_OBSERVATION: 'Chain observation',
+	WALLET_OPERATION_PHASE_PROPOSAL: 'Proposal',
+	WALLET_OPERATION_PHASE_SIGNING: 'Signing',
+	WALLET_OPERATION_PHASE_BROADCAST_AUTHORIZATION: 'Broadcast authorization',
+	WALLET_OPERATION_PHASE_BROADCAST: 'Broadcast',
+	WALLET_OPERATION_PHASE_CONFIRMATION: 'Confirmation',
+	WALLET_OPERATION_PHASE_TERMINAL: 'Terminal',
+	WALLET_RECOVERY_PHASE_ADDRESS: 'Address',
+	WALLET_RECOVERY_PHASE_OBSERVATION: 'Observation',
+	WALLET_RECOVERY_PHASE_PROPOSAL: 'Proposal',
+	WALLET_RECOVERY_PHASE_RESERVATION: 'Reservation',
+	WALLET_RECOVERY_PHASE_SIGNING: 'Signing',
+	WALLET_RECOVERY_PHASE_SIGNED: 'Signed',
+	WALLET_RECOVERY_PHASE_BROADCAST: 'Broadcast',
+	WALLET_RECOVERY_PHASE_CONFIRMATION: 'Confirmation',
+	WALLET_RECOVERY_PHASE_REPLACEMENT: 'Replacement',
+	WALLET_RECOVERY_PHASE_TERMINAL: 'Terminal',
+	WALLET_RECOVERY_ACTION_RECONCILE_BDK_INDEXES: 'Reconcile BDK indexes',
+	WALLET_RECOVERY_ACTION_COLLECT_CHAIN_EVIDENCE: 'Collect chain evidence',
+	WALLET_RECOVERY_ACTION_AWAIT_PROPOSAL: 'Await proposal',
+	WALLET_RECOVERY_ACTION_PRESERVE_STICKY_RESERVATION: 'Preserve sticky reservation',
+	WALLET_RECOVERY_ACTION_START_FRESH_SIGNING_ATTEMPT: 'Start fresh signing attempt',
+	WALLET_RECOVERY_ACTION_REAPPLY_PERSISTED_TRANSACTION: 'Reapply persisted transaction',
+	WALLET_RECOVERY_ACTION_PERSIST_BROADCAST_INTENT: 'Persist broadcast intent',
+	WALLET_RECOVERY_ACTION_REBROADCAST_PERSISTED_TRANSACTION: 'Rebroadcast persisted transaction',
+	WALLET_RECOVERY_ACTION_COLLECT_CONFIRMATION_EVIDENCE: 'Collect confirmation evidence',
+	WALLET_RECOVERY_ACTION_OPERATOR_REVIEW: 'Operator review',
+	WALLET_RECOVERY_ACTION_NO_OP: 'No op',
 	WALLET_UTXO_STATE_OBSERVED: 'Observed',
 	WALLET_UTXO_STATE_CONFIRMED: 'Confirming',
 	WALLET_UTXO_STATE_SPENDABLE: 'Spendable',
