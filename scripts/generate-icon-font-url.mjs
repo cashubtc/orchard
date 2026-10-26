@@ -135,6 +135,7 @@ const ICONS = [
   'network_check',
   'notifications',
   'notifications_off',
+  'play_arrow',
   'progress_activity',
   'qr_code_scanner',
   'queue',
