@@ -8,6 +8,7 @@ import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {FederationService} from '#server/modules/federation/federation.service';
 /* Local Dependencies */
 import {MintDatabaseService} from './mintdatabase.service.js';
 import {OrchardMintDatabaseBackup, OrchardMintDatabaseRestore} from './mintdatabase.model.js';
@@ -16,14 +17,17 @@ describe('MintDatabaseService', () => {
 	let mintDatabaseService: MintDatabaseService;
 	let mintDbService: jest.Mocked<CashuMintDatabaseService>;
 	let errorService: jest.Mocked<ErrorService>;
+	const assertStandaloneOperation = jest.fn();
 
 	beforeEach(async () => {
+		assertStandaloneOperation.mockReset().mockResolvedValue(undefined);
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				MintDatabaseService,
 				{provide: MintService, useValue: {withDbClient: jest.fn((fn: any) => fn({}))}},
 				{provide: CashuMintDatabaseService, useValue: {createBackup: jest.fn(), restoreBackup: jest.fn()}},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
+				{provide: FederationService, useValue: {assertStandaloneOperation}},
 			],
 		}).compile();
 
@@ -48,6 +52,14 @@ describe('MintDatabaseService', () => {
 		const result = await mintDatabaseService.restoreMintDatabaseBackup('TAG', 'Zm8=');
 		expect(result).toBeInstanceOf(OrchardMintDatabaseRestore);
 		expect(result.success).toBe(true);
+	});
+
+	it('refuses to restore over a federation member without touching the database', async () => {
+		const refusal = {code: OrchardErrorCode.MintRpcPreconditionError, details: 'unavailable for federation setup and members'};
+		assertStandaloneOperation.mockRejectedValue(refusal);
+		errorService.resolveError.mockReturnValue(refusal);
+		await expect(mintDatabaseService.restoreMintDatabaseBackup('TAG', 'Zm8=')).rejects.toBeInstanceOf(OrchardApiError);
+		expect(mintDbService.restoreBackup).not.toHaveBeenCalled();
 	});
 
 	it('wraps errors via resolveError and throws OrchardApiError on backup failure', async () => {

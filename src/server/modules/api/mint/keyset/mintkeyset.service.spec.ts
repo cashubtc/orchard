@@ -1,5 +1,6 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
+import {ConfigService} from '@nestjs/config';
 import {expect} from '@jest/globals';
 /* Native Dependencies */
 import {MintService} from '#server/modules/api/mint/mint.service';
@@ -13,6 +14,7 @@ import {BitcoinUTXOracleService} from '#server/modules/bitcoin/utxoracle/utxorac
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {FederationService} from '#server/modules/federation/federation.service';
 /* Local Dependencies */
 import {MintKeysetService} from './mintkeyset.service.js';
 import {OrchardMintKeyset, OrchardMintKeysetCount} from './mintkeyset.model.js';
@@ -39,17 +41,30 @@ describe('MintKeysetService', () => {
 	let analyticsService: jest.Mocked<CashuMintAnalyticsService>;
 	let mintRpcService: jest.Mocked<CashuMintRpcService>;
 	let errorService: jest.Mocked<ErrorService>;
+	const getInfo = jest.fn();
+	const config_get = jest.fn();
 
 	beforeEach(async () => {
+		getInfo.mockReset();
+		config_get.mockReset().mockReturnValue('cdk');
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				MintKeysetService,
 				{provide: BitcoinUTXOracleService, useValue: {getOraclePrice: jest.fn().mockResolvedValue(null)}},
 				{provide: MintService, useValue: {withDbClient: jest.fn((fn: any) => fn({}))}},
-				{provide: CashuMintDatabaseService, useValue: {getKeysets: jest.fn(), getMintKeysetCounts: jest.fn()}},
+				{
+					provide: CashuMintDatabaseService,
+					useValue: {
+						getKeysets: jest.fn(),
+						getMintKeysetCounts: jest.fn(),
+						getKeysetFirstIssued: jest.fn().mockResolvedValue([]),
+					},
+				},
 				{provide: CashuMintAnalyticsService, useValue: {getCachedAnalytics: jest.fn().mockResolvedValue([])}},
 				{provide: CashuMintRpcService, useValue: {rotateNextKeyset: jest.fn()}},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
+				{provide: ConfigService, useValue: {get: config_get}},
+				{provide: FederationService, useValue: {getInfo}},
 			],
 		}).compile();
 
@@ -74,6 +89,30 @@ describe('MintKeysetService', () => {
 		mintDbService.getKeysets.mockResolvedValue([{id: 'k', final_expiry: 1893456000}] as any);
 		const result = await mintKeysetService.getMintKeysets('TAG');
 		expect(result[0].final_expiry).toBe(1893456000);
+	});
+
+	it('getMintKeysets reads a federation member keysets from the federation config', async () => {
+		mintDbService.getKeysets.mockResolvedValue([]);
+		mintDbService.getKeysetFirstIssued.mockResolvedValue([{keyset_id: 'k2', created_time: 1792900000}]);
+		getInfo.mockResolvedValue({
+			keysets: [
+				{id: 'k1', unit: 'sat', active: false, input_fee_ppk: '0'},
+				{id: 'k2', unit: 'sat', active: true, input_fee_ppk: '100', final_expiry: '1893456000'},
+			],
+		});
+		const result = await mintKeysetService.getMintKeysets('TAG');
+		expect(result.map((keyset) => [keyset.id, keyset.derivation_path_index, keyset.active, keyset.valid_from])).toEqual([
+			['k1', 0, false, null],
+			['k2', 1, true, 1792900000],
+		]);
+		expect(result[1]).toMatchObject({input_fee_ppk: 100, final_expiry: 1893456000});
+	});
+
+	it('getMintKeysets keeps an empty keyset table empty outside cdk', async () => {
+		config_get.mockReturnValue('nutshell');
+		mintDbService.getKeysets.mockResolvedValue([]);
+		await expect(mintKeysetService.getMintKeysets('TAG')).resolves.toEqual([]);
+		expect(getInfo).not.toHaveBeenCalled();
 	});
 
 	it('getMintKeysetCounts returns OrchardMintKeysetCount[] from cache', async () => {

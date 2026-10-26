@@ -5,6 +5,7 @@ import type {
 	CashuMintDatabase,
 	CashuMintBalance,
 	CashuMintKeyset,
+	CashuMintKeysetFirstIssued,
 	CashuMintMeltQuote,
 	CashuMintMintQuote,
 	CashuMintProofGroup,
@@ -92,6 +93,15 @@ export class CdkService {
 		} catch (err) {
 			throw err;
 		}
+	}
+
+	/** Earliest signature per keyset; federation keysets carry no creation time of their own. */
+	public async getKeysetFirstIssued(client: CashuMintDatabase): Promise<CashuMintKeysetFirstIssued[]> {
+		const sql = `
+			SELECT keyset_id, MIN(NULLIF(created_time, 0)) AS created_time
+			FROM blind_signature
+			GROUP BY keyset_id;`;
+		return queryRows<CashuMintKeysetFirstIssued>(client, sql);
 	}
 
 	public async listMintQuotes(client: CashuMintDatabase, args?: CashuMintMintQuotesArgs): Promise<CashuMintMintQuote[]> {

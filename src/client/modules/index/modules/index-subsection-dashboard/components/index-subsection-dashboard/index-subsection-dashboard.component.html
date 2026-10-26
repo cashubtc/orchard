@@ -108,14 +108,8 @@
 	<div class="relative index-block">
 		@if (enabled_mint && mint_unavailable()) {
 			<div class="orc-low-card p-2">
-				<h3>{{ mint_mode() === 'setup' ? 'Federation setup' : 'Mint connection unavailable' }}</h3>
-				<p>
-					{{
-						mint_mode() === 'setup'
-							? 'Complete federation setup before this mint can serve wallets.'
-							: 'Open the mint to check its connection and setup status.'
-					}}
-				</p>
+				<h3>Federation setup</h3>
+				<p>Complete federation setup before this mint can serve wallets.</p>
 				<button mat-stroked-button (click)="onNavigate('mint/federation')">Open mint</button>
 			</div>
 		} @else if (enabled_mint) {

@@ -5,8 +5,8 @@ describe('Federation setup helpers', () => {
 		expect(parseAmounts(' 1, 9007199254740993  4 ')).toEqual(['1', '9007199254740993', '4']);
 	});
 	it('treats only standalone and member daemons as serving the mint', () => {
-		expect(['standalone', 'member'].every(isMintAvailable)).toBeTrue();
-		expect(['setup', 'unreachable', null].some(isMintAvailable)).toBeFalse();
+		expect(['standalone', 'member', 'unreachable'].every(isMintAvailable)).toBeTrue();
+		expect(isMintAvailable('setup')).toBeFalse();
 	});
 	it('keeps the Orchard error code and the mint diagnostic', () => {
 		const error = new OrchardErrors([{message: 'Busy', extensions: {code: 40015, details: 'the setup is certified'}}]);

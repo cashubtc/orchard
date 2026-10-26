@@ -1,11 +1,14 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
+import {ConfigService} from '@nestjs/config';
 /* Application Dependencies */
+import {MintType} from '#server/modules/cashu/cashu.enums';
+import {FederationService} from '#server/modules/federation/federation.service';
 import {CashuMintDatabaseService} from '#server/modules/cashu/mintdb/cashumintdb.service';
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
 import {CashuMintAnalyticsService} from '#server/modules/cashu/mintanalytics/mintanalytics.service';
 import {MintAnalyticsMetric} from '#server/modules/cashu/mintanalytics/mintanalytics.enums';
-import type {CashuMintKeyset} from '#server/modules/cashu/mintdb/cashumintdb.types';
+import type {CashuMintDatabase, CashuMintKeyset} from '#server/modules/cashu/mintdb/cashumintdb.types';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {MintService} from '#server/modules/api/mint/mint.service';
@@ -23,12 +26,17 @@ export class MintKeysetService {
 		private cashuMintRpcService: CashuMintRpcService,
 		private mintService: MintService,
 		private errorService: ErrorService,
+		private configService: ConfigService,
+		private federationService: FederationService,
 	) {}
 
 	async getMintKeysets(tag: string): Promise<OrchardMintKeyset[]> {
 		return this.mintService.withDbClient(async (client) => {
 			try {
 				const cashu_keysets: CashuMintKeyset[] = await this.cashuMintDatabaseService.getKeysets(client);
+				// A federation member keeps its keysets in the federation config, not the mint's keyset table
+				if (!cashu_keysets.length && this.configService.get<string>('cashu.type') === MintType.CDK)
+					return await this.getFederationKeysets(client);
 				return cashu_keysets.map((ck) => new OrchardMintKeyset(ck));
 			} catch (error) {
 				const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
@@ -36,6 +44,33 @@ export class MintKeysetService {
 				});
 				throw new OrchardApiError(orchard_error);
 			}
+		});
+	}
+
+	/** Map a member's federation keysets, numbering generations per unit and dating each by its first signature. */
+	private async getFederationKeysets(client: CashuMintDatabase): Promise<OrchardMintKeyset[]> {
+		const [info, first_issued] = await Promise.all([
+			this.federationService.getInfo(),
+			this.cashuMintDatabaseService.getKeysetFirstIssued(client),
+		]);
+		const issued_at = new Map(first_issued.map((row) => [row.keyset_id, row.created_time ? Number(row.created_time) : null]));
+		const generations = new Map<string, number>();
+		return info.keysets.map((keyset) => {
+			const generation = generations.get(keyset.unit) ?? 0;
+			generations.set(keyset.unit, generation + 1);
+			return new OrchardMintKeyset({
+				id: keyset.id,
+				derivation_path: '',
+				derivation_path_index: generation,
+				valid_from: issued_at.get(keyset.id) ?? null,
+				valid_to: null,
+				final_expiry: keyset.final_expiry ? Number(keyset.final_expiry) : null,
+				active: keyset.active ? 1 : 0,
+				unit: keyset.unit,
+				input_fee_ppk: Number(keyset.input_fee_ppk),
+				fees_paid: 0,
+				amounts: [],
+			});
 		});
 	}
 

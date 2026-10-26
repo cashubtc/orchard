@@ -258,7 +258,8 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 
 	private getMintGenesisTime(): number {
 		const valid_times = this.mint_keysets?.filter((keyset) => keyset.valid_from != null).map((keyset) => keyset.valid_from!) ?? [];
-		return valid_times.length > 0 ? Math.min(...valid_times) : 0;
+		// A federation keyset is dated by its first signature, so an unused one has no start yet
+		return valid_times.length > 0 ? Math.min(...valid_times) : DateTime.now().startOf('day').toUnixInteger();
 	}
 
 	/* *******************************************************
@@ -432,6 +433,7 @@ export class MintSubsectionDatabaseComponent implements ComponentCanDeactivate, 
 		this.form_mode !== FormMode.CREATE ? this.initCreateBackup() : this.onClose();
 	}
 	public onRestore(): void {
+		if (!this.standalone_actions()) return;
 		this.form_mode !== FormMode.RESTORE ? this.initRestoreBackup() : this.onClose();
 	}
 	public onRefresh(): void {

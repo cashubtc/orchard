@@ -33,15 +33,14 @@ describe('federationModeGuard navigation', () => {
 			],
 		});
 	});
-	for (const mode of ['setup', 'unreachable'])
-		it(`redirects ${mode} before running mint resolvers`, async () => {
-			load_mode.and.returnValue(of({mode, details: null}));
-			const harness = await RouterTestingHarness.create();
-			await harness.navigateByUrl('/mint/info');
-			expect(TestBed.inject(Router).url).toBe('/mint/federation');
-			expect(mint_resolver).not.toHaveBeenCalled();
-		});
-	for (const mode of ['member', 'standalone'])
+	it('redirects setup mode before running mint resolvers', async () => {
+		load_mode.and.returnValue(of({mode: 'setup', details: null}));
+		const harness = await RouterTestingHarness.create();
+		await harness.navigateByUrl('/mint/info');
+		expect(TestBed.inject(Router).url).toBe('/mint/federation');
+		expect(mint_resolver).not.toHaveBeenCalled();
+	});
+	for (const mode of ['member', 'standalone', 'unreachable'])
 		it(`allows ${mode} to resolve the mint page`, async () => {
 			load_mode.and.returnValue(of({mode, details: null}));
 			const harness = await RouterTestingHarness.create();
@@ -56,11 +55,11 @@ describe('federationModeGuard navigation', () => {
 		expect(mint_resolver).not.toHaveBeenCalled();
 		expect(TestBed.inject(Router).url).not.toBe('/mint/federation');
 	});
-	it('offers a retry page for probe errors without running mint resolvers', async () => {
+	it('keeps the mint page when the probe fails, leaving errors to the page', async () => {
 		load_mode.and.returnValue(throwError(() => new Error('busy')));
 		const harness = await RouterTestingHarness.create();
 		await harness.navigateByUrl('/mint/info');
-		expect(TestBed.inject(Router).url).toBe('/mint/federation');
-		expect(mint_resolver).not.toHaveBeenCalled();
+		expect(TestBed.inject(Router).url).toBe('/mint/info');
+		expect(mint_resolver).toHaveBeenCalled();
 	});
 });

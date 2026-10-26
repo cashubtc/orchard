@@ -11,9 +11,9 @@ export function parseAmounts(text: string): string[] {
 		.filter(Boolean);
 }
 
-/** Whether the mint serves its API, RPC and database; a daemon in setup mode or out of reach doesn't. */
+/** Only a daemon in setup mode lacks its API and database; an unreachable management RPC may leave both serving. */
 export function isMintAvailable(mode: string | null | undefined): boolean {
-	return mode === 'standalone' || mode === 'member';
+	return mode !== 'setup';
 }
 
 /** Keep the Orchard error code with the mint's own diagnostic, so operators can report both. */

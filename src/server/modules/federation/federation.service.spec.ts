@@ -39,6 +39,19 @@ describe('FederationService', () => {
 		respond(absent, new CdkRpcError(status.FAILED_PRECONDITION, 'not federated'));
 		await expect(service.getMode()).resolves.toEqual({mode: 'standalone', details: null});
 	});
+	it('treats a cdk mint without a management connection as standalone', async () => {
+		get.mockImplementation((key: string) => (key === 'cashu.type' ? 'cdk' : undefined));
+		await expect(service.getMode()).resolves.toEqual({mode: 'standalone', details: null});
+		expect(request).not.toHaveBeenCalled();
+	});
+	it('recognizes a setup daemon whose status call is slow', async () => {
+		respond(new CdkRpcError(status.DEADLINE_EXCEEDED, 'Deadline exceeded'), new CdkRpcError(status.UNIMPLEMENTED, ''));
+		await expect(service.getMode()).resolves.toEqual({mode: 'setup', details: null});
+	});
+	it('treats a daemon without either federation service as standalone', async () => {
+		respond(absent, absent);
+		await expect(service.getMode()).resolves.toEqual({mode: 'standalone', details: null});
+	});
 	it.each([status.UNAVAILABLE, status.DEADLINE_EXCEEDED])('reports connection status %s with the original diagnostic', async (code) => {
 		const error = new CdkRpcError(code, 'connection diagnostic');
 		respond(error, error);

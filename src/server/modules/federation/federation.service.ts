@@ -8,6 +8,7 @@ import {status} from '@grpc/grpc-js';
 /* Application Dependencies */
 import type {CdkRpcMethods} from '#server/modules/cashu/cdk/cdkrpc.types';
 import {CdkRpcError, CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
+import {MintType} from '#server/modules/cashu/cashu.enums';
 
 /* Native Dependencies */
 import {normalizeFederationEnums, type NormalizedFederation} from '#server/modules/federation/helpers/federation-enums.helpers';
@@ -28,7 +29,10 @@ export class FederationService {
 
 	/** Probe both services at once: setup mode answers one, a federation member the other, a standalone mint neither. */
 	public async getMode(): Promise<FederationModeResult> {
-		if (this.configService.get<string>('cashu.type') !== 'cdk') return {mode: 'standalone', details: null};
+		if (this.configService.get<string>('cashu.type') !== MintType.CDK) return {mode: 'standalone', details: null};
+		// cdk-mintd's management RPC is optional; without it the database and public API pages still work
+		if (!this.configService.get('cashu.rpc_host') || !this.configService.get('cashu.rpc_port'))
+			return {mode: 'standalone', details: null};
 		const [setup, info] = await Promise.allSettled([
 			this.cdkRpcService.request('GetSetupStatus', {}, 5000),
 			this.cdkRpcService.request('GetFederationInfo', {}, 5000),
@@ -36,6 +40,9 @@ export class FederationService {
 		if (setup.status === 'fulfilled') return {mode: 'setup', details: null};
 		if (info.status === 'fulfilled') return {mode: 'member', details: null};
 		const error = info.reason;
+		const unimplemented = (reason: unknown): boolean => reason instanceof CdkRpcError && reason.grpc_code === status.UNIMPLEMENTED;
+		// A setup daemon serves only the setup service, so it is still in setup when its status call is slow or busy
+		if (unimplemented(error)) return {mode: unimplemented(setup.reason) ? 'standalone' : 'setup', details: null};
 		if (error instanceof CdkRpcError && error.grpc_code === status.FAILED_PRECONDITION) return {mode: 'standalone', details: null};
 		if (error instanceof CdkRpcError && [status.UNAVAILABLE, status.DEADLINE_EXCEEDED].includes(error.grpc_code))
 			return {mode: 'unreachable', details: error.details};
@@ -73,7 +80,7 @@ export class FederationService {
 		if (result.mode !== 'standalone')
 			throw new CdkRpcError(
 				status.FAILED_PRECONDITION,
-				'Keyset rotation and quote state overrides are unavailable for federation setup and members',
+				'Keyset rotation, quote state overrides and database restores are unavailable for federation setup and members',
 			);
 	}
 }

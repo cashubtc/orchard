@@ -6,6 +6,7 @@ import {CashuMintAnalyticsModule} from '#server/modules/cashu/mintanalytics/mint
 import {CashuMintRpcModule} from '#server/modules/cashu/mintrpc/cashumintrpc.module';
 import {ErrorModule} from '#server/modules/error/error.module';
 import {EventLogModule} from '#server/modules/event/event.module';
+import {FederationModule} from '#server/modules/federation/federation.module';
 import {MintService} from '#server/modules/api/mint/mint.service';
 /* Local Dependencies */
 import {MintKeysetService} from './mintkeyset.service.js';
@@ -13,7 +14,7 @@ import {MintKeysetResolver} from './mintkeyset.resolver.js';
 import {MintKeysetInterceptor} from './mintkeyset.interceptor.js';
 
 @Module({
-	imports: [CashuMintDatabaseModule, CashuMintAnalyticsModule, CashuMintRpcModule, ErrorModule, EventLogModule],
+	imports: [CashuMintDatabaseModule, CashuMintAnalyticsModule, CashuMintRpcModule, ErrorModule, EventLogModule, FederationModule],
 	providers: [MintKeysetResolver, MintKeysetService, MintService, MintKeysetInterceptor],
 })
 export class MintKeysetModule {}

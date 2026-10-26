@@ -19,6 +19,7 @@ import type {
 	CashuMintDatabase,
 	CashuMintBalance,
 	CashuMintKeyset,
+	CashuMintKeysetFirstIssued,
 	CashuMintMeltQuote,
 	CashuMintMintQuote,
 	CashuMintProofGroup,
@@ -167,6 +168,11 @@ export class CashuMintDatabaseService implements OnModuleInit {
 	public async getKeysets(client: CashuMintDatabase): Promise<CashuMintKeyset[]> {
 		if (this.type === 'nutshell') return this.nutshellService.getKeysets(client);
 		if (this.type === 'cdk') return this.cdkService.getKeysets(client);
+	}
+
+	public async getKeysetFirstIssued(client: CashuMintDatabase): Promise<CashuMintKeysetFirstIssued[]> {
+		if (this.type === 'cdk') return this.cdkService.getKeysetFirstIssued(client);
+		return [];
 	}
 
 	public async getWatchdogLastSeen(client: CashuMintDatabase): Promise<number | null> {

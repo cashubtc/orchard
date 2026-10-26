@@ -266,7 +266,8 @@ export class MintSubsectionDashboardComponent implements OnInit, OnDestroy {
 
 	private getMintGenesisTime(): number {
 		const valid_times = this.mint_keysets?.filter((keyset) => keyset.valid_from != null).map((keyset) => keyset.valid_from!) ?? [];
-		return valid_times.length > 0 ? Math.min(...valid_times) : 0;
+		// A federation keyset is dated by its first signature, so an unused one has no start yet
+		return valid_times.length > 0 ? Math.min(...valid_times) : DateTime.now().startOf('day').toUnixInteger();
 	}
 
 	private setMintIcon(): void {

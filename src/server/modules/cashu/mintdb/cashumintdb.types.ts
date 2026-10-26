@@ -36,6 +36,11 @@ export type CashuMintKeyset = {
 	amounts: number[];
 };
 
+export type CashuMintKeysetFirstIssued = {
+	keyset_id: string;
+	created_time: number;
+};
+
 export type CashuMintMintQuote = {
 	id: string;
 	amount: number | null;

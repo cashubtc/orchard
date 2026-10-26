@@ -4,12 +4,13 @@ import {Module} from '@nestjs/common';
 import {CashuMintDatabaseModule} from '#server/modules/cashu/mintdb/cashumintdb.module';
 import {MintService} from '#server/modules/api/mint/mint.service';
 import {ErrorModule} from '#server/modules/error/error.module';
+import {FederationModule} from '#server/modules/federation/federation.module';
 /* Local Dependencies */
 import {MintDatabaseResolver} from './mintdatabase.resolver.js';
 import {MintDatabaseService} from './mintdatabase.service.js';
 
 @Module({
-	imports: [CashuMintDatabaseModule, ErrorModule],
+	imports: [CashuMintDatabaseModule, ErrorModule, FederationModule],
 	providers: [MintDatabaseResolver, MintDatabaseService, MintService],
 })
 export class MintDatabaseModule {}

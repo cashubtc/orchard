@@ -50,7 +50,6 @@ import {MintActivityPeriod} from '@shared/generated.types';
 })
 export class IndexSubsectionDashboardComponent implements OnInit, OnDestroy {
 	private readonly federation_service = inject(FederationService);
-	public readonly mint_mode = this.federation_service.mode;
 	public readonly mint_unavailable = signal(false);
 	public enabled_bitcoin: boolean;
 	public enabled_bitcoin_oracle: boolean;

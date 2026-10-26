@@ -75,12 +75,14 @@
 								</div>
 							</button>
 						}
-						<button mat-menu-item (click)="onRestore()">
-							<div class="flex flex-items-center flex-gap-0-5">
-								<mat-icon>restore</mat-icon>
-								<span>Restore Backup</span>
-							</div>
-						</button>
+						@if (standalone_actions()) {
+							<button mat-menu-item (click)="onRestore()">
+								<div class="flex flex-items-center flex-gap-0-5">
+									<mat-icon>restore</mat-icon>
+									<span>Restore Backup</span>
+								</div>
+							</button>
+						}
 					</mat-menu>
 				</div>
 			</div>

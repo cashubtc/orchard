@@ -6,6 +6,7 @@ import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {MintService} from '#server/modules/api/mint/mint.service';
 import {ErrorService} from '#server/modules/error/error.service';
+import {FederationService} from '#server/modules/federation/federation.service';
 /* Local Dependencies */
 import {OrchardMintDatabaseBackup, OrchardMintDatabaseInfo, OrchardMintDatabaseRestore} from './mintdatabase.model.js';
 
@@ -17,6 +18,7 @@ export class MintDatabaseService {
 		private cashuMintDatabaseService: CashuMintDatabaseService,
 		private mintService: MintService,
 		private errorService: ErrorService,
+		private federationService: FederationService,
 	) {}
 
 	async getMintDatabaseInfo(tag: string): Promise<OrchardMintDatabaseInfo> {
@@ -50,6 +52,8 @@ export class MintDatabaseService {
 
 	async restoreMintDatabaseBackup(tag: string, filebase64: string): Promise<OrchardMintDatabaseRestore> {
 		try {
+			// A member's database also holds its consensus journal; rewinding it would diverge from the federation
+			await this.federationService.assertStandaloneOperation();
 			await this.cashuMintDatabaseService.restoreBackup(filebase64);
 			return new OrchardMintDatabaseRestore(true);
 		} catch (error) {
