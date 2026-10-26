@@ -15,6 +15,7 @@ import {isAuthRedirectError, toConnectionError} from '@client/modules/error/help
 import {OrcNavModule} from '@client/modules/nav/nav.module';
 import {OrcMintGeneralModule} from '@client/modules/mint/modules/mint-general/mint-general.module';
 import {provideChartConfig} from '@client/modules/chart/chart.providers';
+import {pendingEventGuard} from '@client/modules/event/guards/pending-event.guard';
 import {federationMemberGuard} from '@client/modules/federation/guards/federation-member.guard';
 import {federationModeGuard} from '@client/modules/federation/guards/federation-mode.guard';
 /* Native Dependencies */
@@ -280,6 +281,7 @@ const mintMetricsHealthResolver: ResolveFn<any> = (route: ActivatedRouteSnapshot
 			{
 				path: 'federation',
 				canActivate: [enabledGuard],
+				canDeactivate: [pendingEventGuard],
 				loadComponent: () =>
 					import('@client/modules/federation/components/federation-setup/federation-setup.component').then(
 						(m) => m.FederationSetupComponent,

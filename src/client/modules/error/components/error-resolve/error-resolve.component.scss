@@ -7,8 +7,10 @@
 
 .error-resolve-content {
 	@extend %flex;
+	@extend %flex-wrap;
 	@extend %flex-row;
-	@extend %w-min-36;
+	min-width: min(36rem, 100%);
+	max-width: 100%;
 }
 
 .error-resolve-icon {
@@ -21,7 +23,9 @@
 }
 
 .error-resolve-info {
-	@extend %flex-grow;
+	flex: 1 1 12rem;
+	@extend %w-min-0;
+	overflow-wrap: anywhere;
 	@extend %p-1;
 	@extend %orc-on-error-container-color;
 }

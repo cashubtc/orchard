@@ -26,7 +26,17 @@ describe('FederationService', () => {
 		service = TestBed.inject(FederationService);
 		http = TestBed.inject(HttpTestingController);
 	});
-	afterEach(() => http.verify());
+	afterEach(() => {
+		http.verify();
+		localStorage.removeItem('v0.federation.backup.id');
+		localStorage.removeItem('v0.federation.backup.warning');
+	});
+	it('retains the mint backup warning verbatim with its federation identity', () => {
+		service.rememberBackupWarning('federation-123', 'Back up your private config.\nKeep it safe.');
+		const restored = TestBed.runInInjectionContext(() => new FederationService());
+		expect(restored.backup_warning()).toBe('Back up your private config.\nKeep it safe.');
+		expect(restored.backup_federation_id()).toBe('federation-123');
+	});
 	it('enables standalone actions only after a successful standalone probe', () => {
 		expect(service.standalone_actions()).toBeFalse();
 		for (const mode of ['setup', 'member', 'unreachable', 'standalone']) {

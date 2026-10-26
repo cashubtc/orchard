@@ -22,4 +22,12 @@ describe('FormToggleComponent', () => {
 	it('should create', () => {
 		expect(component).toBeTruthy();
 	});
+
+	it('exposes the selected state as aria-pressed on its button', () => {
+		const button: HTMLButtonElement = fixture.nativeElement.querySelector('button');
+		expect(button.getAttribute('aria-pressed')).toBe('false');
+		fixture.componentRef.setInput('selected', true);
+		fixture.detectChanges();
+		expect(button.getAttribute('aria-pressed')).toBe('true');
+	});
 });

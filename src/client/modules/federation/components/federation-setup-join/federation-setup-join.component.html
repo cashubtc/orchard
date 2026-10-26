@@ -1,5 +1,5 @@
 <button mat-button (click)="cancel.emit()" [disabled]="busy()">Back to Federation setup</button>
-<h1>Join a federation</h1>
+<h1 tabindex="-1">Join a federation</h1>
 <div class="setup-columns">
 	<form class="setup-form orc-low-card setup-card" (ngSubmit)="submit()">
 		<fieldset [disabled]="busy() || reading()" class="setup-fields-vertical">
@@ -52,7 +52,10 @@
 		<p>AFTER YOU JOIN</p>
 		<h2>Waiting for the coordinator to propose</h2>
 		<p>Your mint enrolls in its assigned slot. Once every operator has joined, the coordinator publishes the proposal.</p>
-		<p>You'll check each member's fingerprint before approving. Fingerprints become available with the proposal.</p>
+		<p>
+			You'll check each member's fingerprint before approving. Your own fingerprint appears after joining so you can share it with the
+			other operators.
+		</p>
 		<p>You can return to this page to resume. Orchard checks for a proposal while this page is open.</p>
 	</aside>
 </div>

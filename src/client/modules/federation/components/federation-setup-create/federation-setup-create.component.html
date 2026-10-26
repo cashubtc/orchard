@@ -1,13 +1,13 @@
 <button mat-button (click)="cancel.emit()" [disabled]="busy()">Back to Federation setup</button>
-<h1>Create a federation</h1>
+<h1 tabindex="-1">Create a federation</h1>
 <div class="setup-columns">
-	<form class="setup-form" (ngSubmit)="submit()">
+	<form #create_form="ngForm" class="setup-form" (ngSubmit)="submit()">
 		<fieldset class="orc-low-card setup-card" [disabled]="busy()">
 			<legend>Members and thresholds</legend>
 			<div class="setup-fields">
 				<div>
-					<label>Members, including you</label>
-					<div class="stepper">
+					<label id="members-label">Members, including you</label>
+					<div class="stepper" role="group" aria-labelledby="members-label">
 						<button
 							mat-icon-button
 							type="button"
@@ -30,8 +30,8 @@
 					</div>
 				</div>
 				<div>
-					<label>Members needed to sign</label>
-					<div class="stepper">
+					<label id="signing-label">Members needed to sign</label>
+					<div class="stepper" role="group" aria-labelledby="signing-label">
 						<button
 							mat-icon-button
 							type="button"
@@ -59,12 +59,12 @@
 					<span>Set by the protocol</span>
 				</div>
 			</div>
-			<p>The federation keeps running with up to {{ offline() }} members offline.</p>
+			<p>{{ offline_copy() }}</p>
 		</fieldset>
 		<fieldset class="orc-low-card setup-card" [disabled]="busy()">
 			<legend>Payment checks</legend>
-			<label>Members who must see a payment</label>
-			<div class="stepper">
+			<label id="payment-label">Members who must see a payment</label>
+			<div class="stepper" role="group" aria-labelledby="payment-label">
 				<button
 					mat-icon-button
 					type="button"
@@ -111,15 +111,17 @@
 					><input matInput name="fee" inputmode="numeric" [ngModel]="fee()" (ngModelChange)="fee.set($event)" required
 				/></mat-form-field>
 				<mat-form-field
-					><mat-label>Expiry, Unix seconds</mat-label
+					><mat-label>Expiry</mat-label
 					><input
 						matInput
 						name="expiry"
-						inputmode="numeric"
-						placeholder="Never"
+						[matDatepicker]="expiry_picker"
+						[min]="today"
 						[ngModel]="expiry()"
 						(ngModelChange)="expiry.set($event)"
-					/><mat-hint>Leave blank for no expiry</mat-hint></mat-form-field
+					/><mat-datepicker-toggle matIconSuffix [for]="expiry_picker"></mat-datepicker-toggle
+					><mat-datepicker #expiry_picker></mat-datepicker><mat-hint>Leave blank for no expiry</mat-hint
+					><mat-error>Choose a future date, or leave it blank</mat-error></mat-form-field
 				>
 			</div>
 			<mat-form-field class="w-full"
@@ -155,7 +157,7 @@
 				>Allow local HTTP for development</mat-checkbox
 			>
 		</fieldset>
-		<button mat-flat-button type="submit" [disabled]="!valid() || busy()">Create and get invitations</button>
+		<button mat-flat-button type="submit" [disabled]="!valid() || busy() || create_form.invalid">Create and get invitations</button>
 	</form>
 	<aside class="orc-low-card setup-card setup-summary">
 		<h2>Summary</h2>

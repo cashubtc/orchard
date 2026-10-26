@@ -4,17 +4,19 @@ import {
 	ChangeDetectionStrategy,
 	Component,
 	computed,
+	ElementRef,
+	HostListener,
 	inject,
 	OnDestroy,
 	OnInit,
 	signal,
 	viewChild,
-	type ElementRef,
 } from '@angular/core';
 import {Router} from '@angular/router';
 import {ClipboardModule} from '@angular/cdk/clipboard';
 
 /* Vendor Dependencies */
+import {DateTime} from 'luxon';
 import {
 	EMPTY,
 	Subject,
@@ -22,6 +24,7 @@ import {
 	catchError,
 	exhaustMap,
 	filter,
+	fromEvent,
 	finalize,
 	merge,
 	of,
@@ -36,6 +39,8 @@ import {MatDialog} from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatProgressBarModule} from '@angular/material/progress-bar';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatInputModule} from '@angular/material/input';
 
 /* Application Dependencies */
 import {CrewService} from '@client/modules/crew/services/crew/crew.service';
@@ -44,11 +49,13 @@ import type {OrchardError} from '@client/modules/error/types/error.types';
 import {OrcGraphicModule} from '@client/modules/graphic/graphic.module';
 import {OrcLocalModule} from '@client/modules/local/local.module';
 import {OrcNavModule} from '@client/modules/nav/nav.module';
+import {NavSetupStepsComponent} from '@client/modules/nav/components/nav-setup-steps/nav-setup-steps.component';
+import type {ComponentCanDeactivate} from '@client/modules/routing/interfaces/routing.interfaces';
 
 /* Native Dependencies */
 import {FederationService} from '@client/modules/federation/services/federation.service';
 import {FederationSetupService} from '@client/modules/federation/services/federation-setup.service';
-import {toOrchardError} from '@client/modules/federation/helpers/federation-setup.helpers';
+import {displayFingerprint, toOrchardError} from '@client/modules/federation/helpers/federation-setup.helpers';
 import {statusLabel, timestamp} from '@client/modules/federation/helpers/federation-status.helpers';
 import type {FederationSetupConfirm} from '@client/modules/federation/types/federation-setup.types';
 import {FEDERATION_DKG_STAGES, FEDERATION_SETUP_STEPS} from '@client/modules/federation/constants/federation.constants';
@@ -60,7 +67,6 @@ import {FederationSetupConfirmDialogComponent} from '@client/modules/federation/
 
 /* Shared Dependencies */
 import {
-	UserRole,
 	type FederationSetupCreateInput,
 	type FederationSetupJoinInput,
 	type OrchardFederationSetupStatus,
@@ -75,6 +81,9 @@ type SetupView = 'start' | 'create' | 'join' | 'waiting' | 'review' | 'keygen' |
 	selector: 'orc-federation-setup',
 	imports: [
 		ClipboardModule,
+		MatFormFieldModule,
+		MatInputModule,
+		NavSetupStepsComponent,
 		MatButtonModule,
 		MatIconModule,
 		MatProgressBarModule,
@@ -91,7 +100,8 @@ type SetupView = 'start' | 'create' | 'join' | 'waiting' | 'review' | 'keygen' |
 	styleUrl: './federation-setup.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class FederationSetupComponent implements OnInit, OnDestroy {
+export class FederationSetupComponent implements ComponentCanDeactivate, OnInit, OnDestroy {
+	private readonly element_ref = inject<ElementRef<HTMLElement>>(ElementRef);
 	private readonly federation_service = inject(FederationService);
 	private readonly setup_service = inject(FederationSetupService);
 	private readonly crew_service = inject(CrewService);
@@ -99,6 +109,7 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 	private readonly dialog = inject(MatDialog);
 
 	public readonly statusLabel = statusLabel;
+	public readonly displayFingerprint = displayFingerprint;
 	public readonly steps = FEDERATION_SETUP_STEPS;
 	public readonly stage_fields = FEDERATION_DKG_STAGES;
 
@@ -111,11 +122,12 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 	public readonly activation = signal<OrchardFederationSetupActivated | null>(null);
 	public readonly choice = signal<'start' | 'create' | 'join'>('start');
 	public readonly selected_member = signal<number | null>(null);
-	public readonly loading = signal(true);
-	public readonly busy = signal(false);
+	public readonly now = signal<number>(DateTime.now().toUnixInteger());
+	public readonly loading = signal<boolean>(true);
+	public readonly busy = signal<boolean>(false);
 	public readonly error = signal<OrchardError | null>(null);
 	public readonly copy_result = signal<string | null>(null);
-	public readonly backup_complete = signal(false);
+	public readonly backup_complete = signal<boolean>(false);
 
 	public readonly view = computed<SetupView>(() => {
 		const status = this.status();
@@ -138,11 +150,13 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 		if (this.proposal() && this.proposal()?.proposal_hash === status.proposal_hash) return 'review';
 		return 'waiting';
 	});
-	public readonly current_step = computed(
+	public readonly current_step = computed<number>(
 		() => ({start: 0, create: 0, join: 0, waiting: 1, review: 2, keygen: 3, activated: 4, aborted: 1})[this.view()],
 	);
-	public readonly is_coordinator = computed(() => this.status()?.role === 'SETUP_ROLE_COORDINATOR');
-	public readonly can_propose = computed(
+	/** Hold the forms and actions while a request runs or for roles that can't change setup. */
+	public readonly locked = computed<boolean>(() => this.busy() || !this.is_admin());
+	public readonly is_coordinator = computed<boolean>(() => this.status()?.role === 'SETUP_ROLE_COORDINATOR');
+	public readonly can_propose = computed<boolean>(
 		() =>
 			this.is_coordinator() &&
 			(this.status()?.member_count ?? 0) > 0 &&
@@ -150,26 +164,39 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 			this.status()?.enrolled_members.length === this.status()?.member_count &&
 			!this.status()?.proposal_hash,
 	);
-	public readonly slots = computed(() => Array.from({length: this.status()?.member_count ?? 0}, (_, index) => index + 1));
-	public readonly invitation = computed(() =>
-		this.selected_member() === null
-			? (this.invitations()[0] ?? null)
-			: (this.invitations().find((item) => item.member_id === this.selected_member()) ?? null),
+	public readonly slots = computed<number[]>(() => Array.from({length: this.status()?.member_count ?? 0}, (_, index) => index + 1));
+	public readonly invitation = computed<OrchardFederationSetupInvitation | null>(
+		() => this.invitations().find((item) => item.member_id === this.selected_member()) ?? null,
 	);
-	public readonly invitation_expires_at = computed(() => timestamp(this.invitation()?.expires_at_unix));
-	/** Offer abort before key generation; cdk decides and refuses verbatim if the window has closed. */
-	public readonly can_abort = computed(() => ['waiting', 'review', 'aborted'].includes(this.view()));
+	public readonly invitation_expires_at = computed<number | null>(() => timestamp(this.invitation()?.expires_at_unix));
+	public readonly invitation_expired = computed<boolean>(() => {
+		const expires = this.invitation_expires_at();
+		return expires !== null && expires <= this.now();
+	});
+	public readonly missing_invitation_note = computed<string>(() => {
+		const member_id = this.selected_member();
+		if (!member_id) return 'Select a waiting member to view or replace their invitation.';
+		return `This page has no invitation for member ${member_id}. Use a saved copy or replace the invitation.`;
+	});
 	/** Render setup views only once the daemon is known to be in setup, so an unknown mode never offers Create or Join. */
-	public readonly show_setup = computed(() => this.mode() === 'setup' || this.view() === 'activated');
+	public readonly show_setup = computed<boolean>(() => this.mode() === 'setup' || this.view() === 'activated');
 
 	private invitation_setup_id: string | null = null;
 	private polling_error = false;
+
 	private readonly error_alert = viewChild<ElementRef<HTMLElement>>('error_alert');
+
 	private readonly refresh_requested = new Subject<void>();
 	private readonly action_started = new Subject<void>();
 	private readonly subscriptions = new Subscription();
 
 	constructor() {
+		afterRenderEffect(() => {
+			this.view();
+			if (this.loading() || !this.show_setup()) return;
+			const heading = this.element_ref.nativeElement.querySelector<HTMLElement>('h1');
+			heading?.focus({preventScroll: true});
+		});
 		// An action's refusal renders above the fold; bring it into view, since its button may sit far below
 		afterRenderEffect(() => {
 			const alert = this.error_alert()?.nativeElement;
@@ -177,14 +204,13 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 		});
 	}
 
-	/** Wait for the authenticated user's role before polling admin-only setup data. */
+	/** Load the authenticated role before polling setup progress. */
 	public ngOnInit(): void {
 		this.subscriptions.add(
-			this.crew_service.loadUser().subscribe({
-				next: (user) => {
-					this.is_admin.set(user.role === UserRole.Admin);
-					if (this.is_admin()) this.startPolling();
-					else this.loading.set(false);
+			this.crew_service.isAdmin().subscribe({
+				next: (is_admin) => {
+					this.is_admin.set(is_admin);
+					this.startPolling();
 				},
 				error: (error: unknown) => {
 					this.showError(error);
@@ -201,9 +227,11 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 	/** Poll until member mode; exhaustMap stops a slow daemon stacking calls, and an action cancels a poll in flight. */
 	private startPolling(): void {
 		this.subscriptions.add(
-			merge(timer(0, 3000), this.refresh_requested)
+			merge(timer(0, 3000), this.refresh_requested, fromEvent(document, 'visibilitychange'))
 				.pipe(
 					takeWhile(() => this.mode() !== 'member'),
+					filter(() => !document.hidden),
+					tap(() => this.now.set(DateTime.now().toUnixInteger())),
 					filter(() => !this.busy()),
 					exhaustMap(() =>
 						this.readState().pipe(
@@ -256,12 +284,18 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 					this.error.set(null);
 					this.polling_error = false;
 				}
-				if (this.status()?.setup_id !== status.setup_id) this.proposal.set(null);
+				if (this.status()?.setup_id !== status.setup_id) {
+					this.proposal.set(null);
+					if (status.setup_id !== this.invitation_setup_id) this.selectMember(null);
+				}
 				this.invitations.update((invitations) =>
 					status.initialized && status.setup_id === this.invitation_setup_id
 						? invitations.filter((invitation) => !status.enrolled_members.includes(invitation.member_id))
 						: [],
 				);
+				if (this.selected_member() !== null && status.enrolled_members.includes(this.selected_member()!)) {
+					this.selectMember(this.invitations()[0]?.member_id ?? null);
+				}
 				this.status.set(status);
 				if (!status.proposal_hash || status.proposal_hash === this.proposal()?.proposal_hash || status.dkg) return of(status);
 				return this.setup_service.review().pipe(
@@ -286,7 +320,7 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 
 	/** Handle mutations once, staying busy until a status read reflects the result so the form can't be submitted twice. */
 	private perform<T>(request: Observable<T>, success?: (response: T) => void): void {
-		if (!this.startAction()) return;
+		if (!this.is_admin() || !this.startAction()) return;
 		this.error.set(null);
 		this.subscriptions.add(
 			request
@@ -315,8 +349,8 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 	public create(input: FederationSetupCreateInput): void {
 		this.perform(this.setup_service.create(input), (response) => {
 			this.invitation_setup_id = response.setup_id;
-			this.invitations.set(response.invitations);
-			this.selected_member.set(null);
+			this.invitations.set([...response.invitations].sort((left, right) => left.member_id - right.member_id));
+			this.selectMember(this.invitations()[0]?.member_id ?? null);
 		});
 	}
 
@@ -344,8 +378,7 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 				if (!invitation) return;
 				this.invitation_setup_id = this.status()?.setup_id ?? null;
 				this.invitations.update((invitations) => [...invitations.filter((item) => item.member_id !== member_id), invitation]);
-				this.selected_member.set(member_id);
-				this.copy_result.set(null);
+				this.selectMember(member_id);
 			}),
 		);
 	}
@@ -371,13 +404,23 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 
 	/** Activate only after CDK reports finalized_ready. */
 	public activate(): void {
-		if (this.status()?.dkg?.finalized_ready) this.perform(this.setup_service.activate(), (response) => this.activation.set(response));
+		if (this.status()?.dkg?.finalized_ready)
+			this.perform(this.setup_service.activate(), (response) => {
+				this.activation.set(response);
+				this.federation_service.rememberBackupWarning(response.federation_id, response.backup_warning);
+			});
+	}
+
+	/** Reset feedback when the displayed member changes. */
+	public selectMember(member_id: number | null): void {
+		this.selected_member.set(member_id);
+		this.copy_result.set(null);
 	}
 
 	/** Save only the invitation the operator explicitly selected. */
 	public saveInvitation(): void {
 		const invitation = this.invitation();
-		if (!invitation) return;
+		if (!invitation || this.invitation_expired()) return;
 		const url = URL.createObjectURL(new Blob([invitation.invitation], {type: 'text/plain'}));
 		const link = document.createElement('a');
 		link.href = url;
@@ -386,16 +429,26 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 		setTimeout(() => URL.revokeObjectURL(url), 0);
 	}
 
-	/** Re-match the same URL once member mode is confirmed, so it opens the member dashboard. */
-	public openMint(): void {
-		if (!this.backup_complete() || this.mode() !== 'member') return;
-		void this.router.navigate(['/mint/federation'], {onSameUrlNavigation: 'reload'});
-	}
-
 	/** Show the error, remembering whether a later successful poll may clear it. */
 	private showError(error: unknown, polling_error = false): void {
 		this.polling_error = polling_error;
 		this.error.set(toOrchardError(error));
+	}
+
+	/* *******************************************************
+        Navigation
+    ******************************************************** */
+
+	/** Unused invitations exist only on this page, so leaving or reloading asks first. */
+	@HostListener('window:beforeunload')
+	public canDeactivate(): boolean {
+		return this.invitations().length === 0;
+	}
+
+	/** Re-match the same URL once member mode is confirmed, so it opens the member dashboard. */
+	public openMint(): void {
+		if (!this.backup_complete() || this.mode() !== 'member') return;
+		void this.router.navigate(['/mint/federation'], {onSameUrlNavigation: 'reload'});
 	}
 
 	/* *******************************************************

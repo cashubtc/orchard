@@ -1,8 +1,9 @@
 import {MatDialog} from '@angular/material/dialog';
 import {signal} from '@angular/core';
 import {TestBed, fakeAsync, tick} from '@angular/core/testing';
-import {Router} from '@angular/router';
-import {of, Subject, throwError} from 'rxjs';
+import {provideRouter, Router} from '@angular/router';
+import {of, Subject, throwError, map} from 'rxjs';
+import {DateTime} from 'luxon';
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
 import {CrewService} from '@client/modules/crew/services/crew/crew.service';
 import {FederationService} from '@client/modules/federation/services/federation.service';
@@ -10,6 +11,11 @@ import {FederationSetupService} from '@client/modules/federation/services/federa
 import {setupStatus, setupProposal} from '@client/modules/federation/helpers/federation-setup.fixtures';
 import {FederationSetupComponent} from './federation-setup.component';
 import {UserRole, type OrchardFederationSetupJoined, type OrchardFederationSetupStatus} from '@shared/generated.types';
+
+/** Visible labels of the buttons inside an element. */
+function buttonTexts(element: Element): string[] {
+	return Array.from(element.querySelectorAll('button')).map((button) => button.textContent?.trim() ?? '');
+}
 
 describe('FederationSetupComponent', () => {
 	const mode = signal<string | null>('setup');
@@ -38,15 +44,116 @@ describe('FederationSetupComponent', () => {
 		navigate = jasmine.createSpy().and.resolveTo(true);
 		TestBed.configureTestingModule({
 			providers: [
+				provideRouter([]),
 				{provide: MatDialog, useValue: {open: () => ({afterClosed: () => confirm})}},
-				{provide: FederationService, useValue: {mode, details, loadMode: () => of({mode: mode()})}},
+				{
+					provide: FederationService,
+					useValue: {mode, details, loadMode: () => of({mode: mode()}), rememberBackupWarning: jasmine.createSpy()},
+				},
 				{provide: FederationSetupService, useValue: setup},
-				{provide: CrewService, useValue: {loadUser: load_user}},
-				{provide: Router, useValue: {navigate}},
+				{
+					provide: CrewService,
+					useValue: {isAdmin: () => load_user().pipe(map((user: {role: UserRole}) => user.role === UserRole.Admin))},
+				},
 			],
 		});
-		TestBed.overrideComponent(FederationSetupComponent, {set: {template: '', imports: []}});
+		TestBed.overrideComponent(FederationSetupComponent, {
+			add: {providers: [{provide: MatDialog, useValue: {open: () => ({afterClosed: () => confirm})}}]},
+		});
+		navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+		spyOnProperty(document, 'hidden').and.returnValue(false);
 	});
+	it('keeps Create and Join hidden while the mode is unknown, with an empty announcement region', fakeAsync(() => {
+		mode.set(null);
+		const fixture = TestBed.createComponent(FederationSetupComponent);
+		fixture.detectChanges();
+		tick(0);
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('.setup-intro')).toBeNull();
+		expect(fixture.nativeElement.querySelector('[role="status"]')).not.toBeNull();
+		fixture.destroy();
+	}));
+	it('renders the mint diagnostic above the current view and identifies the current step', fakeAsync(() => {
+		const fixture = TestBed.createComponent(FederationSetupComponent);
+		fixture.detectChanges();
+		tick(0);
+		fixture.componentInstance.error.set({code: 40016, message: 'Busy', details: 'Mint says wait'});
+		fixture.detectChanges();
+		const alert: HTMLElement = fixture.nativeElement.querySelector('[role="alert"]');
+		expect(alert.textContent).toContain('Mint says wait');
+		expect(alert.compareDocumentPosition(fixture.nativeElement.querySelector('h1')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+		expect(fixture.nativeElement.querySelector('[aria-current="step"]').textContent).toContain('Enroll');
+		fixture.destroy();
+	}));
+	it('refreshes immediately when a hidden tab becomes visible', fakeAsync(() => {
+		const hidden = Object.getOwnPropertyDescriptor(document, 'hidden')!.get as jasmine.Spy;
+		hidden.and.returnValue(true);
+		const fixture = TestBed.createComponent(FederationSetupComponent);
+		fixture.detectChanges();
+		tick(6000);
+		expect(setup.getStatus).not.toHaveBeenCalled();
+		hidden.and.returnValue(false);
+		document.dispatchEvent(new Event('visibilitychange'));
+		expect(setup.getStatus).toHaveBeenCalledTimes(1);
+		fixture.destroy();
+	}));
+	it('blocks copying expired invitations and clears the selection feedback after enrollment', fakeAsync(() => {
+		const invitation = {member_id: 2, invitation: 'secret', expires_at_unix: '1'};
+		setup.create.and.returnValue(of({setup_id: 'setup', member_id: 1, invitations: [invitation]}));
+		const fixture = TestBed.createComponent(FederationSetupComponent);
+		fixture.detectChanges();
+		tick(0);
+		const component = fixture.componentInstance;
+		component.create({members: 3, threshold: 2, network: 'regtest'});
+		fixture.detectChanges();
+		expect(component.invitation_expired()).toBeTrue();
+		const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
+		const invitation_actions = buttons.filter((button) => ['Copy invitation', 'Save file'].includes(button.textContent?.trim() ?? ''));
+		expect(invitation_actions.length).toBe(2);
+		expect(invitation_actions.every((button) => button.disabled)).toBeTrue();
+		expect(fixture.nativeElement.querySelector('.selected-slot button[aria-pressed="true"]')).not.toBeNull();
+		component.copy_result.set('Copied');
+		setup.getStatus.and.returnValue(of({...setupStatus(), enrolled_members: [1, 2]}));
+		tick(3000);
+		expect(component.selected_member()).toBeNull();
+		expect(component.copy_result()).toBeNull();
+		fixture.destroy();
+	}));
+	it('asks before leaving or unloading only while unused invitations remain', () => {
+		const component = TestBed.createComponent(FederationSetupComponent).componentInstance;
+		expect(component.canDeactivate()).toBeTrue();
+		component.invitations.set([{member_id: 2, invitation: 'secret', expires_at_unix: '1'}]);
+		expect(component.canDeactivate()).toBeFalse();
+	});
+	it('announces an invitation expiring through a region that stays in place', fakeAsync(() => {
+		const invitation = {member_id: 2, invitation: 'secret', expires_at_unix: String(DateTime.now().toUnixInteger() + 2)};
+		setup.create.and.returnValue(of({setup_id: 'setup', member_id: 1, invitations: [invitation]}));
+		const fixture = TestBed.createComponent(FederationSetupComponent);
+		fixture.detectChanges();
+		tick(0);
+		fixture.componentInstance.create({members: 3, threshold: 2, network: 'regtest'});
+		fixture.detectChanges();
+		const region: HTMLElement = fixture.nativeElement.querySelector('aside [role="status"]');
+		expect(region.textContent?.trim()).toBe('');
+		fixture.componentInstance.now.set(DateTime.now().toUnixInteger() + 3);
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('aside [role="status"]')).toBe(region);
+		expect(region.textContent).toContain('Expired, replace it');
+		fixture.destroy();
+	}));
+	it('updates the expiry clock only while the tab is visible', fakeAsync(() => {
+		const hidden = Object.getOwnPropertyDescriptor(document, 'hidden')!.get as jasmine.Spy;
+		hidden.and.returnValue(true);
+		const fixture = TestBed.createComponent(FederationSetupComponent);
+		fixture.detectChanges();
+		fixture.componentInstance.now.set(0);
+		tick(6000);
+		expect(fixture.componentInstance.now()).toBe(0);
+		hidden.and.returnValue(false);
+		tick(3000);
+		expect(fixture.componentInstance.now()).toBeGreaterThan(0);
+		fixture.destroy();
+	}));
 	it('resumes the waiting room and proposes only after all members enroll', fakeAsync(() => {
 		const fixture = TestBed.createComponent(FederationSetupComponent);
 		fixture.detectChanges();
@@ -60,12 +167,12 @@ describe('FederationSetupComponent', () => {
 		expect(component.invitation()).toBeNull();
 		fixture.destroy();
 	}));
-	it('does not request admin setup data for other roles', fakeAsync(() => {
+	it('lets other authenticated roles read setup progress', fakeAsync(() => {
 		load_user.and.returnValue(of({role: UserRole.Reader}));
 		const fixture = TestBed.createComponent(FederationSetupComponent);
 		fixture.detectChanges();
 		tick(3000);
-		expect(setup.getStatus).not.toHaveBeenCalled();
+		expect(setup.getStatus).toHaveBeenCalled();
 		fixture.destroy();
 	}));
 	it('coalesces polls and cancels in-flight requests on navigation', fakeAsync(() => {
@@ -213,19 +320,48 @@ describe('FederationSetupComponent', () => {
 		confirm.next(true);
 		expect(setup.abort).toHaveBeenCalledOnceWith('setup');
 		expect(component.view()).toBe('start');
-		expect(component.can_abort()).toBeFalse();
+		fixture.detectChanges();
+		expect(buttonTexts(fixture.nativeElement)).not.toContain('Abort setup');
 		fixture.destroy();
 	}));
-	it('selects views from the new enum names and offers abort only before key generation', () => {
-		const component = TestBed.createComponent(FederationSetupComponent).componentInstance;
-		component.status.set(setupStatus());
+	it('selects views from the new enum names and offers abort in the card actions only before key generation', fakeAsync(() => {
+		const fixture = TestBed.createComponent(FederationSetupComponent);
+		fixture.detectChanges();
+		tick(0);
+		const component = fixture.componentInstance;
+		const element: HTMLElement = fixture.nativeElement;
 		expect(component.view()).toBe('waiting');
-		expect(component.can_abort()).toBeTrue();
+		fixture.detectChanges();
+		expect(buttonTexts(element.querySelector('.setup-card .setup-actions')!)).toContain('Abort setup');
+		component.proposal.set(setupProposal());
+		component.status.set({...setupStatus(), proposal_hash: 'hash'});
+		expect(component.view()).toBe('review');
+		fixture.detectChanges();
+		expect(buttonTexts(element.querySelector('orc-federation-setup-review .review-footer')!)).toContain('Abort setup');
 		component.status.set({...setupStatus(), participant_phase: 'SETUP_PARTICIPANT_PHASE_DKG_RUNNING'});
 		expect(component.view()).toBe('keygen');
-		expect(component.can_abort()).toBeFalse();
+		fixture.detectChanges();
+		expect(buttonTexts(element)).not.toContain('Abort setup');
 		component.status.set({...setupStatus(), coordinator_phase: 'SETUP_COORDINATOR_PHASE_ABORTED'});
 		expect(component.view()).toBe('aborted');
-		expect(component.can_abort()).toBeTrue();
+		fixture.detectChanges();
+		expect(buttonTexts(element)).toContain('Clear and start a new setup');
+		fixture.destroy();
+	}));
+	it('locks the forms while busy or for roles that cannot change setup', () => {
+		const component = TestBed.createComponent(FederationSetupComponent).componentInstance;
+		component.is_admin.set(true);
+		expect(component.locked()).toBeFalse();
+		component.busy.set(true);
+		expect(component.locked()).toBeTrue();
+		component.busy.set(false);
+		component.is_admin.set(false);
+		expect(component.locked()).toBeTrue();
+	});
+	it('explains a missing invitation for the selected slot', () => {
+		const component = TestBed.createComponent(FederationSetupComponent).componentInstance;
+		expect(component.missing_invitation_note()).toContain('Select a waiting member');
+		component.selected_member.set(3);
+		expect(component.missing_invitation_note()).toContain('no invitation for member 3');
 	});
 });

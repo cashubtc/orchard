@@ -1,14 +1,15 @@
 <section class="section-container">
 	<orc-nav-secondary>
 		<div nav-secondary-header class="nav-secondary-header">
-			<mat-icon>spa</mat-icon><strong>Mint</strong
-			><span class="orc-warning-card setup-badge">{{ mode() === 'member' ? 'FEDERATION MEMBER' : 'SETUP MODE' }}</span>
+			<mat-icon>account_balance</mat-icon><strong>Mint</strong
+			><span class="label-state label-warning">{{ mode() === 'member' ? 'FEDERATION MEMBER' : 'SETUP MODE' }}</span>
 		</div>
 		<div nav-secondary-items>
 			<orc-nav-secondary-item name="Federation setup" navroute="mint/federation" [active]="true"></orc-nav-secondary-item>
 		</div>
 	</orc-nav-secondary>
-	<main class="setup-container">
+	<main class="setup-container" data-testid="setup-container">
+		<p role="status" aria-live="polite" class="m-0">{{ copy_result() }}</p>
 		@if (error(); as err) {
 			<div #error_alert class="setup-error" role="alert">
 				<orc-error-resolve [error]="err"></orc-error-resolve>
@@ -18,36 +19,27 @@
 		@if (loading()) {
 			<mat-progress-bar mode="indeterminate" aria-label="Loading federation setup"></mat-progress-bar>
 		}
-		@if (is_admin() === false) {
-			<h1>Federation setup</h1>
-			<p>An administrator must create, join, review and activate this mint's federation.</p>
-		} @else if (mode() === 'unreachable') {
-			<h1>Mint connection unavailable</h1>
-			<p>Check that your mint is running and its management connection is configured.</p>
+		@if (mode() === 'unreachable') {
+			<h1 tabindex="-1">Mint connection unavailable</h1>
 			<p class="mega-string">{{ details() }}</p>
-		} @else if (!loading() && is_admin() && show_setup()) {
+		} @else if (!loading() && is_admin() !== null && show_setup()) {
+			@if (!is_admin()) {
+				<p>An administrator must create, join, approve and activate this mint's federation.</p>
+			}
 			@if (status(); as s) {
 				@if (s.initialized && view() !== 'activated') {
-					<ol class="setup-progress" aria-label="Setup progress">
-						@for (step of steps; track step.title; let i = $index) {
-							<li [attr.aria-current]="current_step() === i ? 'step' : null" [class.current-step]="current_step() === i">
-								{{ i + 1 }}. {{ step.title }}
-							</li>
-						}
-					</ol>
-					<p class="mega-string">
-						Member {{ s.member_id }} · {{ statusLabel(s.role) }} · {{ statusLabel(s.participant_phase) }}
-						@if (s.coordinator_phase) {
-							<span> · Coordinator: {{ statusLabel(s.coordinator_phase) }}</span>
-						}
+					<orc-nav-setup-steps [steps]="steps" [current]="current_step()"></orc-nav-setup-steps>
+					<p>
+						Member {{ s.member_id }} · {{ statusLabel(s.role) }} ·
+						{{ statusLabel(is_coordinator() ? s.coordinator_phase : s.participant_phase) }}
 					</p>
 				}
 			}
 			@switch (view()) {
 				@case ('start') {
 					<div class="setup-intro">
-						<mat-icon class="setup-icon">spa</mat-icon>
-						<h1>Your mint is ready to join a federation</h1>
+						<mat-icon class="setup-icon">network_intelligence</mat-icon>
+						<h1 tabindex="-1">Your mint is ready to join a federation</h1>
 						<p>
 							This cdk-mintd is running in setup mode. It won't serve wallets until a federation is created, approved by every
 							member and activated.
@@ -57,12 +49,12 @@
 						<section class="orc-low-card setup-card">
 							<h2>Create a federation</h2>
 							<p>Start a new federation and invite the other operators. You'll be member 1 and coordinate enrollment.</p>
-							<button mat-flat-button (click)="choice.set('create')">Create</button>
+							<button mat-flat-button [disabled]="!is_admin()" (click)="choice.set('create')">Create</button>
 						</section>
 						<section class="orc-low-card setup-card">
 							<h2>Join a federation</h2>
 							<p>A coordinator sent you an invitation. Paste or scan it to take your member slot.</p>
-							<button mat-stroked-button (click)="choice.set('join')">Join</button>
+							<button mat-stroked-button [disabled]="!is_admin()" (click)="choice.set('join')">Join</button>
 						</section>
 					</div>
 					<h2>How setup works</h2>
@@ -81,14 +73,14 @@
 				}
 				@case ('create') {
 					<orc-federation-setup-create
-						[busy]="busy()"
+						[busy]="locked()"
 						(create)="create($event)"
 						(cancel)="choice.set('start')"
 					></orc-federation-setup-create>
 				}
 				@case ('join') {
 					<orc-federation-setup-join
-						[busy]="busy()"
+						[busy]="locked()"
 						(join)="join($event)"
 						(cancel)="choice.set('start')"
 					></orc-federation-setup-join>
@@ -97,12 +89,12 @@
 					@if (status(); as s) {
 						@let coordinator = is_coordinator();
 						@if (coordinator) {
-							<h1>Send each operator their invitation</h1>
+							<h1 tabindex="-1">Send each operator their invitation</h1>
 							<p>
 								An invitation is a secret until it's used. Send each one privately: whoever holds it takes that member slot.
 							</p>
 						} @else {
-							<h1>Waiting for the coordinator to propose</h1>
+							<h1 tabindex="-1">Waiting for the coordinator to propose</h1>
 							<p>
 								Your mint has joined as member {{ s.member_id }}. Keep this page open to check for the proposal, or return
 								later to resume.
@@ -113,29 +105,46 @@
 								<h2>Member slots</h2>
 								@for (member of slots(); track member) {
 									@let joined = s.enrolled_members.includes(member);
-									<div class="member-slot">
-										<strong>Member {{ member }}{{ member === s.member_id ? ' · you' : '' }}</strong
-										><span>{{ joined ? 'Joined' : 'Waiting' }}</span>
-										@if (!joined && coordinator) {
-											<button mat-button (click)="selected_member.set(member)">Show invitation</button>
-											<button mat-button [disabled]="busy()" (click)="replaceInvitation(member)">
-												Replace invitation
-											</button>
+									<div class="member-slot" data-testid="member-slot" [class.selected-slot]="selected_member() === member">
+										<div class="member-slot-heading">
+											<strong>Member {{ member }}{{ member === s.member_id ? ' · you' : '' }}</strong
+											><span>{{ joined ? 'Joined' : 'Waiting' }}</span>
+										</div>
+										@if (!joined && coordinator && is_admin()) {
+											<div class="member-slot-actions">
+												<button
+													mat-button
+													[attr.aria-pressed]="selected_member() === member"
+													(click)="selectMember(member)"
+												>
+													Show invitation
+												</button>
+												<button mat-button [disabled]="busy()" (click)="replaceInvitation(member)">
+													Replace invitation
+												</button>
+											</div>
 										}
 									</div>
-								}
-								<p>{{ s.enrolled_members.length }} of {{ s.member_count }} enrolled</p>
-								@if (coordinator) {
-									<button mat-flat-button [disabled]="!can_propose() || busy()" (click)="propose()">
-										{{ can_propose() ? 'Propose federation' : 'Propose once everyone has joined' }}
-									</button>
 								}
 								@if (s.identity_fingerprint) {
 									<p>
 										Your identity fingerprint:
-										<strong class="mega-string" data-testid="identity-fingerprint">{{ s.identity_fingerprint }}</strong>
+										<strong class="mega-string" data-testid="identity-fingerprint">{{
+											displayFingerprint(s.identity_fingerprint!)
+										}}</strong>
 									</p>
 									<p>Share it with the other operators so they can match your identity in the proposal.</p>
+								}
+								<p>{{ s.enrolled_members.length }} of {{ s.member_count }} enrolled</p>
+								@if (is_admin()) {
+									<div class="setup-actions">
+										@if (coordinator) {
+											<button mat-flat-button [disabled]="!can_propose() || busy()" (click)="propose()">
+												{{ can_propose() ? 'Propose federation' : 'Propose once everyone has joined' }}
+											</button>
+										}
+										<button mat-button [disabled]="busy()" (click)="abort()">Abort setup</button>
+									</div>
 								}
 							</section>
 							@if (coordinator) {
@@ -150,30 +159,32 @@
 												dialog_title="Secret federation invitation"
 											></orc-graphic-qr>
 										</div>
-										<label for="invitation-text">Invitation</label
-										><textarea
-											id="invitation-text"
-											readonly
-											rows="5"
-											[value]="invite.invitation"
-											spellcheck="false"
-										></textarea>
+										<mat-form-field class="w-full"
+											><mat-label>Invitation</mat-label
+											><textarea
+												matInput
+												id="invitation-text"
+												readonly
+												rows="5"
+												[value]="invite.invitation"
+												spellcheck="false"
+											></textarea>
+										</mat-form-field>
 										<div class="setup-actions">
 											<button
 												mat-stroked-button
+												[disabled]="invitation_expired()"
 												[cdkCopyToClipboard]="invite.invitation"
 												(cdkCopyToClipboardCopied)="
-													copy_result.set(
-														$event ? 'Invitation copied' : 'Copy failed; select the invitation text to copy it'
-													)
+													copy_result.set($event ? 'Invitation copied' : 'Invitation copy failed')
 												"
 											>
 												Copy invitation</button
-											><button mat-stroked-button (click)="saveInvitation()">Save file</button>
+											><button mat-stroked-button [disabled]="invitation_expired()" (click)="saveInvitation()">
+												Save file
+											</button>
 										</div>
-										@if (copy_result()) {
-											<p role="status">{{ copy_result() }}</p>
-										}
+										<p role="status" class="m-0">{{ invitation_expired() ? 'Expired, replace it' : '' }}</p>
 										@if (invitation_expires_at(); as expires_at) {
 											<p>Expires {{ expires_at | localTime }}.</p>
 										}
@@ -183,7 +194,7 @@
 										</p>
 									} @else if (s.missing_enrollments.length) {
 										<h2>Invitation unavailable</h2>
-										<p>This page has no invitation for that slot. Use a saved copy or replace the invitation.</p>
+										<p>{{ missing_invitation_note() }}</p>
 									} @else {
 										<h2>Everyone has joined</h2>
 									}
@@ -198,13 +209,17 @@
 							[proposal]="review"
 							[member_id]="status()?.member_id ?? null"
 							[approved_members]="status()?.approved_members ?? []"
-							[busy]="busy()"
+							[busy]="locked()"
 							(approve)="approve($event)"
-						></orc-federation-setup-review>
+						>
+							@if (is_admin()) {
+								<button mat-button [disabled]="busy()" (click)="abort()">Abort setup</button>
+							}
+						</orc-federation-setup-review>
 					}
 				}
 				@case ('keygen') {
-					<h1>Generating the federation keys</h1>
+					<h1 tabindex="-1">Generating the federation keys</h1>
 					<p>
 						The mints are creating the keys together. No single mint ever holds a whole key. Keep the mints running until
 						generation finishes.
@@ -250,7 +265,7 @@
 										Members can activate in any order. Your mint is ready only when key generation reports a finalized
 										configuration.
 									</p>
-									<button mat-flat-button [disabled]="!dkg.finalized_ready || busy()" (click)="activate()">
+									<button mat-flat-button [disabled]="!dkg.finalized_ready || locked()" (click)="activate()">
 										Activate my mint
 									</button>
 								</section>
@@ -261,14 +276,18 @@
 					}
 				}
 				@case ('activated') {
-					<h1>{{ mode() === 'member' ? 'Your mint is a federation member' : 'Activation accepted' }}</h1>
+					<h1 tabindex="-1">{{ mode() === 'member' ? 'Your mint is a federation member' : 'Activation accepted' }}</h1>
 					@if (activation(); as active) {
 						<p>
 							Member {{ active.member_id }} · federation <span class="mega-string">{{ active.federation_id }}</span>
 						</p>
 						<p class="mega-string">Final config: {{ active.final_config_digest }}</p>
 					}
-					<orc-federation-backup [warning]="activation()?.backup_warning ?? null" (complete)="backup_complete.set($event)">
+					<orc-federation-backup
+						[federation_id]="activation()?.federation_id ?? status()?.activation?.federation_id ?? null"
+						[warning]="activation()?.backup_warning ?? null"
+						(complete)="backup_complete.set($event)"
+					>
 						<p role="status">
 							{{ mode() === 'member' ? 'Member mode confirmed.' : 'Waiting for the mint to report member mode…' }}
 						</p>
@@ -278,12 +297,14 @@
 					</orc-federation-backup>
 				}
 				@case ('aborted') {
-					<h1>Setup aborted</h1>
+					<h1 tabindex="-1">Setup aborted</h1>
 					<p>Your mint reports an aborted setup. Other operators must abort on their own mints. A new setup gets a new ID.</p>
+					@if (is_admin()) {
+						<div class="setup-actions">
+							<button mat-flat-button [disabled]="busy()" (click)="abort()">Clear and start a new setup</button>
+						</div>
+					}
 				}
-			}
-			@if (can_abort()) {
-				<button mat-button [disabled]="busy()" (click)="abort()">Abort setup</button>
 			}
 		}
 	</main>
