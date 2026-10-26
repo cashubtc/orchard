@@ -3,6 +3,8 @@ import {ChangeDetectionStrategy, Component, computed, input, output} from '@angu
 
 /* Vendor Dependencies */
 import {MatButtonModule} from '@angular/material/button';
+import {MatCardModule} from '@angular/material/card';
+import {MatDividerModule} from '@angular/material/divider';
 import {MatIconModule} from '@angular/material/icon';
 
 /* Application Dependencies */
@@ -19,7 +21,7 @@ import type {OrchardFederationSetupDkg} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-federation-setup-keygen',
-	imports: [MatButtonModule, MatIconModule, OrcDataModule, FederationCountPipe],
+	imports: [MatButtonModule, MatCardModule, MatDividerModule, MatIconModule, OrcDataModule, FederationCountPipe],
 	templateUrl: './federation-setup-keygen.component.html',
 	styleUrls: ['../federation-setup/federation-setup-shared.scss', './federation-setup-keygen.component.scss'],
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,6 +36,7 @@ export class FederationSetupKeygenComponent {
 	public readonly activate = output<void>();
 
 	public readonly members = computed<number[]>(() => Array.from({length: this.member_count()}, (_, index) => index + 1));
+	public readonly ready = computed<boolean>(() => !!this.dkg()?.finalized_ready);
 	/** Without totals from the mint, a stage is done once the configuration is final and in progress once it has a count. */
 	public readonly stages = computed<FederationSetupStage[]>(() => {
 		const dkg = this.dkg();

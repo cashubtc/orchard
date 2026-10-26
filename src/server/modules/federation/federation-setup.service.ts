@@ -25,6 +25,7 @@ export class FederationSetupService {
 	public async create(
 		input: CdkRpcMethods['CreateSetup']['request'],
 	): Promise<NormalizedFederation<CdkRpcMethods['CreateSetup']['response']>> {
+		this.assertUint64(input.invitation_lifetime_secs, 'Invitation lifetime');
 		this.assertUint64(input.keyset?.input_fee_ppk, 'Input fee');
 		this.assertUint64(input.keyset?.final_expiry, 'Keyset expiry');
 		input.keyset?.amounts?.forEach((amount) => this.assertUint64(amount, 'Denomination'));

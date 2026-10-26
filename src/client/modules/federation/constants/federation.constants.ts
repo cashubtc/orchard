@@ -14,7 +14,25 @@ export const FEDERATION_SETUP_STEPS = [
 ];
 
 /** Short labels for the wizard's progress pills. */
-export const FEDERATION_SETUP_PHASES = ['Create', 'Enroll', 'Review', 'Generate keys', 'Activate'];
+export const FEDERATION_SETUP_PHASES = ['Create or join', 'Enroll', 'Review', 'Generate keys', 'Activate'];
+
+/** Member counts cdk accepts; it enforces the upper bound when the coordinator proposes. */
+export const FEDERATION_SETUP_MEMBERS = {min: 2, max: 64, initial: 5};
+
+/** cdk caps one keyset at 64 denominations; a new setup defaults to 1 to 128. */
+export const FEDERATION_SETUP_AMOUNTS = {max: 64, initial: 8};
+
+/** Invitation lifetimes offered at creation, all inside cdk's five minutes to seven days. */
+export const FEDERATION_INVITATION_LIFETIMES = [
+	{label: '1 hour', seconds: 3600},
+	{label: '24 hours', seconds: 86400},
+	{label: '3 days', seconds: 259200},
+	{label: '7 days', seconds: 604800},
+];
+export const FEDERATION_INVITATION_DEFAULT_LIFETIME = 86400;
+
+/** cdk's setup invitation prefix; the URL-safe base64 payload follows it. */
+export const FEDERATION_SETUP_INVITATION_PREFIX = 'cashufedsetupA';
 
 /** What belongs in the backup; Orchard can't back up the mint itself. */
 export const FEDERATION_BACKUP_CONTENTS = [
@@ -47,6 +65,18 @@ export const FEDERATION_DKG_STAGE_ICONS: Record<FederationSetupStageState, strin
 
 /** Bitcoin networks CreateSetup accepts. */
 export const FEDERATION_NETWORKS = ['bitcoin', 'signet', 'testnet', 'regtest'];
+export const FEDERATION_NETWORK_LABELS: Record<string, string> = {
+	bitcoin: 'Mainnet',
+	signet: 'Signet',
+	testnet: 'Testnet',
+	regtest: 'Regtest',
+};
+export const FEDERATION_NETWORK_CAPTIONS: Record<string, string> = {
+	bitcoin: 'Real funds',
+	signet: 'Steady test network',
+	testnet: 'Mined test network',
+	regtest: 'Local development',
+};
 
 /** Dashboard poll cadence, just past the window in which cdk reuses member statuses. */
 export const FEDERATION_STATUS_INTERVAL_MS = 6000;

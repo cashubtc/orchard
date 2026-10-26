@@ -27,6 +27,8 @@ export class FederationBackupComponent {
 
 	public readonly federation_id = input<string | null>(null);
 	public readonly warning = input<string | null>(null);
+	/** A plain body sits inside a card the parent titles, and the parent places the confirmation. */
+	public readonly variant = input<'card' | 'plain'>('card');
 
 	public readonly confirmed = linkedSignal<boolean>(() => {
 		const federation_id = this.federation_id();

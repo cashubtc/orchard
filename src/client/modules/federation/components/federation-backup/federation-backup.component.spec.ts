@@ -21,6 +21,14 @@ describe('FederationBackupComponent', () => {
 		fixture.detectChanges();
 		expect(completions).toEqual([false, true, false]);
 	});
+	it('leaves the heading and confirmation to the parent in the plain variant', () => {
+		const fixture = TestBed.createComponent(FederationBackupComponent);
+		fixture.componentRef.setInput('variant', 'plain');
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelectorAll('.backup-contents li').length).toBe(3);
+		expect(fixture.nativeElement.querySelector('h2')).toBeNull();
+		expect(fixture.nativeElement.querySelector('mat-checkbox')).toBeNull();
+	});
 	it('shows the mint backup warning verbatim', () => {
 		const fixture = TestBed.createComponent(FederationBackupComponent);
 		fixture.componentRef.setInput('warning', 'Back up federation-setup/\nand the database');

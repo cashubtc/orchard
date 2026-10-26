@@ -7,38 +7,46 @@
 	</p>
 </div>
 <div class="choice-grid">
-	<section class="choice-card">
-		<span class="choice-icon choice-icon-primary"><mat-icon>add_circle</mat-icon></span>
-		<h2>Create a federation</h2>
-		<p>Start a new federation and invite the other operators. You'll be member 1 and coordinate enrollment.</p>
-		<button type="button" class="choice-action" [disabled]="!admin()" (click)="chosen.emit('create')">
-			Create<mat-icon>arrow_forward</mat-icon>
-		</button>
-	</section>
-	<section class="choice-card">
-		<span class="choice-icon"><mat-icon class="mat-symbol-outline">group_add</mat-icon></span>
-		<h2>Join a federation</h2>
-		<p>A coordinator sent you an invitation. Paste or scan it to take your member slot.</p>
-		<button type="button" class="choice-action" [disabled]="!admin()" (click)="chosen.emit('join')">
-			Join<mat-icon>arrow_forward</mat-icon>
-		</button>
-	</section>
+	<mat-card appearance="outlined" class="relative overflow-hidden choice-card">
+		<mat-card-content class="orc-surface-container-low-bg choice-body">
+			<span class="choice-icon choice-icon-primary"><mat-icon>add_circle</mat-icon></span>
+			<h2>Create a federation</h2>
+			<p>Start a new federation and invite the other operators. You'll be member 1 and coordinate enrollment.</p>
+			<button type="button" class="choice-action" [disabled]="!admin()" (click)="chosen.emit('create')">
+				Create<mat-icon>arrow_forward</mat-icon>
+			</button>
+		</mat-card-content>
+	</mat-card>
+	<mat-card appearance="outlined" class="relative overflow-hidden choice-card">
+		<mat-card-content class="orc-surface-container-low-bg choice-body">
+			<span class="choice-icon"><mat-icon class="mat-symbol-outline">group_add</mat-icon></span>
+			<h2>Join a federation</h2>
+			<p>A coordinator sent you an invitation. Paste or scan it to take your member slot.</p>
+			<button type="button" class="choice-action" [disabled]="!admin()" (click)="chosen.emit('join')">
+				Join<mat-icon>arrow_forward</mat-icon>
+			</button>
+		</mat-card-content>
+	</mat-card>
 </div>
 <section class="setup-how" aria-labelledby="setup-how-title">
-	<h2 id="setup-how-title">How setup works</h2>
-	<ol>
-		@for (step of steps; track step.title; let index = $index) {
-			<li>
-				<span class="how-heading"
-					><span class="how-number">{{ index + 1 }}</span
-					><strong>{{ step.title }}</strong></span
-				>
-				<span class="how-detail">{{ step.detail }}</span>
-			</li>
-		}
-	</ol>
-	<p class="setup-note">
-		<mat-icon class="mat-symbol-outline">shield_person</mat-icon>Each operator runs their own mint and their own Orchard. Orchard never
-		holds your mint's identity key, key shares or seed.
-	</p>
+	<h2 id="setup-how-title" class="title-l">How setup works</h2>
+	<mat-card appearance="outlined" class="relative overflow-hidden">
+		<mat-card-content class="orc-surface-container-low-bg flex flex-column flex-gap-1">
+			<ol>
+				@for (step of steps; track step.title; let index = $index) {
+					<li class="orc-high-card">
+						<span class="flex flex-items-center flex-gap-0-5"
+							><span class="how-number">{{ index + 1 }}</span
+							><strong class="font-size-s font-weight-semi-bold">{{ step.title }}</strong></span
+						>
+						<span class="how-detail">{{ step.detail }}</span>
+					</li>
+				}
+			</ol>
+			<p class="setup-note">
+				<mat-icon class="mat-symbol-outline">shield_person</mat-icon>Each operator runs their own mint and their own Orchard.
+				Orchard never holds your mint's identity key, key shares or seed.
+			</p>
+		</mat-card-content>
+	</mat-card>
 </section>

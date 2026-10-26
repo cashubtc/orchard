@@ -19,7 +19,7 @@
 			<mat-progress-bar mode="indeterminate" aria-label="Loading federation setup"></mat-progress-bar>
 		}
 		@if (mode() === 'unreachable') {
-			<div class="setup-title">
+			<div class="setup-hero">
 				<h1 tabindex="-1">Mint connection unavailable</h1>
 				<p class="mega-string">{{ details() }}</p>
 			</div>
@@ -30,7 +30,7 @@
 					federation.
 				</p>
 			}
-			@if (status()?.initialized && view() !== 'activated') {
+			@if (show_steps()) {
 				<orc-nav-setup-steps variant="pills" [steps]="phases" [current]="current_step()"></orc-nav-setup-steps>
 			}
 			@switch (view()) {
@@ -54,160 +54,222 @@
 				@case ('waiting') {
 					@if (status(); as s) {
 						@let coordinator = is_coordinator();
-						<div class="setup-title-row">
-							<div class="setup-title">
-								@if (coordinator) {
-									<h1 tabindex="-1">Send each operator their invitation</h1>
-									<p>
-										An invitation is a secret until it's used. Send each one privately: whoever holds it takes that
-										member slot.
-									</p>
-								} @else {
-									<h1 tabindex="-1">Waiting for the coordinator to propose</h1>
-									<p>
-										Your mint has joined as member {{ s.member_id }}. Keep this page open to check for the proposal, or
-										return later to resume.
-									</p>
-								}
-							</div>
-							@if (coordinator) {
-								<span class="setup-expiry" role="status" [class.tone-warning]="invitation_expired()">
-									@if (invitation_expiry(); as expiry) {
-										<mat-icon class="mat-symbol-outline">schedule</mat-icon>{{ expiry }}
-									}
-								</span>
-							}
-						</div>
-						<div class="setup-columns">
-							<section class="slot-list" aria-label="Member slots">
-								@for (member of slots(); track member) {
-									@let joined = s.enrolled_members.includes(member);
-									<div class="member-slot" data-testid="member-slot" [class.selected]="selected_member() === member">
-										<span class="member-avatar">{{ member }}</span>
-										<span class="member-text">
-											<strong>Member {{ member }}{{ member === s.member_id ? ' · you' : '' }}</strong>
-											<!-- A joining member sees their fingerprint in the aside instead -->
-											@if (coordinator && member === s.member_id && s.identity_fingerprint) {
-												<small
-													>Your fingerprint
-													<span data-testid="identity-fingerprint">{{
+						<h1 class="cdk-visually-hidden" tabindex="-1">
+							{{ coordinator ? 'Send each operator their invitation' : 'Waiting for the coordinator to propose' }}
+						</h1>
+						<div class="setup-layout">
+							<div class="flex flex-column flex-gap-1-5 w-min-0">
+								@if (!coordinator && s.identity_fingerprint) {
+									<section class="flex flex-column flex-gap-1" aria-labelledby="fingerprint-title">
+										<h2 id="fingerprint-title" class="title-l">Your fingerprint</h2>
+										<mat-card appearance="outlined" class="relative overflow-hidden">
+											<mat-card-content class="orc-surface-container-low-bg flex flex-column flex-gap-1">
+												<div class="setup-row orc-high-card">
+													<mat-icon class="orc-primary-color">key</mat-icon>
+													<strong class="fingerprint" data-testid="identity-fingerprint">{{
 														displayFingerprint(s.identity_fingerprint)
-													}}</span></small
-												>
-											} @else {
-												<small>{{ slot_details()[member] }}</small>
-											}
-										</span>
-										<span class="member-status" [class.tone-success]="joined" [class.tone-warning]="!joined">
-											<mat-icon [class.mat-symbol-outline]="!joined">{{
-												joined ? 'check_circle' : 'hourglass_top'
-											}}</mat-icon
-											>{{ joined ? 'Joined' : 'Waiting' }}
-										</span>
-										@if (!joined && coordinator && is_admin()) {
-											@if (held_members().has(member)) {
-												<button
-													matButton="outlined"
-													[attr.aria-pressed]="selected_member() === member"
-													(click)="selectMember(member)"
-												>
-													Show invitation
-												</button>
-											} @else {
-												<button matButton="outlined" [disabled]="busy()" (click)="replaceInvitation(member)">
-													Replace invitation
-												</button>
-											}
+													}}</strong>
+												</div>
+												<p class="font-size-s orc-on-surface-variant-color">
+													Read this to the other operators over a call or chat you trust. They'll check it against
+													the proposal before approving.
+												</p>
+											</mat-card-content>
+										</mat-card>
+									</section>
+								}
+								<section class="flex flex-column flex-gap-1" aria-labelledby="members-title">
+									<div class="flex flex-wrap flex-items-end flex-gap-0-5">
+										<h2 id="members-title" class="title-l">Members</h2>
+										@if (coordinator) {
+											<span class="font-size-s orc-outline-color"
+												>Send each waiting operator their invitation, privately</span
+											>
 										}
 									</div>
-								}
-								<div class="enrollment-row">
-									<span class="enrollment-progress">
-										<strong>{{ s.enrolled_members.length }} of {{ s.member_count }} enrolled</strong>
-										<mat-progress-bar
-											mode="determinate"
-											[value]="enrolled_percent()"
-											aria-hidden="true"
-										></mat-progress-bar>
-									</span>
-									@if (is_admin()) {
-										<div class="setup-actions">
-											<button matButton [disabled]="busy()" (click)="abort()">Abort setup</button>
-											@if (coordinator) {
-												<button matButton="filled" [disabled]="!can_propose() || busy()" (click)="propose()">
-													{{ can_propose() ? 'Propose federation' : 'Propose once everyone has joined' }}
-												</button>
+									<mat-card appearance="outlined" class="relative overflow-hidden">
+										<mat-card-content class="orc-surface-container-low-bg flex flex-column flex-gap-0-5">
+											@for (member of slots(); track member) {
+												@let joined = s.enrolled_members.includes(member);
+												@let open = selected_member() === member && held_members().has(member);
+												<div class="orc-high-card" data-testid="member-slot">
+													<div class="setup-row">
+														<span class="member-avatar">{{ member }}</span>
+														<span class="member-text">
+															<strong>Member {{ member }}{{ member === s.member_id ? ' · you' : '' }}</strong>
+															@if (coordinator && member === s.member_id && s.identity_fingerprint) {
+																<small
+																	>Your fingerprint
+																	<span data-testid="identity-fingerprint">{{
+																		displayFingerprint(s.identity_fingerprint)
+																	}}</span></small
+																>
+															} @else {
+																<small>{{ slot_details()[member] }}</small>
+															}
+														</span>
+														<span
+															class="member-status"
+															[class.tone-success]="joined"
+															[class.tone-warning]="!joined"
+														>
+															<mat-icon [class.mat-symbol-outline]="!joined">{{
+																joined ? 'check_circle' : 'hourglass_top'
+															}}</mat-icon
+															>{{ joined ? 'Joined' : 'Waiting' }}
+														</span>
+														@if (!joined && coordinator && is_admin()) {
+															@if (held_members().has(member)) {
+																<button
+																	matButton
+																	[attr.aria-label]="'Invitation for member ' + member"
+																	[attr.aria-expanded]="open"
+																	[attr.aria-controls]="'invitation-' + member"
+																	(click)="toggleInvitation(member)"
+																>
+																	Invitation<mat-icon
+																		iconPositionEnd
+																		class="expand-icon"
+																		[class.expand-open]="open"
+																		>keyboard_arrow_down</mat-icon
+																	>
+																</button>
+															} @else {
+																<button
+																	matButton="outlined"
+																	[disabled]="busy()"
+																	(click)="replaceInvitation(member)"
+																>
+																	Replace invitation
+																</button>
+															}
+														}
+													</div>
+													@if (open && invitation(); as invite) {
+														<div class="invitation-panel" [id]="'invitation-' + member">
+															<orc-graphic-qr
+																[data]="invite.invitation"
+																[size]="160"
+																[expandable]="true"
+																dialog_title="Secret federation invitation"
+															></orc-graphic-qr>
+															<div class="flex flex-column flex-gap-1 flex-grow w-min-0">
+																<mat-form-field class="w-full" subscriptSizing="dynamic"
+																	><mat-label>Invitation</mat-label
+																	><input
+																		matInput
+																		readonly
+																		[value]="invite.invitation"
+																		spellcheck="false"
+																	/>
+																</mat-form-field>
+																<div class="flex flex-wrap flex-items-center flex-gap-0-5">
+																	<button
+																		matButton="tonal"
+																		[disabled]="invitation_expired()"
+																		[cdkCopyToClipboard]="invite.invitation"
+																		(cdkCopyToClipboardCopied)="
+																			copy_result.set(
+																				$event ? 'Invitation copied' : 'Invitation copy failed'
+																			)
+																		"
+																	>
+																		<mat-icon>content_copy</mat-icon
+																		>{{ copy_result() === 'Invitation copied' ? 'Copied' : 'Copy' }}
+																	</button>
+																	<button
+																		matButton="outlined"
+																		[disabled]="invitation_expired()"
+																		(click)="saveInvitation()"
+																	>
+																		<mat-icon>download</mat-icon>Save file
+																	</button>
+																	<span
+																		class="setup-expiry"
+																		role="status"
+																		[class.tone-warning]="invitation_expired()"
+																	>
+																		@if (invitation_expiry(); as expiry) {
+																			<mat-icon class="mat-symbol-outline">schedule</mat-icon
+																			>{{ expiry }}
+																		}
+																	</span>
+																</div>
+																@if (invitation_expired() && is_admin()) {
+																	<div>
+																		<button
+																			matButton="outlined"
+																			[disabled]="busy()"
+																			(click)="replaceInvitation(member)"
+																		>
+																			Replace invitation
+																		</button>
+																	</div>
+																}
+																<p class="font-size-xs orc-outline-color">
+																	Whoever holds it takes this member slot. Orchard keeps unused
+																	invitations only on this page; after a refresh, replace any you still
+																	need.
+																</p>
+															</div>
+														</div>
+													}
+												</div>
 											}
-										</div>
-									}
-								</div>
-							</section>
-							@if (coordinator) {
-								<aside class="setup-aside" aria-labelledby="invitation-title">
-									@if (invitation(); as invite) {
-										<h2 id="invitation-title">Invitation for member {{ invite.member_id }}</h2>
-										<div class="invitation-qr">
-											<orc-graphic-qr
-												[data]="invite.invitation"
-												[size]="200"
-												[expandable]="true"
-												dialog_title="Secret federation invitation"
-											></orc-graphic-qr>
-										</div>
-										<mat-form-field class="w-full" subscriptSizing="dynamic"
-											><mat-label>Invitation</mat-label
-											><input matInput id="invitation-text" readonly [value]="invite.invitation" spellcheck="false" />
-										</mat-form-field>
-										<div class="invitation-actions">
-											<button
-												matButton="filled"
-												[disabled]="invitation_expired()"
-												[cdkCopyToClipboard]="invite.invitation"
-												(cdkCopyToClipboardCopied)="
-													copy_result.set($event ? 'Invitation copied' : 'Invitation copy failed')
-												"
+										</mat-card-content>
+									</mat-card>
+								</section>
+							</div>
+							<aside class="setup-side flex flex-column flex-gap-1" aria-labelledby="next-title">
+								<h2 id="next-title" class="title-l">{{ coordinator ? 'Enrollment' : 'Next step' }}</h2>
+								<mat-card appearance="outlined" class="relative overflow-hidden">
+									<mat-card-content class="orc-surface-container-low-bg flex flex-column flex-gap-1">
+										@if (!coordinator) {
+											<strong class="font-size-m font-weight-semi-bold">Waiting for the proposal</strong>
+										}
+										<div class="flex flex-column flex-gap-0-5">
+											<span class="font-weight-semi-bold"
+												>{{ s.enrolled_members.length }} of {{ s.member_count }} joined</span
 											>
-												<mat-icon>content_copy</mat-icon
-												>{{ copy_result() === 'Invitation copied' ? 'Copied' : 'Copy' }}
-											</button>
-											<button matButton="outlined" [disabled]="invitation_expired()" (click)="saveInvitation()">
-												<mat-icon>download</mat-icon>Save file
-											</button>
+											<mat-progress-bar
+												mode="determinate"
+												[value]="enrolled_percent()"
+												aria-hidden="true"
+											></mat-progress-bar>
 										</div>
-										@if (invitation_expired() && is_admin()) {
-											<button matButton [disabled]="busy()" (click)="replaceInvitation(invite.member_id)">
-												Replace invitation
+										@if (!coordinator) {
+											<p class="font-size-xs orc-outline-color">
+												The coordinator proposes once everyone has joined. You can leave this page; Orchard checks
+												for the proposal when you come back.
+											</p>
+										}
+										<mat-divider></mat-divider>
+										@if (coordinator) {
+											@if (is_admin()) {
+												<button
+													matButton="filled"
+													class="w-full"
+													[disabled]="!can_propose() || busy()"
+													(click)="propose()"
+												>
+													Propose federation
+												</button>
+												@if (!can_propose()) {
+													<p class="font-size-xs orc-outline-color text-center">{{ propose_hint() }}</p>
+												}
+											}
+										} @else {
+											<button matButton="filled" class="w-full" disabled>Review the proposal</button>
+											<button matButton="outlined" class="w-full" [disabled]="busy()" (click)="refresh()">
+												<mat-icon>refresh</mat-icon>Check now
 											</button>
 										}
-										<p class="setup-note">
-											<mat-icon class="mat-symbol-outline tone-warning">visibility_off</mat-icon>Orchard keeps unused
-											invitations only on this page. After a refresh, replace any invitation you still need.
-										</p>
-									} @else if (s.missing_enrollments.length) {
-										<h2 id="invitation-title">Invitation unavailable</h2>
-										<p>{{ missing_invitation_note() }}</p>
-									} @else {
-										<h2 id="invitation-title">Everyone has joined</h2>
-										<p>Propose the federation so every operator can review it.</p>
-									}
-								</aside>
-							} @else {
-								<aside class="setup-aside" aria-labelledby="fingerprint-title">
-									@if (s.identity_fingerprint) {
-										<div class="fingerprint-box">
-											<span id="fingerprint-title" class="setup-caption">Your identity fingerprint</span>
-											<strong class="fingerprint" data-testid="identity-fingerprint">{{
-												displayFingerprint(s.identity_fingerprint)
-											}}</strong>
-											<span
-												>Read this to the other operators over a call or chat you trust. They'll check it against
-												the proposal before approving.</span
-											>
-										</div>
-									}
-									<p class="setup-caption">You can leave this page. Orchard checks for the proposal when you return.</p>
-								</aside>
-							}
+										@if (is_admin()) {
+											<button matButton class="w-full" [disabled]="busy()" (click)="abort()">Abort setup</button>
+										}
+									</mat-card-content>
+								</mat-card>
+							</aside>
 						</div>
 					}
 				}
@@ -221,7 +283,7 @@
 							(approve)="approve($event)"
 						>
 							@if (is_admin()) {
-								<button matButton [disabled]="busy()" (click)="abort()">Abort setup</button>
+								<button matButton class="w-full" [disabled]="busy()" (click)="abort()">Abort setup</button>
 							}
 						</orc-federation-setup-review>
 					}
@@ -235,29 +297,77 @@
 					></orc-federation-setup-keygen>
 				}
 				@case ('activated') {
-					<div class="setup-hero">
-						<mat-icon class="hero-icon hero-success">verified</mat-icon>
-						<h1 tabindex="-1">{{ mode() === 'member' ? 'Your mint is a federation member' : 'Activation accepted' }}</h1>
-						@if (activation(); as active) {
-							<p>
-								Member {{ active.member_id }}{{ status()?.member_count ? ' of ' + status()?.member_count : '' }} in
-								federation <span [title]="active.federation_id">{{ active.federation_id | dataTruncate: 18 : 8 : 6 }}</span
-								>. Your mint restarts as a member and catches up with the others.
-							</p>
-						}
-					</div>
-					<orc-federation-backup
-						[federation_id]="activation()?.federation_id ?? status()?.activation?.federation_id ?? null"
-						[warning]="activation()?.backup_warning ?? null"
-						(complete)="backup_complete.set($event)"
-					>
-						<div class="activated-actions">
-							<span class="setup-caption" role="status">{{ activated_status() }}</span>
-							<button matButton="filled" [disabled]="!backup_complete() || mode() !== 'member'" (click)="openMint()">
-								Open the federation<mat-icon iconPositionEnd>arrow_forward</mat-icon>
-							</button>
+					@let federation_id = activation()?.federation_id ?? status()?.activation?.federation_id ?? null;
+					<h1 class="cdk-visually-hidden" tabindex="-1">
+						{{ mode() === 'member' ? 'Your mint is a federation member' : 'Activation accepted' }}
+					</h1>
+					<div class="setup-layout">
+						<div class="flex flex-column flex-gap-1-5 w-min-0">
+							<section class="flex flex-column flex-gap-1" aria-labelledby="federation-title">
+								<h2 id="federation-title" class="title-l">Federation</h2>
+								<mat-card appearance="outlined" class="relative overflow-hidden">
+									<mat-card-content class="orc-surface-container-low-bg flex flex-column flex-gap-1">
+										<div class="setup-row orc-high-card">
+											<span class="member-avatar tone-success"><mat-icon>verified</mat-icon></span>
+											<span class="member-text">
+												<strong>{{
+													mode() === 'member' ? 'Your mint is a federation member' : 'Activation accepted'
+												}}</strong>
+												<small>It restarts as a member and catches up with the others.</small>
+											</span>
+										</div>
+										<dl class="setup-list">
+											@if (activation()?.member_id ?? status()?.member_id; as member_id) {
+												<dt>Member</dt>
+												<dd>{{ member_id }}{{ status()?.member_count ? ' of ' + status()?.member_count : '' }}</dd>
+											}
+											@if (federation_id) {
+												<dt>Federation</dt>
+												<dd [title]="federation_id">{{ federation_id | dataTruncate: 18 : 8 : 6 }}</dd>
+											}
+										</dl>
+									</mat-card-content>
+								</mat-card>
+							</section>
+							<section class="flex flex-column flex-gap-1" aria-labelledby="backup-title">
+								<h2 id="backup-title" class="title-l">Back up before using real funds</h2>
+								<mat-card appearance="outlined" class="relative overflow-hidden">
+									<mat-card-content class="orc-surface-container-low-bg">
+										<orc-federation-backup
+											#backup
+											variant="plain"
+											[federation_id]="federation_id"
+											[warning]="activation()?.backup_warning ?? null"
+											(complete)="backup_complete.set($event)"
+										></orc-federation-backup>
+									</mat-card-content>
+								</mat-card>
+							</section>
 						</div>
-					</orc-federation-backup>
+						<aside class="setup-side flex flex-column flex-gap-1" aria-labelledby="finish-title">
+							<h2 id="finish-title" class="title-l">Finish</h2>
+							<mat-card appearance="outlined" class="relative overflow-hidden">
+								<mat-card-content class="orc-surface-container-low-bg flex flex-column flex-gap-1">
+									<mat-checkbox [checked]="backup.confirmed()" (change)="backup.confirm($event.checked)">{{
+										backup.acknowledgement
+									}}</mat-checkbox>
+									@if (federation_id) {
+										<p class="font-size-xs orc-outline-color">Saved on this device for this federation.</p>
+									}
+									<mat-divider></mat-divider>
+									<button
+										matButton="filled"
+										class="w-full"
+										[disabled]="!backup_complete() || mode() !== 'member'"
+										(click)="openMint()"
+									>
+										Open the federation<mat-icon iconPositionEnd>arrow_forward</mat-icon>
+									</button>
+									<p class="font-size-xs orc-outline-color text-center" role="status">{{ activated_status() }}</p>
+								</mat-card-content>
+							</mat-card>
+						</aside>
+					</div>
 				}
 				@case ('aborted') {
 					<div class="setup-hero">

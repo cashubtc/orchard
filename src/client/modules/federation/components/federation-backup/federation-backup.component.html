@@ -1,8 +1,10 @@
-<section class="backup-card" aria-labelledby="federation-backup-title">
-	<div class="backup-heading">
-		<mat-icon class="mat-symbol-outline">backup</mat-icon>
-		<h2 id="federation-backup-title">Back up before using real funds</h2>
-	</div>
+<section [class.backup-card]="variant() === 'card'" class="backup-section" aria-label="Back up before using real funds">
+	@if (variant() === 'card') {
+		<div class="backup-heading">
+			<mat-icon class="mat-symbol-outline">backup</mat-icon>
+			<h2>Back up before using real funds</h2>
+		</div>
+	}
 	<p>
 		Your mint now holds its share of the federation keys. Make an encrypted backup on the mint's machine and check that it restores.
 		Orchard can't do this for you.
@@ -18,9 +20,10 @@
 			</li>
 		}
 	</ul>
-	<mat-checkbox class="backup-confirm" [checked]="confirmed()" (change)="confirm($event.checked)">{{ acknowledgement }}</mat-checkbox>
-	@if (federation_id()) {
-		<p class="backup-note">Your confirmation is saved on this device for this federation.</p>
+	@if (variant() === 'card') {
+		<mat-checkbox class="backup-confirm" [checked]="confirmed()" (change)="confirm($event.checked)">{{ acknowledgement }}</mat-checkbox>
+		@if (federation_id()) {
+			<p class="backup-note">Your confirmation is saved on this device for this federation.</p>
+		}
 	}
 </section>
-<ng-content></ng-content>

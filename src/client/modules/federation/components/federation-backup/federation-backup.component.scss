@@ -7,10 +7,18 @@
 	@extend %w-full;
 	max-width: 40rem;
 }
-.backup-card {
+.backup-section {
 	@extend %flex;
 	@extend %flex-column;
 	@extend %flex-gap-1;
+	p {
+		@extend %m-0;
+		@extend %font-size-s;
+		line-height: 1.55;
+		@extend %orc-on-surface-variant-color;
+	}
+}
+.backup-card {
 	padding: 1.75rem;
 	box-sizing: border-box;
 	border-width: 1px;
@@ -18,12 +26,6 @@
 	@extend %orc-status-warning-border;
 	@extend %orc-surface-container-bg;
 	@extend %orc-corner-large-increased;
-	p {
-		@extend %m-0;
-		@extend %font-size-s;
-		line-height: 1.55;
-		@extend %orc-on-surface-variant-color;
-	}
 }
 .backup-heading {
 	@extend %flex;
@@ -38,7 +40,7 @@
 		@extend %font-weight-semi-bold;
 	}
 }
-.backup-card .backup-warning {
+.backup-section .backup-warning {
 	white-space: pre-wrap;
 	@extend %orc-status-warning-color;
 }
@@ -70,7 +72,7 @@
 	@extend %orc-outline-variant-border;
 	@extend %font-weight-semi-bold;
 }
-.backup-card .backup-note {
+.backup-section .backup-note {
 	@extend %font-size-xs;
 	@extend %orc-outline-color;
 }

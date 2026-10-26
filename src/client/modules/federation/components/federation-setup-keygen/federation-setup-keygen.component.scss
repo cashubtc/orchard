@@ -1,21 +1,6 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
 
-:host {
-	@extend %flex;
-	@extend %flex-column;
-	@extend %flex-gap-1-5;
-}
-.stage-card {
-	gap: 0;
-	padding: 0.5rem 1.5rem 1rem;
-	h2 {
-		padding: 1rem 0 0.5rem;
-	}
-	.setup-caption {
-		padding-top: 0.75rem;
-	}
-}
 .stage-list {
 	@extend %m-0;
 	@extend %p-0;
@@ -25,9 +10,11 @@
 		@extend %flex-items-center;
 		gap: 0.875rem;
 		padding: 0.75rem 0;
-		border-top-width: 1px;
-		border-top-style: solid;
-		@extend %orc-outline-variant-border;
+		&:not(:first-child) {
+			border-top-width: 1px;
+			border-top-style: solid;
+			@extend %orc-outline-variant-border;
+		}
 	}
 	span {
 		@extend %flex-grow;
@@ -64,7 +51,7 @@
 	border-width: 1px;
 	border-style: solid;
 	@extend %orc-outline-variant-border;
-	@extend %orc-corner-large;
+	@extend %orc-corner-small;
 	font-size: 0.8125rem;
 	@extend %font-weight-semi-bold;
 	@extend %orc-on-surface-variant-color;
@@ -74,8 +61,6 @@
 		height: 1rem;
 	}
 	&.confirmed {
-		border-color: transparent;
-		@extend %orc-surface-container-highest-bg;
 		@extend %orc-on-surface-color;
 		mat-icon {
 			@extend %orc-status-active-color;
@@ -83,22 +68,5 @@
 	}
 }
 .digest-list {
-	@extend %grid;
-	grid-template-columns: auto minmax(0, 1fr);
-	gap: 0.5rem 0.875rem;
-	@extend %m-0;
 	font-size: 0.8125rem;
-	dt {
-		@extend %orc-outline-color;
-	}
-	dd {
-		@extend %m-0;
-		@extend %font-weight-semi-bold;
-		overflow-wrap: anywhere;
-	}
-}
-.activate-heading {
-	@extend %flex;
-	@extend %flex-items-center;
-	gap: 0.625rem;
 }

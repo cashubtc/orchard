@@ -36,6 +36,12 @@ export class FederationSetupCreateInput {
 	})
 	payment_observation_threshold?: number;
 
+	@Field(() => String, {
+		nullable: true,
+		description: 'How long invitations stay valid, in seconds, from 300 to 604800. Defaults to one day when absent.',
+	})
+	invitation_lifetime_secs?: string;
+
 	@Field(() => FederationSetupKeysetInput, {
 		nullable: true,
 		description: 'Initial keyset. When absent, the server uses a "sat" keyset with amounts 1 to 128 in powers of two and no input fee.',

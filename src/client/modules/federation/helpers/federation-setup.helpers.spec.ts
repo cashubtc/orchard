@@ -1,7 +1,10 @@
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
 import {
+	decodeSetupInvitation,
 	isMintAvailable,
 	parseAmounts,
+	powerAmounts,
+	setupThresholds,
 	toOrchardError,
 	displayFingerprint,
 	setupKeysetSummary,
@@ -10,6 +13,7 @@ import {
 	setupUrlHost,
 } from '@client/modules/federation/helpers/federation-setup.helpers';
 import {paymentRule} from '@client/modules/federation/helpers/federation-status.helpers';
+import {setupInvitationCode} from '@client/modules/federation/helpers/federation-setup.fixtures';
 describe('Federation setup helpers', () => {
 	const rule = (mint_quotes: unknown, melt_quotes: unknown = mint_quotes): string =>
 		setupPaymentRule(JSON.stringify({payment_observation_policy: {mint_quotes, melt_quotes}}));
@@ -34,6 +38,42 @@ describe('Federation setup helpers', () => {
 		expect(rule({type: 'future_policy', required: 2})).toBe(paymentRule({kind: 'future_policy', required_observations: 2}));
 		expect(setupPaymentRule('{}')).toBe(paymentRule(null));
 		expect(setupPaymentRule('not json')).toBe(paymentRule(null));
+	});
+	it('follows cdk’s signing, consensus and payment check ranges for each member count', () => {
+		// FROST key generation needs two signers even where BFT would allow one
+		expect(setupThresholds(3)).toEqual(jasmine.objectContaining({faulty: 0, sign_min: 2, sign_max: 3, sign_default: 2}));
+		expect(setupThresholds(2)).toEqual({
+			faulty: 0,
+			consensus: 2,
+			sign_min: 2,
+			sign_max: 2,
+			sign_default: 2,
+			payment_min: 2,
+			payment_max: 2,
+			payment_default: 2,
+		});
+		expect(setupThresholds(5)).toEqual(
+			jasmine.objectContaining({consensus: 4, sign_min: 2, sign_max: 4, sign_default: 3, payment_min: 4}),
+		);
+		expect(setupThresholds(7)).toEqual(
+			jasmine.objectContaining({faulty: 2, consensus: 5, sign_min: 3, sign_default: 4, payment_max: 7}),
+		);
+		expect(setupThresholds(64)).toEqual(jasmine.objectContaining({faulty: 21, consensus: 43, sign_min: 22, sign_default: 33}));
+	});
+	it('lists powers of two as uint64 strings', () => {
+		expect(powerAmounts(8)).toEqual(['1', '2', '4', '8', '16', '32', '64', '128']);
+		expect(powerAmounts(64).at(-1)).toBe('9223372036854775808');
+	});
+	it('reads an invitation’s slot, coordinator and expiry, and nothing from malformed text', () => {
+		const code = setupInvitationCode(3, 'https://mint.cedar.example', 1792886400);
+		expect(decodeSetupInvitation(` ${code} `)).toEqual({
+			member_id: 3,
+			coordinator_url: 'https://mint.cedar.example',
+			expires_at_unix: 1792886400,
+		});
+		expect(decodeSetupInvitation(`${code}AAAA`)).toBeNull();
+		expect(decodeSetupInvitation('cashufedsetupA!!')).toBeNull();
+		expect(decodeSetupInvitation('not an invitation')).toBeNull();
 	});
 	it('splits denominations without rounding uint64 digits', () => {
 		expect(parseAmounts(' 1, 9007199254740993  4 ')).toEqual(['1', '9007199254740993', '4']);

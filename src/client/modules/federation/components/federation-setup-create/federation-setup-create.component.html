@@ -1,220 +1,552 @@
-<div class="setup-title">
-	<button type="button" class="back-link" [disabled]="busy()" (click)="cancel.emit()">
-		<mat-icon>arrow_back</mat-icon>Federation setup
-	</button>
-	<h1 tabindex="-1">Create a federation</h1>
-</div>
-<div class="setup-columns">
-	<form id="federation-create-form" #create_form="ngForm" class="setup-form" (ngSubmit)="submit()">
-		<fieldset class="setup-card" [disabled]="busy()">
-			<legend>Members and thresholds</legend>
-			<div class="stepper-row">
-				<div class="stepper-field">
-					<span id="members-label" class="field-label">Members, including you</span>
-					<div class="stepper" role="group" aria-labelledby="members-label">
-						<button
-							mat-icon-button
-							type="button"
-							aria-label="Fewer members"
-							[disabled]="members() <= 1"
-							(click)="changeMembers(-1)"
-						>
-							<mat-icon>remove</mat-icon>
-						</button>
-						<output data-testid="members-count">{{ members() }}</output>
-						<button
-							mat-icon-button
-							type="button"
-							aria-label="More members"
-							[disabled]="members() >= 15"
-							(click)="changeMembers(1)"
-						>
-							<mat-icon>add</mat-icon>
-						</button>
-					</div>
-				</div>
-				<div class="stepper-field">
-					<span id="signing-label" class="field-label">Members needed to sign</span>
-					<div class="stepper" role="group" aria-labelledby="signing-label">
-						<button
-							mat-icon-button
-							type="button"
-							aria-label="Lower signing threshold"
-							[disabled]="threshold() <= 1"
-							(click)="threshold.set(threshold() - 1)"
-						>
-							<mat-icon>remove</mat-icon>
-						</button>
-						<output>{{ threshold() }}</output>
-						<button
-							mat-icon-button
-							type="button"
-							aria-label="Raise signing threshold"
-							[disabled]="threshold() >= members()"
-							(click)="threshold.set(threshold() + 1)"
-						>
-							<mat-icon>add</mat-icon>
-						</button>
-						<span class="stepper-of">of {{ members() }}</span>
-					</div>
-				</div>
-				<div class="stepper-field">
-					<span class="field-label">Members needed to agree</span>
-					<span class="threshold-value"
-						>{{ consensus() }}<span class="stepper-of">of {{ members() }}, set by the protocol</span></span
-					>
-				</div>
-			</div>
-			<p class="setup-caption">{{ offline_copy() }}</p>
-		</fieldset>
-		<fieldset class="setup-card" [disabled]="busy()">
-			<legend>Payment checks</legend>
-			<div class="payment-row">
-				<div class="stepper-field">
-					<span id="payment-label" class="field-label">Members who must see a payment</span>
-					<div class="stepper" role="group" aria-labelledby="payment-label">
-						<button
-							mat-icon-button
-							type="button"
-							aria-label="Fewer members must see a payment"
-							[disabled]="payment_checks() <= consensus()"
-							(click)="observation.set(payment_checks() - 1)"
-						>
-							<mat-icon>remove</mat-icon>
-						</button>
-						<output>{{ payment_checks() }}</output>
-						<button
-							mat-icon-button
-							type="button"
-							aria-label="More members must see a payment"
-							[disabled]="payment_checks() >= members()"
-							(click)="observation.set(payment_checks() + 1)"
-						>
-							<mat-icon>add</mat-icon>
-						</button>
-						<span class="stepper-of">of {{ members() }}{{ payment_checks() === consensus() ? ', the default' : '' }}</span>
-					</div>
-				</div>
-				<p>
-					A payment counts as paid only once this many members have seen it. It starts at the members needed to agree and can't go
-					lower.
-				</p>
-			</div>
-			<p class="setup-note">
-				<mat-icon class="mat-symbol-outline">info</mat-icon>How the mint takes payments (federated Bark for Lightning, federated BDK
-				for on-chain) is set in each member's mintd config, not here. Orchard shows it once the federation is active.
-			</p>
-		</fieldset>
-		<fieldset class="setup-card" [disabled]="busy()">
-			<legend>Network</legend>
-			<orc-form-toggle-group class="orc-segmented" role="group" aria-label="Bitcoin network">
-				@for (item of networks; track item) {
-					<orc-form-toggle [selected]="network() === item" (click)="network.set(item)">{{ item | titlecase }}</orc-form-toggle>
-				}
-			</orc-form-toggle-group>
-		</fieldset>
-		<fieldset class="setup-card" [disabled]="busy()">
-			<legend>First keyset</legend>
-			<div class="keyset-fields">
-				<mat-form-field
-					><mat-label>Unit</mat-label><input matInput name="unit" [ngModel]="unit()" (ngModelChange)="unit.set($event)" required
-				/></mat-form-field>
-				<mat-form-field
-					><mat-label>Input fee, ppk</mat-label
-					><input matInput name="fee" inputmode="numeric" [ngModel]="fee()" (ngModelChange)="fee.set($event)" required
-				/></mat-form-field>
-				<mat-form-field
-					><mat-label>Expiry</mat-label
-					><input
-						matInput
-						name="expiry"
-						placeholder="Never"
-						[matDatepicker]="expiry_picker"
-						[min]="today"
-						[ngModel]="expiry()"
-						(ngModelChange)="expiry.set($event)"
-					/><mat-datepicker-toggle matIconSuffix [for]="expiry_picker"></mat-datepicker-toggle
-					><mat-datepicker #expiry_picker></mat-datepicker><mat-hint>Leave blank for no expiry</mat-hint
-					><mat-error>Choose a future date, or leave it blank</mat-error></mat-form-field
-				>
-			</div>
-			<div class="denominations">
-				<span id="denominations-label" class="field-label">Denominations</span>
-				@if (editing_amounts()) {
-					<mat-form-field class="w-full"
-						><mat-label>Denominations</mat-label
-						><input
-							matInput
-							name="amounts"
-							[ngModel]="amounts_text()"
-							(ngModelChange)="amounts_text.set($event)"
-							required
-						/><mat-hint>Positive whole amounts, separated by commas</mat-hint></mat-form-field
-					>
-				} @else {
-					<div class="amount-chips" role="group" aria-labelledby="denominations-label">
-						@for (amount of amounts(); track amount) {
-							<span class="amount-chip">{{ amount }}</span>
-						}
-						<button type="button" class="amount-chip amount-edit" (click)="editing_amounts.set(true)">Edit</button>
-					</div>
+<h1 class="cdk-visually-hidden" tabindex="-1">Create a federation</h1>
+<div class="setup-layout">
+	<form id="federation-create-form" #create_form="ngForm" class="flex flex-column flex-gap-1-5 w-min-0" (ngSubmit)="submit()">
+		<section class="flex flex-column flex-gap-1" aria-labelledby="members-title">
+			<div class="flex flex-wrap flex-items-center flex-justify-between flex-gap-0-5">
+				<h2 id="members-title" class="title-l">Members and thresholds</h2>
+				@if (customised()) {
+					<button matButton type="button" [disabled]="busy()" (click)="resetThresholds()">
+						<mat-icon>refresh</mat-icon>Reset to defaults
+					</button>
 				}
 			</div>
-		</fieldset>
-		<fieldset class="setup-card" [disabled]="busy()">
-			<legend>How others reach your mint</legend>
-			<mat-form-field
-				><mat-label>Public mint URL, for wallets</mat-label
-				><input matInput name="public_url" [ngModel]="public_url()" (ngModelChange)="public_url.set($event)" /><mat-hint
-					>Blank uses the mint's configured URL</mat-hint
-				></mat-form-field
-			>
-			<mat-form-field
-				><mat-label>Federation API URL, for other members</mat-label
-				><input matInput name="federation_url" [ngModel]="federation_url()" (ngModelChange)="federation_url.set($event)"
-			/></mat-form-field>
-			<mat-form-field
-				><mat-label>Coordinator URL, for joining members</mat-label
-				><input
-					matInput
-					name="coordinator_url"
-					[ngModel]="coordinator_url()"
-					(ngModelChange)="coordinator_url.set($event)"
-				/><mat-hint>Blank uses the federation API URL</mat-hint></mat-form-field
-			>
-			<p class="setup-caption">
-				Use HTTPS or Iroh. The public and federation URLs must differ unless both are the same Iroh endpoint.
-			</p>
-			<mat-checkbox name="allow_local" [ngModel]="allow_local()" (ngModelChange)="allow_local.set($event)"
-				>Allow local HTTP for development</mat-checkbox
-			>
-		</fieldset>
+			<mat-card appearance="outlined" class="relative overflow-hidden">
+				<mat-card-content class="orc-surface-container-low-bg">
+					<fieldset class="flex flex-column flex-gap-1" [disabled]="busy()">
+						<div class="flex flex-wrap flex-items-center flex-gap-1">
+							<div class="flex flex-column flex-gap-0-5">
+								<span id="members-label" class="font-size-xs orc-outline-color">Members, including you</span>
+								<div class="stepper" role="group" aria-labelledby="members-label">
+									<button
+										mat-icon-button
+										type="button"
+										aria-label="Fewer members"
+										[disabled]="members() <= member_limits.min"
+										(click)="changeMembers(-1)"
+									>
+										<mat-icon>remove</mat-icon>
+									</button>
+									<output data-testid="members-count">{{ members() }}</output>
+									<button
+										mat-icon-button
+										type="button"
+										aria-label="More members"
+										[disabled]="members() >= member_limits.max"
+										(click)="changeMembers(1)"
+									>
+										<mat-icon>add</mat-icon>
+									</button>
+								</div>
+							</div>
+							<p class="threshold-note font-size-xs orc-outline-color">
+								{{ member_limits.min }} to {{ member_limits.max }} members. Changing the count resets the thresholds below
+								to their defaults.
+							</p>
+						</div>
+						<div class="threshold-grid">
+							<div class="orc-high-card threshold-tile">
+								<div class="flex flex-items-center">
+									<span id="signing-label" class="flex-grow font-size-xs orc-outline-color">Members needed to sign</span>
+									<button
+										mat-icon-button
+										type="button"
+										class="orc-icon-button"
+										aria-label="About the signing threshold"
+										[attr.aria-expanded]="help() === 'signing'"
+										(click)="toggleHelp('signing')"
+									>
+										<mat-icon class="orc-outline-color">info</mat-icon>
+									</button>
+								</div>
+								<div class="stepper" role="group" aria-labelledby="signing-label">
+									<button
+										mat-icon-button
+										type="button"
+										aria-label="Lower signing threshold"
+										[disabled]="threshold() <= rules().sign_min"
+										(click)="changeSigning(-1)"
+									>
+										<mat-icon>remove</mat-icon>
+									</button>
+									<output>{{ threshold() }}</output>
+									<button
+										mat-icon-button
+										type="button"
+										aria-label="Raise signing threshold"
+										[disabled]="threshold() >= rules().sign_max"
+										(click)="changeSigning(1)"
+									>
+										<mat-icon>add</mat-icon>
+									</button>
+									<span class="stepper-of">of {{ members() }}</span>
+								</div>
+								<span class="font-size-xs orc-outline-color">{{ signing_range() }}</span>
+								<ng-container
+									*ngTemplateOutlet="
+										help_template;
+										context: {
+											$implicit: 'signing',
+											text: 'How many members must sign to issue ecash. Higher is safer against collusion; lower keeps signing up when members are offline. It can’t exceed the members needed to agree.',
+										}
+									"
+								></ng-container>
+							</div>
+							<div class="orc-high-card threshold-tile">
+								<div class="flex flex-items-center">
+									<span class="flex-grow font-size-xs orc-outline-color">Members needed to agree</span>
+									<button
+										mat-icon-button
+										type="button"
+										class="orc-icon-button"
+										aria-label="About the consensus threshold"
+										[attr.aria-expanded]="help() === 'consensus'"
+										(click)="toggleHelp('consensus')"
+									>
+										<mat-icon class="orc-outline-color">info</mat-icon>
+									</button>
+								</div>
+								<div class="stepper">
+									<output>{{ rules().consensus }}</output>
+									<span class="stepper-of">of {{ members() }}</span>
+								</div>
+								<span class="font-size-xs orc-outline-color">Set by the protocol for {{ members() }} members</span>
+								<ng-container
+									*ngTemplateOutlet="
+										help_template;
+										context: {
+											$implicit: 'consensus',
+											text: 'The quorum that orders every operation. cdk derives it from the member count so the federation tolerates up to a third of its members failing.',
+										}
+									"
+								></ng-container>
+							</div>
+							<div class="orc-high-card threshold-tile">
+								<div class="flex flex-items-center">
+									<span id="payment-label" class="flex-grow font-size-xs orc-outline-color">Payment checks</span>
+									<button
+										mat-icon-button
+										type="button"
+										class="orc-icon-button"
+										aria-label="About payment checks"
+										[attr.aria-expanded]="help() === 'payment'"
+										(click)="toggleHelp('payment')"
+									>
+										<mat-icon class="orc-outline-color">info</mat-icon>
+									</button>
+								</div>
+								<div class="stepper" role="group" aria-labelledby="payment-label">
+									<button
+										mat-icon-button
+										type="button"
+										aria-label="Fewer members must see a payment"
+										[disabled]="payment_checks() <= rules().payment_min"
+										(click)="changePayment(-1)"
+									>
+										<mat-icon>remove</mat-icon>
+									</button>
+									<output>{{ payment_checks() }}</output>
+									<button
+										mat-icon-button
+										type="button"
+										aria-label="More members must see a payment"
+										[disabled]="payment_checks() >= rules().payment_max"
+										(click)="changePayment(1)"
+									>
+										<mat-icon>add</mat-icon>
+									</button>
+									<span class="stepper-of">of {{ members() }}</span>
+								</div>
+								<span class="font-size-xs orc-outline-color">{{ payment_range() }}</span>
+								<ng-container
+									*ngTemplateOutlet="
+										help_template;
+										context: {
+											$implicit: 'payment',
+											text: 'How many members must see a payment before it counts as paid. It starts at the members needed to agree and can’t go lower.',
+										}
+									"
+								></ng-container>
+							</div>
+						</div>
+						<p class="setup-note"><mat-icon class="mat-symbol-outline">wifi_off</mat-icon>{{ offline_copy() }}</p>
+					</fieldset>
+				</mat-card-content>
+			</mat-card>
+		</section>
+
+		<section class="flex flex-column flex-gap-1" aria-labelledby="network-title">
+			<h2 id="network-title" class="title-l">Network</h2>
+			<mat-card appearance="outlined" class="relative overflow-hidden">
+				<mat-card-content class="orc-surface-container-low-bg">
+					<fieldset class="flex flex-column flex-gap-1" [disabled]="busy()">
+						<orc-form-toggle-group role="group" aria-label="Bitcoin network">
+							@for (item of networks; track item) {
+								<orc-form-toggle [selected]="network() === item" [disabled]="busy()" (click)="network.set(item)">
+									<span class="flex flex-column flex-items-center flex-gap-0-25 text-center">
+										<span class="font-size-s">{{ network_labels[item] }}</span>
+										<span class="font-size-xs orc-outline-color">{{ network_captions[item] }}</span>
+									</span>
+								</orc-form-toggle>
+							}
+						</orc-form-toggle-group>
+						<p class="setup-note">
+							<mat-icon class="mat-symbol-outline">info</mat-icon>Every member's mintd config must name this network for
+							on-chain and Bark. A member whose config differs won't start after activation.
+						</p>
+					</fieldset>
+				</mat-card-content>
+			</mat-card>
+		</section>
+
+		<section class="flex flex-column flex-gap-1" aria-labelledby="keyset-title">
+			<h2 id="keyset-title" class="title-l">First keyset</h2>
+			<mat-card appearance="outlined" class="relative overflow-hidden">
+				<mat-card-content class="orc-surface-container-low-bg">
+					<fieldset class="flex flex-column flex-gap-1" [disabled]="busy()">
+						<div class="keyset-columns">
+							<div class="flex flex-column flex-gap-1 w-min-0">
+								<div>
+									<div class="flex flex-row flex-gap-0-5">
+										<div class="orc-small-form-field-wrapper">
+											<mat-form-field class="w-full" hideRequiredMarker="true"
+												><mat-label>Unit</mat-label
+												><input
+													matInput
+													name="unit"
+													#unit_model="ngModel"
+													[ngModel]="unit()"
+													(ngModelChange)="unit.set($event)"
+													required
+												/><mat-hint class="font-size-xs orc-outline-color"
+													>Lowercase letters, digits, - and _</mat-hint
+												><mat-error
+													><orc-form-error [errors]="unit_model.errors">Enter a unit</orc-form-error></mat-error
+												></mat-form-field
+											>
+										</div>
+										<div class="p-t-0-5">
+											<button
+												type="button"
+												mat-icon-button
+												class="orc-icon-button"
+												aria-label="About the unit"
+												[attr.aria-expanded]="help() === 'unit'"
+												(click)="toggleHelp('unit')"
+											>
+												<mat-icon class="orc-outline-color">info</mat-icon>
+											</button>
+										</div>
+									</div>
+									<ng-container
+										*ngTemplateOutlet="
+											help_template;
+											context: {$implicit: 'unit', text: 'The unit of the federation’s first keyset, such as sat.'}
+										"
+									></ng-container>
+								</div>
+								<div>
+									<div class="flex flex-row flex-gap-0-5">
+										<div class="orc-small-form-field-wrapper">
+											<mat-form-field class="w-full" hideRequiredMarker="true"
+												><mat-label>Input Fee PPK</mat-label
+												><input
+													matInput
+													name="fee"
+													inputmode="numeric"
+													#fee_model="ngModel"
+													[ngModel]="fee()"
+													(ngModelChange)="fee.set($event)"
+													required
+												/><mat-hint class="font-size-xs orc-outline-color">0 charges no fee</mat-hint
+												><mat-error
+													><orc-form-error [errors]="fee_model.errors"
+														>Enter a whole number</orc-form-error
+													></mat-error
+												></mat-form-field
+											>
+										</div>
+										<div class="p-t-0-5">
+											<button
+												type="button"
+												mat-icon-button
+												class="orc-icon-button"
+												aria-label="About the input fee"
+												[attr.aria-expanded]="help() === 'fee'"
+												(click)="toggleHelp('fee')"
+											>
+												<mat-icon class="orc-outline-color">info</mat-icon>
+											</button>
+										</div>
+									</div>
+									<ng-container
+										*ngTemplateOutlet="
+											help_template;
+											context: {
+												$implicit: 'fee',
+												text: 'The transaction fee charged by a keyset is based on the number of ecash notes used in the transaction.',
+											}
+										"
+									></ng-container>
+								</div>
+								<div>
+									<button matButton type="button" [attr.aria-expanded]="advanced()" (click)="advanced.set(!advanced())">
+										<mat-icon>settings</mat-icon>
+										<span class="text-nowrap font-size-s">Advanced</span>
+									</button>
+								</div>
+							</div>
+							<div class="keyset-preview" role="group" aria-label="First keyset preview">
+								<span class="font-size-xs orc-outline-color">First keyset</span>
+								<div class="flex flex-items-center flex-gap-1">
+									<orc-graphic-asset [unit]="unit().trim().toLowerCase()" [height]="'1.5rem'"></orc-graphic-asset>
+									<orc-mint-general-keyset class="high-bg" [active]="true" [index]="1" [input_fee_ppk]="fee_ppk()">
+									</orc-mint-general-keyset>
+									<span [innerHTML]="0 | localAmount: unit().trim().toLowerCase() : 'mint'"></span>
+								</div>
+								<span class="font-size-xs orc-outline-color">{{ amount_range() }}</span>
+							</div>
+						</div>
+						<div class="orc-animation-expand-collapse" [class.animation-expanded]="advanced()">
+							<div class="orc-animation-expand-collapse-inner">
+								<mat-divider></mat-divider>
+								<div class="flex flex-column flex-gap-2 p-t-1">
+									<div class="flex flex-column flex-gap-0-5">
+										<span class="title-form-section">Ecash Amounts</span>
+										<div class="amount-slider">
+											<mat-checkbox
+												name="default_amounts"
+												[ngModel]="default_amounts()"
+												(ngModelChange)="setDefaultAmounts($event)"
+											>
+												<span class="font-size-s text-nowrap">Powers of 2</span>
+											</mat-checkbox>
+											<mat-slider
+												min="1"
+												[max]="amount_limit"
+												step="1"
+												discrete
+												[disabled]="!default_amounts() || busy()"
+											>
+												<input
+													matSliderThumb
+													name="amount_count"
+													aria-label="Number of amounts"
+													[ngModel]="amount_count()"
+													(ngModelChange)="amount_count.set($event)"
+												/>
+											</mat-slider>
+										</div>
+										<mat-form-field class="w-full">
+											<mat-chip-grid #chip_grid aria-label="Ecash amounts" [disabled]="default_amounts() || busy()">
+												@for (amount of amounts(); track amount) {
+													<mat-chip-row
+														[editable]="!default_amounts()"
+														[removable]="!default_amounts()"
+														(removed)="removeAmount(amount)"
+														(edited)="editAmount(amount, $event)"
+													>
+														{{ amount }}
+														@if (!default_amounts()) {
+															<button matChipRemove [attr.aria-label]="'Remove ' + amount">
+																<mat-icon>cancel</mat-icon>
+															</button>
+														}
+													</mat-chip-row>
+												}
+											</mat-chip-grid>
+											@if (!default_amounts()) {
+												<input
+													placeholder="New amount..."
+													[matChipInputFor]="chip_grid"
+													[matChipInputSeparatorKeyCodes]="separator_keys"
+													[matChipInputAddOnBlur]="true"
+													(matChipInputTokenEnd)="addAmount($event)"
+												/>
+											}
+											<mat-hint class="font-size-xs orc-outline-color"
+												>{{ amounts().length }} of {{ amount_limit }} amounts</mat-hint
+											>
+										</mat-form-field>
+									</div>
+									<div class="flex flex-column flex-gap-0-5">
+										<span class="title-form-section">Final Expiry</span>
+										<div class="orc-small-form-field-wrapper">
+											<mat-form-field class="w-full"
+												><mat-label>Final Expiry</mat-label
+												><input
+													matInput
+													name="expiry"
+													placeholder="Never"
+													[matDatepicker]="expiry_picker"
+													[min]="today"
+													#expiry_model="ngModel"
+													[ngModel]="expiry()"
+													(ngModelChange)="expiry.set($event)"
+												/><mat-datepicker-toggle matIconSuffix [for]="expiry_picker"></mat-datepicker-toggle
+												><mat-datepicker #expiry_picker></mat-datepicker
+												><mat-hint class="font-size-xs orc-outline-color">Leave blank for no expiry</mat-hint
+												><mat-error
+													><orc-form-error [errors]="expiry_model.errors"
+														>Choose a future date, or leave it blank</orc-form-error
+													></mat-error
+												></mat-form-field
+											>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</fieldset>
+				</mat-card-content>
+			</mat-card>
+		</section>
+
+		<section class="flex flex-column flex-gap-1" aria-labelledby="reach-title">
+			<h2 id="reach-title" class="title-l">How others reach your mint</h2>
+			<mat-card appearance="outlined" class="relative overflow-hidden">
+				<mat-card-content class="orc-surface-container-low-bg">
+					<fieldset class="flex flex-column flex-gap-1" [disabled]="busy()">
+						<ng-container
+							*ngTemplateOutlet="
+								url_template;
+								context: {
+									$implicit: 'public',
+									label: 'Public mint URL, for wallets',
+									value: public_url,
+									hint: 'Blank uses the mint’s configured URL',
+									text: 'The address wallets use. HTTPS, or an Iroh endpoint.',
+								}
+							"
+						></ng-container>
+						<ng-container
+							*ngTemplateOutlet="
+								url_template;
+								context: {
+									$implicit: 'federation',
+									label: 'Federation API URL, for other members',
+									value: federation_url,
+									hint: 'Required unless the public URL is an Iroh endpoint',
+									text: 'The address other members use for consensus. It must differ from the public URL unless both are the same Iroh endpoint.',
+								}
+							"
+						></ng-container>
+						<ng-container
+							*ngTemplateOutlet="
+								url_template;
+								context: {
+									$implicit: 'coordinator',
+									label: 'Coordinator URL, for joining members',
+									value: coordinator_url,
+									hint: 'Blank uses the federation API URL',
+									text: 'Written into each invitation so joining mints can reach you during setup.',
+								}
+							"
+						></ng-container>
+						<div class="flex flex-wrap flex-items-end flex-gap-1">
+							<div class="flex flex-column flex-gap-0-5">
+								<span id="lifetime-label" class="font-size-xs orc-outline-color">Invitations expire after</span>
+								<orc-form-toggle-group size="small" class="toggle-fit" role="group" aria-labelledby="lifetime-label">
+									@for (item of lifetimes; track item.seconds) {
+										<orc-form-toggle
+											[selected]="lifetime() === item.seconds"
+											[disabled]="busy()"
+											(click)="lifetime.set(item.seconds)"
+										>
+											<span class="font-size-s text-nowrap">{{ item.label }}</span>
+										</orc-form-toggle>
+									}
+								</orc-form-toggle-group>
+							</div>
+							<mat-checkbox name="allow_local" [ngModel]="allow_local()" (ngModelChange)="allow_local.set($event)"
+								>Allow local HTTP for development</mat-checkbox
+							>
+						</div>
+					</fieldset>
+				</mat-card-content>
+			</mat-card>
+		</section>
 	</form>
-	<aside class="setup-aside setup-summary" aria-labelledby="summary-title">
-		<h2 id="summary-title">Summary</h2>
-		<dl class="summary-list">
-			<dt>Members</dt>
-			<dd>{{ members() }}</dd>
-			<dt>To sign</dt>
-			<dd>{{ threshold() }} of {{ members() }}</dd>
-			<dt>To agree</dt>
-			<dd>{{ consensus() }} of {{ members() }}</dd>
-			<dt>Payment checks</dt>
-			<dd>{{ payment_checks() }} of {{ members() }}</dd>
-			<dt>Network</dt>
-			<dd>{{ network() | titlecase }}</dd>
-			<dt>Keyset</dt>
-			<dd>{{ keyset_summary() }}</dd>
-			<dt>Invitations</dt>
-			<dd>Valid for 24 hours</dd>
-		</dl>
-		<p class="lock-note">
-			<mat-icon class="mat-symbol-outline tone-warning">lock</mat-icon>These choices are locked in once every member approves the
-			proposal.
-		</p>
-		<button matButton="filled" type="submit" form="federation-create-form" [disabled]="!valid() || busy() || create_form.invalid">
-			Create and get invitations
-		</button>
-		<button matButton type="button" [disabled]="busy()" (click)="cancel.emit()">Cancel</button>
+
+	<aside class="setup-side flex flex-column flex-gap-1" aria-labelledby="summary-title">
+		<h2 id="summary-title" class="title-l">Summary</h2>
+		<mat-card appearance="outlined" class="relative overflow-hidden">
+			<mat-card-content class="orc-surface-container-low-bg flex flex-column flex-gap-1">
+				<dl class="setup-list">
+					<dt>Members</dt>
+					<dd>{{ members() }}</dd>
+					<dt>To sign</dt>
+					<dd>{{ threshold() }} of {{ members() }}</dd>
+					<dt>To agree</dt>
+					<dd>{{ rules().consensus }} of {{ members() }}</dd>
+					<dt>Payment checks</dt>
+					<dd>{{ payment_checks() }} of {{ members() }}</dd>
+					<dt>Offline</dt>
+					<dd>Up to {{ offline() }}</dd>
+					<dt>Network</dt>
+					<dd>{{ network_labels[network()] }}</dd>
+					<dt>Keyset</dt>
+					<dd>{{ keyset_summary() }}</dd>
+					<dt>Invitations</dt>
+					<dd>Valid for {{ lifetime_label() }}</dd>
+				</dl>
+				<p class="setup-note">
+					<mat-icon class="mat-symbol-outline tone-warning">lock</mat-icon>Locked in once every member approves the proposal.
+				</p>
+				<mat-divider></mat-divider>
+				<button
+					matButton="filled"
+					class="w-full"
+					type="submit"
+					form="federation-create-form"
+					[disabled]="!valid() || busy() || create_form.invalid"
+				>
+					Create and get invitations
+				</button>
+				<button matButton class="w-full" type="button" [disabled]="busy()" (click)="cancel.emit()">Back</button>
+			</mat-card-content>
+		</mat-card>
 	</aside>
 </div>
+
+<ng-template #help_template let-key let-text="text">
+	<div class="orc-animation-expand-collapse" [class.animation-expanded]="help() === key">
+		<div class="orc-animation-expand-collapse-inner">
+			<div class="flex p-t-0-5 w-max-18">
+				<orc-form-help-text class="orc-surface-container-highest-bg">{{ text }}</orc-form-help-text>
+			</div>
+		</div>
+	</div>
+</ng-template>
+
+<ng-template #url_template let-key let-label="label" let-value="value" let-hint="hint" let-text="text">
+	<div>
+		<div class="flex flex-row flex-gap-0-5">
+			<mat-form-field class="flex-grow"
+				><mat-label>{{ label }}</mat-label
+				><input matInput [name]="key + '_url'" [ngModel]="value()" (ngModelChange)="value.set($event)" /><mat-hint
+					class="font-size-xs orc-outline-color"
+					>{{ hint }}</mat-hint
+				></mat-form-field
+			>
+			<div class="p-t-0-5">
+				<button
+					type="button"
+					mat-icon-button
+					class="orc-icon-button"
+					[attr.aria-label]="'About the ' + label"
+					[attr.aria-expanded]="help() === key"
+					(click)="toggleHelp(key)"
+				>
+					<mat-icon class="orc-outline-color">info</mat-icon>
+				</button>
+			</div>
+		</div>
+		<div class="orc-animation-expand-collapse" [class.animation-expanded]="help() === key">
+			<div class="orc-animation-expand-collapse-inner">
+				<div class="flex p-t-0-5 w-max-18">
+					<orc-form-help-text class="orc-surface-container-high-bg">{{ text }}</orc-form-help-text>
+				</div>
+			</div>
+		</div>
+	</div>
+</ng-template>

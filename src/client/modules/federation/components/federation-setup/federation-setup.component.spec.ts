@@ -110,10 +110,16 @@ describe('FederationSetupComponent', () => {
 		component.create({members: 3, threshold: 2, network: 'regtest'});
 		fixture.detectChanges();
 		expect(component.invitation_expired()).toBeTrue();
-		const invitation_actions = Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('.invitation-actions button'));
-		expect(buttonTexts(fixture.nativeElement.querySelector('.invitation-actions'))).toEqual(['Copy', 'Save file']);
+		const panel: HTMLElement = fixture.nativeElement.querySelector('#invitation-2');
+		// The QR code's own expand button has no text
+		const invitation_actions = Array.from<HTMLButtonElement>(panel.querySelectorAll('button')).filter((button) =>
+			/Copy|Save file/.test(button.textContent ?? ''),
+		);
+		expect(buttonTexts(panel).filter(Boolean)).toEqual(['Copy', 'Save file', 'Replace invitation']);
+		expect(invitation_actions.length).toBe(2);
 		expect(invitation_actions.every((button) => button.disabled)).toBeTrue();
-		expect(fixture.nativeElement.querySelector('.member-slot.selected button[aria-pressed="true"]')).not.toBeNull();
+		// The invitation opens under its own row
+		expect(panel.closest('[data-testid="member-slot"]')?.querySelector('button[aria-expanded="true"]')).not.toBeNull();
 		component.copy_result.set('Copied');
 		setup.getStatus.and.returnValue(of({...setupStatus(), enrolled_members: [1, 2]}));
 		tick(3000);
@@ -185,11 +191,11 @@ describe('FederationSetupComponent', () => {
 		const fingerprints = (): HTMLElement[] =>
 			Array.from(fixture.nativeElement.querySelectorAll('[data-testid="identity-fingerprint"]'));
 		expect(fingerprints().length).toBe(1);
-		expect(fingerprints()[0].closest('.member-slot')).not.toBeNull();
+		expect(fingerprints()[0].closest('[data-testid="member-slot"]')).not.toBeNull();
 		fixture.componentInstance.status.set({...setupStatus(), role: 'SETUP_ROLE_PARTICIPANT', member_id: 2, enrolled_members: [1, 2]});
 		fixture.detectChanges();
 		expect(fingerprints().length).toBe(1);
-		expect(fingerprints()[0].closest('.fingerprint-box')).not.toBeNull();
+		expect(fingerprints()[0].closest('[aria-labelledby="fingerprint-title"]')).not.toBeNull();
 		fixture.destroy();
 	}));
 	it('coalesces polls and cancels in-flight requests on navigation', fakeAsync(() => {
@@ -349,12 +355,13 @@ describe('FederationSetupComponent', () => {
 		const element: HTMLElement = fixture.nativeElement;
 		expect(component.view()).toBe('waiting');
 		fixture.detectChanges();
-		expect(buttonTexts(element.querySelector('.enrollment-row .setup-actions')!)).toContain('Abort setup');
+		// Every step keeps its actions in the card on the right
+		expect(buttonTexts(element.querySelector('aside')!)).toEqual(['Propose federation', 'Abort setup']);
 		component.proposal.set(setupProposal());
 		component.status.set({...setupStatus(), proposal_hash: 'hash'});
 		expect(component.view()).toBe('review');
 		fixture.detectChanges();
-		expect(buttonTexts(element.querySelector('orc-federation-setup-review .review-footer')!)).toContain('Abort setup');
+		expect(buttonTexts(element.querySelector('orc-federation-setup-review aside')!)).toContain('Abort setup');
 		component.status.set({...setupStatus(), participant_phase: 'SETUP_PARTICIPANT_PHASE_DKG_RUNNING'});
 		expect(component.view()).toBe('keygen');
 		fixture.detectChanges();
@@ -375,10 +382,15 @@ describe('FederationSetupComponent', () => {
 		component.is_admin.set(false);
 		expect(component.locked()).toBeTrue();
 	});
-	it('explains a missing invitation for the selected slot', () => {
+	it('names the members Propose still waits for, and toggles an invitation open and closed', () => {
 		const component = TestBed.createComponent(FederationSetupComponent).componentInstance;
-		expect(component.missing_invitation_note()).toContain('Select a waiting member');
-		component.selected_member.set(3);
-		expect(component.missing_invitation_note()).toContain('no invitation for member 3');
+		component.status.set({...setupStatus(), missing_enrollments: [3]});
+		expect(component.propose_hint()).toBe('Opens once member 3 has joined');
+		component.status.set({...setupStatus(), missing_enrollments: [2, 3]});
+		expect(component.propose_hint()).toBe('Opens once members 2 and 3 have joined');
+		component.toggleInvitation(3);
+		expect(component.selected_member()).toBe(3);
+		component.toggleInvitation(3);
+		expect(component.selected_member()).toBeNull();
 	});
 });

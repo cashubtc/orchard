@@ -1,103 +1,130 @@
-<div class="setup-title">
-	<h1 tabindex="-1">Review the proposal</h1>
-	<p>
-		Check the proposal hash and each member's fingerprint with that operator directly, over a call or chat you trust. Approve only if
-		everything matches.
-	</p>
-</div>
-<div class="setup-columns review-columns">
-	<section class="setup-card" aria-labelledby="proposal-title">
-		<h2 id="proposal-title">Proposal</h2>
-		<div class="hash-box">
-			<span class="setup-caption">Proposal hash · compare with every operator</span>
-			<span class="hash-row"
-				><strong class="hash" data-testid="proposal-hash" [title]="proposal().proposal_hash">{{
-					proposal().proposal_hash | dataTruncate: 18 : 8 : 6
-				}}</strong
-				><button
-					mat-icon-button
-					type="button"
-					[attr.aria-label]="copied() ? 'Proposal hash copied' : 'Copy proposal hash'"
-					[cdkCopyToClipboard]="proposal().proposal_hash"
-					(cdkCopyToClipboardCopied)="copied.set($event)"
-				>
-					<mat-icon>{{ copied() ? 'check' : 'content_copy' }}</mat-icon>
-				</button></span
-			>
-		</div>
-		<p class="proposal-summary">
-			{{ proposal().network | titlecase }} · {{ proposal().member_count }} members · {{ proposal().signature_threshold }} to sign ·
-			{{ proposal().consensus_threshold }} to agree
-		</p>
-		<dl class="proposal-details">
-			<dt>Federation</dt>
-			<dd [title]="proposal().proposed_federation_id">{{ proposal().proposed_federation_id | dataTruncate: 18 : 8 : 6 }}</dd>
-			<dt>Network</dt>
-			<dd>{{ proposal().network | titlecase }}</dd>
-			<dt>Members</dt>
-			<dd>{{ proposal().member_count }}</dd>
-			<dt>To sign</dt>
-			<dd>{{ proposal().signature_threshold }} of {{ proposal().member_count }}</dd>
-			<dt>To agree</dt>
-			<dd>{{ proposal().consensus_threshold }} of {{ proposal().member_count }}</dd>
-			<dt>Payments</dt>
-			<dd>{{ payment_rule() }}</dd>
-			@for (keyset of keysets(); track $index) {
-				<dt>Keyset</dt>
-				<dd>
-					{{ keyset.summary }} · {{ keyset.expiry ? 'expires ' + (keyset.expiry | localTime: 'date-only') : 'never expires' }}
-				</dd>
-			}
-		</dl>
-		<details class="proposal-details">
-			<summary>Full proposal as JSON</summary>
-			<pre>{{ proposal().details_json }}</pre>
-		</details>
-	</section>
-	<section class="review-members" aria-labelledby="review-members-title">
-		<h2 id="review-members-title">Members</h2>
-		@for (member of proposal().members; track member.member_id) {
-			@let own = member.member_id === member_id();
-			<article class="member-row" [class.checked]="!own && isChecked(member.member_id)">
-				<span class="member-avatar">{{ member.member_id }}</span>
-				<div class="member-text">
-					<h3>{{ hostOf(member.public_mint_url) }}</h3>
-					<span [title]="member.federation_api_url">{{ member.federation_api_url }}</span>
-				</div>
-				<div class="member-fingerprint">
-					<span>Fingerprint</span>
-					<strong>{{ displayFingerprint(member.identity_fingerprint) }}</strong>
-				</div>
-				@if (own) {
-					<span class="member-check"><mat-icon class="mat-symbol-outline">person</mat-icon>This is you</span>
-				} @else {
-					<mat-checkbox
-						class="member-check"
-						[checked]="isChecked(member.member_id)"
-						[disabled]="busy() || already_approved()"
-						[aria-label]="'Checked member ' + member.member_id + ' with its operator'"
-						(change)="setChecked(member.member_id, $event.checked)"
-					>
-						Checked with operator
-					</mat-checkbox>
-				}
-			</article>
-		}
-		<div class="review-footer" aria-live="polite">
-			<span class="review-counts">
-				<strong>{{ checked_count() }} of {{ other_members().length }} fingerprints checked</strong>
-				<span>Approved so far: {{ approved_text() }}</span>
-			</span>
-			<div class="setup-actions">
-				<ng-content></ng-content>
-				@if (already_approved()) {
-					<span class="setup-caption">Your approval is recorded. Waiting for every member to approve.</span>
-				} @else {
-					<button matButton="filled" [disabled]="!ready() || busy()" (click)="submit()">
-						{{ ready() ? 'Approve proposal ' + short_hash() : 'Check every member to approve' }}
-					</button>
-				}
+<h1 class="cdk-visually-hidden" tabindex="-1">Review the proposal</h1>
+<div class="setup-layout">
+	<div class="flex flex-column flex-gap-1-5 w-min-0">
+		<section class="flex flex-column flex-gap-1" aria-labelledby="proposal-title">
+			<div class="flex flex-wrap flex-items-end flex-gap-0-5">
+				<h2 id="proposal-title" class="title-l">Proposal</h2>
+				<span class="font-size-s orc-outline-color">Compare the hash with every operator</span>
 			</div>
-		</div>
-	</section>
+			<mat-card appearance="outlined" class="relative overflow-hidden">
+				<mat-card-content class="orc-surface-container-low-bg flex flex-column flex-gap-1">
+					<div class="setup-row orc-high-card">
+						<span class="flex flex-column flex-gap-0-25 flex-grow w-min-0">
+							<span class="font-size-xs orc-outline-color">Proposal hash</span>
+							<strong class="hash" data-testid="proposal-hash" [title]="proposal().proposal_hash">{{
+								proposal().proposal_hash | dataTruncate: 18 : 8 : 6
+							}}</strong>
+						</span>
+						<button
+							matButton
+							type="button"
+							[attr.aria-label]="copied() ? 'Proposal hash copied' : 'Copy proposal hash'"
+							[cdkCopyToClipboard]="proposal().proposal_hash"
+							(cdkCopyToClipboardCopied)="copied.set($event)"
+						>
+							<mat-icon>{{ copied() ? 'check' : 'content_copy' }}</mat-icon
+							>{{ copied() ? 'Copied' : 'Copy' }}
+						</button>
+					</div>
+					<dl class="setup-list proposal-list">
+						<dt>Network</dt>
+						<dd>{{ network_label() }}</dd>
+						<dt>Members</dt>
+						<dd>{{ proposal().member_count }}</dd>
+						<dt>To sign</dt>
+						<dd>{{ proposal().signature_threshold }} of {{ proposal().member_count }}</dd>
+						<dt>To agree</dt>
+						<dd>{{ proposal().consensus_threshold }} of {{ proposal().member_count }}</dd>
+						<dt>Payments</dt>
+						<dd>{{ payment_rule() }}</dd>
+						<dt>Federation</dt>
+						<dd [title]="proposal().proposed_federation_id">
+							{{ proposal().proposed_federation_id | dataTruncate: 18 : 8 : 6 }}
+						</dd>
+						@for (keyset of keysets(); track $index) {
+							<dt>Keyset</dt>
+							<dd>
+								{{ keyset.summary }} ·
+								{{ keyset.expiry ? 'expires ' + (keyset.expiry | localTime: 'date-only') : 'never expires' }}
+							</dd>
+						}
+					</dl>
+					<details>
+						<summary>Full proposal as JSON</summary>
+						<pre>{{ proposal().details_json }}</pre>
+					</details>
+				</mat-card-content>
+			</mat-card>
+		</section>
+		<section class="flex flex-column flex-gap-1" aria-labelledby="review-members-title">
+			<div class="flex flex-wrap flex-items-end flex-gap-0-5">
+				<h2 id="review-members-title" class="title-l">Members</h2>
+				<span class="font-size-s orc-outline-color">Check each fingerprint with that operator</span>
+			</div>
+			<mat-card appearance="outlined" class="relative overflow-hidden">
+				<mat-card-content class="orc-surface-container-low-bg flex flex-column flex-gap-0-5">
+					@for (member of proposal().members; track member.member_id) {
+						@let own = member.member_id === member_id();
+						<article class="setup-row orc-high-card">
+							<span class="member-avatar">{{ member.member_id }}</span>
+							<div class="member-text">
+								<h3>{{ hostOf(member.public_mint_url) }}</h3>
+								<span [title]="member.federation_api_url">{{ member.federation_api_url }}</span>
+							</div>
+							<div class="member-fingerprint">
+								<span>Fingerprint</span>
+								<strong>{{ displayFingerprint(member.identity_fingerprint) }}</strong>
+							</div>
+							@if (own) {
+								<span class="member-check"><mat-icon class="mat-symbol-outline">person</mat-icon>This is you</span>
+							} @else {
+								<mat-checkbox
+									class="member-check"
+									[checked]="isChecked(member.member_id)"
+									[disabled]="busy() || already_approved()"
+									[aria-label]="'Checked member ' + member.member_id + ' with its operator'"
+									(change)="setChecked(member.member_id, $event.checked)"
+								>
+									Checked with operator
+								</mat-checkbox>
+							}
+						</article>
+					}
+				</mat-card-content>
+			</mat-card>
+		</section>
+	</div>
+	<aside class="setup-side flex flex-column flex-gap-1" aria-labelledby="approve-title">
+		<h2 id="approve-title" class="title-l">Approve</h2>
+		<mat-card appearance="outlined" class="relative overflow-hidden">
+			<mat-card-content class="orc-surface-container-low-bg flex flex-column flex-gap-1" aria-live="polite">
+				<div class="flex flex-column flex-gap-0-5">
+					<span class="font-weight-semi-bold">{{ checked_count() }} of {{ other_members().length }} fingerprints checked</span>
+					<mat-progress-bar mode="determinate" [value]="checked_percent()" aria-hidden="true"></mat-progress-bar>
+				</div>
+				<dl class="setup-list">
+					<dt>Approved</dt>
+					<dd>{{ approved_text() }}</dd>
+					<dt>Waiting on</dt>
+					<dd>{{ waiting_text() }}</dd>
+				</dl>
+				<p class="setup-note">
+					<mat-icon class="mat-symbol-outline tone-warning">lock</mat-icon>Approving locks in these settings. Key generation
+					starts once every member approves.
+				</p>
+				<mat-divider></mat-divider>
+				@if (already_approved()) {
+					<p class="font-size-s orc-on-surface-variant-color">Your approval is recorded. Waiting for every member to approve.</p>
+				} @else {
+					<button matButton="filled" class="w-full" [disabled]="!ready() || busy()" (click)="submit()">
+						{{ ready() ? 'Approve proposal ' + short_hash() : 'Approve proposal' }}
+					</button>
+					@if (!ready()) {
+						<p class="font-size-xs orc-outline-color text-center">Check every fingerprint first</p>
+					}
+				}
+				<ng-content></ng-content>
+			</mat-card-content>
+		</mat-card>
+	</aside>
 </div>

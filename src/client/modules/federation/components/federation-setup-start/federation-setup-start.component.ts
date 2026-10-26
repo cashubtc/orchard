@@ -2,6 +2,7 @@
 import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
 
 /* Vendor Dependencies */
+import {MatCardModule} from '@angular/material/card';
 import {MatIconModule} from '@angular/material/icon';
 
 /* Native Dependencies */
@@ -9,7 +10,7 @@ import {FEDERATION_SETUP_STEPS} from '@client/modules/federation/constants/feder
 
 @Component({
 	selector: 'orc-federation-setup-start',
-	imports: [MatIconModule],
+	imports: [MatCardModule, MatIconModule],
 	templateUrl: './federation-setup-start.component.html',
 	styleUrls: ['../federation-setup/federation-setup-shared.scss', './federation-setup-start.component.scss'],
 	changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,79 +1,190 @@
-<div class="setup-title">
-	<button type="button" class="back-link" [disabled]="busy()" (click)="cancel.emit()">
-		<mat-icon>arrow_back</mat-icon>Federation setup
-	</button>
-	<h1 tabindex="-1">Join a federation</h1>
-</div>
-<div class="setup-columns">
-	<form class="setup-card setup-form" (ngSubmit)="submit()">
-		<fieldset [disabled]="busy() || reading()" class="setup-form">
-			<div class="invitation-field">
-				<mat-form-field subscriptSizing="dynamic"
-					><mat-label>Invitation</mat-label
-					><textarea
-						matInput
-						name="invitation"
-						rows="4"
-						autocomplete="off"
-						spellcheck="false"
-						[ngModel]="invitation()"
-						(ngModelChange)="invitation.set($event)"
-						required
-					></textarea>
-				</mat-form-field>
-				<div class="setup-actions">
-					@if (scanner) {
-						<input #qr_file type="file" accept="image/*" capture="environment" hidden (change)="openFile($event, true)" />
-						<button matButton="outlined" type="button" (click)="qr_file.click()">
-							<mat-icon>qr_code_scanner</mat-icon>Scan QR photo
-						</button>
-					}
-					<input #invitation_file type="file" accept=".invite,.txt,text/plain" hidden (change)="openFile($event)" />
-					<button matButton="outlined" type="button" (click)="invitation_file.click()">
-						<mat-icon>upload_file</mat-icon>Open file
-					</button>
-				</div>
-				@if (!scanner) {
-					<p class="setup-caption">QR scanning isn't available in this browser. Paste the invitation or open its text file.</p>
-				}
-				@if (file_error()) {
-					<p class="orc-error-card p-1" role="alert">{{ file_error() }}</p>
-				}
-			</div>
-			<p class="setup-note">
-				<mat-icon class="mat-symbol-outline">info</mat-icon>Keep the invitation private. Your mint verifies the coordinator and
-				member slot when you join.
-			</p>
-			<mat-form-field
-				><mat-label>Your public mint URL, for wallets</mat-label
-				><input matInput name="public_url" [ngModel]="public_url()" (ngModelChange)="public_url.set($event)" /><mat-hint
-					>Blank uses the mint's configured URL</mat-hint
-				></mat-form-field
-			>
-			<mat-form-field
-				><mat-label>Your federation API URL, for other members</mat-label
-				><input matInput name="federation_url" [ngModel]="federation_url()" (ngModelChange)="federation_url.set($event)"
-			/></mat-form-field>
-			<p class="setup-caption">
-				Use HTTPS or Iroh. The public and federation URLs must differ unless both are the same Iroh endpoint.
-			</p>
-			<mat-checkbox name="allow_local" [ngModel]="allow_local()" (ngModelChange)="allow_local.set($event)"
-				>Allow local HTTP for development</mat-checkbox
-			>
-		</fieldset>
-		<div class="setup-actions form-footer">
-			<button matButton type="button" [disabled]="busy()" (click)="cancel.emit()">Cancel</button>
-			<button matButton="filled" type="submit" [disabled]="!valid() || busy() || reading()">Join federation</button>
-		</div>
+<h1 class="cdk-visually-hidden" tabindex="-1">Join a federation</h1>
+<div class="setup-layout">
+	<form id="federation-join-form" class="flex flex-column flex-gap-1-5 w-min-0" (ngSubmit)="submit()">
+		<section class="flex flex-column flex-gap-1" aria-labelledby="invitation-title">
+			<h2 id="invitation-title" class="title-l">Your invitation</h2>
+			<mat-card appearance="outlined" class="relative overflow-hidden">
+				<mat-card-content class="orc-surface-container-low-bg">
+					<fieldset class="flex flex-column flex-gap-1" [disabled]="busy() || reading()">
+						<mat-form-field subscriptSizing="dynamic"
+							><mat-label>Invitation</mat-label
+							><textarea
+								matInput
+								name="invitation"
+								rows="3"
+								autocomplete="off"
+								spellcheck="false"
+								#invitation_model="ngModel"
+								[ngModel]="invitation()"
+								(ngModelChange)="invitation.set($event)"
+								required
+							></textarea>
+							<mat-error><orc-form-error [errors]="invitation_model.errors">Paste the invitation</orc-form-error></mat-error>
+						</mat-form-field>
+						<div class="flex flex-wrap flex-gap-0-5">
+							@if (scanner) {
+								<input
+									#qr_file
+									type="file"
+									accept="image/*"
+									capture="environment"
+									hidden
+									(change)="openFile($event, true)"
+								/>
+								<button matButton="outlined" type="button" (click)="qr_file.click()">
+									<mat-icon>qr_code_scanner</mat-icon>Scan QR photo
+								</button>
+							}
+							<input #invitation_file type="file" accept=".invite,.txt,text/plain" hidden (change)="openFile($event)" />
+							<button matButton="outlined" type="button" (click)="invitation_file.click()">
+								<mat-icon>upload_file</mat-icon>Open file
+							</button>
+						</div>
+						@if (!scanner) {
+							<p class="font-size-xs orc-outline-color">
+								QR scanning isn't available in this browser. Paste the invitation or open its text file.
+							</p>
+						}
+						@if (file_error()) {
+							<p class="orc-error-card p-1" role="alert">{{ file_error() }}</p>
+						}
+						@if (preview(); as invite) {
+							<div class="setup-row orc-high-card">
+								<mat-icon class="mat-symbol-outline orc-primary-color">mail</mat-icon>
+								<span class="font-size-s orc-on-surface-variant-color"
+									>Invitation for <strong class="orc-on-surface-color">member {{ invite.member_id }}</strong> from
+									{{ coordinator() }}</span
+								>
+							</div>
+						}
+						<p class="setup-note">
+							<mat-icon class="mat-symbol-outline">info</mat-icon>Keep the invitation private. Your mint verifies the
+							coordinator and member slot when you join.
+						</p>
+					</fieldset>
+				</mat-card-content>
+			</mat-card>
+		</section>
+
+		<section class="flex flex-column flex-gap-1" aria-labelledby="reach-title">
+			<h2 id="reach-title" class="title-l">How others reach your mint</h2>
+			<mat-card appearance="outlined" class="relative overflow-hidden">
+				<mat-card-content class="orc-surface-container-low-bg">
+					<fieldset class="flex flex-column flex-gap-1" [disabled]="busy() || reading()">
+						<div>
+							<div class="flex flex-row flex-gap-0-5">
+								<mat-form-field class="flex-grow"
+									><mat-label>Your public mint URL, for wallets</mat-label
+									><input
+										matInput
+										name="public_url"
+										[ngModel]="public_url()"
+										(ngModelChange)="public_url.set($event)"
+									/><mat-hint class="font-size-xs orc-outline-color"
+										>Blank uses the mint's configured URL</mat-hint
+									></mat-form-field
+								>
+								<div class="p-t-0-5">
+									<button
+										type="button"
+										mat-icon-button
+										class="orc-icon-button"
+										aria-label="About the public mint URL"
+										[attr.aria-expanded]="help() === 'public'"
+										(click)="toggleHelp('public')"
+									>
+										<mat-icon class="orc-outline-color">info</mat-icon>
+									</button>
+								</div>
+							</div>
+							<div class="orc-animation-expand-collapse" [class.animation-expanded]="help() === 'public'">
+								<div class="orc-animation-expand-collapse-inner">
+									<div class="flex p-t-0-5 w-max-18">
+										<orc-form-help-text class="orc-surface-container-high-bg"
+											>The address wallets use to reach your mint. HTTPS, or an Iroh endpoint.</orc-form-help-text
+										>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div>
+							<div class="flex flex-row flex-gap-0-5">
+								<mat-form-field class="flex-grow"
+									><mat-label>Your federation API URL, for other members</mat-label
+									><input
+										matInput
+										name="federation_url"
+										[ngModel]="federation_url()"
+										(ngModelChange)="federation_url.set($event)"
+									/><mat-hint class="font-size-xs orc-outline-color"
+										>Required unless the public URL is an Iroh endpoint</mat-hint
+									></mat-form-field
+								>
+								<div class="p-t-0-5">
+									<button
+										type="button"
+										mat-icon-button
+										class="orc-icon-button"
+										aria-label="About the federation API URL"
+										[attr.aria-expanded]="help() === 'federation'"
+										(click)="toggleHelp('federation')"
+									>
+										<mat-icon class="orc-outline-color">info</mat-icon>
+									</button>
+								</div>
+							</div>
+							<div class="orc-animation-expand-collapse" [class.animation-expanded]="help() === 'federation'">
+								<div class="orc-animation-expand-collapse-inner">
+									<div class="flex p-t-0-5 w-max-18">
+										<orc-form-help-text class="orc-surface-container-high-bg"
+											>The address other members use for consensus. It must differ from the public URL unless both are
+											the same Iroh endpoint.</orc-form-help-text
+										>
+									</div>
+								</div>
+							</div>
+						</div>
+						<mat-checkbox name="allow_local" [ngModel]="allow_local()" (ngModelChange)="allow_local.set($event)"
+							>Allow local HTTP for development</mat-checkbox
+						>
+					</fieldset>
+				</mat-card-content>
+			</mat-card>
+		</section>
 	</form>
-	<aside class="setup-aside join-preview" aria-labelledby="after-join-title">
-		<span class="eyebrow">AFTER YOU JOIN</span>
-		<h2 id="after-join-title">Waiting for the coordinator to propose</h2>
-		<p>Your mint enrolls in its assigned slot. Once every operator has joined, the coordinator publishes the proposal.</p>
-		<p>
-			Your identity fingerprint appears as soon as you join. Read it to the other operators over a call or chat you trust; they'll
-			check it against the proposal before approving.
-		</p>
-		<p class="setup-caption">You can leave this page. Orchard checks for the proposal when you return.</p>
+
+	<aside class="setup-side flex flex-column flex-gap-1" aria-labelledby="join-title">
+		<h2 id="join-title" class="title-l">Join</h2>
+		<mat-card appearance="outlined" class="relative overflow-hidden">
+			<mat-card-content class="orc-surface-container-low-bg flex flex-column flex-gap-1">
+				@if (preview(); as invite) {
+					<dl class="setup-list">
+						<dt>Your slot</dt>
+						<dd>Member {{ invite.member_id }}</dd>
+						<dt>Coordinator</dt>
+						<dd>{{ coordinator() }}</dd>
+						<dt>Expires</dt>
+						<dd>{{ expires() }}</dd>
+					</dl>
+				} @else {
+					<p class="font-size-s orc-on-surface-variant-color">Paste an invitation to see the member slot it holds for you.</p>
+				}
+				<p class="setup-note">
+					<mat-icon class="mat-symbol-outline">key</mat-icon>Once you join, read your mint's fingerprint to the other operators
+					over a call or chat you trust.
+				</p>
+				<mat-divider></mat-divider>
+				<button
+					matButton="filled"
+					class="w-full"
+					type="submit"
+					form="federation-join-form"
+					[disabled]="!valid() || busy() || reading()"
+				>
+					{{ preview() ? 'Join as member ' + preview()!.member_id : 'Join federation' }}
+				</button>
+				<button matButton class="w-full" type="button" [disabled]="busy()" (click)="cancel.emit()">Back</button>
+			</mat-card-content>
+		</mat-card>
 	</aside>
 </div>

@@ -1,0 +1,12 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+fieldset {
+	border: 0;
+	@extend %m-0;
+	@extend %p-0;
+	min-width: 0;
+}
+textarea {
+	font-family: monospace;
+}

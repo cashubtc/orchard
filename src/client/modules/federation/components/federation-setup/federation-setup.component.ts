@@ -37,6 +37,9 @@ import {
 } from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
+import {MatCardModule} from '@angular/material/card';
+import {MatCheckboxModule} from '@angular/material/checkbox';
+import {MatDividerModule} from '@angular/material/divider';
 import {MatIconModule} from '@angular/material/icon';
 import {MatProgressBarModule} from '@angular/material/progress-bar';
 import {MatFormFieldModule} from '@angular/material/form-field';
@@ -56,7 +59,7 @@ import type {ComponentCanDeactivate} from '@client/modules/routing/interfaces/ro
 /* Native Dependencies */
 import {FederationService} from '@client/modules/federation/services/federation.service';
 import {FederationSetupService} from '@client/modules/federation/services/federation-setup.service';
-import {displayFingerprint, toOrchardError} from '@client/modules/federation/helpers/federation-setup.helpers';
+import {displayFingerprint, setupMemberList, toOrchardError} from '@client/modules/federation/helpers/federation-setup.helpers';
 import {timestamp} from '@client/modules/federation/helpers/federation-status.helpers';
 import type {FederationSetupConfirm} from '@client/modules/federation/types/federation-setup.types';
 import {FEDERATION_SETUP_PHASES} from '@client/modules/federation/constants/federation.constants';
@@ -88,6 +91,9 @@ type SetupView = 'start' | 'create' | 'join' | 'waiting' | 'review' | 'keygen' |
 		MatInputModule,
 		NavSetupStepsComponent,
 		MatButtonModule,
+		MatCardModule,
+		MatCheckboxModule,
+		MatDividerModule,
 		MatIconModule,
 		MatProgressBarModule,
 		OrcErrorModule,
@@ -177,14 +183,16 @@ export class FederationSetupComponent implements ComponentCanDeactivate, OnInit,
 		const expires = this.invitation_expires_at();
 		return expires !== null && expires <= this.now();
 	});
-	public readonly missing_invitation_note = computed<string>(() => {
-		const member_id = this.selected_member();
-		if (!member_id) return 'Select a waiting member to view or replace their invitation.';
-		return `This page has no invitation for member ${member_id}. Use a saved copy or replace the invitation.`;
+	/** Why Propose is still closed, naming the slots that haven't joined. */
+	public readonly propose_hint = computed<string>(() => {
+		const missing = this.status()?.missing_enrollments ?? [];
+		if (!missing.length) return 'Opens once every member has joined';
+		return `Opens once ${setupMemberList(missing)} ${missing.length === 1 ? 'has' : 'have'} joined`;
 	});
 	/** Render setup views only once the daemon is known to be in setup, so an unknown mode never offers Create or Join. */
 	public readonly show_setup = computed<boolean>(() => this.mode() === 'setup' || this.view() === 'activated');
-	public readonly centred = computed<boolean>(() => ['start', 'activated', 'aborted'].includes(this.view()));
+	public readonly centred = computed<boolean>(() => ['start', 'aborted'].includes(this.view()));
+	public readonly show_steps = computed<boolean>(() => !this.centred());
 	/** Slots whose invitation this page still holds; the others can only be replaced. */
 	public readonly held_members = computed<Set<number>>(() => new Set(this.invitations().map((invitation) => invitation.member_id)));
 	public readonly enrolled_percent = computed<number>(() => {
@@ -440,6 +448,11 @@ export class FederationSetupComponent implements ComponentCanDeactivate, OnInit,
 				this.activation.set(response);
 				this.federation_service.rememberBackupWarning(response.federation_id, response.backup_warning);
 			});
+	}
+
+	/** Open a waiting member's invitation under its row, or close it when it's already open. */
+	public toggleInvitation(member_id: number): void {
+		this.selectMember(this.selected_member() === member_id ? null : member_id);
 	}
 
 	/** Reset feedback when the displayed member changes. */

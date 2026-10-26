@@ -37,8 +37,14 @@ describe('FederationSetupService', () => {
 	it('passes uint64 strings through without rounding', async () => {
 		request.mockResolvedValue(created);
 		const keyset = {unit: 'sat', amounts: ['18446744073709551615'], input_fee_ppk: '9007199254740993'};
-		await service.create({...input, keyset});
-		expect(request).toHaveBeenCalledWith('CreateSetup', {...input, keyset}, 120000);
+		await service.create({...input, keyset, invitation_lifetime_secs: '604800'});
+		expect(request).toHaveBeenCalledWith('CreateSetup', {...input, keyset, invitation_lifetime_secs: '604800'}, 120000);
+	});
+	it('rejects an invitation lifetime protobuf would wrap', async () => {
+		await expect(service.create({...input, invitation_lifetime_secs: '-1'})).rejects.toMatchObject({
+			grpc_code: status.INVALID_ARGUMENT,
+		});
+		expect(request).not.toHaveBeenCalled();
 	});
 	it.each(['18446744073709551616', '-1', '1.5', '1e3'])('rejects %s before protobuf can wrap it', async (amount) => {
 		await expect(service.create({...input, keyset: {amounts: [amount]}})).rejects.toMatchObject({

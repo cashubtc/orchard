@@ -3,11 +3,21 @@ import {ChangeDetectionStrategy, Component, computed, input, output, signal} fro
 import {FormsModule} from '@angular/forms';
 
 /* Vendor Dependencies */
+import {DateTime} from 'luxon';
 import {MatButtonModule} from '@angular/material/button';
+import {MatCardModule} from '@angular/material/card';
 import {MatCheckboxModule} from '@angular/material/checkbox';
+import {MatDividerModule} from '@angular/material/divider';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
+
+/* Application Dependencies */
+import {OrcFormModule} from '@client/modules/form/form.module';
+
+/* Native Dependencies */
+import {decodeSetupInvitation, setupUrlHost} from '@client/modules/federation/helpers/federation-setup.helpers';
+import type {FederationSetupInvitationPreview} from '@client/modules/federation/types/federation-setup.types';
 
 /* Shared Dependencies */
 import type {FederationSetupJoinInput} from '@shared/generated.types';
@@ -19,9 +29,19 @@ type QrDetectorConstructor = new (options: {formats: string[]}) => QrDetector;
 
 @Component({
 	selector: 'orc-federation-setup-join',
-	imports: [FormsModule, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatIconModule, MatInputModule],
+	imports: [
+		FormsModule,
+		MatButtonModule,
+		MatCardModule,
+		MatCheckboxModule,
+		MatDividerModule,
+		MatFormFieldModule,
+		MatIconModule,
+		MatInputModule,
+		OrcFormModule,
+	],
 	templateUrl: './federation-setup-join.component.html',
-	styleUrls: ['../federation-setup/federation-setup-shared.scss', '../federation-setup/federation-setup-forms.scss'],
+	styleUrls: ['../federation-setup/federation-setup-shared.scss', './federation-setup-join.component.scss'],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FederationSetupJoinComponent {
@@ -36,8 +56,28 @@ export class FederationSetupJoinComponent {
 	public readonly allow_local = signal(false);
 	public readonly file_error = signal<string | null>(null);
 	public readonly reading = signal(false);
+	public readonly help = signal<string | null>(null);
 
 	public readonly valid = computed(() => !!this.invitation().trim());
+	/** What the invitation says about itself; the mint verifies it when this member joins. */
+	public readonly preview = computed<FederationSetupInvitationPreview | null>(() => decodeSetupInvitation(this.invitation()));
+	public readonly coordinator = computed<string | null>(() => {
+		const preview = this.preview();
+		return preview ? setupUrlHost(preview.coordinator_url) : null;
+	});
+	public readonly expires = computed<string | null>(() => {
+		const preview = this.preview();
+		return preview ? DateTime.fromSeconds(preview.expires_at_unix).toRelative() : null;
+	});
+
+	/* *******************************************************
+        Help
+    ******************************************************** */
+
+	/** Open one field's help, or close it when it's already open. */
+	public toggleHelp(key: string): void {
+		this.help.update((current) => (current === key ? null : key));
+	}
 
 	/* *******************************************************
         Invitation

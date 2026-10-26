@@ -5,6 +5,8 @@ import type {OrchardError} from '@client/modules/error/types/error.types';
 
 /* Native Dependencies */
 import {paymentRule} from '@client/modules/federation/helpers/federation-status.helpers';
+import {FEDERATION_SETUP_INVITATION_PREFIX} from '@client/modules/federation/constants/federation.constants';
+import type {FederationSetupInvitationPreview, FederationSetupThresholds} from '@client/modules/federation/types/federation-setup.types';
 
 /* Shared Dependencies */
 import type {OrchardFederationPaymentVerificationPolicy} from '@shared/generated.types';
@@ -15,6 +17,55 @@ export function parseAmounts(text: string): string[] {
 		.trim()
 		.split(/[\s,]+/)
 		.filter(Boolean);
+}
+
+/** The first `count` powers of two as uint64 strings, 1 up to 2^63. */
+export function powerAmounts(count: number): string[] {
+	return Array.from({length: count}, (_, index) => (BigInt(1) << BigInt(index)).toString());
+}
+
+/** cdk's rules for a member count: signing from f + 1 (at least 2) to consensus, payment checks from consensus to every member. */
+export function setupThresholds(members: number): FederationSetupThresholds {
+	const faulty = Math.floor((members - 1) / 3);
+	const consensus = members - faulty;
+	// cdk accepts 1 at create, but its FROST key generation needs at least 2 signers and the ceremony stalls
+	const sign_min = Math.max(2, faulty + 1);
+	// cdk has no signing default; a simple majority keeps 3 of 5
+	const sign_default = Math.min(consensus, Math.max(sign_min, Math.floor(members / 2) + 1));
+	return {
+		faulty,
+		consensus,
+		sign_min,
+		sign_max: consensus,
+		sign_default,
+		payment_min: consensus,
+		payment_max: members,
+		payment_default: consensus,
+	};
+}
+
+/** Read an invitation's slot, coordinator and expiry for display; the mint still verifies it on join. */
+export function decodeSetupInvitation(text: string): FederationSetupInvitationPreview | null {
+	const code = text.trim();
+	if (!code.startsWith(FEDERATION_SETUP_INVITATION_PREFIX)) return null;
+	try {
+		const base64 = code.slice(FEDERATION_SETUP_INVITATION_PREFIX.length).replace(/-/g, '+').replace(/_/g, '/');
+		const binary = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
+		const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+		const view = new DataView(bytes.buffer);
+		// Version (2 bytes), setup ID and invitation ID (32 each) come before the member slot
+		const url_length = view.getUint32(68);
+		const expiry_offset = 72 + url_length + 33;
+		// Capability (32) and checksum (6) close the payload
+		if (bytes.length !== expiry_offset + 8 + 32 + 6) return null;
+		return {
+			member_id: view.getUint16(66),
+			coordinator_url: new TextDecoder('utf-8', {fatal: true}).decode(bytes.subarray(72, 72 + url_length)),
+			expires_at_unix: Number(view.getBigUint64(expiry_offset)),
+		};
+	} catch {
+		return null;
+	}
 }
 
 /** Only a daemon in setup mode lacks its API and database; an unreachable management RPC may leave both serving. */

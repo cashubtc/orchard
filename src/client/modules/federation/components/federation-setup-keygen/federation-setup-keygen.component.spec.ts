@@ -35,7 +35,7 @@ describe('FederationSetupKeygenComponent', () => {
 		expect(stages[3].dataset['state']).toBe('pending');
 		expect(fixture.nativeElement.querySelectorAll('.member-chip.confirmed').length).toBe(1);
 		expect(fixture.nativeElement.querySelector('.digest-list').textContent).toContain('b81d1f88...0ee984');
-		const activate: HTMLButtonElement = fixture.nativeElement.querySelector('.setup-aside button');
+		const activate: HTMLButtonElement = fixture.nativeElement.querySelector('aside button');
 		expect(activate.disabled).toBeTrue();
 		fixture.componentRef.setInput('dkg', dkg({finalized_ready: true}));
 		fixture.detectChanges();
@@ -51,5 +51,6 @@ describe('FederationSetupKeygenComponent', () => {
 		const fixture = TestBed.createComponent(FederationSetupKeygenComponent);
 		fixture.detectChanges();
 		expect(fixture.nativeElement.textContent).toContain('Waiting for key generation progress');
+		expect(fixture.nativeElement.querySelector('aside button').disabled).toBeTrue();
 	});
 });

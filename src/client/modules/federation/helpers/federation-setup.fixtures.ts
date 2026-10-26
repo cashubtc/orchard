@@ -36,3 +36,16 @@ export function setupStatus(): OrchardFederationSetupStatus {
 		identity_fingerprint: '0123456789abcdef',
 	};
 }
+
+/** An invitation in cdk's layout, with filler where the IDs, coordinator key, capability and checksum go. */
+export function setupInvitationCode(member_id: number, coordinator_url: string, expires_at_unix: number): string {
+	const url = new TextEncoder().encode(coordinator_url);
+	const bytes = new Uint8Array(72 + url.length + 33 + 8 + 32 + 6).fill(7);
+	const view = new DataView(bytes.buffer);
+	view.setUint16(66, member_id);
+	view.setUint32(68, url.length);
+	bytes.set(url, 72);
+	view.setBigUint64(72 + url.length + 33, BigInt(expires_at_unix));
+	const base64 = btoa(String.fromCharCode(...bytes));
+	return `cashufedsetupA${base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+}
