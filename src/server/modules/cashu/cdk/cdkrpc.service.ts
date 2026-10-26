@@ -11,6 +11,7 @@ import {loadSync, type ServiceDefinition} from '@grpc/proto-loader';
 /* Application Dependencies */
 import {CredentialService} from '#server/modules/credential/credential.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
+import {INTEGRATION_REQUEST_TIMEOUT_MS} from '#server/modules/integration/constants/integration.constants';
 
 /* Native Dependencies */
 import type {CdkRpcMethods} from './cdkrpc.types.js';
@@ -22,9 +23,11 @@ export class CdkRpcError extends Error {
 	public readonly details: string;
 
 	constructor(grpc_code: number, details: string) {
-		super(details);
+		// An unknown service answers with an empty message; the status name is the only diagnostic left
+		const diagnostic = details || status[grpc_code] || `gRPC status ${grpc_code}`;
+		super(diagnostic);
 		this.grpc_code = grpc_code;
-		this.details = details;
+		this.details = diagnostic;
 		const codes: Partial<Record<status, OrchardErrorCode>> = {
 			[status.INVALID_ARGUMENT]: OrchardErrorCode.MintRpcInvalidArgumentError,
 			[status.FAILED_PRECONDITION]: OrchardErrorCode.MintRpcPreconditionError,
@@ -55,21 +58,24 @@ export class CdkRpcService implements OnModuleDestroy {
 	/** Lazily share one channel and one set of credentials across all seven services. */
 	private getClient(): Client {
 		if (this.client) return this.client;
+		try {
+			return this.createClient();
+		} catch (error) {
+			// Credential, proto and target failures carry no gRPC status; keep their message for the operator
+			if (error instanceof CdkRpcError) throw error;
+			throw new CdkRpcError(status.UNAVAILABLE, error instanceof Error ? error.message : String(error));
+		}
+	}
+
+	/** Build the channel from the current configuration. */
+	private createClient(): Client {
 		const host = this.configService.get<string>('cashu.rpc_host');
 		const port = this.configService.get<number>('cashu.rpc_port');
-		if (!host || !port)
-			throw new CdkRpcError(status.UNAVAILABLE, 'Mint RPC host or port is missing; set MINT_RPC_HOST and MINT_RPC_PORT');
+		if (!host || !port) throw new CdkRpcError(status.UNAVAILABLE, 'Mint RPC host and port are not configured');
 		let channel_credentials = credentials.createInsecure();
 		const options: ChannelOptions = {};
 		if (this.configService.get<boolean>('cashu.rpc_mtls')) {
-			const key = this.credentialService.loadPemOrPath(this.configService.get<string>('cashu.rpc_key'));
-			const cert = this.credentialService.loadPemOrPath(this.configService.get<string>('cashu.rpc_cert'));
-			const ca = this.credentialService.loadPemOrPath(this.configService.get<string>('cashu.rpc_ca'));
-			if (!key || !cert || !ca)
-				throw new CdkRpcError(
-					status.UNAVAILABLE,
-					'Mint RPC TLS credentials are missing; check MINT_RPC_KEY, MINT_RPC_CERT and MINT_RPC_CA',
-				);
+			const [key, cert, ca] = (['key', 'cert', 'ca'] as const).map((field) => this.loadCredential(field));
 			channel_credentials = credentials.createSsl(ca, key, cert);
 			if (host.includes('host.docker.internal')) {
 				options['grpc.ssl_target_name_override'] = 'localhost';
@@ -97,6 +103,19 @@ export class CdkRpcService implements OnModuleDestroy {
 		return this.client;
 	}
 
+	/** Read one mTLS credential, naming it when it is missing or unreadable. */
+	private loadCredential(field: 'key' | 'cert' | 'ca'): Buffer {
+		const label = {key: 'client key', cert: 'client certificate', ca: 'CA certificate'}[field];
+		let credential: Buffer | undefined;
+		try {
+			credential = this.credentialService.loadPemOrPath(this.configService.get<string>(`cashu.rpc_${field}`), true);
+		} catch (error) {
+			throw new CdkRpcError(status.UNAVAILABLE, `Mint RPC ${label}: ${error instanceof Error ? error.message : String(error)}`);
+		}
+		if (!credential) throw new CdkRpcError(status.UNAVAILABLE, `Mint RPC ${label} is not configured`);
+		return credential;
+	}
+
 	/** Drop the channel so the next request connects with the current configuration. */
 	public reinitialize(): void {
 		const previous = this.client;
@@ -109,7 +128,7 @@ export class CdkRpcService implements OnModuleDestroy {
 	public request<M extends keyof CdkRpcMethods>(
 		method: M,
 		request: CdkRpcMethods[M]['request'],
-		timeout_ms = 15000,
+		timeout_ms = INTEGRATION_REQUEST_TIMEOUT_MS,
 	): Promise<CdkRpcMethods[M]['response']> {
 		return new Promise((resolve, reject) => {
 			const client = this.getClient();

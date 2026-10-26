@@ -104,9 +104,29 @@ describe('CdkRpcService wire contracts', () => {
 	it('terminates an unresponsive RPC at its deadline', async () => {
 		await expect(service.request('UpdateMotd', {motd: 'test'}, 30)).rejects.toMatchObject({grpc_code: status.DEADLINE_EXCEEDED});
 	});
-	it('fails clearly when configured mTLS credentials are missing', async () => {
+	it('names the missing mTLS credential', async () => {
 		config['cashu.rpc_mtls'] = true;
-		await expect(service.request('GetInfo', {})).rejects.toThrow('MINT_RPC_KEY, MINT_RPC_CERT and MINT_RPC_CA');
+		await expect(service.request('GetInfo', {})).rejects.toMatchObject({
+			grpc_code: status.UNAVAILABLE,
+			details: 'Mint RPC client key is not configured',
+		});
+	});
+	it('surfaces an unreadable credential file verbatim as a connection error', async () => {
+		config['cashu.rpc_mtls'] = true;
+		const credentials = module.get(CredentialService);
+		jest.spyOn(credentials, 'loadPemOrPath').mockImplementation(() => {
+			throw new Error("ENOENT: no such file or directory, open '/certs/client.key'");
+		});
+		await expect(service.request('GetInfo', {})).rejects.toMatchObject({
+			code: OrchardErrorCode.MintRpcConnectionError,
+			details: "Mint RPC client key: ENOENT: no such file or directory, open '/certs/client.key'",
+		});
+	});
+	it('keeps the status name when the server sends no message', () => {
+		expect(new CdkRpcError(status.UNIMPLEMENTED, '')).toMatchObject({
+			code: OrchardErrorCode.MintSupportError,
+			details: 'UNIMPLEMENTED',
+		});
 	});
 	it.each([
 		[status.INVALID_ARGUMENT, OrchardErrorCode.MintRpcInvalidArgumentError],

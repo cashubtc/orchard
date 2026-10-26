@@ -6,7 +6,7 @@ import {Client, credentials, Metadata, status, type ServiceError} from '@grpc/gr
 /* Native Dependencies */
 import {Logger} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
-import {CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
+import {CdkRpcError, CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
 import {FederationService} from '#server/modules/federation/federation.service';
 import {NutshellService} from '#server/modules/cashu/nutshell/nutshell.service';
 /* Local Dependencies */
@@ -463,14 +463,14 @@ describe('CashuMintRpcService split CDK adapter', () => {
 		await expect(service.updateNut04({unit: 'sat', method: 'unknown', min_amount: 1, disabled: true})).rejects.toBe(error);
 		expect(request).toHaveBeenCalledTimes(1);
 	});
-	it('translates quote states in both directions and rejects unknown states', async () => {
+	it('translates quote states in both directions and leaves unknown states for the mint to refuse', async () => {
 		request.mockResolvedValueOnce({quote_id: 'q', state: 'MINT_QUOTE_STATE_PAID'});
 		await expect(service.updateNut04Quote({quote_id: 'q', state: 'PAID'})).resolves.toEqual({quote_id: 'q', state: 'PAID'});
 		expect(request).toHaveBeenCalledWith('UpdateMintQuoteState', {quote_id: 'q', state: 'MINT_QUOTE_STATE_PAID'});
-		await expect(service.updateNut04Quote({quote_id: 'q', state: 'oops'})).rejects.toMatchObject({
-			code: OrchardErrorCode.MintRpcInvalidArgumentError,
-		});
-		expect(request).toHaveBeenCalledTimes(1);
+		const refusal = new CdkRpcError(status.INVALID_ARGUMENT, 'only PAID is supported');
+		request.mockRejectedValueOnce(refusal);
+		await expect(service.updateNut04Quote({quote_id: 'q', state: 'ISSUED'})).rejects.toBe(refusal);
+		expect(request).toHaveBeenLastCalledWith('UpdateMintQuoteState', {quote_id: 'q', state: 'MINT_QUOTE_STATE_ISSUED'});
 	});
 	it('blocks member rotation and quote overrides before sending mutations', async () => {
 		const error = new Error('not standalone');

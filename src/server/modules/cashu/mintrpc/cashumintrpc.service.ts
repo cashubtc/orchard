@@ -219,8 +219,6 @@ export class CashuMintRpcService implements OnModuleInit, OnModuleDestroy {
 	async updateNut04Quote({quote_id, state}: {quote_id: string; state: string}): Promise<{quote_id: string; state: string}> {
 		if (this.type === 'cdk') {
 			await this.federationService.assertStandaloneOperation();
-			if (!['UNPAID', 'PAID', 'ISSUED'].includes(state))
-				throw {code: OrchardErrorCode.MintRpcInvalidArgumentError, details: 'Unknown mint quote state'};
 			const response = await this.cdkRpcService.request('UpdateMintQuoteState', {
 				quote_id,
 				state: `MINT_QUOTE_STATE_${state}` as 'MINT_QUOTE_STATE_UNPAID' | 'MINT_QUOTE_STATE_PAID' | 'MINT_QUOTE_STATE_ISSUED',
