@@ -100,6 +100,23 @@ orc-onboarding-configure {
 	flex: 999 1 35rem;
 	min-width: 0;
 }
+// Configure fills the viewport so only the form scrolls; the header, steps and service list stay put
+:host(.fit-viewport) {
+	.onboarding-container {
+		@extend %h-dvh;
+		box-sizing: border-box;
+		padding: 2.5rem 1.5rem 1.5rem;
+	}
+	.configure-layout {
+		flex: 1 1 auto;
+		min-height: 0;
+		flex-wrap: nowrap;
+		align-items: stretch;
+	}
+	.service-list {
+		align-self: flex-start;
+	}
+}
 :host(.mobile) {
 	.onboarding-container {
 		@extend %flex-items-start;

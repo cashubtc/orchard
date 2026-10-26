@@ -1,57 +1,55 @@
-@if (busy()) {
-	<mat-progress-bar mode="indeterminate" aria-label="Updating connection"></mat-progress-bar>
-}
-@if (configuration().source === 'environment') {
-	<p class="environment-notice">
-		<mat-icon>info</mat-icon>
-		<span
-			>Filled in from your environment ({{ environment_prefix() }}). Saving stores these values in Orchard, where they take
-			precedence.</span
-		>
-	</p>
-}
-<orc-service-fields
-	[configuration]="configuration()"
-	[form]="form"
-	[flagged]="result()?.fields ?? []"
-	(changed)="changed()"
-></orc-service-fields>
-@if (result(); as check) {
-	<orc-service-check-result [result]="check"></orc-service-check-result>
-	@if (check.mode === 'setup') {
-		<p>
-			This mint is in <strong>federation setup mode</strong>. It won't serve wallets until you create or join a federation.
-			@if (context() === 'onboarding') {
-				Orchard opens Federation setup after Review.
-			}
+<div class="connection-body">
+	@if (configuration().source === 'environment') {
+		<p class="environment-notice">
+			<mat-icon>info</mat-icon>
+			<span
+				>Filled in from your environment ({{ environment_prefix() }}). Saving stores these values in Orchard, where they take
+				precedence.</span
+			>
 		</p>
-		<p>Its payment backends show up once the federation is active.</p>
 	}
-}
-@if (error()) {
-	<p class="orc-error-color" role="alert">{{ error() }}</p>
-}
-@if (saved()) {
-	<p role="status" class="orc-status-active-color">
-		{{ result()?.ok ? 'Saved and reconnected' : 'Connection saved' }}. No restart needed.
-	</p>
-}
-<orc-service-refresh-alert [service]="configuration().service" [disabled]="busy()"></orc-service-refresh-alert>
-<div class="connection-actions">
-	<ng-content select="[connection-actions]"></ng-content>
-	@if (context() === 'onboarding') {
-		<button matButton type="button" [disabled]="busy()" (click)="backed.emit()">Back</button>
-		<button matButton type="button" [disabled]="busy()" (click)="skipped.emit()">Skip this service</button>
+	<orc-service-fields
+		[configuration]="configuration()"
+		[form]="form"
+		[flagged]="result()?.fields ?? []"
+		(changed)="changed()"
+	></orc-service-fields>
+</div>
+<div class="connection-foot">
+	@if (busy()) {
+		<mat-progress-bar mode="indeterminate" aria-label="Updating connection"></mat-progress-bar>
 	}
-	@if (saved() && context() === 'settings') {
-		<button matButton="filled" type="button" [disabled]="busy()" (click)="done.emit()">Done</button>
-	} @else {
-		<button [matButton]="failed() ? 'filled' : 'outlined'" type="button" [disabled]="busy()" (click)="submit(false)">
-			<mat-icon>network_check</mat-icon>{{ result() ? 'Test again' : 'Test connection' }}
-		</button>
-		@if (failed()) {
-			<button matButton type="button" [disabled]="busy()" (click)="submit(true, true)">Save without a working connection</button>
+	@if (result(); as check) {
+		<orc-service-check-result [result]="check" [note]="setup_note()"></orc-service-check-result>
+	}
+	@if (error()) {
+		<p class="orc-error-color" role="alert">{{ error() }}</p>
+	}
+	@if (saved()) {
+		<p role="status" class="orc-status-active-color">
+			{{ result()?.ok ? 'Saved and reconnected' : 'Connection saved' }}. No restart needed.
+		</p>
+	}
+	<orc-service-refresh-alert [service]="configuration().service" [disabled]="busy()"></orc-service-refresh-alert>
+	<div class="connection-actions">
+		<ng-content select="[connection-actions]"></ng-content>
+		@if (context() === 'onboarding') {
+			<button matButton type="button" [disabled]="busy()" (click)="backed.emit()">Back</button>
+			<button matButton type="button" [disabled]="busy()" (click)="skipped.emit()">Skip</button>
+		}
+		<span class="actions-spacer"></span>
+		@if (saved() && context() === 'settings') {
+			<button matButton="filled" type="button" [disabled]="busy()" (click)="done.emit()">Done</button>
+		} @else if (failed()) {
+			<!-- After a failed test, retesting is the default and saving is the deliberate choice -->
+			<button matButton="outlined" type="button" [disabled]="busy()" (click)="submit(true, true)">Save anyway</button>
+			<button matButton="filled" type="button" [disabled]="busy()" (click)="submit(false)">
+				<mat-icon>network_check</mat-icon>Test again
+			</button>
 		} @else {
+			<button matButton="outlined" type="button" [disabled]="busy()" (click)="submit(false)">
+				<mat-icon>network_check</mat-icon>{{ result() ? 'Test again' : 'Test connection' }}
+			</button>
 			<button matButton="filled" type="button" [disabled]="busy()" (click)="submit(true)">
 				{{
 					context() === 'onboarding'
@@ -62,8 +60,5 @@
 				}}
 			</button>
 		}
-	}
+	</div>
 </div>
-@if (context() === 'onboarding' && configuration().enabled) {
-	<p class="orc-outline-color">Skipping leaves the existing connection unchanged.</p>
-}

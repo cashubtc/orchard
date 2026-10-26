@@ -8,14 +8,16 @@
 	<div class="category-rule"></div>
 	<div class="editor-content">
 		@if (error()) {
-			<p role="alert" class="orc-error-color">{{ error() }}</p>
+			<p role="alert" class="editor-message orc-error-color">{{ error() }}</p>
 		}
 		@if (removed()) {
-			<p role="status">{{ descriptor.name }} removed. No restart needed.</p>
-			<orc-service-refresh-alert [service]="configuration.service" [disabled]="busy()"></orc-service-refresh-alert>
-			<button matButton="filled" type="button" [disabled]="busy()" (click)="close()">Done</button>
+			<div class="editor-removed">
+				<p role="status">{{ descriptor.name }} removed. No restart needed.</p>
+				<orc-service-refresh-alert [service]="configuration.service" [disabled]="busy()"></orc-service-refresh-alert>
+				<button matButton="filled" type="button" [disabled]="busy()" (click)="close()">Done</button>
+			</div>
 		} @else {
-			<p>Changes apply as soon as you save. No restart needed.</p>
+			<p class="editor-message">Changes apply as soon as you save. No restart needed.</p>
 			<orc-service-connection [configuration]="configuration" [pending]="removing()" (applied)="applied($event)" (done)="close()">
 				@if (effective_configuration().enabled) {
 					<button

@@ -1,26 +1,33 @@
 <section
 	class="check-result"
-	[class.orc-low-card]="result().ok && !result().warning"
-	[class.orc-warning-card]="result().ok && result().warning"
-	[class.orc-error-card]="!result().ok"
+	[class.orc-low-card]="tone() === 'success'"
+	[class.orc-warning-card]="tone() === 'warning'"
+	[class.orc-error-card]="tone() === 'error'"
 	[attr.role]="result().ok ? 'status' : 'alert'"
 >
-	<h3>{{ result().title }}</h3>
-	<p>{{ result().context }}</p>
+	<mat-icon class="result-icon" [class.result-success]="tone() === 'success'">{{ icon() }}</mat-icon>
+	<div class="result-text">
+		<h3>{{ result().title }}</h3>
+		@for (line of details(); track line) {
+			<p>{{ line }}</p>
+		}
+		@if (note()) {
+			<p>{{ note() }}</p>
+		}
+		@if (result().diagnostic; as diagnostic) {
+			<pre>{{ diagnostic }}</pre>
+		}
+	</div>
 	@if (result().diagnostic; as diagnostic) {
-		<pre>{{ diagnostic }}</pre>
-		<button matButton type="button" [cdkCopyToClipboard]="diagnostic" (cdkCopyToClipboardCopied)="copied.set($event)">
-			<mat-icon>content_copy</mat-icon>Copy diagnostic
+		<button
+			mat-icon-button
+			type="button"
+			aria-label="Copy diagnostic"
+			[cdkCopyToClipboard]="diagnostic"
+			(cdkCopyToClipboardCopied)="copied.set($event)"
+		>
+			<mat-icon>content_copy</mat-icon>
 		</button>
-	}
-	@if (bitcoin_detail()) {
-		<p>{{ bitcoin_detail() }}</p>
-	}
-	@if (result().chain && !bitcoin_detail()) {
-		<p>{{ result().chain_match === true ? 'Same network as your Bitcoin node: ' : 'Network: ' }}{{ result().chain }}</p>
-	}
-	@if (mode_label()) {
-		<p>{{ mode_label() }}</p>
 	}
 </section>
 <p role="status" aria-live="polite" class="copy-feedback">{{ copied() === true ? 'Diagnostic copied.' : '' }}</p>

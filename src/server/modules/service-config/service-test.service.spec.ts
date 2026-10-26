@@ -15,6 +15,7 @@ describe('ServiceTestService', () => {
 	const bitcoin_rpc = {isConfigured: jest.fn(() => true)};
 	const pem = '-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----';
 	const macaroon = '0201036c6e64';
+	const mint_details = {database: '/missing/mint.sqlite', api: 'https://mint.test'};
 	let service: ServiceTestService;
 	beforeEach(() => {
 		service = new ServiceTestService(
@@ -67,8 +68,9 @@ describe('ServiceTestService', () => {
 
 	it('accepts setup mode without requiring management GetInfo', async () => {
 		jest.spyOn(FederationService.prototype, 'getMode').mockResolvedValue({mode: 'setup', details: null});
+		jest.spyOn(CashuMintDatabaseService.prototype, 'getMintDatabase').mockRejectedValue(new Error('Unable to open database'));
 		const rpc = jest.spyOn(CdkRpcService.prototype, 'request');
-		const result = await service.test('mint', {type: 'cdk', host: 'localhost', port: '8091', mtls: 'false'});
+		const result = await service.test('mint', {type: 'cdk', host: 'localhost', port: '8091', mtls: 'false', ...mint_details});
 		expect(result).toMatchObject({ok: true, mode: 'setup'});
 		expect(rpc).not.toHaveBeenCalled();
 	});
@@ -76,8 +78,22 @@ describe('ServiceTestService', () => {
 	it('warns without blocking if RPC works and the database fails', async () => {
 		jest.spyOn(FederationService.prototype, 'getMode').mockResolvedValue({mode: 'setup', details: null});
 		jest.spyOn(CashuMintDatabaseService.prototype, 'getMintDatabase').mockRejectedValue(new Error('Unable to open database'));
-		const result = await service.test('mint', {type: 'cdk', host: 'localhost', port: '8091', database: '/missing/mint.sqlite'});
+		const result = await service.test('mint', {type: 'cdk', host: 'localhost', port: '8091', ...mint_details});
 		expect(result).toMatchObject({ok: true, warning: true, diagnostic: 'Unable to open database', fields: ['database']});
+	});
+
+	it('requires the mint database and public URL once the RPC has answered', async () => {
+		jest.spyOn(FederationService.prototype, 'getMode').mockResolvedValue({mode: 'setup', details: null});
+		const values = {type: 'cdk', host: 'localhost', port: '8091', database: '/data/mint.sqlite'};
+		expect(await service.test('mint', values)).toMatchObject({
+			ok: false,
+			mode: 'setup',
+			title: 'Mint details missing',
+			diagnostic: 'Missing public mint URL',
+			fields: ['api'],
+		});
+		expect(service.isValid('mint', values)).toBe(false);
+		expect(service.isValid('mint', {...values, api: 'https://mint.test'})).toBe(true);
 	});
 
 	it('compares the actual Lightning network within the test timeout and closes the temporary client', async () => {
@@ -123,10 +139,11 @@ describe('ServiceTestService', () => {
 
 	it('returns federation membership metadata and releases the isolated RPC client', async () => {
 		jest.spyOn(FederationService.prototype, 'getMode').mockResolvedValue({mode: 'member', details: null});
+		jest.spyOn(CashuMintDatabaseService.prototype, 'getMintDatabase').mockRejectedValue(new Error('Unable to open database'));
 		const info = {local_member_id: 3, threshold_params: {member_count: 5}};
 		const rpc = jest.spyOn(CdkRpcService.prototype, 'request').mockResolvedValue(info as never);
 		const close = jest.spyOn(CdkRpcService.prototype, 'onModuleDestroy');
-		expect(await service.test('mint', {type: 'cdk', host: 'mint', port: '8091'})).toMatchObject({
+		expect(await service.test('mint', {type: 'cdk', host: 'mint', port: '8091', ...mint_details})).toMatchObject({
 			ok: true,
 			mode: 'member',
 			mint_member_id: 3,

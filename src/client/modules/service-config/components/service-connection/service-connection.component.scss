@@ -1,9 +1,29 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
+// The body scrolls inside whatever height the parent gives; the result and actions stay pinned below it
 :host {
 	@extend %flex;
 	@extend %flex-column;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+.connection-body {
+	@extend %flex;
+	@extend %flex-column;
 	@extend %flex-gap-1;
+	flex: 1 1 auto;
+	min-height: 0;
+	@extend %overflow-y-auto;
+	padding: var(--service-connection-padding, 1rem);
+}
+.connection-foot {
+	@extend %flex;
+	@extend %flex-column;
+	gap: 0.75rem;
+	padding: 0.875rem var(--service-connection-padding, 1rem);
+	border-top-width: 1px;
+	border-top-style: solid;
+	@extend %orc-outline-variant-border;
 }
 .environment-notice {
 	@extend %flex;
@@ -17,9 +37,11 @@
 .connection-actions {
 	@extend %flex;
 	@extend %flex-wrap;
-	@extend %flex-justify-end;
+	@extend %flex-items-center;
 	@extend %flex-gap-0-5;
-	@extend %p-t-1;
+}
+.actions-spacer {
+	@extend %flex-grow;
 }
 p {
 	@extend %m-0;

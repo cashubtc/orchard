@@ -47,10 +47,9 @@ export function connectionConfig(service: ServiceName, values: ConnectionValues,
 	}
 	if (service === 'mint') {
 		config.database_type = mintDatabaseType(String(config.database));
-		// Env-only metrics and database TLS belong to the env mint; keep them unless Orchard now points elsewhere
-		const moved = (key: string): boolean => String(config[key] ?? '') !== String(base[key] ?? '');
-		if (moved('rpc_host') || moved('rpc_port') || moved('api')) config.metrics_api = '';
-		if (moved('database')) Object.assign(config, {database_ca: '', database_cert: '', database_key: ''});
+		// Env-only database TLS belongs to the env database; keep it unless Orchard now points at another one
+		if (String(config.database ?? '') !== String(base.database ?? ''))
+			Object.assign(config, {database_ca: '', database_cert: '', database_key: ''});
 	}
 	return config;
 }

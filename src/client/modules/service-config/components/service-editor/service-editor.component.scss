@@ -16,8 +16,23 @@ h2 {
 	@extend %m-0;
 	@extend %font-size-l;
 }
+// The connection form scrolls on its own and keeps its actions pinned to the bottom of the panel
 .editor-content {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-1;
+	min-height: 0;
+}
+.editor-message {
+	@extend %m-0;
+	@extend %p-h-1;
+	@extend %p-t-1;
+}
+.editor-removed {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-items-start;
+	@extend %flex-gap-1;
 	@extend %p-1;
 	@extend %overflow-y-auto;
-	@extend %flex-1;
 }

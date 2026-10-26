@@ -49,19 +49,21 @@ export const SERVICE_DEFINITIONS: Record<ServiceName, ServiceDefinition> = {
 			{name: 'key', config: 'rpc_key', key: ServiceSettingKey.SERVICE_MINT_KEY},
 			{name: 'database', config: 'database', key: ServiceSettingKey.SERVICE_MINT_DATABASE},
 			{name: 'api', config: 'api', key: ServiceSettingKey.SERVICE_MINT_API},
+			{name: 'metrics', config: 'metrics_api', key: ServiceSettingKey.SERVICE_MINT_METRICS},
 		],
 	},
 };
 export const SERVICE_SETTING_KEYS = new Set<ServiceSettingKey>(
 	Object.values(SERVICE_DEFINITIONS).flatMap((definition) => [definition.enabled_key, ...definition.fields.map((field) => field.key)]),
 );
-export const SERVICE_ADDRESS_FIELDS: ServiceFieldName[] = ['host', 'api', 'database'];
+export const SERVICE_ADDRESS_FIELDS: ServiceFieldName[] = ['host', 'api', 'database', 'metrics'];
 export const SERVICE_FAILURE_TITLES: Record<ServiceName, string> = {
 	bitcoin: "Couldn't connect to Bitcoin Core",
 	lightning: "Couldn't connect to Lightning",
 	mint: "Couldn't reach the mint's management RPC",
 };
 export const SERVICE_TLS_FAILURE_TITLE = 'TLS connection failed';
+export const SERVICE_MINT_DETAILS_TITLE = 'Mint details missing';
 export const SERVICE_ENVIRONMENT_KEY = 'service_environment';
 export const CONNECTION_TIMEOUT_MS = 5000;
 // How long an unavailable mint database stays reported before the next status read probes it again

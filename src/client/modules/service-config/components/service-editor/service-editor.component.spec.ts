@@ -51,11 +51,11 @@ describe('ServiceEditorComponent', () => {
 		fixture.detectChanges();
 		click(fixture, 'Save connection');
 		expect(fixture.componentInstance.saved()).toBeFalse();
-		expect(fixture.nativeElement.textContent).toContain('Save without a working connection');
+		expect(fixture.nativeElement.textContent).toContain('Save anyway');
 		type(fixture, 'RPC port', '18443');
-		expect(fixture.nativeElement.textContent).not.toContain('Save without a working connection');
+		expect(fixture.nativeElement.textContent).not.toContain('Save anyway');
 		click(fixture, 'Save connection');
-		click(fixture, 'Save without a working connection');
+		click(fixture, 'Save anyway');
 		expect(fixture.componentInstance.saved()).toBeTrue();
 		expect(fixture.nativeElement.textContent.match(/Connection saved/g)?.length).toBe(1);
 		const applied = fixture.componentInstance.effective_configuration();

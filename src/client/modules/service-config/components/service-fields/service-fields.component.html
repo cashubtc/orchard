@@ -10,6 +10,14 @@
 		</orc-form-toggle-group>
 	</div>
 	@for (field of connection_fields(); track field.key) {
+		@if (field.section) {
+			<div class="field-section">
+				<h3>{{ field.section }}</h3>
+				@if (field.credential_caption) {
+					<p>{{ credential_caption() }}</p>
+				}
+			</div>
+		}
 		<ng-container *ngTemplateOutlet="field_template; context: {$implicit: field}"></ng-container>
 		@if (field.key === 'port' && configuration().service === 'mint') {
 			<div class="field-choice">
@@ -27,11 +35,13 @@
 			</div>
 		}
 	}
-	@if (optional_fields().length) {
-		<details class="optional-fields" [open]="optional_open()">
-			<summary>{{ optional_fields()[0].heading }}</summary>
+	@if (advanced_fields().length) {
+		<details class="advanced-fields" [open]="advanced_open()">
+			<summary>
+				Advanced<span class="advanced-tag">{{ type_label() }}</span>
+			</summary>
 			<div class="service-fields">
-				@for (field of optional_fields(); track field.key) {
+				@for (field of advanced_fields(); track field.key) {
 					<ng-container *ngTemplateOutlet="field_template; context: {$implicit: field}"></ng-container>
 				}
 			</div>
@@ -39,68 +49,148 @@
 	}
 
 	<ng-template #field_template let-field>
-		<orc-form-field-dynamic
-			class="service-field"
-			[class.service-field-wide]="field.credential || field.optional"
-			[style.--service-field-span]="field.span"
-			[hot]="field.hot"
-			[invalid]="field.flagged"
-			[standalone]="false"
-			(cancel)="resetField(field.key)"
-		>
-			<mat-form-field
-				appearance="fill"
-				class="orc-dynamic-form-field w-full"
-				[class.orc-hot-form-field]="field.hot"
-				[class.orc-cold-form-field]="!field.hot"
-			>
-				<mat-label>{{ field.label }}</mat-label>
-				@if (field.multiline) {
-					<textarea
-						matInput
-						[errorStateMatcher]="error_matcher"
-						[formControlName]="field.key"
-						[placeholder]="field.placeholder"
-						rows="2"
-						[formAutogrow]="true"
-						(input)="changed.emit()"
-						(focus)="focused.set(field.key)"
-						(blur)="focused.set(null)"
-						autocomplete="off"
-						spellcheck="false"
-					></textarea>
-				} @else {
-					<input
-						matInput
-						[errorStateMatcher]="error_matcher"
-						[formControlName]="field.key"
-						[placeholder]="field.placeholder"
-						[type]="field.password ? 'password' : 'text'"
-						(input)="changed.emit()"
-						(focus)="focused.set(field.key)"
-						(blur)="focused.set(null)"
-						[autocomplete]="field.password ? 'new-password' : 'off'"
-					/>
-				}
-				@if ((field.credential || field.password) && field.stored) {
-					<mat-hint
-						>Leave unchanged to keep it.
-						<button
-							type="button"
-							class="clear-field"
-							[disabled]="form().disabled"
-							[attr.aria-label]="'Clear ' + field.label"
-							(click)="clearField(field.key)"
-						>
-							Clear
-						</button></mat-hint
+		@if (field.saved_view) {
+			<div class="credential-saved" [class.credential-flagged]="field.flagged">
+				<span class="credential-icon"
+					><mat-icon class="mat-symbol-outline">{{ field.key === 'key' ? 'key' : 'verified' }}</mat-icon></span
+				>
+				<span class="credential-text">
+					<strong>{{ field.label }}</strong>
+					<small>Saved in Orchard · hidden</small>
+				</span>
+				<button
+					matButton
+					type="button"
+					[disabled]="form().disabled"
+					[attr.aria-label]="'Replace ' + field.label"
+					(click)="replaceField(field.key)"
+				>
+					Replace
+				</button>
+				<button
+					matButton
+					type="button"
+					[disabled]="form().disabled"
+					[attr.aria-label]="'Clear ' + field.label"
+					(click)="clearField(field.key)"
+				>
+					Clear
+				</button>
+			</div>
+		} @else if (field.mask; as mask) {
+			<div class="credential-masked" [class.credential-flagged]="field.flagged">
+				<span class="credential-label">{{ field.label }}</span>
+				<div class="pem-masked">
+					<span>{{ mask.begin }}</span>
+					<span class="pem-hidden"><mat-icon class="mat-symbol-outline">lock</mat-icon>{{ mask.hidden }} lines hidden</span>
+					<span>{{ mask.end }}</span>
+				</div>
+				<p class="credential-hint">
+					Hidden · stored encrypted when you save.
+					<button
+						type="button"
+						class="clear-field"
+						[disabled]="form().disabled"
+						[attr.aria-label]="'Replace ' + field.label"
+						(click)="clearField(field.key)"
 					>
-				} @else if ((field.credential || field.password) && field.cleared) {
-					<mat-hint>Cleared. Saving removes it.</mat-hint>
-				}
-			</mat-form-field>
-		</orc-form-field-dynamic>
-		@if (field.credential_caption) {
+						Replace
+					</button>
+				</p>
+			</div>
+		} @else {
+			<orc-form-field-dynamic
+				class="service-field"
+				[style.--service-field-span]="field.span"
+				[hot]="field.hot"
+				[invalid]="field.flagged"
+				[standalone]="false"
+				[info]="!!field.help"
+				(cancel)="resetField(field.key)"
+				(inform)="toggleHelp(field.key)"
+			>
+				<mat-form-field
+					appearance="fill"
+					class="orc-dynamic-form-field"
+					[class.w-full]="!field.pem"
+					[class.pem-form-field]="field.pem"
+					[class.orc-hot-form-field]="field.hot"
+					[class.orc-cold-form-field]="!field.hot"
+				>
+					<mat-label>{{ field.label }}</mat-label>
+					@if (field.multiline) {
+						<textarea
+							matInput
+							[errorStateMatcher]="error_matcher"
+							[formControlName]="field.key"
+							[placeholder]="field.placeholder"
+							[class.pem-input]="field.pem"
+							[attr.wrap]="field.pem ? 'off' : null"
+							[rows]="field.rows"
+							[formAutogrow]="!field.pem"
+							(input)="changed.emit()"
+							(focus)="focused.set(field.key)"
+							(blur)="focused.set(null)"
+							autocomplete="off"
+							spellcheck="false"
+						></textarea>
+					} @else {
+						<input
+							matInput
+							[errorStateMatcher]="error_matcher"
+							[formControlName]="field.key"
+							[placeholder]="field.placeholder"
+							[type]="field.password ? 'password' : 'text'"
+							(input)="changed.emit()"
+							(focus)="focused.set(field.key)"
+							(blur)="focused.set(null)"
+							[autocomplete]="field.password ? 'new-password' : 'off'"
+						/>
+					}
+					@if (field.replacing && field.stored) {
+						<mat-hint
+							>Paste the replacement.
+							<button
+								type="button"
+								class="clear-field"
+								[disabled]="form().disabled"
+								[attr.aria-label]="'Keep the saved ' + field.label"
+								(click)="keepField(field.key)"
+							>
+								Keep the saved one
+							</button></mat-hint
+						>
+					} @else if ((field.credential || field.password) && field.stored) {
+						<mat-hint
+							>Leave unchanged to keep it.
+							<button
+								type="button"
+								class="clear-field"
+								[disabled]="form().disabled"
+								[attr.aria-label]="'Clear ' + field.label"
+								(click)="clearField(field.key)"
+							>
+								Clear
+							</button></mat-hint
+						>
+					} @else if ((field.credential || field.password) && field.cleared) {
+						<mat-hint>Cleared. Saving removes it.</mat-hint>
+					} @else if (field.description) {
+						<mat-hint>{{ field.description }}</mat-hint>
+					}
+				</mat-form-field>
+			</orc-form-field-dynamic>
+			@if (field.help) {
+				<div class="orc-animation-expand-collapse" [class.animation-expanded]="field.help_open">
+					<div class="orc-animation-expand-collapse-inner">
+						<div class="flex p-b-1 w-max-18">
+							<orc-form-help-text class="orc-surface-container-high-bg">{{ field.help }}</orc-form-help-text>
+						</div>
+					</div>
+				</div>
+			}
+		}
+		@if (field.credential_caption && !field.section) {
 			<p class="field-caption">{{ credential_caption() }}</p>
 		}
 	</ng-template>

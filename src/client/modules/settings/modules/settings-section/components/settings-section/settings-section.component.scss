@@ -6,6 +6,11 @@
 	@extend %flex-grow;
 }
 
+// Fill the section so a form panel, and an editor's pinned actions, reach its bottom edge
+mat-sidenav-container {
+	flex: 1 0 auto;
+}
+
 .form-sidenav {
 	&.device-desktop {
 		width: 50%;

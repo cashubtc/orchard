@@ -6,6 +6,7 @@ export class ServiceFieldError extends Error {
 	constructor(
 		message: string,
 		public readonly field: ServiceFieldName,
+		public readonly title?: string,
 	) {
 		super(message);
 	}

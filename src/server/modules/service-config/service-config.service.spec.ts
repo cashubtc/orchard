@@ -183,7 +183,7 @@ describe('ServiceConfigService', () => {
 		expect(rows.get(ServiceSettingKey.SERVICE_BITCOIN_HOST)).toBe('new-node');
 	});
 
-	it('drops env metrics for another mint but keeps database TLS for the same database', async () => {
+	it('saves the metrics URL from the form and keeps database TLS for the same database', async () => {
 		config.set('service_environment.mint', {
 			type: 'cdk',
 			metrics_api: 'http://old/metrics',
@@ -197,12 +197,13 @@ describe('ServiceConfigService', () => {
 				values: [
 					{key: 'type', value: 'cdk'},
 					{key: 'host', value: 'new-mint'},
+					{key: 'metrics', value: 'http://new-mint:9090'},
 				],
 			},
 			false,
 		);
 		expect(config.get('cashu')).toMatchObject({
-			metrics_api: '',
+			metrics_api: 'http://new-mint:9090',
 			database_ca: 'old-ca',
 			database_cert: 'old-cert',
 			database_key: 'old-key',

@@ -80,7 +80,7 @@ describe('connection normalization', () => {
 			database: '/data/mint.db',
 		});
 	});
-	describe('environment-only mint metrics and database TLS', () => {
+	describe('mint metrics and environment-only database TLS', () => {
 		const environment = {
 			type: 'cdk',
 			rpc_host: 'mint',
@@ -98,26 +98,28 @@ describe('connection normalization', () => {
 				[ServiceSettingKey.SERVICE_MINT_HOST, values.host ?? 'mint'],
 				[ServiceSettingKey.SERVICE_MINT_PORT, values.port ?? '8086'],
 				[ServiceSettingKey.SERVICE_MINT_DATABASE, values.database ?? 'postgres://mint-db/mint'],
+				[ServiceSettingKey.SERVICE_MINT_METRICS, values.metrics ?? 'http://mint/metrics'],
 			]);
-		it('keeps them when the override points at the same mint and database', () => {
-			expect(mergeServiceConfig('mint', environment, stored({}))).toMatchObject({
+		it('keeps database TLS when the override points at the same database', () => {
+			expect(mergeServiceConfig('mint', environment, stored({host: 'other-mint'}))).toMatchObject({
 				metrics_api: 'http://mint/metrics',
 				database_ca: 'ca',
 				database_cert: 'cert',
 				database_key: 'key',
 			});
 		});
-		it('drops metrics for another mint and database TLS for another database', () => {
-			expect(mergeServiceConfig('mint', environment, stored({host: 'other-mint'}))).toMatchObject({
-				metrics_api: '',
-				database_ca: 'ca',
-			});
+		it('drops database TLS for another database', () => {
 			expect(mergeServiceConfig('mint', environment, stored({database: '/data/other.sqlite'}))).toMatchObject({
-				metrics_api: 'http://mint/metrics',
 				database_ca: '',
 				database_cert: '',
 				database_key: '',
 			});
+		});
+		it('stores the metrics URL like any other field, so a blank one turns metrics off', () => {
+			expect(mergeServiceConfig('mint', environment, stored({metrics: 'http://other/metrics'})).metrics_api).toBe(
+				'http://other/metrics',
+			);
+			expect(mergeServiceConfig('mint', environment, stored({metrics: ''})).metrics_api).toBe('');
 		});
 	});
 });

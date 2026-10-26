@@ -44,7 +44,10 @@ describe('ServiceConnectionComponent', () => {
 			button.textContent?.includes('Test again'),
 		)!;
 		expect(retry.classList).toContain('mat-mdc-unelevated-button');
-		expect(fixture.nativeElement.textContent).toContain('Save without a working connection');
+		expect(fixture.nativeElement.textContent).toContain('Save anyway');
+		// Retesting is the last, filled action; saving anyway is the deliberate one before it
+		const actions: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('.connection-actions button'));
+		expect(actions.map((button) => button.textContent?.trim())).toEqual(['Back', 'Skip', 'Save anyway', 'network_checkTest again']);
 		fixture.componentInstance.submit(true, true);
 		expect(applied).toHaveBeenCalledWith({
 			check: {...failure, saved: true},
@@ -52,7 +55,19 @@ describe('ServiceConnectionComponent', () => {
 		});
 		fixture.componentInstance.changed();
 		fixture.detectChanges();
-		expect(fixture.nativeElement.textContent).not.toContain('Save without a working connection');
+		expect(fixture.nativeElement.textContent).not.toContain('Save anyway');
+	});
+	it('explains a mint in setup mode inside the result', () => {
+		api.test.and.returnValue(of({...failure, ok: true, mode: 'setup', diagnostic: null}));
+		const fixture = TestBed.createComponent(ServiceConnectionComponent);
+		fixture.componentRef.setInput('configuration', bitcoinConfiguration());
+		fixture.componentRef.setInput('context', 'onboarding');
+		fixture.detectChanges();
+		fixture.componentInstance.submit(false);
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('orc-service-check-result').textContent).toContain(
+			'Orchard opens Federation setup after Review.',
+		);
 	});
 	it('keeps a saved result on refresh failure and retries without saving again', () => {
 		api.save.and.returnValue(of({...failure, ok: true, saved: true}));

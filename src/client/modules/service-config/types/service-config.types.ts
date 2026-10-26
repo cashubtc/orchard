@@ -11,12 +11,14 @@ export type ServiceField = {
 	credential?: boolean;
 	password?: boolean;
 	multiline?: boolean;
-	optional?: boolean;
-	heading?: string;
+	pem?: boolean;
+	help?: string;
+	advanced?: boolean;
 };
 export type ServiceDescriptor = {name: string; icon: string; description: string; types: {value: string; label: string}[]};
 export type ServiceDescriptors = Record<ServiceKind, ServiceDescriptor>;
 
+export type ServicePemMask = {begin: string; end: string; hidden: number};
 export type ServiceFieldState = ServiceField & {
 	stored: boolean;
 	cleared: boolean;
@@ -25,6 +27,13 @@ export type ServiceFieldState = ServiceField & {
 	flagged: boolean;
 	credential_caption: boolean;
 	span: number;
+	section: string | null;
+	help_open: boolean;
+	saved_view: boolean;
+	replacing: boolean;
+	mask: ServicePemMask | null;
+	description: string;
+	rows: number;
 };
 
 export type ServiceApplied = {

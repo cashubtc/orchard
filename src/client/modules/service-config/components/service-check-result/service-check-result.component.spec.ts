@@ -17,8 +17,9 @@ describe('ServiceCheckResultComponent', () => {
 		});
 		fixture.detectChanges();
 		expect(fixture.nativeElement.querySelector('pre').textContent).toBe('connect ECONNREFUSED <127.0.0.1:1>');
-		expect(fixture.nativeElement.textContent).toContain('Copy diagnostic');
+		expect(fixture.nativeElement.querySelector('button[aria-label="Copy diagnostic"]')).toBeTruthy();
 		expect(fixture.nativeElement.querySelector('.orc-error-card[role="alert"]')).toBeTruthy();
+		expect(fixture.nativeElement.querySelector('.result-icon').textContent).toBe('error');
 		const button: HTMLButtonElement = fixture.nativeElement.querySelector('button');
 		button.click();
 		fixture.detectChanges();
@@ -102,7 +103,10 @@ describe('ServiceCheckResultComponent', () => {
 			fields: [],
 			mode: 'setup',
 		});
+		fixture.componentRef.setInput('note', 'This mint is in federation setup mode.');
 		fixture.detectChanges();
 		expect(fixture.nativeElement.textContent).not.toContain('Mint mode:');
+		expect(fixture.nativeElement.textContent).toContain('This mint is in federation setup mode.');
+		expect(fixture.nativeElement.querySelector('.result-icon').textContent).toBe('check_circle');
 	});
 });

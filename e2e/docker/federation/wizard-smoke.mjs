@@ -49,7 +49,7 @@ async function checkOnboardingConnection(page, base) {
 	const saved_response = page.waitForResponse(
 		(response) => response.request().postData()?.includes('service_configuration_save') ?? false,
 	);
-	await configure.getByRole('button', {name: 'Save without a working connection', exact: true}).click();
+	await configure.getByRole('button', {name: 'Save anyway', exact: true}).click();
 	const saved = (await (await saved_response).json()).data?.service_configuration_save;
 	assert.equal(saved?.saved, true, 'Save without a working connection did not persist');
 	assert.equal(saved?.ok, false);

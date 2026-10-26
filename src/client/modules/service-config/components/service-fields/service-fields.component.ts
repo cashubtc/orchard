@@ -8,6 +8,7 @@ import type {ErrorStateMatcher} from '@angular/material/core';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
 import {MatButtonModule} from '@angular/material/button';
+import {MatIconModule} from '@angular/material/icon';
 
 /* Application Dependencies */
 import {OrcFormModule} from '@client/modules/form/form.module';
@@ -19,16 +20,17 @@ import {
 	SERVICE_DEFAULT_PORTS,
 	SERVICE_DESCRIPTORS,
 	SERVICE_FIELD_SPANS,
+	SERVICE_MINT_SECTIONS,
 	SERVICE_TRANSPORTS,
 } from '@client/modules/service-config/constants/service-config.constants';
-import {visibleServiceFields} from '@client/modules/service-config/helpers/service-config.helpers';
+import {servicePemDescription, servicePemMask, visibleServiceFields} from '@client/modules/service-config/helpers/service-config.helpers';
 
 /* Shared Dependencies */
 import type {OrchardServiceConfiguration} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-service-fields',
-	imports: [NgTemplateOutlet, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, OrcFormModule],
+	imports: [NgTemplateOutlet, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, OrcFormModule],
 	templateUrl: './service-fields.component.html',
 	styleUrl: './service-fields.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,39 +53,55 @@ export class ServiceFieldsComponent {
 		const configuration = this.configuration();
 		const form = this.form();
 		const visible = visibleServiceFields(configuration.service, form.controls['type'].value, form.controls['mtls']?.value ?? 'false');
-		const last_credential = visible.filter((field) => field.credential || field.password).at(-1)?.key;
-		const three_files = visible.some((field) => field.key === 'ca');
+		const sections: Record<string, string> = configuration.service === 'mint' ? SERVICE_MINT_SECTIONS : {};
+		// The mint explains its certificates under their heading; other services after the last credential
+		const credentials = visible.filter((field) => field.credential || field.password);
+		const caption_key = (configuration.service === 'mint' ? credentials[0] : credentials.at(-1))?.key;
 		return visible
 			.filter((field) => !!form.controls[field.key])
 			.map((field) => {
 				const control = form.controls[field.key];
 				const saved = configuration.fields.find((item) => item.key === field.key);
 				const stored = !!saved?.set && !control.dirty;
+				const replacing = this.replacing().includes(field.key);
 				return {
 					...field,
 					stored,
 					cleared: !!saved?.set && control.dirty && !control.value,
 					placeholder:
-						saved?.secret && stored
+						saved?.secret && stored && !replacing
 							? '•••••••• (unchanged)'
-							: (field.placeholder ?? (field.credential ? 'File path or pasted content' : '')),
+							: (field.placeholder ??
+								(field.pem ? 'Paste a PEM, or enter a file path' : field.credential ? 'File path or pasted content' : '')),
 					hot: control.dirty || this.focused() === field.key,
 					flagged: this.flagged().includes(field.key),
-					credential_caption: field.key === last_credential,
-					span: field.key === 'cert' && three_files ? 4 : (SERVICE_FIELD_SPANS[field.key] ?? 12),
+					credential_caption: field.key === caption_key,
+					span: SERVICE_FIELD_SPANS[field.key] ?? 12,
+					section: sections[field.key] ?? null,
+					help_open: this.help_open().includes(field.key),
+					// A saved pasted credential stays hidden until the operator chooses to replace it
+					saved_view: !!field.credential && !!saved?.secret && stored && !replacing,
+					replacing,
+					mask: field.key === 'key' ? servicePemMask(control.value) : null,
+					description: field.pem ? servicePemDescription(control.value) : '',
+					// A PEM shows whole, one row per line, instead of scrolling inside a capped box; a file path takes one
+					rows: field.pem && control.value ? control.value.split('\n').length : 2,
 				};
 			});
 	});
-	public readonly connection_fields = computed<ServiceFieldState[]>(() => this.fields().filter((field) => !field.optional));
-	public readonly optional_fields = computed<ServiceFieldState[]>(() => this.fields().filter((field) => field.optional));
-	// Opens for a flagged or filled-in optional value; otherwise the operator expands it
-	public readonly optional_open = computed<boolean>(() =>
-		this.optional_fields().some((field) => field.flagged || field.stored || !!this.form().controls[field.key].value),
+	public readonly connection_fields = computed<ServiceFieldState[]>(() => this.fields().filter((field) => !field.advanced));
+	public readonly advanced_fields = computed<ServiceFieldState[]>(() => this.fields().filter((field) => field.advanced));
+	// Opens for a flagged or filled-in advanced value; otherwise the operator expands it
+	public readonly advanced_open = computed<boolean>(() =>
+		this.advanced_fields().some((field) => field.flagged || field.stored || !!this.form().controls[field.key].value),
 	);
 	public readonly type_value = computed<string>(() => {
 		this.form_revision();
 		return this.form().controls['type'].value;
 	});
+	public readonly type_label = computed<string>(
+		() => this.descriptors[this.configuration().service].types.find((type) => type.value === this.type_value())?.label ?? '',
+	);
 	public readonly mtls_value = computed<string>(() => {
 		this.form_revision();
 		return this.form().controls['mtls']?.value ?? 'false';
@@ -94,6 +112,8 @@ export class ServiceFieldsComponent {
 	});
 
 	private readonly form_revision = signal<number>(0);
+	private readonly help_open = signal<string[]>([]);
+	private readonly replacing = signal<string[]>([]);
 
 	constructor() {
 		effect((on_cleanup) => {
@@ -124,7 +144,7 @@ export class ServiceFieldsComponent {
 		this.changed.emit();
 	}
 
-	/** Clear incompatible credentials when switching between Lightning implementations. */
+	/** Clear values the new implementation can't use. */
 	public onTypeChange(): void {
 		if (this.configuration().service === 'lightning') {
 			for (const key of ['cert', 'key', 'ca', 'macaroon']) {
@@ -134,7 +154,30 @@ export class ServiceFieldsComponent {
 			if (!this.form().controls['port'].dirty)
 				this.form().controls['port'].setValue(SERVICE_DEFAULT_PORTS[this.form().controls['type'].value]);
 		}
+		// Only cdk-mintd serves metrics, so another mint must not keep a hidden URL
+		const metrics = this.form().controls['metrics'];
+		if (metrics?.value && this.form().controls['type'].value !== 'cdk') {
+			metrics.setValue('');
+			metrics.markAsDirty();
+		}
 		this.changed.emit();
+	}
+
+	/** Show or hide a field's help text. */
+	public toggleHelp(key: string): void {
+		this.help_open.update((open) => (open.includes(key) ? open.filter((item) => item !== key) : [...open, key]));
+	}
+
+	/** Open the paste box for a saved credential, which stays saved until something new is entered. */
+	public replaceField(key: string): void {
+		if (this.form().disabled) return;
+		this.replacing.update((keys) => [...keys, key]);
+	}
+
+	/** Close the paste box and keep the saved credential. */
+	public keepField(key: string): void {
+		this.replacing.update((keys) => keys.filter((item) => item !== key));
+		this.resetField(key);
 	}
 
 	/** Restore a field's effective value without submitting a masked credential. */

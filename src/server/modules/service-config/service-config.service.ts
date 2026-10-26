@@ -154,12 +154,17 @@ export class ServiceConfigService implements OnApplicationBootstrap {
 				input.values.find((entry) => entry.key === field.name)?.value ?? String(config[field.config] ?? ''),
 			);
 		if (!definition.types.includes(values.type ?? '')) throw new BadRequestException('Unsupported service type');
-		if (values.api) {
+		for (const [field, label] of [
+			['api', 'Public mint URL'],
+			['metrics', 'Prometheus metrics URL'],
+		] as const) {
+			const value = values[field];
+			if (!value) continue;
 			try {
-				const url = new URL(values.api);
+				const url = new URL(value);
 				if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error();
 			} catch {
-				throw new BadRequestException('Public mint URL must be an HTTP or HTTPS URL without credentials');
+				throw new BadRequestException(`${label} must be an HTTP or HTTPS URL without credentials`);
 			}
 		}
 		if (values.host?.includes('@')) throw new BadRequestException('RPC host must not contain credentials');

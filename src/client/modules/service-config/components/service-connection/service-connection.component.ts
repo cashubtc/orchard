@@ -52,6 +52,11 @@ export class ServiceConnectionComponent implements OnInit {
 	public readonly environment_prefix = computed<string>(() => serviceEnvironmentPrefix(this.configuration().service));
 	public readonly busy = computed<boolean>(() => this.connection.busy() || this.pending());
 	public readonly failed = computed<boolean>(() => !!this.result() && !this.result()!.ok);
+	public readonly setup_note = computed<string | null>(() => {
+		if (this.result()?.mode !== 'setup') return null;
+		const next = this.context() === 'onboarding' ? ' Orchard opens Federation setup after Review.' : '';
+		return `This mint is in federation setup mode and won't serve wallets until you create or join a federation.${next}`;
+	});
 
 	/** Prepare the shared connection form after its configuration is bound. */
 	public ngOnInit(): void {

@@ -8,6 +8,8 @@ import {
 	serviceEnvironmentPrefix,
 	serviceFormInput,
 	serviceModeLabel,
+	servicePemDescription,
+	servicePemMask,
 	visibleServiceFields,
 } from './service-config.helpers';
 
@@ -50,11 +52,23 @@ describe('service configuration helpers', () => {
 				.filter((field) => field.credential)
 				.map((field) => field.key),
 		).toEqual(['ca', 'cert', 'key']);
-		expect(
-			visibleServiceFields(ServiceKind.Mint, 'cdk', 'false')
-				.filter((field) => field.optional)
-				.map((field) => field.key),
-		).toEqual(['database', 'api']);
+		expect(visibleServiceFields(ServiceKind.Mint, 'cdk', 'false').map((field) => field.key)).toEqual([
+			'host',
+			'port',
+			'database',
+			'api',
+			'metrics',
+		]);
+		// Only cdk-mintd serves Prometheus metrics
+		expect(visibleServiceFields(ServiceKind.Mint, 'nutshell', 'false').some((field) => field.key === 'metrics')).toBeFalse();
+	});
+	it('describes pasted PEMs by line count and hides all but their armour lines', () => {
+		const pem = '-----BEGIN PRIVATE KEY-----\nAAAA\nBBBB\n-----END PRIVATE KEY-----\n';
+		expect(servicePemDescription(pem)).toBe('PEM · 4 lines');
+		expect(servicePemDescription('/certs/ca.pem')).toBe('File on the Orchard host');
+		expect(servicePemDescription('')).toBe('');
+		expect(servicePemMask(pem)).toEqual({begin: '-----BEGIN PRIVATE KEY-----', end: '-----END PRIVATE KEY-----', hidden: 2});
+		expect(servicePemMask('/certs/client.key')).toBeNull();
 	});
 	it('keeps IPv6 endpoints unambiguous', () => {
 		const configuration = bitcoinConfiguration();

@@ -24,4 +24,5 @@ export enum ServiceSettingKey {
 	SERVICE_MINT_KEY = 'service.mint.key',
 	SERVICE_MINT_DATABASE = 'service.mint.database',
 	SERVICE_MINT_API = 'service.mint.api',
+	SERVICE_MINT_METRICS = 'service.mint.metrics',
 }

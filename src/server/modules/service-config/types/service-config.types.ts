@@ -3,7 +3,7 @@ import type {ServiceSettingKey} from '#server/modules/service-config/enums/servi
 
 export type ServiceName = 'bitcoin' | 'lightning' | 'mint';
 export type ServiceFieldName =
-	'type' | 'host' | 'port' | 'user' | 'password' | 'macaroon' | 'cert' | 'key' | 'ca' | 'mtls' | 'database' | 'api';
+	'type' | 'host' | 'port' | 'user' | 'password' | 'macaroon' | 'cert' | 'key' | 'ca' | 'mtls' | 'database' | 'api' | 'metrics';
 export type ServiceSource = 'orchard' | 'environment' | 'none';
 export type ServiceStatus = 'connected' | 'warning' | 'unreachable' | 'not_tested' | 'not_configured';
 export type ConnectionValues = Partial<Record<ServiceFieldName, string>>;

@@ -45,12 +45,12 @@ describe('OnboardingConfigureComponent', () => {
 		expect(api.test).toHaveBeenCalled();
 		expect(api.save).toHaveBeenCalledTimes(1);
 		expect(applied).not.toHaveBeenCalled();
-		click(fixture, 'Save without a working connection');
+		click(fixture, 'Save anyway');
 		expect(applied).toHaveBeenCalledWith(bypassed);
 		fixture.componentRef.setInput('pending', true);
 		fixture.detectChanges();
 		api.save.calls.reset();
-		click(fixture, 'Save without a working connection');
+		click(fixture, 'Save anyway');
 		expect(api.save).not.toHaveBeenCalled();
 	});
 	it('allows a database warning and explains setup mode', () => {

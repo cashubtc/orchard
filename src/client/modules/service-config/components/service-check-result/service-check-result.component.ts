@@ -21,7 +21,13 @@ import type {OrchardConnectionCheck} from '@shared/generated.types';
 })
 export class ServiceCheckResultComponent {
 	public readonly result = input.required<OrchardConnectionCheck>();
+	public readonly note = input<string | null>(null);
 	public readonly copied = signal<boolean | null>(null);
+
+	public readonly tone = computed<'success' | 'warning' | 'error'>(() =>
+		!this.result().ok ? 'error' : this.result().warning ? 'warning' : 'success',
+	);
+	public readonly icon = computed<string>(() => (this.tone() === 'success' ? 'check_circle' : this.tone()));
 
 	// Setup mode has its own explanation in the connection view
 	public readonly mode_label = computed<string>(() => {
@@ -42,6 +48,15 @@ export class ServiceCheckResultComponent {
 		]
 			.filter(Boolean)
 			.join(' · ');
+	});
+	// One short line each under the title: where Orchard dialled, then what it learned
+	public readonly details = computed<string[]>(() => {
+		const result = this.result();
+		const chain =
+			result.chain && !this.bitcoin_detail()
+				? `${result.chain_match === true ? 'Same network as your Bitcoin node: ' : 'Network: '}${result.chain}`
+				: '';
+		return [result.context, this.bitcoin_detail(), chain, this.mode_label()].filter(Boolean);
 	});
 
 	constructor() {

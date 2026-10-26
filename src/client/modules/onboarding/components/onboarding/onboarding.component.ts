@@ -49,7 +49,7 @@ import {ServiceKind, SettingKey, type OrchardConnectionCheck, type OrchardServic
 
 @Component({
 	selector: 'orc-onboarding',
-	host: {'[class.mobile]': 'mobile()'},
+	host: {'[class.mobile]': 'mobile()', '[class.fit-viewport]': "stage() === 'configure' && !mobile()"},
 	imports: [
 		NavSetupStepsComponent,
 		MatButtonModule,

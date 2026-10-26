@@ -9,7 +9,7 @@ import {
 	SERVICE_FIELDS,
 	SERVICE_MODE_LABELS,
 } from '@client/modules/service-config/constants/service-config.constants';
-import type {ServiceForm, ServiceField} from '@client/modules/service-config/types/service-config.types';
+import type {ServiceForm, ServiceField, ServicePemMask} from '@client/modules/service-config/types/service-config.types';
 /* Shared Dependencies */
 import type {OrchardServiceConfiguration, ServiceConnectionInput, ServiceKind} from '@shared/generated.types';
 
@@ -59,8 +59,24 @@ export function visibleServiceFields(service: ServiceKind, type: string, mtls: s
 	if (service === 'mint') {
 		if (mtls === 'true') keys.push('ca', 'cert', 'key');
 		keys.push('database', 'api');
+		// Only cdk-mintd serves Prometheus metrics
+		if (type === 'cdk') keys.push('metrics');
 	}
 	return SERVICE_FIELDS.filter((field) => keys.includes(field.key));
+}
+
+/** Describe a credential value: a pasted PEM by its line count, anything else as a file path. */
+export function servicePemDescription(value: string): string {
+	const text = value.trim();
+	if (!text) return '';
+	return text.startsWith('-----BEGIN') ? `PEM · ${text.split('\n').length} lines` : 'File on the Orchard host';
+}
+
+/** Keep only a pasted PEM's armour lines, so a private key never shows on screen. */
+export function servicePemMask(value: string): ServicePemMask | null {
+	const lines = value.trim().split('\n');
+	if (lines.length < 3 || !lines[0].startsWith('-----BEGIN')) return null;
+	return {begin: lines[0].trim(), end: lines[lines.length - 1].trim(), hidden: lines.length - 2};
 }
 
 /** Show an effective RPC endpoint without any credentials. */

@@ -30,6 +30,7 @@ import {
 	SERVICE_DEFINITIONS,
 	SERVICE_FAILURE_TITLES,
 	SERVICE_TLS_FAILURE_TITLE,
+	SERVICE_MINT_DETAILS_TITLE,
 	CONNECTION_TIMEOUT_MS,
 } from '#server/modules/service-config/constants/service-config.constants';
 import {
@@ -97,14 +98,20 @@ export class ServiceTestService {
 			}
 			if (service === 'mint') {
 				Object.assign(result, await this.testMint(config, values));
-				if (values.database) await this.checkMintDatabase(config, result, secrets);
+				this.validateMintDetails(values);
+				await this.checkMintDatabase(config, result, secrets);
 			}
 		} catch (error) {
 			result.ok = false;
 			result.diagnostic = redactDiagnostic(error, secrets);
 			const tls_failure =
 				isTlsDiagnostic(result.diagnostic) || (error instanceof ServiceFieldError && ['ca', 'cert', 'key'].includes(error.field));
-			result.title = tls_failure ? SERVICE_TLS_FAILURE_TITLE : SERVICE_FAILURE_TITLES[service];
+			result.title =
+				error instanceof ServiceFieldError && error.title
+					? error.title
+					: tls_failure
+						? SERVICE_TLS_FAILURE_TITLE
+						: SERVICE_FAILURE_TITLES[service];
 			result.fields = error instanceof ServiceFieldError ? [error.field] : diagnosticFields(result.diagnostic, service);
 		}
 		return result;
@@ -136,6 +143,7 @@ export class ServiceTestService {
 	public isValid(service: ServiceName, values: ConnectionValues): boolean {
 		try {
 			this.validate(values, service);
+			if (service === 'mint') this.validateMintDetails(values);
 			return true;
 		} catch {
 			return false;
@@ -173,6 +181,12 @@ export class ServiceTestService {
 			if (field !== 'macaroon' && !content?.includes('-----BEGIN '))
 				throw new ServiceFieldError('Not a PEM certificate or key', field);
 		}
+	}
+
+	/** Require the mint's database and public URL; tests check them after the RPC so the connection is still reported. */
+	private validateMintDetails(values: ConnectionValues): void {
+		if (!values.database) throw new ServiceFieldError('Missing mint database', 'database', SERVICE_MINT_DETAILS_TITLE);
+		if (!values.api) throw new ServiceFieldError('Missing public mint URL', 'api', SERVICE_MINT_DETAILS_TITLE);
 	}
 
 	/** Read the actual Bitcoin network through the same HTTP/proxy transport as normal RPCs. */
