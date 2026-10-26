@@ -1,20 +1,20 @@
 /* Native Dependencies */
-import type {ServiceDescriptors, ServiceField} from '@client/modules/service-config/types/service-config.types';
+import type {ServiceDescriptors, ServiceField, ServiceOption} from '@client/modules/service-config/types/service-config.types';
 
 export const SERVICE_DESCRIPTORS: ServiceDescriptors = {
 	bitcoin: {
 		name: 'Bitcoin',
 		icon: 'currency_bitcoin',
 		description: 'Blockchain, mempool and on-chain activity',
-		types: [{value: 'core', label: 'Bitcoin Core'}],
+		types: [{value: 'core', label: 'Bitcoin Core', detail: 'JSON-RPC with a user and password'}],
 	},
 	lightning: {
 		name: 'Lightning',
 		icon: 'bolt',
 		description: 'Channels, payments and wallet activity',
 		types: [
-			{value: 'lnd', label: 'LND'},
-			{value: 'cln', label: 'Core Lightning'},
+			{value: 'lnd', label: 'LND', detail: 'gRPC with a macaroon'},
+			{value: 'cln', label: 'Core Lightning', detail: 'gRPC with mutual TLS'},
 		],
 	},
 	mint: {
@@ -22,8 +22,8 @@ export const SERVICE_DESCRIPTORS: ServiceDescriptors = {
 		icon: 'account_balance',
 		description: 'Cashu mint management and federation',
 		types: [
-			{value: 'cdk', label: 'CDK'},
-			{value: 'nutshell', label: 'Nutshell'},
+			{value: 'cdk', label: 'CDK', detail: 'Standalone or federation member'},
+			{value: 'nutshell', label: 'Nutshell', detail: 'Standalone Python mint'},
 		],
 	},
 };
@@ -69,7 +69,7 @@ export const SERVICE_MINT_SECTIONS: Record<string, string> = {
 	ca: 'Mutual TLS certificates',
 	database: 'Mint data',
 };
-export const SERVICE_TRANSPORTS = [
+export const SERVICE_TRANSPORTS: Pick<ServiceOption, 'value' | 'label'>[] = [
 	{value: 'true', label: 'Mutual TLS'},
 	{value: 'false', label: 'Without mTLS'},
 ];

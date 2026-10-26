@@ -1,5 +1,19 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
+.check-success {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+	@extend %m-0;
+	@extend %font-size-s;
+	@extend %font-weight-semi-bold;
+	@extend %orc-status-active-color;
+	mat-icon {
+		font-size: 1.25rem;
+		width: 1.25rem;
+		height: 1.25rem;
+	}
+}
 // One compact strip: icon, title, short detail lines, then the upstream diagnostic
 .check-result {
 	@extend %flex;
@@ -14,9 +28,6 @@
 	width: 1.25rem;
 	height: 1.25rem;
 	margin-top: 0.125rem;
-}
-.result-success {
-	@extend %orc-status-active-color;
 }
 .result-text {
 	@extend %flex;

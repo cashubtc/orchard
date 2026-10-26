@@ -13,9 +13,14 @@ describe('ServiceFieldsComponent', () => {
 		fixture.componentRef.setInput('configuration', configuration);
 		fixture.componentRef.setInput('form', form);
 		fixture.componentRef.setInput('flagged', ['host']);
+		fixture.componentRef.setInput('flag_message', 'Missing RPC host');
 		fixture.detectChanges();
 		expect(fixture.nativeElement.querySelector('input[type="password"]').placeholder).toContain('unchanged');
 		expect(fixture.nativeElement.querySelector('[aria-invalid="true"]')).toBeTruthy();
+		// The flagged field explains itself through the form error component
+		expect(fixture.nativeElement.querySelector('mat-error orc-form-error').textContent).toContain('Missing RPC host');
+		expect(fixture.nativeElement.querySelector('orc-form-toggle-group.orc-segmented')).toBeNull();
+		expect(fixture.nativeElement.querySelector('orc-form-toggle').textContent).toContain('JSON-RPC with a user and password');
 		expect(fixture.nativeElement.querySelector('input[type="password"]').autocomplete).toBe('new-password');
 		const plain: HTMLInputElement[] = Array.from(fixture.nativeElement.querySelectorAll('input:not([type="password"])'));
 		expect(plain.length).toBe(3);
@@ -60,6 +65,9 @@ describe('ServiceFieldsComponent', () => {
 		expect(fixture.nativeElement.querySelectorAll('textarea').length).toBe(0);
 		expect(fixture.nativeElement.textContent).not.toContain('Paste each PEM');
 		expect(fixture.nativeElement.querySelector('.advanced-fields summary').textContent).toContain('CDK');
+		// Connection security is the small, label-only toggle; the implementation keeps its full size
+		const small: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('button.form-toggle.small'));
+		expect(small.map((toggle) => toggle.textContent!.trim())).toEqual(['Mutual TLS', 'Without mTLS']);
 		form.controls['mtls'].setValue('true');
 		fixture.detectChanges();
 		expect(headings()).toEqual(['Management RPC', 'Mutual TLS certificates', 'Mint data']);

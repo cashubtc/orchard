@@ -1,26 +1,17 @@
 <div class="connection-body">
-	@if (configuration().source === 'environment') {
-		<p class="environment-notice">
-			<mat-icon>info</mat-icon>
-			<span
-				>Filled in from your environment ({{ environment_prefix() }}). Saving stores these values in Orchard, where they take
-				precedence.</span
-			>
-		</p>
-	}
+	<!-- A parent's heading scrolls with the form rather than staying pinned above it -->
+	<ng-content select="[connection-heading]"></ng-content>
 	<orc-service-fields
 		[configuration]="configuration()"
 		[form]="form"
 		[flagged]="result()?.fields ?? []"
+		[flag_message]="flag_message()"
 		(changed)="changed()"
 	></orc-service-fields>
 </div>
 <div class="connection-foot">
-	@if (busy()) {
-		<mat-progress-bar mode="indeterminate" aria-label="Updating connection"></mat-progress-bar>
-	}
 	@if (result(); as check) {
-		<orc-service-check-result [result]="check" [note]="setup_note()"></orc-service-check-result>
+		<orc-service-check-result [result]="check"></orc-service-check-result>
 	}
 	@if (error()) {
 		<p class="orc-error-color" role="alert">{{ error() }}</p>
@@ -40,24 +31,44 @@
 		<span class="actions-spacer"></span>
 		@if (saved() && context() === 'settings') {
 			<button matButton="filled" type="button" [disabled]="busy()" (click)="done.emit()">Done</button>
-		} @else if (failed()) {
-			<!-- After a failed test, retesting is the default and saving is the deliberate choice -->
-			<button matButton="outlined" type="button" [disabled]="busy()" (click)="submit(true, true)">Save anyway</button>
-			<button matButton="filled" type="button" [disabled]="busy()" (click)="submit(false)">
-				<mat-icon>network_check</mat-icon>Test again
-			</button>
 		} @else {
-			<button matButton="outlined" type="button" [disabled]="busy()" (click)="submit(false)">
-				<mat-icon>network_check</mat-icon>{{ result() ? 'Test again' : 'Test connection' }}
+			<!-- The buttons keep their place and size while a request runs; only the clicked one shows progress -->
+			<button matButton="outlined" type="button" [disabled]="busy()" [attr.aria-busy]="testing()" (click)="submit(false)">
+				@if (testing()) {
+					<mat-progress-spinner
+						matButtonIcon
+						class="button-spinner"
+						mode="indeterminate"
+						diameter="18"
+						strokeWidth="2"
+						aria-hidden="true"
+					></mat-progress-spinner>
+				} @else {
+					<mat-icon>network_check</mat-icon>
+				}
+				Test connection
 			</button>
-			<button matButton="filled" type="button" [disabled]="busy()" (click)="submit(true)">
-				{{
-					context() === 'onboarding'
-						? 'Save and continue'
-						: configuration().source === 'environment'
-							? 'Save to Orchard'
-							: 'Save connection'
-				}}
+			<button
+				matButton="filled"
+				type="button"
+				class="save-button"
+				[disabled]="busy()"
+				[attr.aria-busy]="saving()"
+				(click)="submit(true, failed())"
+			>
+				<!-- The other label is reserved invisibly, so the button keeps the wider width whichever one shows -->
+				<span class="save-label" [class.save-label-hidden]="saving()" [attr.data-reserve]="failed() ? save_label() : 'Save anyway'"
+					><span>{{ failed() ? 'Save anyway' : save_label() }}</span></span
+				>
+				@if (saving()) {
+					<mat-progress-spinner
+						class="button-spinner save-spinner"
+						mode="indeterminate"
+						diameter="18"
+						strokeWidth="2"
+						aria-hidden="true"
+					></mat-progress-spinner>
+				}
 			</button>
 		}
 	</div>

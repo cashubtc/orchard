@@ -1,8 +1,4 @@
 <section class="configure-card" [attr.aria-labelledby]="'onboarding-configure-' + configuration().service">
-	<div class="configure-heading">
-		<h2 [id]="'onboarding-configure-' + configuration().service">{{ descriptors[configuration().service].name }}</h2>
-		<p>{{ copy[configuration().service].configure }}</p>
-	</div>
 	<orc-service-connection
 		[configuration]="configuration()"
 		[pending]="pending()"
@@ -11,5 +7,10 @@
 		(applied)="applied.emit($event.check)"
 		(backed)="backed.emit()"
 		(skipped)="skipped.emit()"
-	></orc-service-connection>
+	>
+		<div connection-heading class="configure-heading">
+			<h2 [id]="'onboarding-configure-' + configuration().service">{{ descriptors[configuration().service].name }}</h2>
+			<p>{{ copy[configuration().service].configure }}</p>
+		</div>
+	</orc-service-connection>
 </section>

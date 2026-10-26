@@ -7,10 +7,11 @@
 	@extend %flex;
 	@extend %flex-column;
 	@extend %flex-items-center;
-	@extend %flex-gap-2;
+	gap: 1.25rem;
 	max-width: 65rem;
 	margin: auto;
-	padding: 3.5rem 1.5rem 4rem;
+	padding: 2rem 1.5rem 3rem;
+	@extend %relative;
 	> * {
 		@extend %w-full;
 	}
@@ -23,10 +24,10 @@
 	@extend %flex-column;
 	@extend %flex-items-center;
 	@extend %text-center;
-	gap: 0.875rem;
+	gap: 0.5rem;
 	h1 {
 		@extend %m-0;
-		font-size: 1.75rem;
+		font-size: 1.375rem;
 		@extend %font-weight-semi-bold;
 	}
 	p {
@@ -36,6 +37,12 @@
 		line-height: 1.5;
 		@extend %orc-on-surface-variant-color;
 	}
+}
+// Overlays the top edge, so loading never pushes the page down
+.page-progress {
+	@extend %absolute;
+	top: 0;
+	left: 0;
 }
 .onboarding-error {
 	max-width: 55rem;
@@ -105,7 +112,7 @@ orc-onboarding-configure {
 	.onboarding-container {
 		@extend %h-dvh;
 		box-sizing: border-box;
-		padding: 2.5rem 1.5rem 1.5rem;
+		padding: 1.5rem 1.5rem 1.25rem;
 	}
 	.configure-layout {
 		flex: 1 1 auto;

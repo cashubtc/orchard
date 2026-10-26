@@ -1,6 +1,6 @@
 <main class="onboarding-container">
 	<header class="onboarding-header">
-		<orc-graphic-orchard-logo height="3rem"></orc-graphic-orchard-logo>
+		<orc-graphic-orchard-logo height="2rem"></orc-graphic-orchard-logo>
 		<h1 tabindex="-1">{{ stage_copy().title }}</h1>
 		@if (stage_copy().intro; as intro) {
 			<p>{{ intro }}</p>
@@ -12,8 +12,8 @@
 			{{ error() }}<button matButton (click)="retry()">Try again</button>
 		</div>
 	}
-	@if (busy()) {
-		<mat-progress-bar mode="indeterminate" aria-label="Loading services"></mat-progress-bar>
+	@if (page_loading()) {
+		<mat-progress-bar class="page-progress" mode="indeterminate" aria-label="Loading services"></mat-progress-bar>
 	}
 	@if (configurations().length) {
 		@switch (stage()) {

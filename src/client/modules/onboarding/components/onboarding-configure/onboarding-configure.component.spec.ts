@@ -41,7 +41,7 @@ describe('OnboardingConfigureComponent', () => {
 		fixture.componentInstance.applied.subscribe(applied);
 		click(fixture, 'Save and continue');
 		expect(applied).not.toHaveBeenCalled();
-		click(fixture, 'Test again');
+		click(fixture, 'Test connection');
 		expect(api.test).toHaveBeenCalled();
 		expect(api.save).toHaveBeenCalledTimes(1);
 		expect(applied).not.toHaveBeenCalled();
@@ -53,7 +53,7 @@ describe('OnboardingConfigureComponent', () => {
 		click(fixture, 'Save anyway');
 		expect(api.save).not.toHaveBeenCalled();
 	});
-	it('allows a database warning and explains setup mode', () => {
+	it('allows a database warning and scrolls its heading with the form', () => {
 		const check = {
 			ok: true,
 			warning: true,
@@ -74,9 +74,10 @@ describe('OnboardingConfigureComponent', () => {
 		fixture.detectChanges();
 		const applied = jasmine.createSpy();
 		fixture.componentInstance.applied.subscribe(applied);
+		expect(fixture.nativeElement.querySelector('.connection-body > .configure-heading h2').textContent).toBe('Mint');
 		click(fixture, 'Test connection');
-		expect(fixture.nativeElement.textContent).toContain('Federation setup after Review');
-		expect(fixture.nativeElement.textContent).toContain('Filled in from your environment');
+		expect(fixture.nativeElement.querySelector('.orc-warning-card').textContent).toContain('Database unavailable');
+		expect(fixture.nativeElement.querySelector('[aria-invalid="true"]')).toBeTruthy();
 		click(fixture, 'Save and continue');
 		expect(applied).toHaveBeenCalledWith(stored);
 	});

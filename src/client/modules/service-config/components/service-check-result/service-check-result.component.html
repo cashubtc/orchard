@@ -1,34 +1,35 @@
-<section
-	class="check-result"
-	[class.orc-low-card]="tone() === 'success'"
-	[class.orc-warning-card]="tone() === 'warning'"
-	[class.orc-error-card]="tone() === 'error'"
-	[attr.role]="result().ok ? 'status' : 'alert'"
->
-	<mat-icon class="result-icon" [class.result-success]="tone() === 'success'">{{ icon() }}</mat-icon>
-	<div class="result-text">
-		<h3>{{ result().title }}</h3>
-		@for (line of details(); track line) {
-			<p>{{ line }}</p>
-		}
-		@if (note()) {
-			<p>{{ note() }}</p>
-		}
+@if (tone() === 'success') {
+	<!-- A clean pass needs no detail; warnings and failures get the full strip -->
+	<p class="check-success" role="status"><mat-icon>check_circle</mat-icon>{{ result().title }}</p>
+} @else {
+	<section
+		class="check-result"
+		[class.orc-warning-card]="tone() === 'warning'"
+		[class.orc-error-card]="tone() === 'error'"
+		[attr.role]="result().ok ? 'status' : 'alert'"
+	>
+		<mat-icon class="result-icon">{{ icon() }}</mat-icon>
+		<div class="result-text">
+			<h3>{{ result().title }}</h3>
+			@for (line of details(); track line) {
+				<p>{{ line }}</p>
+			}
+			@if (result().diagnostic; as diagnostic) {
+				<pre>{{ diagnostic }}</pre>
+			}
+		</div>
 		@if (result().diagnostic; as diagnostic) {
-			<pre>{{ diagnostic }}</pre>
+			<button
+				mat-icon-button
+				type="button"
+				aria-label="Copy diagnostic"
+				[cdkCopyToClipboard]="diagnostic"
+				(cdkCopyToClipboardCopied)="copied.set($event)"
+			>
+				<mat-icon>content_copy</mat-icon>
+			</button>
 		}
-	</div>
-	@if (result().diagnostic; as diagnostic) {
-		<button
-			mat-icon-button
-			type="button"
-			aria-label="Copy diagnostic"
-			[cdkCopyToClipboard]="diagnostic"
-			(cdkCopyToClipboardCopied)="copied.set($event)"
-		>
-			<mat-icon>content_copy</mat-icon>
-		</button>
-	}
-</section>
-<p role="status" aria-live="polite" class="copy-feedback">{{ copied() === true ? 'Diagnostic copied.' : '' }}</p>
-<p role="alert" class="copy-feedback orc-error-color">{{ copied() === false ? 'Could not copy the diagnostic.' : '' }}</p>
+	</section>
+	<p role="status" aria-live="polite" class="copy-feedback">{{ copied() === true ? 'Diagnostic copied.' : '' }}</p>
+	<p role="alert" class="copy-feedback orc-error-color">{{ copied() === false ? 'Could not copy the diagnostic.' : '' }}</p>
+}

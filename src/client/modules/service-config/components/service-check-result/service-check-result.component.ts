@@ -21,7 +21,6 @@ import type {OrchardConnectionCheck} from '@shared/generated.types';
 })
 export class ServiceCheckResultComponent {
 	public readonly result = input.required<OrchardConnectionCheck>();
-	public readonly note = input<string | null>(null);
 	public readonly copied = signal<boolean | null>(null);
 
 	public readonly tone = computed<'success' | 'warning' | 'error'>(() =>
@@ -29,7 +28,7 @@ export class ServiceCheckResultComponent {
 	);
 	public readonly icon = computed<string>(() => (this.tone() === 'success' ? 'check_circle' : this.tone()));
 
-	// Setup mode has its own explanation in the connection view
+	// Onboarding's Review explains setup mode, so a result doesn't label it
 	public readonly mode_label = computed<string>(() => {
 		const result = this.result();
 		if (result.mode === 'setup') return '';

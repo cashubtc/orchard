@@ -1,17 +1,17 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal} from '@angular/core';
 
 /* Vendor Dependencies */
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
-import {MatProgressBarModule} from '@angular/material/progress-bar';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 
 /* Native Dependencies */
 import {ServiceFormService} from '@client/modules/service-config/services/service-form.service';
 import {ServiceFieldsComponent} from '@client/modules/service-config/components/service-fields/service-fields.component';
 import {ServiceCheckResultComponent} from '@client/modules/service-config/components/service-check-result/service-check-result.component';
 import {ServiceRefreshAlertComponent} from '@client/modules/service-config/components/service-refresh-alert/service-refresh-alert.component';
-import {serviceAppliedConfiguration, serviceEnvironmentPrefix} from '@client/modules/service-config/helpers/service-config.helpers';
+import {serviceAppliedConfiguration} from '@client/modules/service-config/helpers/service-config.helpers';
 import type {ServiceApplied, ServiceForm} from '@client/modules/service-config/types/service-config.types';
 
 /* Shared Dependencies */
@@ -23,7 +23,7 @@ import type {OrchardConnectionCheck, OrchardServiceConfiguration} from '@shared/
 	imports: [
 		MatButtonModule,
 		MatIconModule,
-		MatProgressBarModule,
+		MatProgressSpinnerModule,
 		ServiceFieldsComponent,
 		ServiceCheckResultComponent,
 		ServiceRefreshAlertComponent,
@@ -49,14 +49,23 @@ export class ServiceConnectionComponent implements OnInit {
 	public readonly saved = this.connection.saved;
 	public readonly error = this.connection.error;
 
-	public readonly environment_prefix = computed<string>(() => serviceEnvironmentPrefix(this.configuration().service));
 	public readonly busy = computed<boolean>(() => this.connection.busy() || this.pending());
 	public readonly failed = computed<boolean>(() => !!this.result() && !this.result()!.ok);
-	public readonly setup_note = computed<string | null>(() => {
-		if (this.result()?.mode !== 'setup') return null;
-		const next = this.context() === 'onboarding' ? ' Orchard opens Federation setup after Review.' : '';
-		return `This mint is in federation setup mode and won't serve wallets until you create or join a federation.${next}`;
+	// A failure pinned to one field explains itself under that field; several share a generic prompt
+	public readonly flag_message = computed<string | null>(() => {
+		const result = this.result();
+		return result?.fields.length === 1 && result.diagnostic ? result.diagnostic : null;
 	});
+	public readonly testing = computed<boolean>(() => this.connection.busy() && this.action() === 'test');
+	public readonly saving = computed<boolean>(() => this.connection.busy() && this.action() === 'save');
+	// After a failed test the same button saves without a working connection and reads "Save anyway" instead
+	public readonly save_label = computed<string>(() => {
+		if (this.context() === 'onboarding') return 'Save and continue';
+		return this.configuration().source === 'environment' ? 'Save to Orchard' : 'Save connection';
+	});
+
+	// Which request is running, so only the button that started it shows progress
+	private readonly action = signal<'test' | 'save' | null>(null);
 
 	/** Prepare the shared connection form after its configuration is bound. */
 	public ngOnInit(): void {
@@ -70,6 +79,7 @@ export class ServiceConnectionComponent implements OnInit {
 	/** Share tests and confirmed saves between onboarding and Settings, emitting what a save applied. */
 	public submit(save: boolean, save_unreachable = false): void {
 		if (this.busy()) return;
+		this.action.set(save ? 'save' : 'test');
 		this.connection.submit(save, save_unreachable).subscribe((check) => {
 			this.checked.emit(check);
 			if (this.saved()) this.applied.emit({check, configuration: serviceAppliedConfiguration(this.configuration(), this.form)});

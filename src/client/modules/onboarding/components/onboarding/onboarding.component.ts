@@ -122,6 +122,8 @@ export class OnboardingComponent implements OnInit {
 	);
 	public readonly setup_mode = computed(() => this.mint_enabled() && this.federationService.mode() === 'setup');
 	public readonly busy = computed(() => this.loading() || this.opening() || this.saving() || (this.configure()?.busy() ?? false));
+	// A connection test or save shows progress in its own button, so the page bar covers only page work
+	public readonly page_loading = computed(() => this.loading() || this.opening() || this.saving());
 
 	private pending_advance = false;
 

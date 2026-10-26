@@ -1,6 +1,6 @@
 import {signal} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
-import {of} from 'rxjs';
+import {of, Subject} from 'rxjs';
 import {ServiceConfigService} from '@client/modules/service-config/services/service-config.service';
 import {bitcoinConfiguration} from '@client/modules/service-config/helpers/service-config.fixture';
 import {ServiceKind, type OrchardConnectionCheck} from '@shared/generated.types';
@@ -36,18 +36,18 @@ describe('ServiceConnectionComponent', () => {
 		fixture.detectChanges();
 		const applied = jasmine.createSpy();
 		fixture.componentInstance.applied.subscribe(applied);
-		expect(fixture.nativeElement.textContent).toContain('Test connection');
+		const actions = (): string[] =>
+			Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('.connection-actions button')).map(
+				(button) =>
+					`${button.textContent?.replace(/\s+/g, ' ').trim()}|${button.classList.contains('mat-mdc-unelevated-button') ? 'filled' : 'outlined'}`,
+			);
+		const before = actions();
+		expect(before).toEqual(['Back|outlined', 'Skip|outlined', 'network_check Test connection|outlined', 'Save and continue|filled']);
 		fixture.componentInstance.submit(false);
 		fixture.detectChanges();
 		expect(applied).not.toHaveBeenCalled();
-		const retry: HTMLButtonElement = Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button')).find((button) =>
-			button.textContent?.includes('Test again'),
-		)!;
-		expect(retry.classList).toContain('mat-mdc-unelevated-button');
-		expect(fixture.nativeElement.textContent).toContain('Save anyway');
-		// Retesting is the last, filled action; saving anyway is the deliberate one before it
-		const actions: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('.connection-actions button'));
-		expect(actions.map((button) => button.textContent?.trim())).toEqual(['Back', 'Skip', 'Save anyway', 'network_checkTest again']);
+		// A failed test changes only the save label; no button moves or swaps emphasis
+		expect(actions()).toEqual([...before.slice(0, 3), 'Save anyway|filled']);
 		fixture.componentInstance.submit(true, true);
 		expect(applied).toHaveBeenCalledWith({
 			check: {...failure, saved: true},
@@ -57,17 +57,34 @@ describe('ServiceConnectionComponent', () => {
 		fixture.detectChanges();
 		expect(fixture.nativeElement.textContent).not.toContain('Save anyway');
 	});
-	it('explains a mint in setup mode inside the result', () => {
-		api.test.and.returnValue(of({...failure, ok: true, mode: 'setup', diagnostic: null}));
+	it('shows progress only in the button that started the request', () => {
+		const pending = new Subject<OrchardConnectionCheck>();
+		api.test.and.returnValue(pending);
+		const fixture = TestBed.createComponent(ServiceConnectionComponent);
+		fixture.componentRef.setInput('configuration', bitcoinConfiguration());
+		fixture.detectChanges();
+		fixture.componentInstance.submit(false);
+		fixture.detectChanges();
+		const [test, save]: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('.connection-actions button'));
+		expect(test.querySelector('mat-progress-spinner')).toBeTruthy();
+		expect(test.getAttribute('aria-busy')).toBe('true');
+		expect(save.querySelector('mat-progress-spinner')).toBeNull();
+		expect(fixture.nativeElement.querySelector('mat-progress-bar')).toBeNull();
+		pending.next(failure);
+		pending.complete();
+		fixture.detectChanges();
+		expect(test.querySelector('mat-progress-spinner')).toBeNull();
+	});
+	it('reports a passing setup-mode mint with the plain success line', () => {
+		api.test.and.returnValue(of({...failure, ok: true, title: 'Connection successful', mode: 'setup', diagnostic: null}));
 		const fixture = TestBed.createComponent(ServiceConnectionComponent);
 		fixture.componentRef.setInput('configuration', bitcoinConfiguration());
 		fixture.componentRef.setInput('context', 'onboarding');
 		fixture.detectChanges();
 		fixture.componentInstance.submit(false);
 		fixture.detectChanges();
-		expect(fixture.nativeElement.querySelector('orc-service-check-result').textContent).toContain(
-			'Orchard opens Federation setup after Review.',
-		);
+		const result: HTMLElement = fixture.nativeElement.querySelector('orc-service-check-result');
+		expect(result.textContent?.replace('check_circle', '').trim()).toBe('Connection successful');
 	});
 	it('keeps a saved result on refresh failure and retries without saving again', () => {
 		api.save.and.returnValue(of({...failure, ok: true, saved: true}));
@@ -96,12 +113,12 @@ describe('ServiceConnectionComponent', () => {
 		expect(fixture.componentInstance.saved()).toBeTrue();
 		expect(fixture.nativeElement.textContent).not.toContain('Retry status refresh');
 	});
-	it('names the environment prefix and blocks requests during a parent refresh', () => {
+	it('blocks requests during a parent refresh', () => {
 		const fixture = TestBed.createComponent(ServiceConnectionComponent);
 		fixture.componentRef.setInput('configuration', {...bitcoinConfiguration(), source: 'environment'});
 		fixture.componentRef.setInput('pending', true);
 		fixture.detectChanges();
-		expect(fixture.nativeElement.textContent).toContain('BITCOIN_*');
+		expect(fixture.nativeElement.textContent).not.toContain('BITCOIN_*');
 		const calls = api.test.calls.count();
 		fixture.componentInstance.submit(false);
 		expect(api.test.calls.count()).toBe(calls);

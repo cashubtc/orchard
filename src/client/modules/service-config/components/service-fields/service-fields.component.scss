@@ -22,6 +22,14 @@
 	@extend %flex-gap-0-5;
 	margin-bottom: 0.75rem;
 }
+// The native group grows along a row; in this column it takes its content's height instead of collapsing
+.field-choice orc-form-toggle-group {
+	flex: none;
+}
+// A short either-or sits at its content's width instead of spanning the form
+.toggle-fit {
+	align-self: flex-start;
+}
 .choice-label,
 .field-caption {
 	@extend %font-size-xs;

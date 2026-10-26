@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {Component, ChangeDetectionStrategy, computed, effect, input, output, signal} from '@angular/core';
 import {NgTemplateOutlet} from '@angular/common';
-import {ReactiveFormsModule} from '@angular/forms';
+import {ReactiveFormsModule, type ValidationErrors} from '@angular/forms';
 
 /* Vendor Dependencies */
 import type {ErrorStateMatcher} from '@angular/material/core';
@@ -41,10 +41,13 @@ export class ServiceFieldsComponent {
 	};
 	public readonly descriptors = SERVICE_DESCRIPTORS;
 	public readonly transports = SERVICE_TRANSPORTS;
+	// The server flagged the field rather than a validator, so the form error shows the projected message
+	public readonly flagged_error: ValidationErrors = {orchardServiceFlagged: true};
 
 	public readonly configuration = input.required<OrchardServiceConfiguration>();
 	public readonly form = input.required<ServiceForm>();
 	public readonly flagged = input<string[]>([]);
+	public readonly flag_message = input<string | null>(null);
 	public readonly changed = output<void>();
 	public readonly focused = signal<string | null>(null);
 

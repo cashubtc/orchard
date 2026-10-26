@@ -61,52 +61,49 @@ describe('ServiceCheckResultComponent', () => {
 		expect(fixture.nativeElement.querySelector('h3').textContent).toBe("Couldn't connect to the mint");
 		expect(fixture.nativeElement.querySelector('pre').textContent).toBe('14 UNAVAILABLE: TLS certificate rejected');
 	});
-	it('formats Bitcoin details, member metadata and network matches without raw setup labels', () => {
+	it('shows a clean pass as one green line and keeps details for warnings', () => {
 		const fixture = TestBed.createComponent(ServiceCheckResultComponent);
 		fixture.componentRef.setInput('result', {
 			ok: true,
 			warning: false,
 			saved: true,
 			title: 'Connection successful',
-			context: '',
+			context: 'node:38332 · HTTP RPC',
 			fields: [],
 			bitcoin_version: '28.1',
 			bitcoin_blocks: 214880,
 			chain: 'signet',
 		});
 		fixture.detectChanges();
-		expect(fixture.nativeElement.querySelector('h3').textContent).toBe('Connection successful');
-		expect(fixture.nativeElement.textContent).not.toContain('Saved and reconnected');
-		expect(fixture.nativeElement.textContent).toContain('Bitcoin Core 28.1 · signet · block 214,880');
+		const success: HTMLElement = fixture.nativeElement.querySelector('.check-success[role="status"]');
+		expect(success.textContent?.replace('check_circle', '')).toBe('Connection successful');
+		expect(fixture.nativeElement.querySelector('.check-result')).toBeNull();
+		expect(fixture.nativeElement.textContent).not.toContain('Bitcoin Core 28.1');
 		fixture.componentRef.setInput('result', {
 			ok: true,
-			warning: false,
+			warning: true,
 			saved: false,
-			title: 'Connected',
-			context: '',
-			fields: [],
+			title: 'Mint RPC connected; database could not be opened',
+			context: 'mint:8086 · gRPC',
+			fields: ['database'],
 			mode: 'member',
 			mint_member_id: 3,
 			mint_member_count: 5,
-			chain: 'signet',
-			chain_match: true,
 		});
 		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('.check-success')).toBeNull();
+		expect(fixture.nativeElement.textContent).toContain('mint:8086 · gRPC');
 		expect(fixture.nativeElement.textContent).toContain('Federation member 3 of 5');
-		expect(fixture.nativeElement.textContent).toContain('Same network as your Bitcoin node: signet');
 		fixture.componentRef.setInput('result', {
 			ok: true,
-			warning: false,
+			warning: true,
 			saved: false,
-			title: 'Connected',
+			title: 'Mint RPC connected; database could not be opened',
 			context: '',
-			fields: [],
+			fields: ['database'],
 			mode: 'setup',
 		});
-		fixture.componentRef.setInput('note', 'This mint is in federation setup mode.');
 		fixture.detectChanges();
-		expect(fixture.nativeElement.textContent).not.toContain('Mint mode:');
-		expect(fixture.nativeElement.textContent).toContain('This mint is in federation setup mode.');
-		expect(fixture.nativeElement.querySelector('.result-icon').textContent).toBe('check_circle');
+		expect(fixture.nativeElement.textContent).not.toContain('Federation setup');
 	});
 });

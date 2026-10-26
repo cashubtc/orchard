@@ -15,7 +15,8 @@ export type ServiceField = {
 	help?: string;
 	advanced?: boolean;
 };
-export type ServiceDescriptor = {name: string; icon: string; description: string; types: {value: string; label: string}[]};
+export type ServiceOption = {value: string; label: string; detail: string};
+export type ServiceDescriptor = {name: string; icon: string; description: string; types: ServiceOption[]};
 export type ServiceDescriptors = Record<ServiceKind, ServiceDescriptor>;
 
 export type ServicePemMask = {begin: string; end: string; hidden: number};

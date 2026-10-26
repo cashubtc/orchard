@@ -25,15 +25,6 @@
 	border-top-style: solid;
 	@extend %orc-outline-variant-border;
 }
-.environment-notice {
-	@extend %flex;
-	@extend %flex-gap-0-5;
-	@extend %font-size-s;
-	@extend %orc-outline-color;
-	mat-icon {
-		@extend %flex-shrink-0;
-	}
-}
 .connection-actions {
 	@extend %flex;
 	@extend %flex-wrap;
@@ -42,6 +33,37 @@
 }
 .actions-spacer {
 	@extend %flex-grow;
+}
+.button-spinner {
+	--mat-progress-spinner-active-indicator-color: currentColor;
+}
+// Material spaces only a mat-icon in its icon slot, so the spinner takes the same offsets
+.button-spinner[matButtonIcon] {
+	margin-right: var(--mat-button-outlined-icon-spacing, 8px);
+	margin-left: var(--mat-button-outlined-icon-offset, -8px);
+}
+// The labels keep the button's width while a centred spinner stands in for them
+.save-button {
+	@extend %relative;
+}
+.save-label {
+	display: inline-grid;
+	> span,
+	&::after {
+		grid-area: 1 / 1;
+	}
+	&::after {
+		content: attr(data-reserve);
+		visibility: hidden;
+	}
+}
+.save-label-hidden {
+	visibility: hidden;
+}
+.save-spinner {
+	@extend %absolute;
+	inset: 0;
+	margin: auto;
 }
 p {
 	@extend %m-0;

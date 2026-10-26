@@ -1,6 +1,6 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
-// The heading stays at the top while the connection form scrolls between it and the pinned actions
+// The heading scrolls with the connection form above its pinned actions
 :host {
 	@extend %flex;
 	@extend %flex-column;
@@ -19,10 +19,6 @@
 	@extend %flex;
 	@extend %flex-column;
 	gap: 0.375rem;
-	padding: 1.375rem 1.75rem 1.125rem;
-	border-bottom-width: 1px;
-	border-bottom-style: solid;
-	@extend %orc-outline-variant-border;
 	h2,
 	p {
 		@extend %m-0;

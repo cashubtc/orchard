@@ -1,11 +1,11 @@
 <div [formGroup]="form()" class="service-fields">
 	<div class="field-choice">
 		<span class="choice-label" [id]="'service-type-' + configuration().service">Implementation</span>
-		<orc-form-toggle-group class="orc-segmented" role="group" [attr.aria-labelledby]="'service-type-' + configuration().service">
+		<orc-form-toggle-group role="group" [attr.aria-labelledby]="'service-type-' + configuration().service">
 			@for (type of descriptors[configuration().service].types; track type.value) {
-				<orc-form-toggle [selected]="type_value() === type.value" [disabled]="form().disabled" (click)="setType(type.value)">{{
-					type.label
-				}}</orc-form-toggle>
+				<orc-form-toggle [selected]="type_value() === type.value" [disabled]="form().disabled" (click)="setType(type.value)">
+					<ng-container *ngTemplateOutlet="option_template; context: {$implicit: type}"></ng-container>
+				</orc-form-toggle>
 			}
 		</orc-form-toggle-group>
 	</div>
@@ -22,14 +22,15 @@
 		@if (field.key === 'port' && configuration().service === 'mint') {
 			<div class="field-choice">
 				<span class="choice-label" id="service-transport">Connection security</span>
-				<orc-form-toggle-group class="orc-segmented" role="group" aria-labelledby="service-transport">
+				<orc-form-toggle-group class="toggle-fit" size="small" role="group" aria-labelledby="service-transport">
 					@for (option of transports; track option.value) {
 						<orc-form-toggle
 							[selected]="mtls_value() === option.value"
 							[disabled]="form().disabled"
 							(click)="setTransport(option.value)"
-							>{{ option.label }}</orc-form-toggle
 						>
+							<span class="font-size-s text-nowrap">{{ option.label }}</span>
+						</orc-form-toggle>
 					}
 				</orc-form-toggle-group>
 			</div>
@@ -148,7 +149,7 @@
 						/>
 					}
 					@if (field.replacing && field.stored) {
-						<mat-hint
+						<mat-hint class="font-size-xs orc-outline-color"
 							>Paste the replacement.
 							<button
 								type="button"
@@ -161,7 +162,7 @@
 							</button></mat-hint
 						>
 					} @else if ((field.credential || field.password) && field.stored) {
-						<mat-hint
+						<mat-hint class="font-size-xs orc-outline-color"
 							>Leave unchanged to keep it.
 							<button
 								type="button"
@@ -174,10 +175,15 @@
 							</button></mat-hint
 						>
 					} @else if ((field.credential || field.password) && field.cleared) {
-						<mat-hint>Cleared. Saving removes it.</mat-hint>
+						<mat-hint class="font-size-xs orc-outline-color">Cleared. Saving removes it.</mat-hint>
 					} @else if (field.description) {
-						<mat-hint>{{ field.description }}</mat-hint>
+						<mat-hint class="font-size-xs orc-outline-color">{{ field.description }}</mat-hint>
 					}
+					<mat-error>
+						<orc-form-error [errors]="field.flagged ? flagged_error : form().controls[field.key].errors">{{
+							flag_message() ?? 'Check this value'
+						}}</orc-form-error>
+					</mat-error>
 				</mat-form-field>
 			</orc-form-field-dynamic>
 			@if (field.help) {
@@ -193,5 +199,12 @@
 		@if (field.credential_caption && !field.section) {
 			<p class="field-caption">{{ credential_caption() }}</p>
 		}
+	</ng-template>
+
+	<ng-template #option_template let-option>
+		<span class="flex flex-column flex-items-center flex-gap-0-25 text-center">
+			<span class="font-size-s">{{ option.label }}</span>
+			<span class="font-size-xs orc-outline-color">{{ option.detail }}</span>
+		</span>
 	</ng-template>
 </div>
