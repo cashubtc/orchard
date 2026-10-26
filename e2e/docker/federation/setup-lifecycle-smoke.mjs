@@ -11,6 +11,7 @@ const definitions = loadSync('proto/cdk/federation_setup.proto', {
 	oneofs: true,
 });
 const methods = definitions['cdk_mint_federation_setup_v1.FederationSetupService'];
+export const fingerprint_pattern = /^[0-9a-f]{4}( [0-9a-f]{4}){3}$/;
 
 /** Inspect the actual mint wire response using Orchard's loader options. */
 export async function setupRpc(member, method, request = {}) {
@@ -59,9 +60,11 @@ export async function createSetup(page) {
 	assert.equal(created?.invitations?.length, 2);
 	for (const invitation of created.invitations) assert(BigInt(invitation.expires_at_unix) > BigInt(Math.floor(Date.now() / 1000)));
 	await expect(page.getByRole('heading', {name: 'Send each operator their invitation'})).toBeVisible();
-	await expect(page.locator('#invitation-text')).toHaveValue(created.invitations[0].invitation);
+	const member_two = created.invitations.find((invitation) => invitation.member_id === 2);
+	assert(member_two, 'Create did not return an invitation for member 2');
+	await expect(page.getByLabel('Invitation', {exact: true})).toHaveValue(member_two.invitation);
 	await expect(page.getByText(/^Expires /)).toBeVisible();
-	await expect(page.getByTestId('identity-fingerprint')).toHaveText(/^[0-9a-f]{16}$/);
+	await expect(page.getByTestId('identity-fingerprint')).toHaveText(fingerprint_pattern);
 	return created;
 }
 
@@ -79,7 +82,7 @@ export async function joinSetup(page, member, invitation) {
 	await submitJoin(page, member, invitation);
 	await expect(page.getByRole('heading', {name: 'Waiting for the coordinator to propose', exact: true})).toBeVisible({timeout: 30000});
 	const fingerprint = page.getByTestId('identity-fingerprint');
-	await expect(fingerprint).toHaveText(/^[0-9a-f]{16}$/);
+	await expect(fingerprint).toHaveText(fingerprint_pattern);
 	return fingerprint.innerText();
 }
 
@@ -100,10 +103,16 @@ export async function checkSetupLifecycle(pages) {
 	);
 	const page = pages[0];
 	const created = await createSetup(page);
-	await page.reload();
+	await Promise.all([
+		page.waitForEvent('dialog').then(async (dialog) => {
+			assert.equal(dialog.type(), 'beforeunload');
+			await dialog.accept();
+		}),
+		page.reload(),
+	]);
 	await expect(page.getByRole('heading', {name: 'Invitation unavailable'})).toBeVisible();
-	await expect(page.locator('#invitation-text')).toHaveCount(0);
-	const slot = page.locator('.member-slot').filter({hasText: 'Member 2'});
+	await expect(page.getByLabel('Invitation', {exact: true})).toHaveCount(0);
+	const slot = page.getByTestId('member-slot').filter({hasText: 'Member 2'});
 	await slot.getByRole('button', {name: 'Replace invitation', exact: true}).click();
 	const dialog = page.getByRole('dialog');
 	await expect(dialog).toContainText('old invitation for member 2 stops working');
@@ -113,13 +122,15 @@ export async function checkSetupLifecycle(pages) {
 	await dialog.getByRole('button', {name: 'Replace invitation', exact: true}).click();
 	const replacement = (await (await response).json()).data?.federation_setup_replace_invitation?.invitation;
 	assert(replacement);
-	assert.notEqual(replacement.invitation, created.invitations[0].invitation);
+	const member_two = created.invitations.find((invitation) => invitation.member_id === 2);
+	assert(member_two, 'Create did not return an invitation for member 2');
+	assert.equal(replacement.member_id, 2);
+	assert.notEqual(replacement.invitation, member_two.invitation);
 	assert(BigInt(replacement.expires_at_unix) > BigInt(Math.floor(Date.now() / 1000)));
-	await expect(page.locator('#invitation-text')).toHaveValue(replacement.invitation);
-	// A member holding the replaced invitation sees the mint's refusal. cdk then can't report that member's status, so the
-	// wizard never learns the setup ID to abort with; clean up over RPC until cdk reports local state.
+	await expect(page.getByLabel('Invitation', {exact: true})).toHaveValue(replacement.invitation);
+	// Clean up the rejected enrollment over RPC because cdk cannot return that member's setup ID.
 	const stale = pages[2];
-	await submitJoin(stale, 3, created.invitations[0].invitation);
+	await submitJoin(stale, 3, member_two.invitation);
 	await expect(stale.locator('orc-error-resolve')).toBeVisible({timeout: 30000});
 	await setupRpc(3, 'AbortSetup', {setup_id: created.setup_id});
 	await checkUninitialized(3);

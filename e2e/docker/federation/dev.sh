@@ -27,8 +27,9 @@ case "${1:-}" in
     logs) compose logs -f ;;
     smoke)
         for member in 1 2 3; do
-            echo "Member $member setup status:"
-            cli "$member" federation-setup status --json
+            echo "Member $member setup status or active federation info:"
+            cli "$member" federation-setup status --json 2>/dev/null \
+                || cli "$member" federation info --json
         done
         ;;
     ceremony) compose exec -T member1 sh /stack/ceremony.sh ;;

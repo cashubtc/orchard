@@ -13,14 +13,14 @@ fail() {
     exit 1
 }
 
-# Retry a check every 2s for up to 10 minutes, then fail with its last output.
+# Try a check up to 300 times with 2s between failures; each CLI call can take up to 120s.
 wait_for() {
     desc="$1"
     shift
     tries=300
     until last="$("$@" 2>&1)"; do
         tries=$((tries - 1))
-        [ "$tries" -gt 0 ] || fail "Timed out waiting for $desc: $last"
+        [ "$tries" -gt 0 ] || fail "Gave up after 300 attempts waiting for $desc: $last"
         sleep 2
     done
 }
@@ -66,7 +66,7 @@ for member in 1 2 3; do
     cli "$member" federation-setup approve --proposal-hash "$proposal_hash"
 done
 
-echo "Waiting for key generation, activation, and convergence..."
+echo "Waiting for key generation, activation, and convergence (up to 300 attempts per check, 120s per CLI call)..."
 for member in 1 2 3; do
     wait_for "member $member key generation" setup_finalized "$member"
 done

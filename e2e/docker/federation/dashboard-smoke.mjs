@@ -48,6 +48,11 @@ export async function checkMemberDashboard(page, index) {
 		await expect(page.getByRole('heading', {name: 'Invalid-operation alerts', exact: true})).toBeVisible();
 		await page.getByRole('link', {name: 'Custody', exact: true}).click();
 		await expect(page.getByRole('heading', {name: 'No funds held', exact: true})).toBeVisible();
+		await expect(page.getByTestId('federation-custody-off')).toHaveCount(0);
+		await page.getByRole('link', {name: 'Overview', exact: true}).click();
+		await expect(page.getByRole('heading', {name: 'Federation overview', exact: true})).toBeVisible();
+		for (let i = 1; i < member_times.length; i++)
+			assert(member_times[i] - member_times[i - 1] >= 5000, 'Peer status polled too quickly after changing views');
 		await page.getByRole('link', {name: 'Backup checklist', exact: true}).click();
 		await expect(page.getByRole('heading', {name: 'Back up before using real funds', exact: true})).toBeVisible();
 		const polls_before_leaving = member_times.length;
@@ -56,6 +61,21 @@ export async function checkMemberDashboard(page, index) {
 			await page.waitForLoadState('networkidle');
 			assert.equal(new URL(page.url()).pathname, path, `Member ${index + 1}: ${path} redirected`);
 			await expect(page.locator('orc-error-resolve')).toHaveCount(0);
+			if (path === '/mint/keysets') {
+				await expect(page.getByTestId('rotate-keyset')).toHaveCount(0);
+				await expect(page.getByRole('button', {name: /Rotate keyset/i})).toHaveCount(0);
+			}
+			if (path === '/mint/database') {
+				await page.getByTestId('mint-database-more').click();
+				await expect(page.getByRole('menuitem', {name: /Refresh Data/i})).toBeVisible();
+				await expect(page.getByRole('menuitem', {name: /Restore Backup/i})).toHaveCount(0);
+				await page.keyboard.press('Escape');
+				for (const label of ['Mints', 'Melts']) {
+					await page.getByRole('combobox', {name: 'Data', exact: true}).click();
+					await page.getByRole('option', {name: new RegExp(`^${label}\\b`)}).click();
+					await page.waitForLoadState('networkidle');
+				}
+			}
 		}
 		assert.equal(member_times.length, polls_before_leaving, 'Peer polling continued after leaving federation');
 		assert(
