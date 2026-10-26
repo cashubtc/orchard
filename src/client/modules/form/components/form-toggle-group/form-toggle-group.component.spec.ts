@@ -22,4 +22,11 @@ describe('FormToggleGroupComponent', () => {
 	it('should create', () => {
 		expect(component).toBeTruthy();
 	});
+
+	it('marks its host when set to the small size', () => {
+		expect(fixture.nativeElement.classList).not.toContain('small');
+		fixture.componentRef.setInput('size', 'small');
+		fixture.detectChanges();
+		expect(fixture.nativeElement.classList).toContain('small');
+	});
 });

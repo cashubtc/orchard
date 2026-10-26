@@ -1,3 +1,11 @@
-<button type="button" class="form-toggle" [class.selected]="selected()" [attr.aria-pressed]="selected()" [disabled]="disabled()" matRipple>
+<button
+	type="button"
+	class="form-toggle"
+	[class.selected]="selected()"
+	[class.small]="small()"
+	[attr.aria-pressed]="selected()"
+	[disabled]="disabled()"
+	matRipple
+>
 	<ng-content></ng-content>
 </button>
