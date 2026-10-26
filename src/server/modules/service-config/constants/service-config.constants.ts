@@ -62,3 +62,5 @@ export const SERVICE_FAILURE_TITLES: Record<ServiceName, string> = {
 };
 export const SERVICE_ENVIRONMENT_KEY = 'service_environment';
 export const CONNECTION_TIMEOUT_MS = 5000;
+// How long an unavailable mint database stays reported before the next status read probes it again
+export const DATABASE_RECHECK_MS = 30000;

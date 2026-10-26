@@ -38,9 +38,9 @@ export class BitcoinRpcService implements OnModuleInit {
 		this.chain = undefined;
 		try {
 			this.initializeRpc();
-		} catch {
+		} catch (error) {
 			this.type = undefined;
-			this.logger.warn('Bitcoin RPC configuration could not be loaded');
+			this.logger.warn(`Bitcoin RPC configuration could not be loaded: ${error instanceof Error ? error.message : String(error)}`);
 		}
 		if (this.type) await this.initializeChain();
 	}

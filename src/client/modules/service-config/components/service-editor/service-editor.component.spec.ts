@@ -10,12 +10,15 @@ describe('ServiceEditorComponent', () => {
 		const failure = {
 			ok: false,
 			warning: false,
+			saved: false,
 			title: 'Failed',
 			context: 'localhost:8332',
 			diagnostic: 'ECONNREFUSED',
 			fields: ['host', 'port'],
 		};
-		const save = jasmine.createSpy().and.returnValue(of(failure));
+		const save = jasmine
+			.createSpy()
+			.and.callFake((_input: unknown, save_unreachable: boolean) => of({...failure, saved: save_unreachable}));
 		TestBed.configureTestingModule({
 			providers: [
 				{provide: FORM_PANEL_DATA, useValue: bitcoinConfiguration()},

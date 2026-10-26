@@ -48,6 +48,8 @@
 					>Leave unchanged to keep it.
 					<button type="button" class="clear-field" (click)="clearField(field.key)">Clear</button></mat-hint
 				>
+			} @else if ((field.credential || field.password) && cleared(field)) {
+				<mat-hint>Cleared. Saving removes it.</mat-hint>
 			}
 		</mat-form-field>
 	}

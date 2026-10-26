@@ -1,5 +1,7 @@
 /* Core Dependencies */
 import {FormControl, FormRecord} from '@angular/forms';
+/* Application Dependencies */
+import {OrchardErrors} from '@client/modules/error/classes/error.class';
 /* Native Dependencies */
 import {
 	SERVICE_DEFAULT_PORTS,
@@ -29,6 +31,13 @@ export function serviceFormInput(configuration: OrchardServiceConfiguration, for
 			.filter((field) => !(field.secret && field.set && !form.controls[field.key].dirty))
 			.map((field) => ({key: field.key, value: form.controls[field.key].value})),
 	};
+}
+
+/** Keep the server's diagnostic and code in a failure message, since operators paste it into issues. */
+export function serviceErrorMessage(error: unknown, fallback: string): string {
+	const orchard_error = error instanceof OrchardErrors ? error.errors[0] : undefined;
+	if (!orchard_error) return fallback;
+	return `${fallback} ${orchard_error.details || orchard_error.message} (${orchard_error.code})`;
 }
 
 /** Select the fields for each implementation without coupling the form to Settings. */

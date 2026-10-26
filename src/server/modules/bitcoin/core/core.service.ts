@@ -40,7 +40,7 @@ export class CoreService {
 		};
 	}
 
-	public async makeRpcRequest(method: string, params: any): Promise<any> {
+	public async makeRpcRequest(method: string, params: any, timeout_ms = INTEGRATION_REQUEST_TIMEOUT_MS): Promise<any> {
 		const data_string = JSON.stringify({
 			jsonrpc: '1.0',
 			id: 'curltext',
@@ -51,7 +51,7 @@ export class CoreService {
 			method: this.options.method,
 			headers: this.options.headers,
 			body: data_string,
-			signal: AbortSignal.timeout(INTEGRATION_REQUEST_TIMEOUT_MS),
+			signal: AbortSignal.timeout(timeout_ms),
 		});
 		const body = await response.text();
 		let result: {result: unknown; error?: {message: string} | null} | null = null;
@@ -61,7 +61,11 @@ export class CoreService {
 			// Bitcoin Core answers authentication and transport failures without a JSON body
 		}
 		if (result?.error) throw new Error(result.error.message);
-		if (!response.ok || !result) throw new Error(body || `${response.status} ${response.statusText}`);
+		if (!response.ok || !result) {
+			// Keep a short excerpt for proxies and Core's plain-text errors without relaying whole pages from the host
+			const excerpt = body.replace(/\s+/g, ' ').trim().slice(0, 200);
+			throw new Error([`${response.status} ${response.statusText}`.trim(), excerpt].filter(Boolean).join(': '));
+		}
 		return result.result;
 	}
 }

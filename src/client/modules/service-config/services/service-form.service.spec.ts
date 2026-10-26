@@ -10,6 +10,7 @@ describe('ServiceFormService', () => {
 	const failure: OrchardConnectionCheck = {
 		ok: false,
 		warning: false,
+		saved: false,
 		title: 'Failed',
 		context: 'localhost',
 		diagnostic: 'ECONNREFUSED',
@@ -38,10 +39,13 @@ describe('ServiceFormService', () => {
 		expect(form.enabled).toBeTrue();
 		expect(service.saved()).toBeFalse();
 	});
-	it('saves only after success or explicit bypass and invalidates the offer on edit', () => {
+	it('reports saved only when the server stored the connection, and invalidates the offer on edit', () => {
 		api.save.and.returnValue(of(failure));
 		service.submit(true).subscribe();
 		expect(service.saved()).toBeFalse();
+		service.submit(true, true).subscribe();
+		expect(service.saved()).toBeFalse();
+		api.save.and.returnValue(of({...failure, saved: true}));
 		service.submit(true, true).subscribe();
 		expect(service.saved()).toBeTrue();
 		service.changed();

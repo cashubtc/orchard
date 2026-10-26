@@ -9,10 +9,17 @@ import {firstRunGuard} from './first-run.guard';
 describe('firstRunGuard', () => {
 	const executeGuard: CanMatchFn = (...guardParameters) => TestBed.runInInjectionContext(() => firstRunGuard(...guardParameters));
 	const config = {bitcoin: {enabled: false}, lightning: {enabled: false}, mint: {enabled: false}, taproot_assets: {enabled: false}};
+	const config_service = {config, status_loaded: true};
 
 	beforeEach(() => {
 		config.mint.enabled = false;
-		TestBed.configureTestingModule({providers: [{provide: ConfigService, useValue: {config}}]});
+		config_service.status_loaded = true;
+		TestBed.configureTestingModule({providers: [{provide: ConfigService, useValue: config_service}]});
+	});
+
+	it('does not invite onboarding when the service flags failed to load', () => {
+		config_service.status_loaded = false;
+		expect(executeGuard({} as Route, [] as UrlSegment[])).toBeFalse();
 	});
 
 	it('matches while nothing is connected', () => {

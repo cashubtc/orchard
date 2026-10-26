@@ -1,6 +1,19 @@
 import {SettingKey} from '#server/modules/setting/setting.enums';
 import {isSettingSensitive} from '#server/modules/setting/setting.helpers';
-import {connectionConfig, mergeServiceConfig} from './service-config.helpers.js';
+import {connectionConfig, diagnosticFields, mergeServiceConfig} from './service-config.helpers.js';
+
+describe('diagnosticFields', () => {
+	it('does not mistake a port containing 401 for an authentication failure', () => {
+		expect(diagnosticFields('connect ECONNREFUSED 10.0.0.2:14013', 'bitcoin')).toEqual(['host', 'port']);
+		expect(diagnosticFields('401 Unauthorized', 'bitcoin')).toEqual(['user', 'password']);
+	});
+	it("flags LND's macaroon rejection and keeps Bitcoin TLS failures on the host", () => {
+		expect(diagnosticFields('2 UNKNOWN: verification failed: signature mismatch after caveat verification', 'lightning')).toEqual([
+			'macaroon',
+		]);
+		expect(diagnosticFields('self-signed certificate in certificate chain', 'bitcoin')).toEqual(['host']);
+	});
+});
 
 describe('service configuration precedence', () => {
 	const env = {type: 'core', host: 'environment', pass: 'env-password'};

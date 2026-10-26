@@ -12,7 +12,9 @@ import {ServiceTestService} from './service-test.service.js';
 
 describe('ServiceTestService', () => {
 	const config = new ConfigService({bitcoin: {type: 'core', host: 'localhost', port: '8332'}});
-	const bitcoin_rpc = {isConfigured: jest.fn(() => true), getBitcoinBlockchainInfo: jest.fn(async () => ({chain: 'main'}))};
+	const bitcoin_rpc = {isConfigured: jest.fn(() => true)};
+	const pem = '-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----';
+	const macaroon = '0201036c6e64';
 	let service: ServiceTestService;
 	beforeEach(() => {
 		service = new ServiceTestService(
@@ -27,7 +29,19 @@ describe('ServiceTestService', () => {
 	it('retains the upstream Bitcoin diagnostic and flags authentication fields', async () => {
 		jest.spyOn(CoreService.prototype, 'makeRpcRequest').mockRejectedValue(new Error('401 Unauthorized'));
 		const result = await service.test('bitcoin', {type: 'core', host: 'localhost', port: '8332', password: 'secret'});
-		expect(result).toMatchObject({ok: false, diagnostic: '401 Unauthorized', fields: ['user', 'password']});
+		expect(result).toMatchObject({ok: false, saved: false, diagnostic: '401 Unauthorized', fields: ['user', 'password']});
+	});
+
+	it('names the host Orchard dialled after the Docker rewrite', async () => {
+		const docker_env = process.env.DOCKER_ENV;
+		process.env.DOCKER_ENV = 'true';
+		try {
+			jest.spyOn(CoreService.prototype, 'makeRpcRequest').mockResolvedValue({chain: 'regtest'});
+			const result = await service.test('bitcoin', {type: 'core', host: 'localhost', port: '8332'});
+			expect(result.context).toBe('host.docker.internal:8332 · HTTP RPC');
+		} finally {
+			process.env.DOCKER_ENV = docker_env;
+		}
 	});
 
 	it('does not expose a credential echoed by an upstream error', async () => {
@@ -66,17 +80,27 @@ describe('ServiceTestService', () => {
 		expect(result).toMatchObject({ok: true, warning: true, diagnostic: 'Unable to open database', fields: ['database']});
 	});
 
-	it('compares the actual Lightning network and closes the temporary client', async () => {
+	it('compares the actual Lightning network within the test timeout and closes the temporary client', async () => {
 		const close = jest.fn();
 		jest.spyOn(LndService.prototype, 'initializeLightningClient').mockReturnValue({
 			getChannel: () => ({close}),
 			GetInfo: (_request: object, _metadata: unknown, _options: unknown, callback: (error: null, result: object) => void) =>
 				callback(null, {chains: [{network: 'mainnet'}]}),
 		} as unknown as Client);
-		const result = await service.test('lightning', {type: 'lnd', host: 'localhost', port: '10009', macaroon: 'aabb', cert: 'inline'});
+		const rpc = jest.spyOn(CoreService.prototype, 'makeRpcRequest').mockResolvedValue({chain: 'main'});
+		const result = await service.test('lightning', {type: 'lnd', host: 'localhost', port: '10009', macaroon, cert: pem});
 		expect(result.chain_match).toBe(true);
-		expect(bitcoin_rpc.getBitcoinBlockchainInfo).toHaveBeenCalled();
+		expect(rpc).toHaveBeenCalledWith('getblockchaininfo', [], 5000);
 		expect(close).toHaveBeenCalled();
+	});
+
+	it('refuses a credential that is not a certificate, key or macaroon', async () => {
+		jest.spyOn(CredentialService.prototype, 'loadPemOrPath').mockReturnValue(Buffer.from('not a certificate'));
+		const values = {type: 'lnd', host: 'localhost', port: '10009', macaroon, cert: '/data/orchard.key'};
+		await expect(service.test('lightning', values)).resolves.toMatchObject({ok: false, fields: ['cert']});
+		expect(service.isValid('lightning', values)).toBe(false);
+		jest.restoreAllMocks();
+		expect(service.isValid('lightning', {...values, cert: pem, macaroon: 'aabb'})).toBe(false);
 	});
 
 	it('flags the field Orchard rejected before contacting the node', async () => {

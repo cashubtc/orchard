@@ -17,5 +17,9 @@ describe('ServiceFieldsComponent', () => {
 		expect(serviceFormInput(configuration, form).values.some((field) => field.key === 'password')).toBeFalse();
 		fixture.componentInstance.clearField('password');
 		expect(serviceFormInput(configuration, form).values.find((field) => field.key === 'password')?.value).toBe('');
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('input[type="password"]').placeholder).not.toContain('unchanged');
+		expect(fixture.nativeElement.textContent).toContain('Cleared. Saving removes it.');
+		expect(fixture.nativeElement.textContent).not.toContain('Leave unchanged to keep it.');
 	});
 });

@@ -49,20 +49,21 @@ describe('TaprootAssetsService', () => {
 
 	it('delegates methods to grpc client and returns responses', async () => {
 		const client = {
-			GetInfo: jest.fn((req: any, cb: any) => cb(null, {version: 'v'})),
-			ListAssets: jest.fn((req: any, cb: any) => cb(null, {assets: []})),
-			ListUtxos: jest.fn((req: any, cb: any) => cb(null, {utxos: []})),
+			GetInfo: jest.fn((req: any, options: any, cb: any) => cb(null, {version: 'v'})),
+			ListAssets: jest.fn((req: any, options: any, cb: any) => cb(null, {assets: []})),
+			ListUtxos: jest.fn((req: any, options: any, cb: any) => cb(null, {utxos: []})),
 		};
 		tapdService.initializeTaprootAssetsClient.mockReturnValue(client as any);
 		await taprootAssetsService.onModuleInit();
 		await expect(taprootAssetsService.getTaprootAssetsInfo()).resolves.toEqual({version: 'v'});
+		expect(client.GetInfo).toHaveBeenCalledWith({}, {deadline: expect.any(Number)}, expect.any(Function));
 		await expect(taprootAssetsService.getListTaprootAssets()).resolves.toEqual({assets: []});
 		await expect(taprootAssetsService.getListTaprootAssetsUtxos()).resolves.toEqual({utxos: []});
 	});
 
 	it('maps UNAVAILABLE error to connection error code', async () => {
 		const client = {
-			GetInfo: jest.fn((req: any, cb: any) => cb(new Error('14 UNAVAILABLE: upstream down'), null)),
+			GetInfo: jest.fn((req: any, options: any, cb: any) => cb(new Error('14 UNAVAILABLE: upstream down'), null)),
 		};
 		tapdService.initializeTaprootAssetsClient.mockReturnValue(client as any);
 		await taprootAssetsService.onModuleInit();

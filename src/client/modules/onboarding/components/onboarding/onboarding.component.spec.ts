@@ -48,7 +48,15 @@ describe('OnboardingComponent', () => {
 		component.continue();
 		expect(component.active_service()).toBe(ServiceKind.Bitcoin);
 		configurations[0] = {...onboardingConfiguration(ServiceKind.Bitcoin, true, 'orchard'), status: 'connected'};
-		component.applied(ServiceKind.Bitcoin, {ok: true, warning: false, title: 'Connected', context: '', fields: [], chain: 'regtest'});
+		component.applied(ServiceKind.Bitcoin, {
+			ok: true,
+			warning: false,
+			saved: true,
+			title: 'Connected',
+			context: '',
+			fields: [],
+			chain: 'regtest',
+		});
 		expect(component.configurations()[0].enabled).toBeTrue();
 		expect(component.active_service()).toBe(ServiceKind.Lightning);
 		component.skipService();

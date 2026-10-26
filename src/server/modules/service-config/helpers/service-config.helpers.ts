@@ -69,10 +69,11 @@ export function redactDiagnostic(error: unknown, secrets: string[]): string {
 
 /** Associate common transport diagnostics with the form fields that supplied them. */
 export function diagnosticFields(diagnostic: string, service: ServiceName): string[] {
-	if (/macaroon/i.test(diagnostic)) return ['macaroon'];
+	// LND rejects a macaroon from another node with "verification failed: signature mismatch"
+	if (service === 'lightning' && /macaroon|signature mismatch/i.test(diagnostic)) return ['macaroon'];
 	if (/certificate|SSL|TLS|PEM|private key/i.test(diagnostic))
-		return service === 'lightning' ? ['cert', 'ca', 'key'] : ['mtls', 'cert', 'ca', 'key'];
-	if (/401|403|unauth|password|permission denied/i.test(diagnostic))
+		return service === 'bitcoin' ? ['host'] : service === 'lightning' ? ['cert', 'ca', 'key'] : ['mtls', 'cert', 'ca', 'key'];
+	if (/\b(401|403)\b|unauth|password|permission denied/i.test(diagnostic))
 		return service === 'bitcoin' ? ['user', 'password'] : ['macaroon', 'cert', 'key'];
 	return ['host', 'port'];
 }

@@ -50,6 +50,8 @@ export class OrchardConnectionCheck {
 	ok: boolean;
 	@Field(() => Boolean)
 	warning: boolean;
+	@Field(() => Boolean, {description: 'Whether this request stored and applied the connection'})
+	saved: boolean;
 	@Field(() => String)
 	title: string;
 	@Field(() => String)

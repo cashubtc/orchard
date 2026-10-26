@@ -91,5 +91,14 @@ describe('CoreService', () => {
 			text: jest.fn().mockResolvedValue(''),
 		} as any);
 		await expect(coreService.makeRpcRequest('getblockcount', [])).rejects.toThrow('401 Unauthorized');
+		fetchService.fetchWithProxy.mockResolvedValueOnce({
+			ok: false,
+			status: 502,
+			statusText: 'Bad Gateway',
+			text: jest.fn().mockResolvedValue(`<html>\n<body>${'x'.repeat(500)}</body></html>`),
+		} as any);
+		const error: Error = await coreService.makeRpcRequest('getblockcount', []).catch((reason: Error) => reason);
+		expect(error.message.startsWith('502 Bad Gateway: <html> <body>xxx')).toBe(true);
+		expect(error.message.length).toBeLessThan(230);
 	});
 });

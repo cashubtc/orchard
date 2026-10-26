@@ -5,12 +5,9 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 /* Vendor Dependencies */
 import {EMPTY, catchError, finalize, tap, type Observable} from 'rxjs';
 
-/* Application Dependencies */
-import {OrchardErrors} from '@client/modules/error/classes/error.class';
-
 /* Native Dependencies */
 import {ServiceConfigService} from '@client/modules/service-config/services/service-config.service';
-import {createServiceForm, serviceFormInput} from '@client/modules/service-config/helpers/service-config.helpers';
+import {createServiceForm, serviceErrorMessage, serviceFormInput} from '@client/modules/service-config/helpers/service-config.helpers';
 import type {ServiceForm} from '@client/modules/service-config/types/service-config.types';
 
 /* Shared Dependencies */
@@ -53,12 +50,10 @@ export class ServiceFormService {
 			takeUntilDestroyed(this.destroy_ref),
 			tap((result) => {
 				this.result.set(result);
-				this.saved.set(save && (result.ok || save_unreachable));
+				this.saved.set(save && result.saved);
 			}),
 			catchError((error: unknown) => {
-				this.error.set(
-					(error instanceof OrchardErrors && error.errors[0]?.message) || 'The configuration request could not be completed.',
-				);
+				this.error.set(serviceErrorMessage(error, 'The configuration request could not be completed.'));
 				return EMPTY;
 			}),
 			finalize(() => {

@@ -37,6 +37,7 @@ describe('CashuMintApiService', () => {
 		expect(fetchService.fetchWithProxy).toHaveBeenCalledWith('https://mint/v1/info', {
 			method: 'GET',
 			headers: {'Content-Type': 'application/json'},
+			signal: expect.any(AbortSignal),
 		});
 		expect(out).toEqual({name: 'Mint'});
 	});
@@ -72,6 +73,7 @@ describe('CashuMintApiService', () => {
 		expect(fetchService.fetchWithProxy).toHaveBeenCalledWith('https://mint/v1/info', {
 			method: 'GET',
 			headers: {'Content-Type': 'application/json'},
+			signal: expect.any(AbortSignal),
 		});
 	});
 
@@ -83,6 +85,7 @@ describe('CashuMintApiService', () => {
 		expect(fetchService.fetchWithProxy).toHaveBeenCalledWith('https://mint//v1/info', {
 			method: 'GET',
 			headers: {'Content-Type': 'application/json'},
+			signal: expect.any(AbortSignal),
 		});
 	});
 });

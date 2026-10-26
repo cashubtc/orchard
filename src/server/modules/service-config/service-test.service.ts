@@ -63,11 +63,15 @@ export class ServiceTestService {
 			.filter((field) => isSettingSensitive(field.key, values[field.name] ?? ''))
 			.map((field) => values[field.name] ?? '');
 		const transport = service === 'bitcoin' ? 'HTTP RPC' : service === 'lightning' || values.mtls === 'true' ? 'gRPC over TLS' : 'gRPC';
+		const host_key = definition.fields.find((field) => field.name === 'host')?.config ?? 'host';
+		const host = String(config.get<IntegrationConfig>(definition.group)?.[host_key] || values.host);
 		const result: ConnectionCheck = {
 			ok: true,
 			warning: false,
+			saved: false,
 			title: 'Connection successful',
-			context: `${values.host}:${values.port} · ${transport}`,
+			// The host Orchard dialled, after any Docker localhost rewrite
+			context: `${host}:${values.port} · ${transport}`,
 			diagnostic: null,
 			fields: [],
 			chain: null,
@@ -116,6 +120,16 @@ export class ServiceTestService {
 		}
 	}
 
+	/** Whether the inputs are well formed, regardless of whether the node answers. */
+	public isValid(service: ServiceName, values: ConnectionValues): boolean {
+		try {
+			this.validate(values, service);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
 	/** Reject incomplete transport inputs before attempting to construct a channel. */
 	private validate(values: ConnectionValues, service: ServiceName): void {
 		if (!values.host) throw new ServiceFieldError('Missing RPC host', 'host');
@@ -133,12 +147,19 @@ export class ServiceTestService {
 		for (const field of credentials) {
 			const value = values[field];
 			if (!value) throw new ServiceFieldError(`Missing credential: ${field}`, field);
+			let content: string | undefined;
 			try {
-				if (field === 'macaroon') this.credentialService.loadMacaroonHex(value, true);
-				else this.credentialService.loadPemOrPath(value, true);
+				content =
+					field === 'macaroon'
+						? this.credentialService.loadMacaroonHex(value, true)
+						: this.credentialService.loadPemOrPath(value, true)?.toString('utf8');
 			} catch (error) {
 				throw new ServiceFieldError(error instanceof Error ? error.message : String(error), field);
 			}
+			// Accept only certificates, keys and macaroons, so a path can't hand some other file to the node
+			if (field === 'macaroon' && !content?.startsWith('02')) throw new ServiceFieldError('Not a macaroon', field);
+			if (field !== 'macaroon' && !content?.includes('-----BEGIN '))
+				throw new ServiceFieldError('Not a PEM certificate or key', field);
 		}
 	}
 
@@ -146,7 +167,7 @@ export class ServiceTestService {
 	private async testBitcoin(config: ConfigService): Promise<string> {
 		const core = new CoreService(config, this.fetchService);
 		core.initializeRpc();
-		const info: {chain: string} = await core.makeRpcRequest('getblockchaininfo', []);
+		const info: {chain: string} = await core.makeRpcRequest('getblockchaininfo', [], CONNECTION_TIMEOUT_MS);
 		return info.chain;
 	}
 
@@ -168,15 +189,16 @@ export class ServiceTestService {
 	private async compareBitcoinChain(result: ConnectionCheck): Promise<void> {
 		if (!this.bitcoinRpcService.isConfigured() || !result.chain) return;
 		try {
-			const {chain} = await this.bitcoinRpcService.getBitcoinBlockchainInfo();
+			const chain = await this.testBitcoin(this.configService);
 			result.chain_match = bitcoinNetworksMatch(chain, result.chain);
 			if (result.chain_match) return;
 			result.warning = true;
 			result.title = 'Lightning and Bitcoin use different networks';
 			result.diagnostic = `Bitcoin: ${chain}; Lightning: ${result.chain}`;
-		} catch {
+		} catch (error) {
 			result.warning = true;
 			result.title = 'Lightning connected; Bitcoin network comparison unavailable';
+			result.diagnostic = `Bitcoin: ${error instanceof Error ? error.message : String(error)}`;
 		}
 	}
 
@@ -227,7 +249,8 @@ export class ServiceTestService {
 		const request = (client as unknown as Record<string, Unary>)[method];
 		return new Promise((resolve, reject) =>
 			request.call(client, {}, new Metadata(), {deadline: Date.now() + CONNECTION_TIMEOUT_MS}, (error, response) =>
-				error ? reject(new Error(error.details)) : resolve(response),
+				// The message carries the status, e.g. "14 UNAVAILABLE: …", which details alone drops
+				error ? reject(new Error(error.message)) : resolve(response),
 			),
 		);
 	}

@@ -14,6 +14,7 @@ import {ConfigService} from '@client/modules/config/services/config.service';
 import {FederationService} from '@client/modules/federation/services/federation.service';
 import {ServiceConfigService} from '@client/modules/service-config/services/service-config.service';
 import {SERVICE_DESCRIPTORS} from '@client/modules/service-config/constants/service-config.constants';
+import {serviceErrorMessage} from '@client/modules/service-config/helpers/service-config.helpers';
 import {OrcGraphicModule} from '@client/modules/graphic/graphic.module';
 
 /* Native Dependencies */
@@ -115,7 +116,7 @@ export class OnboardingComponent implements OnInit {
 							)
 							.subscribe();
 				},
-				error: () => this.error.set('Could not load service configuration. Try again to continue.'),
+				error: (error: unknown) => this.error.set(serviceErrorMessage(error, 'Could not load service configuration.')),
 			});
 	}
 
@@ -224,7 +225,7 @@ export class OnboardingComponent implements OnInit {
 					this.configurations.set(configurations);
 					next?.();
 				},
-				error: () => this.error.set('Could not reload service configuration. Try again to continue.'),
+				error: (error: unknown) => this.error.set(serviceErrorMessage(error, 'Could not reload service configuration.')),
 			});
 	}
 

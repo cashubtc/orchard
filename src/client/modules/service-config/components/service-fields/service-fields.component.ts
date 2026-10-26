@@ -47,17 +47,28 @@ export class ServiceFieldsComponent {
 		);
 	}
 
-	/** Whether Orchard already holds a value that leaving the field unchanged would keep. */
+	/** Whether Orchard already holds a value that leaving the field untouched would keep. */
 	public stored(field: ServiceField): boolean {
-		return !!this.configuration().fields.find((item) => item.key === field.key)?.set;
+		return this.held(field) && !this.form().controls[field.key].dirty;
+	}
+
+	/** Whether the operator cleared a value Orchard holds, so saving removes it. */
+	public cleared(field: ServiceField): boolean {
+		const control = this.form().controls[field.key];
+		return this.held(field) && control.dirty && !control.value;
 	}
 
 	/** A placeholder communicates presence without sending or resubmitting a secret. */
 	public placeholder(field: ServiceField): string {
-		const stored = this.configuration().fields.find((item) => item.key === field.key);
-		return stored?.secret && stored.set
+		const secret = this.configuration().fields.find((item) => item.key === field.key)?.secret;
+		return secret && this.stored(field)
 			? '•••••••• (unchanged)'
 			: (field.placeholder ?? (field.credential ? 'File path or pasted content' : ''));
+	}
+
+	/** Whether the saved configuration has a value for this field. */
+	private held(field: ServiceField): boolean {
+		return !!this.configuration().fields.find((item) => item.key === field.key)?.set;
 	}
 
 	/** Clear incompatible credentials when switching between Lightning implementations. */

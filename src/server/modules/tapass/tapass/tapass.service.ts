@@ -5,6 +5,7 @@ import {ConfigService} from '@nestjs/config';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {TaprootAssetType} from '#server/modules/tapass/tapass.enums';
 import {TapdService} from '#server/modules/tapass/tapd/tapd.service';
+import {INTEGRATION_REQUEST_TIMEOUT_MS} from '#server/modules/integration/constants/integration.constants';
 /* Local Dependencies */
 import type {TaprootAssetsInfo, TaprootAssetsUtxos, TaprootAssets, AssetTransfers, AddrReceives} from './tapass.types.js';
 
@@ -35,7 +36,8 @@ export class TaprootAssetsService implements OnModuleInit {
 
 		return new Promise((resolve, reject) => {
 			if (!(method in this.grpc_client)) reject(OrchardErrorCode.TaprootAssetsSupportError);
-			this.grpc_client[method](request, (error: Error | null, response: any) => {
+			const options = {deadline: Date.now() + INTEGRATION_REQUEST_TIMEOUT_MS};
+			this.grpc_client[method](request, options, (error: Error | null, response: any) => {
 				if (error && error?.message?.includes('14 UNAVAILABLE')) reject(OrchardErrorCode.TaprootAssetsRpcConnectionError);
 				if (error) reject(error);
 				resolve(response);

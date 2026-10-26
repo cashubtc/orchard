@@ -19,6 +19,7 @@ import {ConfigService} from '@client/modules/config/services/config.service';
 /* Native Dependencies */
 import {ServiceConfigService} from '@client/modules/service-config/services/service-config.service';
 import {ServiceEditorComponent} from '@client/modules/service-config/components/service-editor/service-editor.component';
+import {serviceErrorMessage} from '@client/modules/service-config/helpers/service-config.helpers';
 import {
 	SERVICE_DESCRIPTORS,
 	SERVICE_SOURCE_LABELS,
@@ -90,7 +91,7 @@ export class SettingsServicesComponent implements OnInit {
 			)
 			.subscribe({
 				next: (services) => this.services.set(services),
-				error: () => this.error.set('Could not load service configuration.'),
+				error: (error: unknown) => this.error.set(serviceErrorMessage(error, 'Could not load service configuration.')),
 			});
 	}
 
@@ -124,7 +125,7 @@ export class SettingsServicesComponent implements OnInit {
 							this.confirmation.set(`${this.descriptors[service.service].name} removed. No restart needed.`);
 							this.load();
 						},
-						error: () => this.error.set('Could not remove the service.'),
+						error: (error: unknown) => this.error.set(serviceErrorMessage(error, 'Could not remove the service.')),
 					});
 			});
 	}

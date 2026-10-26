@@ -66,7 +66,7 @@ export class ServiceConfigService {
 	public save(input: ServiceConnectionInput, save_unreachable = false): Observable<OrchardConnectionCheck> {
 		return this.request<{service_configuration_save: OrchardConnectionCheck}>(SAVE_MUTATION, {input, save_unreachable}).pipe(
 			map((data) => data.service_configuration_save),
-			switchMap((result) => (result.ok || save_unreachable ? this.refresh(input.service).pipe(map(() => result)) : of(result))),
+			switchMap((result) => (result.saved ? this.refresh(input.service).pipe(map(() => result)) : of(result))),
 		);
 	}
 

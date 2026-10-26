@@ -19,6 +19,7 @@ import type {ConnectionCheck, ConnectionInput} from './types/service-config.type
 const success: ConnectionCheck = {
 	ok: true,
 	warning: false,
+	saved: false,
 	title: 'Connected',
 	context: '',
 	diagnostic: null,
@@ -39,6 +40,8 @@ describe('ServiceConfigService', () => {
 	});
 	const reconnect = jest.fn();
 	const pause = jest.fn(async () => undefined);
+	const testDatabase = jest.fn();
+	const isValid = jest.fn();
 	const input: ConnectionInput = {
 		service: 'bitcoin',
 		values: [
@@ -53,6 +56,7 @@ describe('ServiceConfigService', () => {
 		jest.clearAllMocks();
 		rows.clear();
 		test.mockResolvedValue(success);
+		isValid.mockReturnValue(true);
 		const environment = {
 			bitcoin: {type: 'core', host: 'env-node', port: '8332', user: 'env-user', pass: 'env-secret'},
 			lightning: {},
@@ -67,7 +71,7 @@ describe('ServiceConfigService', () => {
 					provide: SettingService,
 					useValue: {getSettings: async () => Array.from(rows, ([key, value]) => ({key, value})), updateSettings: update},
 				},
-				{provide: ServiceTestService, useValue: {test, testDatabase: jest.fn()}},
+				{provide: ServiceTestService, useValue: {test, testDatabase, isValid}},
 				...[
 					BitcoinRpcService,
 					LightningService,
@@ -103,6 +107,19 @@ describe('ServiceConfigService', () => {
 		expect(reconnect).toHaveBeenCalled();
 	});
 
+	it('probes an unavailable mint database again after the recheck window', async () => {
+		config.set('cashu.database', '/mint/cdk-mintd.sqlite');
+		const now = jest.spyOn(Date, 'now').mockReturnValue(1_000_000);
+		testDatabase.mockRejectedValueOnce(new Error('unable to open database file')).mockResolvedValue(undefined);
+		service.onApplicationBootstrap();
+		expect((await service.getStatus()).find((state) => state.service === 'mint')?.database).toBe(false);
+		expect(testDatabase).toHaveBeenCalledTimes(1);
+		now.mockReturnValue(1_000_000 + 30_000);
+		expect((await service.getStatus()).find((state) => state.service === 'mint')?.database).toBe(true);
+		expect(testDatabase).toHaveBeenCalledTimes(2);
+		now.mockRestore();
+	});
+
 	it('drains the analytics that read the Lightning identity before switching nodes', async () => {
 		await service.remove('lightning');
 		expect(pause).toHaveBeenCalledTimes(2);
@@ -111,11 +128,18 @@ describe('ServiceConfigService', () => {
 	it('tests without saving and blocks a failed save unless explicitly bypassed', async () => {
 		test.mockResolvedValue({...success, ok: false});
 		await service.test(input);
-		await service.save(input, false);
+		expect((await service.save(input, false)).saved).toBe(false);
 		expect(update).not.toHaveBeenCalled();
-		await service.save(input, true);
+		expect((await service.save(input, true)).saved).toBe(true);
 		expect(update).toHaveBeenCalledTimes(1);
 		expect((await service.getStatus())[0].status).toBe('unreachable');
+	});
+
+	it('never saves malformed credentials, even when the connection failure is accepted', async () => {
+		test.mockResolvedValue({...success, ok: false, fields: ['cert']});
+		isValid.mockReturnValue(false);
+		expect((await service.save(input, true)).saved).toBe(false);
+		expect(update).not.toHaveBeenCalled();
 	});
 
 	it('distinguishes an omitted credential from an explicitly cleared one', async () => {

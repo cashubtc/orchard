@@ -18,6 +18,7 @@ export type ServiceDefinition = {
 export type ConnectionCheck = {
 	ok: boolean;
 	warning: boolean;
+	saved: boolean;
 	title: string;
 	context: string;
 	diagnostic: string | null;

@@ -36,6 +36,11 @@ export class ConfigService {
 		this.configuration.set(config);
 	}
 
+	/** Whether the server's service flags have loaded; until then every service reads as disabled. */
+	public get status_loaded(): boolean {
+		return this.loaded;
+	}
+
 	/** Load authenticated runtime flags before entering sections, or refresh after a save. */
 	public loadStatus(refresh = false): Observable<void> {
 		if (refresh) {

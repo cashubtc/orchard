@@ -32,7 +32,7 @@ describe('ServiceConfigService', () => {
 		});
 		TestBed.inject(ServiceConfigService).save({service: ServiceKind.Mint, values: []}).subscribe();
 		const http = TestBed.inject(HttpTestingController);
-		http.expectOne('/api').flush({data: {service_configuration_save: {ok: true}}});
+		http.expectOne('/api').flush({data: {service_configuration_save: {ok: true, saved: true}}});
 		expect(clear_cache.calls.allArgs()).toEqual([['mint-info']]);
 		expect(status).toHaveBeenCalledWith(true);
 		expect(mode).toHaveBeenCalledWith(true);

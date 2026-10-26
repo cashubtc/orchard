@@ -16,7 +16,7 @@ describe('onboarding helpers', () => {
 	});
 	it('reports the applied status, environment values and an untested saved connection', () => {
 		const mint = onboardingConfiguration(ServiceKind.Mint, true, 'orchard');
-		const check = {ok: true, warning: true, title: 'Database unavailable', context: '', fields: [], mode: 'setup'};
+		const check = {ok: true, warning: true, saved: true, title: 'Database unavailable', context: '', fields: [], mode: 'setup'};
 		const warning = onboardingReview([{...mint, status: 'warning'}], {mint: {saved_check: check}})[2];
 		expect(warning).toEqual(jasmine.objectContaining({status: 'Connected with a warning', tone: 'warning'}));
 		expect(warning.detail).toBe('CDK · localhost:8091 · federation setup mode');
@@ -26,7 +26,7 @@ describe('onboarding helpers', () => {
 	});
 	it('does not describe the applied connection with an unsaved draft test', () => {
 		const mint = onboardingConfiguration(ServiceKind.Mint, true, 'environment');
-		const check = {ok: true, warning: false, title: 'Connected', context: '', fields: [], mode: 'member'};
+		const check = {ok: true, warning: false, saved: false, title: 'Connected', context: '', fields: [], mode: 'member'};
 		expect(onboardingReview([mint], {mint: {check}})[2].detail).not.toContain('federation member');
 	});
 });

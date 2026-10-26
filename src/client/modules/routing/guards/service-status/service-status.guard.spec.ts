@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {TestBed} from '@angular/core/testing';
+import {TestBed, fakeAsync, tick} from '@angular/core/testing';
 import type {CanMatchFn, Route, UrlSegment} from '@angular/router';
 /* Vendor Dependencies */
 import {firstValueFrom, of, throwError, type Observable} from 'rxjs';
@@ -33,11 +33,24 @@ describe('serviceStatusGuard', () => {
 		expect(load_status).toHaveBeenCalled();
 	});
 
-	it('leaves authentication to the activation guards when loading fails', async () => {
-		load_status.and.returnValue(throwError(() => new Error('unauthenticated')));
+	it('leaves authentication to the activation guards without retrying', async () => {
+		load_status.and.returnValue(throwError(() => ({type: 'auth_error'})));
 		const result = executeGuard({} as Route, [] as UrlSegment[]) as Observable<boolean>;
 		expect(await firstValueFrom(result)).toBeTrue();
+		expect(load_status).toHaveBeenCalledTimes(1);
 	});
+
+	it('retries a transient failure before matching', fakeAsync(() => {
+		load_status.and.returnValues(
+			throwError(() => new Error('502')),
+			of(undefined),
+		);
+		let matched: boolean | undefined;
+		(executeGuard({} as Route, [] as UrlSegment[]) as Observable<boolean>).subscribe((value) => (matched = value));
+		tick(1000);
+		expect(matched).toBeTrue();
+		expect(load_status).toHaveBeenCalledTimes(2);
+	}));
 
 	it('skips the query without a session', () => {
 		auth.isAuthenticated.and.returnValue(false);

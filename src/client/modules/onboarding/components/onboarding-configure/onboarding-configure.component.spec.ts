@@ -7,8 +7,22 @@ import {OnboardingConfigureComponent} from './onboarding-configure.component';
 
 describe('OnboardingConfigureComponent', () => {
 	it('tests without advancing, blocks failed saves, and advances after an explicit bypass', () => {
-		const failure = {ok: false, warning: false, title: 'Failed', context: '', diagnostic: 'ECONNREFUSED', fields: ['port']};
-		const api = {save: jasmine.createSpy().and.returnValue(of(failure)), test: jasmine.createSpy().and.returnValue(of(failure))};
+		const failure = {
+			ok: false,
+			warning: false,
+			saved: false,
+			title: 'Failed',
+			context: '',
+			diagnostic: 'ECONNREFUSED',
+			fields: ['port'],
+		};
+		const bypassed = {...failure, saved: true};
+		const api = {
+			save: jasmine
+				.createSpy()
+				.and.callFake((_input: unknown, save_unreachable: boolean) => of(save_unreachable ? bypassed : failure)),
+			test: jasmine.createSpy().and.returnValue(of(failure)),
+		};
 		TestBed.configureTestingModule({providers: [{provide: ServiceConfigService, useValue: api}]});
 		const fixture = TestBed.createComponent(OnboardingConfigureComponent);
 		fixture.componentRef.setInput('configuration', onboardingConfiguration(ServiceKind.Bitcoin));
@@ -23,7 +37,7 @@ describe('OnboardingConfigureComponent', () => {
 		fixture.detectChanges();
 		expect(fixture.nativeElement.textContent).toContain('Save without a working connection');
 		fixture.componentInstance.submit(true, true);
-		expect(applied).toHaveBeenCalledWith(failure);
+		expect(applied).toHaveBeenCalledWith(bypassed);
 		fixture.componentRef.setInput('pending', true);
 		fixture.detectChanges();
 		api.save.calls.reset();
@@ -31,9 +45,18 @@ describe('OnboardingConfigureComponent', () => {
 		expect(api.save).not.toHaveBeenCalled();
 	});
 	it('allows a database warning and explains setup mode', () => {
-		const check = {ok: true, warning: true, title: 'Database unavailable', context: '', fields: ['database'], mode: 'setup'};
+		const check = {
+			ok: true,
+			warning: true,
+			saved: false,
+			title: 'Database unavailable',
+			context: '',
+			fields: ['database'],
+			mode: 'setup',
+		};
+		const stored = {...check, saved: true};
 		TestBed.configureTestingModule({
-			providers: [{provide: ServiceConfigService, useValue: {test: () => of(check), save: () => of(check)}}],
+			providers: [{provide: ServiceConfigService, useValue: {test: () => of(check), save: () => of(stored)}}],
 		});
 		const fixture = TestBed.createComponent(OnboardingConfigureComponent);
 		fixture.componentRef.setInput('configuration', onboardingConfiguration(ServiceKind.Mint, true, 'environment'));
@@ -45,6 +68,6 @@ describe('OnboardingConfigureComponent', () => {
 		expect(fixture.nativeElement.textContent).toContain('Federation setup after Review');
 		expect(fixture.nativeElement.textContent).toContain('Filled in from your environment');
 		fixture.componentInstance.submit(true);
-		expect(applied).toHaveBeenCalledWith(check);
+		expect(applied).toHaveBeenCalledWith(stored);
 	});
 });

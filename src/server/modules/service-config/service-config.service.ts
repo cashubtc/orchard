@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {BadRequestException, Injectable, type OnApplicationBootstrap} from '@nestjs/common';
+import {BadRequestException, Injectable, Logger, type OnApplicationBootstrap} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 
 /* Application Dependencies */
@@ -19,7 +19,7 @@ import {CashuMintAnalyticsService} from '#server/modules/cashu/mintanalytics/min
 
 /* Native Dependencies */
 import {ServiceTestService} from '#server/modules/service-config/service-test.service';
-import {SERVICE_NAMES, SERVICE_DEFINITIONS} from '#server/modules/service-config/constants/service-config.constants';
+import {SERVICE_NAMES, SERVICE_DEFINITIONS, DATABASE_RECHECK_MS} from '#server/modules/service-config/constants/service-config.constants';
 import {applyServiceSettings} from '#server/modules/service-config/helpers/service-config.helpers';
 import type {
 	ConnectionInput,
@@ -34,8 +34,10 @@ import type {
 
 @Injectable()
 export class ServiceConfigService implements OnApplicationBootstrap {
+	private readonly logger = new Logger(ServiceConfigService.name);
 	private mutation_queue: Promise<unknown> = Promise.resolve();
 	private database_check: Promise<boolean> = Promise.resolve(false);
+	private database_checked_at = 0;
 	private statuses = new Map<ServiceName, ServiceStatus>();
 
 	constructor(
@@ -67,7 +69,7 @@ export class ServiceConfigService implements OnApplicationBootstrap {
 	/** Nonsecret runtime flags are available to authenticated users for navigation. */
 	public async getStatus(): Promise<ServiceState[]> {
 		const settings = new Map((await this.settingService.getSettings()).map((setting) => [setting.key, setting.value]));
-		const database = await this.database_check;
+		const database = await this.databaseAvailable();
 		return SERVICE_NAMES.map((service) => {
 			const definition = SERVICE_DEFINITIONS[service];
 			const config = this.configService.get<IntegrationConfig>(definition.group) ?? {};
@@ -111,10 +113,11 @@ export class ServiceConfigService implements OnApplicationBootstrap {
 		return this.serialize(async () => {
 			const values = this.resolveValues(input);
 			const result = await this.testService.test(input.service, values);
-			if (!result.ok && !save_unreachable) return result;
+			// Saving without a working connection accepts an unreachable node, never missing or malformed credentials
+			if (!result.ok && (!save_unreachable || !this.testService.isValid(input.service, values))) return result;
 			await this.apply(input.service, values, true);
 			this.statuses.set(input.service, !result.ok ? 'unreachable' : result.warning ? 'warning' : 'connected');
-			return result;
+			return {...result, saved: true};
 		});
 	}
 
@@ -168,7 +171,8 @@ export class ServiceConfigService implements OnApplicationBootstrap {
 				[String(enabled), ...definition.fields.map((field) => values[field.name] ?? '')],
 			);
 			applyServiceSettings(this.configService, settings, [service]);
-			if (service === 'bitcoin') await this.bitcoinRpcService.reinitialize();
+			// The chain is read in the background, so an unreachable node can't hold the save past a proxy's timeout
+			if (service === 'bitcoin') void this.bitcoinRpcService.reinitialize();
 			if (service === 'lightning') {
 				this.lightningService.reinitialize();
 				this.walletKitService.reinitialize();
@@ -187,12 +191,24 @@ export class ServiceConfigService implements OnApplicationBootstrap {
 
 	/** Probe the mint database in the background; status reads wait for the latest probe. */
 	private checkDatabase(): void {
+		this.database_checked_at = Date.now();
 		this.database_check = this.configService.get<string>('cashu.database')
 			? this.testService.testDatabase(this.configService).then(
 					() => true,
-					() => false,
+					(error: unknown) => {
+						this.logger.warn(`Mint database unavailable: ${error instanceof Error ? error.message : String(error)}`);
+						return false;
+					},
 				)
 			: Promise.resolve(false);
+	}
+
+	/** Retry an unavailable database, so one created or started after Orchard unlocks its pages without a restart. */
+	private async databaseAvailable(): Promise<boolean> {
+		const available = await this.database_check;
+		if (available || Date.now() - this.database_checked_at < DATABASE_RECHECK_MS) return available;
+		this.checkDatabase();
+		return this.database_check;
 	}
 
 	/** Keep mutations ordered even after a failed operation. */
