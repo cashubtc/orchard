@@ -10,9 +10,9 @@
 	</orc-nav-secondary>
 	<main class="setup-container">
 		@if (error(); as err) {
-			<div class="setup-error" role="alert">
+			<div #error_alert class="setup-error" role="alert">
 				<orc-error-resolve [error]="err"></orc-error-resolve>
-				<button mat-button (click)="refresh()" [disabled]="action_disabled()">Check status</button>
+				<button mat-button (click)="refresh()" [disabled]="busy()">Check status</button>
 			</div>
 		}
 		@if (loading()) {
@@ -25,7 +25,7 @@
 			<h1>Mint connection unavailable</h1>
 			<p>Check that your mint is running and its management connection is configured.</p>
 			<p class="mega-string">{{ details() }}</p>
-		} @else if (!loading() && is_admin()) {
+		} @else if (!loading() && is_admin() && show_setup()) {
 			@if (status(); as s) {
 				@if (s.initialized && view() !== 'activated') {
 					<ol class="setup-progress" aria-label="Setup progress">
@@ -81,14 +81,14 @@
 				}
 				@case ('create') {
 					<orc-federation-setup-create
-						[busy]="action_disabled()"
+						[busy]="busy()"
 						(create)="create($event)"
 						(cancel)="choice.set('start')"
 					></orc-federation-setup-create>
 				}
 				@case ('join') {
 					<orc-federation-setup-join
-						[busy]="action_disabled()"
+						[busy]="busy()"
 						(join)="join($event)"
 						(cancel)="choice.set('start')"
 					></orc-federation-setup-join>
@@ -118,7 +118,7 @@
 										><span>{{ joined ? 'Joined' : 'Waiting' }}</span>
 										@if (!joined && coordinator) {
 											<button mat-button (click)="selected_member.set(member)">Show invitation</button>
-											<button mat-button [disabled]="action_disabled()" (click)="replaceInvitation(member)">
+											<button mat-button [disabled]="busy()" (click)="replaceInvitation(member)">
 												Replace invitation
 											</button>
 										}
@@ -126,7 +126,7 @@
 								}
 								<p>{{ s.enrolled_members.length }} of {{ s.member_count }} enrolled</p>
 								@if (coordinator) {
-									<button mat-flat-button [disabled]="!can_propose() || action_disabled()" (click)="propose()">
+									<button mat-flat-button [disabled]="!can_propose() || busy()" (click)="propose()">
 										{{ can_propose() ? 'Propose federation' : 'Propose once everyone has joined' }}
 									</button>
 								}
@@ -198,7 +198,7 @@
 							[proposal]="review"
 							[member_id]="status()?.member_id ?? null"
 							[approved_members]="status()?.approved_members ?? []"
-							[busy]="action_disabled()"
+							[busy]="busy()"
 							(approve)="approve($event)"
 						></orc-federation-setup-review>
 					}
@@ -250,7 +250,7 @@
 										Members can activate in any order. Your mint is ready only when key generation reports a finalized
 										configuration.
 									</p>
-									<button mat-flat-button [disabled]="!dkg.finalized_ready || action_disabled()" (click)="activate()">
+									<button mat-flat-button [disabled]="!dkg.finalized_ready || busy()" (click)="activate()">
 										Activate my mint
 									</button>
 								</section>
@@ -283,7 +283,7 @@
 				}
 			}
 			@if (can_abort()) {
-				<button mat-button [disabled]="action_disabled()" (click)="abort()">Abort setup</button>
+				<button mat-button [disabled]="busy()" (click)="abort()">Abort setup</button>
 			}
 		}
 	</main>

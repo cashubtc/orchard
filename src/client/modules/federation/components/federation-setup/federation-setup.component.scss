@@ -18,6 +18,10 @@
 	align-items: center;
 	gap: 1rem;
 }
+.setup-error {
+	flex-wrap: wrap;
+	overflow-x: auto;
+}
 .setup-badge {
 	font-size: 0.65rem;
 	white-space: nowrap;

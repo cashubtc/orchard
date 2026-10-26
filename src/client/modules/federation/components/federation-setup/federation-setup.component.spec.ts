@@ -9,7 +9,7 @@ import {FederationService} from '@client/modules/federation/services/federation.
 import {FederationSetupService} from '@client/modules/federation/services/federation-setup.service';
 import {setupStatus, setupProposal} from '@client/modules/federation/helpers/federation-setup.fixtures';
 import {FederationSetupComponent} from './federation-setup.component';
-import {UserRole, type OrchardFederationSetupStatus} from '@shared/generated.types';
+import {UserRole, type OrchardFederationSetupJoined, type OrchardFederationSetupStatus} from '@shared/generated.types';
 
 describe('FederationSetupComponent', () => {
 	const mode = signal<string | null>('setup');
@@ -80,6 +80,38 @@ describe('FederationSetupComponent', () => {
 		fixture.destroy();
 		expect(pending.observed).toBeFalse();
 	}));
+	it('never locks the forms for a poll, and an action cancels a poll in flight', fakeAsync(() => {
+		const fixture = TestBed.createComponent(FederationSetupComponent);
+		fixture.detectChanges();
+		tick(0);
+		const component = fixture.componentInstance;
+		const pending = new Subject<OrchardFederationSetupStatus>();
+		setup.getStatus.and.returnValue(pending);
+		tick(3000);
+		expect(pending.observed).toBeTrue();
+		expect(component.busy()).toBeFalse();
+		const joined = new Subject<OrchardFederationSetupJoined>();
+		setup.join.and.returnValue(joined);
+		component.join({invitation: 'secret'});
+		expect(pending.observed).toBeFalse();
+		expect(component.busy()).toBeTrue();
+		const after_join = new Subject<OrchardFederationSetupStatus>();
+		setup.getStatus.and.returnValue(after_join);
+		joined.next({member_id: 2, setup_id: 'setup'});
+		joined.complete();
+		expect(component.busy()).toBeTrue();
+		after_join.next(setupStatus());
+		after_join.complete();
+		expect(component.busy()).toBeFalse();
+		fixture.destroy();
+	}));
+	it('holds the setup views until the daemon is known to be in setup', () => {
+		mode.set(null);
+		const component = TestBed.createComponent(FederationSetupComponent).componentInstance;
+		expect(component.show_setup()).toBeFalse();
+		mode.set('setup');
+		expect(component.show_setup()).toBeTrue();
+	});
 	it('loads a published proposal once and restores the review after refresh', fakeAsync(() => {
 		setup.getStatus.and.returnValue(of({...setupStatus(), proposal_hash: 'hash'}));
 		const fixture = TestBed.createComponent(FederationSetupComponent);

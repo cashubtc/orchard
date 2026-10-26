@@ -42,6 +42,15 @@ describe('FederationService', () => {
 		service.loadMode().subscribe();
 		http.expectNone('/graphql');
 	});
+	it('keeps the last mode while a refresh is in flight', () => {
+		service.loadMode().subscribe();
+		http.expectOne('/graphql').flush({data: {federation_mode: {mode: 'unreachable', details: 'Connection refused'}}});
+		service.loadMode(true).subscribe();
+		expect(service.mode()).toBe('unreachable');
+		expect(service.details()).toBe('Connection refused');
+		http.expectOne('/graphql').flush({data: {federation_mode: {mode: 'setup', details: null}}});
+		expect(service.mode()).toBe('setup');
+	});
 	it('preserves GraphQL diagnostics', () => {
 		let error: OrchardErrors | undefined;
 		service.loadMode().subscribe({error: (value: OrchardErrors) => (error = value)});

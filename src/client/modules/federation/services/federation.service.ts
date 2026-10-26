@@ -36,13 +36,12 @@ export class FederationService {
         Mode
     ******************************************************** */
 
-	/** Probe the mint daemon's mode. Member and standalone don't change on their own, so they're reused unless refreshed. */
+	/** Probe the mint daemon's mode. Member and standalone don't change on their own, so they're reused unless refreshed.
+	 * A refresh keeps the last known mode until the new one arrives, so pages don't flash an unknown state. */
 	public loadMode(refresh = false): Observable<OrchardFederationMode> {
 		if (refresh) {
 			this.request_version++;
 			this.mode_observable = null;
-			this.mode.set(null);
-			this.details.set(null);
 		}
 		const version = this.request_version;
 		if (!this.configService.config.mint.enabled || this.configService.config.mint.type !== 'cdk') {

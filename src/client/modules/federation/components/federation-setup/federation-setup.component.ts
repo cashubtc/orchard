@@ -1,5 +1,16 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, computed, inject, OnDestroy, OnInit, signal} from '@angular/core';
+import {
+	afterRenderEffect,
+	ChangeDetectionStrategy,
+	Component,
+	computed,
+	inject,
+	OnDestroy,
+	OnInit,
+	signal,
+	viewChild,
+	type ElementRef,
+} from '@angular/core';
 import {Router} from '@angular/router';
 import {ClipboardModule} from '@angular/cdk/clipboard';
 
@@ -15,6 +26,7 @@ import {
 	merge,
 	of,
 	switchMap,
+	takeUntil,
 	takeWhile,
 	tap,
 	timer,
@@ -101,7 +113,6 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 	public readonly selected_member = signal<number | null>(null);
 	public readonly loading = signal(true);
 	public readonly busy = signal(false);
-	public readonly polling = signal(false);
 	public readonly error = signal<OrchardError | null>(null);
 	public readonly copy_result = signal<string | null>(null);
 	public readonly backup_complete = signal(false);
@@ -148,12 +159,23 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 	public readonly invitation_expires_at = computed(() => timestamp(this.invitation()?.expires_at_unix));
 	/** Offer abort before key generation; cdk decides and refuses verbatim if the window has closed. */
 	public readonly can_abort = computed(() => ['waiting', 'review', 'aborted'].includes(this.view()));
-	public readonly action_disabled = computed(() => this.busy() || this.polling());
+	/** Render setup views only once the daemon is known to be in setup, so an unknown mode never offers Create or Join. */
+	public readonly show_setup = computed(() => this.mode() === 'setup' || this.view() === 'activated');
 
 	private invitation_setup_id: string | null = null;
 	private polling_error = false;
+	private readonly error_alert = viewChild<ElementRef<HTMLElement>>('error_alert');
 	private readonly refresh_requested = new Subject<void>();
+	private readonly action_started = new Subject<void>();
 	private readonly subscriptions = new Subscription();
+
+	constructor() {
+		// An action's refusal renders above the fold; bring it into view, since its button may sit far below
+		afterRenderEffect(() => {
+			const alert = this.error_alert()?.nativeElement;
+			if (alert && this.error() && !this.polling_error) alert.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+		});
+	}
 
 	/** Wait for the authenticated user's role before polling admin-only setup data. */
 	public ngOnInit(): void {
@@ -176,26 +198,23 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
         Polling
     ******************************************************** */
 
-	/** Poll until the daemon reports member mode; exhaustMap keeps a slow daemon from stacking status calls. */
+	/** Poll until member mode; exhaustMap stops a slow daemon stacking calls, and an action cancels a poll in flight. */
 	private startPolling(): void {
 		this.subscriptions.add(
 			merge(timer(0, 3000), this.refresh_requested)
 				.pipe(
 					takeWhile(() => this.mode() !== 'member'),
 					filter(() => !this.busy()),
-					exhaustMap(() => {
-						this.polling.set(true);
-						return this.readState().pipe(
+					exhaustMap(() =>
+						this.readState().pipe(
+							takeUntil(this.action_started),
 							catchError((error: unknown) => {
 								this.showError(error, true);
 								return EMPTY;
 							}),
-							finalize(() => {
-								this.polling.set(false);
-								this.loading.set(false);
-							}),
-						);
-					}),
+							finalize(() => this.loading.set(false)),
+						),
+					),
 					finalize(() => this.loading.set(false)),
 				)
 				.subscribe(),
@@ -265,24 +284,31 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
         Actions
     ******************************************************** */
 
-	/** Handle mutations once; an uncertain response is reconciled by subsequent status polling. */
+	/** Handle mutations once, staying busy until a status read reflects the result so the form can't be submitted twice. */
 	private perform<T>(request: Observable<T>, success?: (response: T) => void): void {
-		if (this.action_disabled()) return;
-		this.busy.set(true);
+		if (!this.startAction()) return;
 		this.error.set(null);
 		this.subscriptions.add(
 			request
 				.pipe(
-					finalize(() => {
-						this.busy.set(false);
-						this.refresh_requested.next();
+					tap((response) => success?.(response)),
+					catchError((error: unknown) => {
+						this.showError(error);
+						return of(null);
 					}),
+					switchMap(() => this.readState().pipe(catchError(() => EMPTY))),
+					finalize(() => this.busy.set(false)),
 				)
-				.subscribe({
-					next: (response) => success?.(response),
-					error: (error: unknown) => this.showError(error),
-				}),
+				.subscribe(),
 		);
+	}
+
+	/** Claim the page for one action, cancelling any poll in flight. */
+	private startAction(): boolean {
+		if (this.busy()) return false;
+		this.busy.set(true);
+		this.action_started.next();
+		return true;
 	}
 
 	/** Keep creation invitations only in this page's state. */
@@ -326,8 +352,7 @@ export class FederationSetupComponent implements OnInit, OnDestroy {
 
 	/** Ask before an irreversible change, holding polling off while the dialog is open. */
 	private confirm(data: FederationSetupConfirm, confirmed: () => void): void {
-		if (this.action_disabled()) return;
-		this.busy.set(true);
+		if (!this.startAction()) return;
 		this.subscriptions.add(
 			this.dialog
 				.open(FederationSetupConfirmDialogComponent, {data})

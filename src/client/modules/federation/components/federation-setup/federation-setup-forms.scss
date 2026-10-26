@@ -37,6 +37,10 @@ legend {
 	font-weight: 600;
 	margin-bottom: 1.25rem;
 }
+// A flex or grid box beside a full-width float shrinks to nothing; start it below the legend
+legend + * {
+	clear: both;
+}
 fieldset > mat-form-field {
 	display: block;
 	margin-bottom: 0.75rem;
