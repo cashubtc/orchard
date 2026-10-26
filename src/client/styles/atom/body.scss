@@ -31,3 +31,8 @@ body {
 		color: var(--mat-sys-on-surface);
 	}
 }
+
+// Headings focused programmatically after a view change aren't interactive, so they draw no focus ring
+h1[tabindex='-1']:focus {
+	outline: none;
+}

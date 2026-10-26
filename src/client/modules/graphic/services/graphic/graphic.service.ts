@@ -24,6 +24,7 @@ export class GraphicService {
 			.addSvgIcon('x', this.domSanitizer.bypassSecurityTrustResourceUrl('icon/x.svg'))
 			.addSvgIcon('minting_disabled_outline', this.domSanitizer.bypassSecurityTrustResourceUrl('icon/minting-disabled-outline.svg'))
 			.addSvgIcon('melting_disabled_outline', this.domSanitizer.bypassSecurityTrustResourceUrl('icon/melting-disabled-outline.svg'))
-			.addSvgIcon('double_bolt', this.domSanitizer.bypassSecurityTrustResourceUrl('icon/double-bolt.svg'));
+			.addSvgIcon('double_bolt', this.domSanitizer.bypassSecurityTrustResourceUrl('icon/double-bolt.svg'))
+			.addSvgIcon('do_not_disturb_on', this.domSanitizer.bypassSecurityTrustResourceUrl('icon/do-not-disturb-on.svg'));
 	}
 }

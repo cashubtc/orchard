@@ -1,4 +1,5 @@
-import {TestBed} from '@angular/core/testing';
+import {signal} from '@angular/core';
+import {TestBed, type ComponentFixture} from '@angular/core/testing';
 import {of} from 'rxjs';
 import {ServiceConfigService} from '@client/modules/service-config/services/service-config.service';
 import {onboardingConfiguration} from '@client/modules/onboarding/helpers/onboarding.fixture';
@@ -6,6 +7,14 @@ import {ServiceKind} from '@shared/generated.types';
 import {OnboardingConfigureComponent} from './onboarding-configure.component';
 
 describe('OnboardingConfigureComponent', () => {
+	/** Click the button with exactly this label. */
+	function click(fixture: ComponentFixture<OnboardingConfigureComponent>, label: string): void {
+		Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button'))
+			.find((button) => button.textContent?.trim() === label)!
+			.click();
+		fixture.detectChanges();
+	}
+
 	it('tests without advancing, blocks failed saves, and advances after an explicit bypass', () => {
 		const failure = {
 			ok: false,
@@ -18,6 +27,7 @@ describe('OnboardingConfigureComponent', () => {
 		};
 		const bypassed = {...failure, saved: true};
 		const api = {
+			refresh_errors: signal({}),
 			save: jasmine
 				.createSpy()
 				.and.callFake((_input: unknown, save_unreachable: boolean) => of(save_unreachable ? bypassed : failure)),
@@ -29,19 +39,18 @@ describe('OnboardingConfigureComponent', () => {
 		fixture.detectChanges();
 		const applied = jasmine.createSpy();
 		fixture.componentInstance.applied.subscribe(applied);
-		fixture.componentInstance.submit(false);
+		click(fixture, 'Save and continue');
 		expect(applied).not.toHaveBeenCalled();
-		expect(api.save).not.toHaveBeenCalled();
-		fixture.componentInstance.submit(true);
+		click(fixture, 'Test again');
+		expect(api.test).toHaveBeenCalled();
+		expect(api.save).toHaveBeenCalledTimes(1);
 		expect(applied).not.toHaveBeenCalled();
-		fixture.detectChanges();
-		expect(fixture.nativeElement.textContent).toContain('Save without a working connection');
-		fixture.componentInstance.submit(true, true);
+		click(fixture, 'Save without a working connection');
 		expect(applied).toHaveBeenCalledWith(bypassed);
 		fixture.componentRef.setInput('pending', true);
 		fixture.detectChanges();
 		api.save.calls.reset();
-		fixture.componentInstance.submit(true);
+		click(fixture, 'Save without a working connection');
 		expect(api.save).not.toHaveBeenCalled();
 	});
 	it('allows a database warning and explains setup mode', () => {
@@ -56,18 +65,19 @@ describe('OnboardingConfigureComponent', () => {
 		};
 		const stored = {...check, saved: true};
 		TestBed.configureTestingModule({
-			providers: [{provide: ServiceConfigService, useValue: {test: () => of(check), save: () => of(stored)}}],
+			providers: [
+				{provide: ServiceConfigService, useValue: {refresh_errors: signal({}), test: () => of(check), save: () => of(stored)}},
+			],
 		});
 		const fixture = TestBed.createComponent(OnboardingConfigureComponent);
 		fixture.componentRef.setInput('configuration', onboardingConfiguration(ServiceKind.Mint, true, 'environment'));
 		fixture.detectChanges();
 		const applied = jasmine.createSpy();
 		fixture.componentInstance.applied.subscribe(applied);
-		fixture.componentInstance.submit(false);
-		fixture.detectChanges();
+		click(fixture, 'Test connection');
 		expect(fixture.nativeElement.textContent).toContain('Federation setup after Review');
 		expect(fixture.nativeElement.textContent).toContain('Filled in from your environment');
-		fixture.componentInstance.submit(true);
+		click(fixture, 'Save and continue');
 		expect(applied).toHaveBeenCalledWith(stored);
 	});
 });

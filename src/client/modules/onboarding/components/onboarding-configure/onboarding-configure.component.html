@@ -1,42 +1,13 @@
 <section class="configure-card orc-low-card">
 	<h2>{{ descriptors[configuration().service].name }}</h2>
 	<p>{{ copy[configuration().service].configure }}</p>
-	@if (configuration().source === 'environment') {
-		<p class="orc-outline-color">Filled in from your environment. Saving stores these values in Orchard.</p>
-	}
-	@if (busy()) {
-		<mat-progress-bar mode="indeterminate" aria-label="Testing connection"></mat-progress-bar>
-	}
-	<orc-service-fields
+	<orc-service-connection
 		[configuration]="configuration()"
-		[form]="form"
-		[flagged]="result()?.fields ?? []"
-		(changed)="changed()"
-	></orc-service-fields>
-	<p class="orc-outline-color">{{ copy[configuration().service].credential }}</p>
-	@if (result(); as check) {
-		<orc-service-check-result [result]="check"></orc-service-check-result>
-		@if (check.mode === 'setup') {
-			<p>
-				This mint is in <strong>federation setup mode</strong>. It won't serve wallets until you create or join a federation.
-				Orchard opens Federation setup after Review.
-			</p>
-			<p>Its payment backends show up once the federation is active.</p>
-		}
-	}
-	@if (error()) {
-		<p class="orc-error-color" role="alert">{{ error() }}</p>
-	}
-	<div class="step-actions">
-		<button matButton type="button" [disabled]="busy()" (click)="backed.emit()">Back</button>
-		<button matButton type="button" [disabled]="busy()" (click)="skipped.emit()">Skip this service</button>
-		<button matButton type="button" [disabled]="busy()" (click)="submit(false)">Test again</button>
-		<button matButton="filled" type="button" [disabled]="busy()" (click)="submit(true)">Save and continue</button>
-		@if (result() && !result()!.ok) {
-			<button matButton type="button" [disabled]="busy()" (click)="submit(true, true)">Save without a working connection</button>
-		}
-	</div>
-	@if (configuration().enabled) {
-		<p class="orc-outline-color">Skipping leaves the existing connection unchanged.</p>
-	}
+		[pending]="pending()"
+		context="onboarding"
+		(checked)="checked.emit($event)"
+		(applied)="applied.emit($event.check)"
+		(backed)="backed.emit()"
+		(skipped)="skipped.emit()"
+	></orc-service-connection>
 </section>

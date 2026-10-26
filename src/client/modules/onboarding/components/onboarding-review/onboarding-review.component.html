@@ -10,8 +10,13 @@
 				class="review-status"
 				[class.orc-status-active-color]="row.tone === 'success'"
 				[class.orc-status-warning-color]="row.tone === 'warning'"
-				><mat-icon aria-hidden="true">{{ row.icon }}</mat-icon
-				>{{ row.status }}</span
+			>
+				@if (row.icon === 'do_not_disturb_on') {
+					<mat-icon svgIcon="do_not_disturb_on"></mat-icon>
+				} @else {
+					<mat-icon>{{ row.icon }}</mat-icon>
+				}
+				{{ row.status }}</span
 			>
 			<button
 				matButton

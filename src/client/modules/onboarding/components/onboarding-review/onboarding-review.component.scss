@@ -1,7 +1,7 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
 .review-card {
-	padding: 1.5rem;
+	@extend %p-1;
 }
 .review-row {
 	@extend %flex;
@@ -20,7 +20,7 @@
 	min-width: 0;
 	h2,
 	p {
-		margin: 0;
+		@extend %m-0;
 		overflow-wrap: anywhere;
 	}
 	h2 {
@@ -41,7 +41,7 @@
 	@extend %p-1;
 	margin-top: 1rem;
 	p {
-		margin: 0;
+		@extend %m-0;
 	}
 	mat-icon {
 		flex-shrink: 0;
@@ -51,9 +51,9 @@
 	@extend %flex-justify-end;
 	margin-top: 1.5rem;
 }
-@media (max-width: 600px) {
+:host(.mobile) {
 	.review-card {
-		padding: 1rem;
+		@extend %p-1;
 	}
 	.service-detail {
 		flex-basis: calc(100% - 3rem);

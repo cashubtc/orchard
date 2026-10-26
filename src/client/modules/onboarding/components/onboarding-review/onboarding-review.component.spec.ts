@@ -1,3 +1,4 @@
+import {MatIconTestingModule} from '@angular/material/icon/testing';
 import {TestBed} from '@angular/core/testing';
 import {onboardingReview} from '@client/modules/onboarding/helpers/onboarding.helpers';
 import {ServiceKind} from '@shared/generated.types';
@@ -5,6 +6,7 @@ import {OnboardingReviewComponent} from './onboarding-review.component';
 
 describe('OnboardingReviewComponent', () => {
 	it('shows neutral skipped rows, allows Add, and only offers opening the applied setup', () => {
+		TestBed.configureTestingModule({imports: [MatIconTestingModule]});
 		const fixture = TestBed.createComponent(OnboardingReviewComponent);
 		fixture.componentRef.setInput('rows', onboardingReview([], {}));
 		fixture.componentRef.setInput('setup_mode', true);

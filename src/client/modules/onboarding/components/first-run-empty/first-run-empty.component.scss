@@ -13,15 +13,15 @@
 }
 .empty-tiles {
 	@extend %flex-gap-1;
-	display: grid;
+	@extend %grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .empty-tile {
 	@extend %flex;
 	@extend %flex-column;
 	@extend %flex-gap-1;
-	padding: 1.5rem;
-	text-decoration: none;
+	@extend %p-1;
+	@extend %text-decoration-none;
 	color: inherit;
 	text-align: left;
 }
@@ -32,12 +32,12 @@
 	@extend %flex-gap-0-5;
 	margin-top: 2rem;
 }
-@media (max-width: 600px) {
+:host(.mobile) {
 	.empty-home {
-		padding: 1rem;
+		@extend %p-1;
 		margin-top: 1rem;
 	}
 	.empty-tiles {
-		grid-template-columns: 1fr;
+		@extend %cols-1;
 	}
 }

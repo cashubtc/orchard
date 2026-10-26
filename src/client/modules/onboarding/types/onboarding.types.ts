@@ -8,6 +8,12 @@ export interface OnboardingStageCopy {
 	intro: string | null;
 	step: number;
 }
+export interface OnboardingRoute {
+	stage: OnboardingStage;
+	service: ServiceKind | null;
+	picked: ServiceKind[] | null;
+	return_to_review: boolean;
+}
 export interface OnboardingOutcome {
 	check?: OrchardConnectionCheck;
 	saved_check?: OrchardConnectionCheck;
@@ -23,4 +29,12 @@ export interface OnboardingReviewRow extends OnboardingReviewStatus {
 	service: ServiceKind;
 	detail: string;
 	enabled: boolean;
+}
+
+export interface OnboardingServiceCopy {
+	description: string;
+	note: string;
+	tile: string;
+	configure: string;
+	skipped: string;
 }

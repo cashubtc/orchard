@@ -1,7 +1,7 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
 :host {
-	display: block;
+	@extend %block;
 }
 .onboarding-container {
 	@extend %flex;
@@ -19,28 +19,10 @@
 		line-height: 1.5;
 	}
 }
-.setup-steps {
-	@extend %flex;
-	@extend %flex-justify-center;
-	@extend %flex-wrap;
-	@extend %flex-gap-1-5;
-	padding: 0;
-	margin: 0;
-	list-style: none;
-	li {
-		@extend %flex;
-		@extend %flex-items-center;
-		@extend %flex-gap-0-5;
-	}
-}
-.current {
-	@extend %orc-primary-color;
-	font-weight: 600;
-}
 .configure-layout {
-	display: grid;
+	@extend %grid;
 	grid-template-columns: 12rem minmax(0, 1fr);
-	gap: 1.5rem;
+	@extend %flex-gap-1-5;
 }
 .service-list {
 	@extend %flex;
@@ -53,23 +35,24 @@
 		text-align: left;
 	}
 	small {
-		display: block;
+		@extend %block;
 	}
 }
-@media (max-width: 700px) {
+:host(.mobile) {
 	.onboarding-container {
 		padding: 1.5rem 1rem;
-		gap: 1.5rem;
+		@extend %flex-gap-1-5;
 	}
 	.configure-layout {
-		grid-template-columns: 1fr;
+		@extend %cols-1;
 	}
 	.service-list {
-		flex-direction: row;
-		flex-wrap: wrap;
+		@extend %flex-row;
+		@extend %flex-wrap;
 	}
-	.setup-steps {
-		gap: 0.75rem;
-		font-size: 0.75rem;
-	}
+}
+
+.service-list [aria-current='step'] {
+	@extend %orc-primary-container-bg;
+	@extend %orc-on-primary-container-color;
 }

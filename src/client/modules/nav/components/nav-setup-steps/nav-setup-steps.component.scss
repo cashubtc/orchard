@@ -1,0 +1,28 @@
+@use '@angular/cdk' as cdk;
+@use 'molecule/molecule';
+ol {
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-gap-1;
+	@extend %p-0;
+	@extend %m-0;
+	list-style: none;
+}
+li {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+}
+@include cdk.a11y-visually-hidden();
+[aria-current='step'] {
+	@extend %orc-primary-color;
+	@extend %font-weight-semi-bold;
+}
+:host(.mobile) {
+	ol {
+		@extend %flex-gap-0-5;
+	}
+	li {
+		@extend %font-size-xs;
+	}
+}

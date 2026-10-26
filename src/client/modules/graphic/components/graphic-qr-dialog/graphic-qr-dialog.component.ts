@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, computed, inject, signal, viewChild} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, forwardRef, inject, signal, viewChild} from '@angular/core';
 
 /* Vendor Dependencies */
 import {MAT_DIALOG_DATA} from '@angular/material/dialog';
@@ -28,7 +28,7 @@ export class GraphicQrDialogComponent {
 
 	public readonly ecc = computed((): ErrorCorrection => resolveQrEcc(QR_ECC_LEVELS[this.ecc_index()], !!this.data.image));
 
-	private readonly qr = viewChild(GraphicQrComponent);
+	private readonly qr = viewChild<GraphicQrComponent>(forwardRef(() => GraphicQrComponent));
 
 	/* *******************************************************
 		Download

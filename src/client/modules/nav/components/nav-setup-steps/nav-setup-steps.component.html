@@ -1,0 +1,12 @@
+<ol aria-label="Setup progress">
+	@for (step of steps(); track step; let index = $index) {
+		<li [attr.aria-current]="current() === index ? 'step' : null">
+			@if (index < current()) {
+				<mat-icon>task_alt</mat-icon><span class="cdk-visually-hidden">Completed: </span>
+			} @else {
+				<span>{{ index + 1 }}</span>
+			}
+			{{ step }}
+		</li>
+	}
+</ol>

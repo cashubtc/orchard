@@ -1,27 +1,18 @@
 <main class="onboarding-container">
 	<header class="onboarding-header">
 		<orc-graphic-orchard-logo height="3rem"></orc-graphic-orchard-logo>
-		<h1>{{ stage_copy().title }}</h1>
+		<h1 tabindex="-1">{{ stage_copy().title }}</h1>
 		@if (stage_copy().intro; as intro) {
 			<p>{{ intro }}</p>
 		}
 	</header>
-	<ol class="setup-steps" aria-label="Setup steps">
-		@for (step of steps; track step; let index = $index) {
-			<li [attr.aria-current]="index === stage_copy().step ? 'step' : null" [class.current]="index === stage_copy().step">
-				@if (index < stage_copy().step) {
-					<mat-icon aria-label="Done">task_alt</mat-icon>
-				} @else {
-					<span>{{ index + 1 }}</span>
-				}
-				{{ step }}
-			</li>
-		}
-	</ol>
+	<div class="flex flex-justify-center">
+		<orc-nav-setup-steps [steps]="steps" [current]="stage_copy().step"></orc-nav-setup-steps>
+	</div>
 	@if (error()) {
 		<div class="orc-error-card p-1" role="alert">{{ error() }}<button matButton (click)="retry()">Try again</button></div>
 	}
-	@if (loading()) {
+	@if (busy()) {
 		<mat-progress-bar mode="indeterminate" aria-label="Loading services"></mat-progress-bar>
 	}
 	@if (configurations().length) {
@@ -45,10 +36,15 @@
 								[attr.aria-current]="service === active_service() ? 'step' : null"
 								(click)="showService(service)"
 							>
-								<mat-icon>{{ descriptors[service].icon }}</mat-icon
+								<mat-icon [class.mat-symbol-outline]="service !== active_service()">{{
+									descriptors[service].icon
+								}}</mat-icon
 								><span
 									>{{ descriptors[service].name }}<small>{{ service_states()[service] }}</small></span
 								>
+								@if (outcomes()[service]?.saved_check?.ok) {
+									<mat-icon iconPositionEnd>task_alt</mat-icon>
+								}
 							</button>
 						}
 					</nav>

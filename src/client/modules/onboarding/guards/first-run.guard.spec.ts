@@ -4,10 +4,11 @@ import type {CanMatchFn, Route, UrlSegment} from '@angular/router';
 /* Application Dependencies */
 import {ConfigService} from '@client/modules/config/services/config.service';
 /* Local Dependencies */
-import {firstRunGuard} from './first-run.guard';
+import {onboardingFirstRunGuard} from './first-run.guard';
 
-describe('firstRunGuard', () => {
-	const executeGuard: CanMatchFn = (...guardParameters) => TestBed.runInInjectionContext(() => firstRunGuard(...guardParameters));
+describe('onboardingFirstRunGuard', () => {
+	const executeGuard: CanMatchFn = (...guardParameters) =>
+		TestBed.runInInjectionContext(() => onboardingFirstRunGuard(...guardParameters));
 	const config = {bitcoin: {enabled: false}, lightning: {enabled: false}, mint: {enabled: false}, taproot_assets: {enabled: false}};
 	const config_service = {config, status_loaded: true};
 

@@ -1,14 +1,12 @@
+/* Core Dependencies */
+import type {ActivatedRouteSnapshot} from '@angular/router';
+
 /* Application Dependencies */
-import {SERVICE_DESCRIPTORS} from '@client/modules/service-config/constants/service-config.constants';
+import {serviceConfigurationDetail} from '@client/modules/service-config/helpers/service-config.helpers';
 
 /* Native Dependencies */
-import {
-	ONBOARDING_COPY,
-	ONBOARDING_MODE_LABELS,
-	ONBOARDING_REVIEW_STATUS,
-	ONBOARDING_SERVICES,
-} from '@client/modules/onboarding/constants/onboarding.constants';
-import type {OnboardingOutcomes, OnboardingReviewRow} from '@client/modules/onboarding/types/onboarding.types';
+import {ONBOARDING_COPY, ONBOARDING_REVIEW_STATUS, ONBOARDING_SERVICES} from '@client/modules/onboarding/constants/onboarding.constants';
+import type {OnboardingOutcomes, OnboardingReviewRow, OnboardingRoute} from '@client/modules/onboarding/types/onboarding.types';
 
 /* Shared Dependencies */
 import type {OrchardServiceConfiguration, ServiceKind} from '@shared/generated.types';
@@ -16,6 +14,18 @@ import type {OrchardServiceConfiguration, ServiceKind} from '@shared/generated.t
 /** Recognize only supported services in direct first-run links. */
 export function onboardingService(value: string | null): ServiceKind | null {
 	return ONBOARDING_SERVICES.find((service) => service === value) ?? null;
+}
+
+/** Read the wizard's step, service, picked services and return target from the onboarding route's URL. */
+export function onboardingRoute(snapshot: ActivatedRouteSnapshot): OnboardingRoute {
+	const service = onboardingService(snapshot.firstChild?.paramMap.get('service') ?? null);
+	const picked = snapshot.queryParamMap.get('picked')?.split(',');
+	return {
+		stage: snapshot.firstChild?.data['stage'] === 'review' ? 'review' : service ? 'configure' : 'services',
+		service,
+		picked: picked ? ONBOARDING_SERVICES.filter((item) => picked.includes(item)) : null,
+		return_to_review: snapshot.queryParamMap.get('return') === 'review',
+	};
 }
 
 /** Members open the federation dashboard; the mint section sends setup and unreachable daemons to setup itself. */
@@ -30,10 +40,7 @@ export function onboardingReview(configurations: OrchardServiceConfiguration[], 
 		if (!configuration?.enabled)
 			return {service, detail: ONBOARDING_COPY[service].skipped, enabled: false, ...ONBOARDING_REVIEW_STATUS['skipped']};
 		const saved = outcomes[service]?.saved_check;
-		const value = (key: string): string => configuration.fields.find((field) => field.key === key)?.value ?? '';
-		const type = SERVICE_DESCRIPTORS[service].types.find((item) => item.value === configuration.type)?.label ?? configuration.type;
-		const network = saved?.chain || (saved?.mode ? (ONBOARDING_MODE_LABELS[saved.mode] ?? saved.mode) : null);
-		const detail = [type, `${value('host')}:${value('port')}`, network].filter(Boolean).join(' · ');
+		const detail = serviceConfigurationDetail(configuration, saved?.chain, saved?.mode);
 		const status =
 			configuration.source === 'environment'
 				? 'environment'

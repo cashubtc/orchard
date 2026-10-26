@@ -2,29 +2,30 @@
 @use 'nucleus/nucleus';
 .service-grid {
 	@extend %flex-gap-1;
-	display: grid;
+	@extend %grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .service-card {
 	@extend %flex;
 	@extend %flex-column;
 	@extend %flex-gap-1;
-	padding: 1.5rem;
+	@extend %p-1;
 	color: inherit;
 	font: inherit;
 	text-align: left;
-	border: 2px solid transparent;
-	cursor: pointer;
+	border: 1px solid;
+	@extend %orc-outline-variant-border;
+	@extend %cursor-pointer;
 }
 .selected {
-	border-color: var(--mat-sys-primary);
+	@extend %orc-on-primary-container-border;
 }
 .card-heading {
 	@extend %flex;
 	@extend %flex-items-center;
-	gap: 0.75rem;
+	@extend %flex-gap-1;
 	strong {
-		flex: 1;
+		@extend %flex-1;
 	}
 }
 .picker-actions {
@@ -36,9 +37,9 @@
 .environment-caption {
 	margin: 1.5rem 0;
 }
-@media (max-width: 700px) {
+:host(.mobile) {
 	.service-grid {
-		grid-template-columns: 1fr;
+		@extend %cols-1;
 	}
 	.description {
 		display: none;
@@ -46,4 +47,10 @@
 	.picker-actions {
 		flex-direction: column-reverse;
 	}
+}
+
+.environment-caption {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
 }

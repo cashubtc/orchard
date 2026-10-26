@@ -3,22 +3,23 @@ import {provideRouter} from '@angular/router';
 import {of} from 'rxjs';
 import {CrewService} from '@client/modules/crew/services/crew/crew.service';
 import {UserRole} from '@shared/generated.types';
-import {FirstRunEmptyComponent} from './first-run-empty.component';
+import {OnboardingFirstRunEmptyComponent} from './first-run-empty.component';
 
-describe('FirstRunEmptyComponent', () => {
+describe('OnboardingFirstRunEmptyComponent', () => {
 	for (const role of [UserRole.Admin, UserRole.Reader]) {
 		it(`shows setup actions only to admins (${role})`, () => {
 			TestBed.configureTestingModule({
-				providers: [provideRouter([]), {provide: CrewService, useValue: {loadUser: () => of({role})}}],
+				providers: [provideRouter([]), {provide: CrewService, useValue: {isAdmin: () => of(role === UserRole.Admin)}}],
 			});
-			const fixture = TestBed.createComponent(FirstRunEmptyComponent);
+			const fixture = TestBed.createComponent(OnboardingFirstRunEmptyComponent);
 			fixture.detectChanges();
 			expect(fixture.nativeElement.textContent).toContain('Nothing connected yet');
 			expect(fixture.nativeElement.querySelectorAll('a').length).toBe(role === UserRole.Admin ? 5 : 0);
-			if (role === UserRole.Admin)
-				expect(fixture.nativeElement.querySelector('a[aria-label="Add Mint"]').getAttribute('href')).toBe(
-					'/onboarding?service=mint',
-				);
+			if (role === UserRole.Admin) {
+				const tile: HTMLAnchorElement = fixture.nativeElement.querySelector('a[aria-label="Add Mint"]');
+				expect(tile.getAttribute('href')).toBe('/onboarding/configure/mint');
+				expect(tile.textContent).toContain('CDK or Nutshell, standalone or a federation member.');
+			}
 		});
 	}
 });

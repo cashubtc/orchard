@@ -17,7 +17,9 @@
 		</button>
 	}
 </div>
-<p class="environment-caption">Values already set in your environment are filled in on the next step.</p>
+<p class="environment-caption orc-outline-color">
+	<mat-icon>info</mat-icon>Values already set in your environment are filled in on the next step.
+</p>
 <div class="picker-actions">
 	<button matButton type="button" (click)="skipped.emit()">Skip for now</button>
 	<button matButton="filled" type="button" [disabled]="!selected().length" (click)="continued.emit()">
