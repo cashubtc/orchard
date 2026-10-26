@@ -1,4 +1,13 @@
 <div class="mint-subsection-config-container">
+	@if (is_member()) {
+		<div class="p-1 flex flex-column flex-gap-1">
+			<p class="m-0">
+				These settings apply to this member only. Wallets create quotes at member 1 unless it's unavailable, and the other members
+				accept those quotes as created. Set the same values on every member.
+			</p>
+			<orc-federation-settings-summary group="config" />
+		</div>
+	}
 	@if (device_type() !== 'desktop') {
 		<div class="mobile-mint-config-nav">
 			<button matButton type="button" [matMenuTriggerFor]="nut_menu">
@@ -8,7 +17,7 @@
 		</div>
 	}
 	<div class="flex flex-gap-0-5">
-		<div class="grid" #nut_container [class.tablet-view]="device_type() !== 'desktop'">
+		<div class="grid flex-1 w-min-0" #nut_container [class.tablet-view]="device_type() !== 'desktop'">
 			<div class="flex flex-wrap">
 				<!-- NUT 04 -->
 				<div class="nav4 flex-1" #nav4>
@@ -19,12 +28,14 @@
 						<div class="category-rule"></div>
 					</div>
 					<orc-mint-subsection-config-form-enabled
+						[member]="is_member()"
 						[nut]="'nut4'"
 						[enabled]="form_minting.get('enabled')?.value"
 						[form_group]="form_minting"
 						[device_desktop]="device_type() === 'desktop'"
 						(update)="onEnabledUpdate($event)"
 					></orc-mint-subsection-config-form-enabled>
+					<orc-federation-settings-hint class="p-h-1" setting="missing_methods" nut="nut4" [show_field]="true" />
 
 					<!-- NUT 04 QUOTE TTL -->
 					<div class="sticky-config z-index-1">
@@ -33,6 +44,7 @@
 						</div>
 					</div>
 					<orc-mint-subsection-config-form-quote-ttl
+						[member]="is_member()"
 						[nut]="'nut4'"
 						[form_group]="form_minting"
 						[control_name]="'mint_ttl'"
@@ -130,12 +142,14 @@
 
 					<!-- NUT 05 ENABLED -->
 					<orc-mint-subsection-config-form-enabled
+						[member]="is_member()"
 						[nut]="'nut5'"
 						[enabled]="form_melting.get('enabled')?.value"
 						[form_group]="form_melting"
 						[device_desktop]="device_type() === 'desktop'"
 						(update)="onEnabledUpdate($event)"
 					></orc-mint-subsection-config-form-enabled>
+					<orc-federation-settings-hint class="p-h-1" setting="missing_methods" nut="nut5" [show_field]="true" />
 
 					<!-- NUT 05 QUOTE TTL -->
 					<div class="sticky-config z-index-1">
@@ -144,6 +158,7 @@
 						</div>
 					</div>
 					<orc-mint-subsection-config-form-quote-ttl
+						[member]="is_member()"
 						[nut]="'nut5'"
 						[form_group]="form_melting"
 						[control_name]="'melt_ttl'"

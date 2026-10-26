@@ -23,6 +23,8 @@
 								<mat-icon class="orc-outline-color">info</mat-icon>
 							</button>
 						</div>
+						<p class="m-0 font-size-xs">Applies to all methods and units on this {{ member() ? 'member' : 'mint' }}.</p>
+						<orc-federation-settings-hint setting="disabled" [nut]="nut()" />
 					</div>
 					<div class="flex-1 flex flex-justify-center flex-items-center">
 						<orc-mint-subsection-config-nut

@@ -1,0 +1,14 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+:host {
+	@extend %block;
+	@extend %w-min-0;
+}
+.setting-difference {
+	@extend %m-0;
+	@extend %font-size-xs;
+	overflow-wrap: anywhere;
+}
+.setting-value {
+	white-space: pre-wrap;
+}

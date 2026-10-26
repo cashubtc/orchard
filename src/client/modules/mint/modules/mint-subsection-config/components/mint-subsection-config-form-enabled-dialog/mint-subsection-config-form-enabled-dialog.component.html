@@ -2,6 +2,7 @@
 	<div class="flex flex-column flex-gap-1 flex-items-center p-2">
 		<mat-icon class="mat-symbol-outline orc-status-warning-color icon-lg" [svgIcon]="icon"></mat-icon>
 		<div class="text-center" [innerHTML]="description"></div>
+		<p class="m-0 text-center">Applies to all methods and units on this {{ data.member ? 'member' : 'mint' }}.</p>
 	</div>
 </mat-dialog-content>
 <mat-dialog-actions>

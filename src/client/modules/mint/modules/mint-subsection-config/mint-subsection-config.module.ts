@@ -24,6 +24,8 @@ import {OrcPublicModule} from '@client/modules/public/public.module';
 import {OrcMintGeneralModule} from '@client/modules/mint/modules/mint-general/mint-general.module';
 /* Application Dependencies */
 import {pendingEventGuard} from '@client/modules/event/guards/pending-event.guard';
+import {FederationSettingsSummaryComponent} from '@client/modules/federation/components/federation-settings-summary/federation-settings-summary.component';
+import {FederationSettingsHintComponent} from '@client/modules/federation/components/federation-settings-hint/federation-settings-hint.component';
 /* Local Dependencies */
 import {MintSubsectionConfigComponent} from './components/mint-subsection-config/mint-subsection-config.component';
 import {MintSubsectionConfigFormEnabledComponent} from './components/mint-subsection-config-form-enabled/mint-subsection-config-form-enabled.component';
@@ -76,6 +78,8 @@ import {MintSubsectionConfigNut29Component} from './components/mint-subsection-c
 		MintSubsectionConfigNut29Component,
 	],
 	imports: [
+		FederationSettingsSummaryComponent,
+		FederationSettingsHintComponent,
 		CoreRouterModule.forChild([
 			{
 				path: '',

@@ -1,4 +1,10 @@
 <div class="mint-subsection-info-container" [ngClass]="{'p-2': device_type() === 'desktop', 'p-1': device_type() !== 'desktop'}">
+	@if (is_member()) {
+		<p class="m-0">
+			These details belong to this member. Wallets show whichever member answers first, so set the same values on every member.
+		</p>
+		<orc-federation-settings-summary group="info" />
+	}
 	<mat-card appearance="outlined" class="relative overflow-hidden flex-grow flex">
 		<mat-card-content class="orc-surface-container-low-bg flex-grow flex">
 			<div class="h-full flex flex-column flex-gap-2">
@@ -19,31 +25,54 @@
 								(update)="onControlUpdate($event)"
 								(cancel)="onControlCancel($event)"
 							></orc-mint-subsection-info-form-name>
+							<orc-federation-settings-hint setting="name" />
 							<orc-mint-subsection-info-form-description
 								[form_group]="form_info"
 								[control_name]="'description'"
 								(update)="onControlUpdate($event)"
 								(cancel)="onControlCancel($event)"
 							></orc-mint-subsection-info-form-description>
+							<orc-federation-settings-hint setting="description" />
 						</orc-mint-subsection-info-form-icon>
+						<orc-federation-settings-hint setting="icon_url" />
 						<orc-mint-subsection-info-form-description-long
 							[form_group]="form_info"
 							[control_name]="'description_long'"
 							(update)="onControlUpdate($event)"
 							(cancel)="onControlCancel($event)"
 						></orc-mint-subsection-info-form-description-long>
+						<orc-federation-settings-hint setting="description_long" />
 					</div>
 					<div class="flex-1 flex flex-column flex-gap-2">
-						<orc-mint-subsection-info-form-urls
-							[form_group]="form_info"
-							[form_array]="form_array_urls"
-							[array_name]="'urls'"
-							[array_length]="form_array_urls.length"
-							(addControl)="onAddUrlControl()"
-							(update)="onArrayControlUpdate($event)"
-							(cancel)="onArrayControlCancel($event)"
-							(remove)="onArrayControlRemove($event)"
-						></orc-mint-subsection-info-form-urls>
+						@if (is_member()) {
+							<section aria-label="This member's federation URLs" class="member-urls">
+								<h3 class="m-0">This member’s URLs</h3>
+								<p class="m-0">Set at federation setup. Federated wallets use these, and they can't be changed yet.</p>
+								@if (local_member(); as member) {
+									<dl class="m-0">
+										<dt>Public mint URL</dt>
+										<dd>{{ member.public_mint_url }}</dd>
+										<dt>Federation API URL</dt>
+										<dd>{{ member.federation_api_url }}</dd>
+									</dl>
+								} @else if (comparison_error()) {
+									<p class="m-0">Unavailable until the member comparison loads.</p>
+								} @else {
+									<p class="m-0">Loading this member’s URLs…</p>
+								}
+							</section>
+						} @else {
+							<orc-mint-subsection-info-form-urls
+								[form_group]="form_info"
+								[form_array]="form_array_urls"
+								[array_name]="'urls'"
+								[array_length]="form_array_urls.length"
+								(addControl)="onAddUrlControl()"
+								(update)="onArrayControlUpdate($event)"
+								(cancel)="onArrayControlCancel($event)"
+								(remove)="onArrayControlRemove($event)"
+							></orc-mint-subsection-info-form-urls>
+						}
 						<orc-mint-subsection-info-form-contacts
 							[form_group]="form_info"
 							[form_array]="form_array_contacts"
@@ -55,6 +84,7 @@
 							(cancel)="onArrayControlCancel($event)"
 							(remove)="onArrayControlRemove($event)"
 						></orc-mint-subsection-info-form-contacts>
+						<orc-federation-settings-hint setting="contact" />
 					</div>
 				</div>
 				<orc-mint-subsection-info-form-motd
@@ -65,6 +95,7 @@
 					(update)="onControlUpdate($event)"
 					(cancel)="onControlCancel($event)"
 				></orc-mint-subsection-info-form-motd>
+				<orc-federation-settings-hint setting="motd" />
 			</div>
 		</mat-card-content>
 	</mat-card>

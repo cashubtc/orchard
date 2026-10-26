@@ -1,5 +1,6 @@
 /* Core Dependencies */
 import {
+	inject,
 	ChangeDetectionStrategy,
 	Component,
 	OnInit,
@@ -20,6 +21,8 @@ import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 /* Vendor Dependencies */
 import {Subscription, lastValueFrom, forkJoin} from 'rxjs';
 /* Application Dependencies */
+import {FederationService} from '@client/modules/federation/services/federation.service';
+import {FederationSettingsService} from '@client/modules/federation/services/federation-settings.service';
 import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 import {EventService} from '@client/modules/event/services/event/event.service';
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
@@ -89,6 +92,11 @@ const METHOD_DISPLAY: Record<string, MethodDisplay> = {
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSubsectionConfigComponent implements ComponentCanDeactivate, OnInit, OnDestroy, AfterViewInit {
+	private readonly federation_service = inject(FederationService);
+	private readonly settings_service = inject(FederationSettingsService);
+
+	public readonly is_member = this.federation_service.is_member;
+
 	@ViewChildren('nav4,nav5,nav7,nav8,nav9,nav10,nav11,nav12,nav14,nav15,nav17,nav19,nav20,nav21,nav22,nav29')
 	nav_elements!: QueryList<ElementRef>;
 	@ViewChild('nut_container', {static: false}) nut_container!: ElementRef;
@@ -229,6 +237,7 @@ export class MintSubsectionConfigComponent implements ComponentCanDeactivate, On
 	******************************************************** */
 
 	ngOnInit(): void {
+		if (this.is_member()) this.settings_service.load();
 		this.page_settings = this.getPageSettings();
 		this.mint_info = this.route.snapshot.data['mint_info'];
 		this.quote_ttls = this.route.snapshot.data['mint_quote_ttl'];

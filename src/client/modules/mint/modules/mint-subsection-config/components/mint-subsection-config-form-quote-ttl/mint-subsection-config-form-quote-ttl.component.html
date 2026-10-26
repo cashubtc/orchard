@@ -4,6 +4,9 @@
 			<div class="flex flex-gap-column-2 flex-wrap-reverse">
 				<div class="flex-1 flex flex-column flex-gap-2 p-l-1">
 					<div class="flex flex-column">
+						@if (member()) {
+							<p class="m-0 font-size-xs">This member only. Not visible to the other members.</p>
+						}
 						<form
 							class="flex-grow"
 							[formGroup]="form_group()"

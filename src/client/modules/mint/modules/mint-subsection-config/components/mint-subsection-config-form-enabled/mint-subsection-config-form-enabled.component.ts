@@ -16,6 +16,7 @@ import {MintSubsectionConfigFormEnabledDialogComponent} from '../mint-subsection
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSubsectionConfigFormEnabledComponent {
+	public readonly member = input<boolean>(false);
 	public nut = input.required<'nut4' | 'nut5'>(); // which nut configuration this controls
 	public form_group = input.required<FormGroup>(); // form group containing the enabled control
 	public enabled = input<boolean>(true); // current enabled state
@@ -54,7 +55,7 @@ export class MintSubsectionConfigFormEnabledComponent {
 
 	private launchDialog(): void {
 		const dialog_ref = this.dialog.open(MintSubsectionConfigFormEnabledDialogComponent, {
-			data: {nut: this.nut()},
+			data: {nut: this.nut(), member: this.member()},
 		});
 		dialog_ref.afterClosed().subscribe((decision) => {
 			decision === true ? this.onConfirm(false) : this.onCancel();

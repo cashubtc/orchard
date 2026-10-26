@@ -1,5 +1,15 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, OnInit, OnDestroy, ChangeDetectorRef, signal, HostListener} from '@angular/core';
+import {
+	inject,
+	computed,
+	ChangeDetectionStrategy,
+	Component,
+	OnInit,
+	OnDestroy,
+	ChangeDetectorRef,
+	signal,
+	HostListener,
+} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {FormGroup, FormControl, Validators, FormArray} from '@angular/forms';
 import {toObservable} from '@angular/core/rxjs-interop';
@@ -8,6 +18,8 @@ import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 /* Vendor Dependencies */
 import {Subscription} from 'rxjs';
 /* Application Dependencies */
+import {FederationService} from '@client/modules/federation/services/federation.service';
+import {FederationSettingsService} from '@client/modules/federation/services/federation-settings.service';
 import {ConfigService} from '@client/modules/config/services/config.service';
 import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
@@ -30,6 +42,13 @@ import {AssistantToolName, OrchardContact} from '@shared/generated.types';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSubsectionInfoComponent implements ComponentCanDeactivate, OnInit, OnDestroy {
+	private readonly federation_service = inject(FederationService);
+	private readonly settings_service = inject(FederationSettingsService);
+
+	public readonly is_member = this.federation_service.is_member;
+	public readonly comparison_error = this.settings_service.error;
+	public readonly local_member = computed(() => this.settings_service.comparison()?.members.find((member) => member.local) ?? null);
+
 	@HostListener('window:beforeunload')
 	canDeactivate(): boolean {
 		return this.active_event?.type !== 'PENDING';
@@ -82,6 +101,7 @@ export class MintSubsectionInfoComponent implements ComponentCanDeactivate, OnIn
 	******************************************************** */
 
 	async ngOnInit(): Promise<void> {
+		if (this.is_member()) this.settings_service.load();
 		this.init_info = this.route.snapshot.data['mint_info_rpc'];
 		this.form_info.patchValue({
 			name: this.init_info.name,
@@ -94,6 +114,8 @@ export class MintSubsectionInfoComponent implements ComponentCanDeactivate, OnIn
 			const url_controls = this.init_info.urls.map((url) => new FormControl(url, [Validators.required]));
 			url_controls.forEach((control) => this.form_array_urls.push(control));
 		}
+		// A member's URLs are fixed by the federation config, so they never count as edits
+		if (this.is_member()) this.form_array_urls.disable();
 		if (this.init_info.contact && Array.isArray(this.init_info.contact)) {
 			const contact_controls = this.init_info.contact.map(
 				(contact) =>
@@ -544,7 +566,7 @@ export class MintSubsectionInfoComponent implements ComponentCanDeactivate, OnIn
 
 	private onSuccess(reset: boolean = false): void {
 		this.mintService.clearInfoCache();
-		this.mintService.loadMintInfo().subscribe();
+		if (this.configService.config.mint.public_api) this.mintService.loadMintInfo().subscribe();
 		this.eventService.registerEvent(
 			new EventData({
 				type: 'SUCCESS',
@@ -670,6 +692,13 @@ export class MintSubsectionInfoComponent implements ComponentCanDeactivate, OnIn
 	******************************************************** */
 
 	private executeAssistantFunction(tool_call: AiChatToolCall): void {
+		if (
+			this.is_member() &&
+			[AssistantToolName.MintUrlAdd, AssistantToolName.MintUrlUpdate, AssistantToolName.MintUrlRemove].includes(
+				tool_call.function.name,
+			)
+		)
+			return;
 		if (tool_call.function.name === AssistantToolName.MintNameUpdate) {
 			this.form_info.get('name')?.setValue(tool_call.function.arguments.name);
 			this.form_info.get('name')?.markAsDirty();

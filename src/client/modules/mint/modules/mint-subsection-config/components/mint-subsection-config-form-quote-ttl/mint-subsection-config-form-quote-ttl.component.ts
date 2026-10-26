@@ -19,6 +19,7 @@ import {MintQuoteState, MeltQuoteState} from '@shared/generated.types';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MintSubsectionConfigFormQuoteTtlComponent {
+	public readonly member = input<boolean>(false);
 	public nut = input.required<'nut4' | 'nut5'>(); // which nut configuration this controls
 	public form_group = input.required<FormGroup>(); // form group containing the quote ttl control
 	public control_name = input.required<keyof MintQuoteTtls>(); // name of the form control to bind

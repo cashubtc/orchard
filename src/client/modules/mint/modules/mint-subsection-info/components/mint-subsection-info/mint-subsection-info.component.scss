@@ -12,3 +12,15 @@
 	@extend %flex-grow;
 	@extend %flex-gap-1;
 }
+
+.member-urls {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-1;
+	@extend %w-min-0;
+	overflow-wrap: anywhere;
+	dd {
+		@extend %m-0;
+		@extend %p-b-1;
+	}
+}

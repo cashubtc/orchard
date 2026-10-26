@@ -23,6 +23,6 @@ export class MintSubsectionConfigFormEnabledDialogComponent {
 
 	constructor(
 		public dialogRef: MatDialogRef<MintSubsectionConfigFormEnabledDialogComponent>,
-		@Inject(MAT_DIALOG_DATA) public data: {nut: 'nut4' | 'nut5'},
+		@Inject(MAT_DIALOG_DATA) public data: {nut: 'nut4' | 'nut5'; member?: boolean},
 	) {}
 }

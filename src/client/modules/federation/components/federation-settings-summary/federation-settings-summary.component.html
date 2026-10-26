@@ -1,0 +1,23 @@
+<section aria-label="Member settings comparison" class="settings-comparison">
+	<div class="comparison-heading">
+		<p role="status" aria-live="polite">{{ loading() ? 'Comparing member settings…' : summary() }}</p>
+		<button matButton type="button" (click)="refresh()" [disabled]="loading()">Refresh comparison</button>
+	</div>
+	@if (comparison(); as result) {
+		<p class="orc-outline-color font-size-xs">Last checked {{ result.checked_at | localTime }}</p>
+	}
+	@if (default_quote_warning()) {
+		<p class="orc-status-warning-color">
+			Member {{ default_quote_member_id() }} is the default quote member. Its limits differ, so most wallets receive member
+			{{ default_quote_member_id() }}’s limits.
+		</p>
+	}
+	@if (error(); as err) {
+		<orc-error-resolve [error]="err" mode="small"></orc-error-resolve>
+	}
+	@for (member of unchecked(); track member.member_id) {
+		<p class="comparison-error">
+			Member {{ member.member_id }}{{ member.local ? ' (this member)' : '' }}: {{ member.error ?? 'Not compared' }}
+		</p>
+	}
+</section>

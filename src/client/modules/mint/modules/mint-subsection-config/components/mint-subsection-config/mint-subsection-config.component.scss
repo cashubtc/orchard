@@ -54,6 +54,12 @@
 }
 
 .tablet-view {
+	grid-template-columns: minmax(0, 1fr);
+	> .flex {
+		@extend %flex-column;
+		@extend %w-min-0;
+	}
+
 	.sticky-nut {
 		@extend %p-l-1;
 		@extend %p-t-1;

@@ -1,3 +1,4 @@
+<orc-federation-settings-hint setting="method" [nut]="nut()" [method]="method()" [unit]="unit()" />
 <div class="flex flex-wrap-reverse flex-gap-column-2">
 	<div class="flex flex-column flex-gap-2 flex-1">
 		<div class="flex flex-row flex-gap-1 flex-wrap">
@@ -15,6 +16,7 @@
 					(cancel)="onCancel($event)"
 					(hot)="onMaxHot($event)"
 				></orc-mint-subsection-config-form-max>
+				<orc-federation-settings-hint setting="max_amount" [nut]="nut()" [method]="method()" [unit]="unit()" />
 				<orc-mint-subsection-config-form-min
 					[form_group]="form_method()"
 					[control_name]="'min_amount'"
@@ -28,9 +30,13 @@
 					(cancel)="onCancel($event)"
 					(hot)="onMinHot($event)"
 				></orc-mint-subsection-config-form-min>
+				<orc-federation-settings-hint setting="min_amount" [nut]="nut()" [method]="method()" [unit]="unit()" />
 			</div>
 			<!-- Bespoke controls projected by the method-specific forms -->
-			<ng-content></ng-content>
+			<div class="flex flex-column flex-gap-0-5">
+				<ng-content></ng-content>
+				<orc-federation-settings-hint setting="options" [nut]="nut()" [method]="method()" [unit]="unit()" />
+			</div>
 		</div>
 	</div>
 	<div class="flex-1">

@@ -1,0 +1,22 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+.settings-comparison {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-0-5;
+	@extend %w-min-0;
+}
+.comparison-heading {
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-items-center;
+	@extend %flex-justify-between;
+	@extend %flex-gap-0-5;
+}
+p {
+	@extend %m-0;
+	overflow-wrap: anywhere;
+}
+.comparison-error {
+	white-space: pre-wrap;
+}

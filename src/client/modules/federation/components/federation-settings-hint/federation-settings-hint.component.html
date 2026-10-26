@@ -1,0 +1,11 @@
+@for (hint of hints(); track $index) {
+	<p class="setting-difference orc-status-warning-color">
+		@if (show_field()) {
+			<span>{{ hint.label }} — </span>
+		}
+		Differs on member {{ hint.member_id }}: <span class="setting-value">{{ hint.value }}</span>
+		@if (hint.default_quote_member) {
+			<strong> · Default quote member</strong>
+		}
+	</p>
+}

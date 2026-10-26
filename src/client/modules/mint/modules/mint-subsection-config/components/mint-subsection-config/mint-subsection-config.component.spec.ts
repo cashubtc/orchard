@@ -5,6 +5,11 @@ import {FormGroup} from '@angular/forms';
 import {OrcMintSubsectionConfigModule} from '@client/modules/mint/modules/mint-subsection-config/mint-subsection-config.module';
 /* Vendor Dependencies */
 import {of} from 'rxjs';
+import {MatIconTestingModule} from '@angular/material/icon/testing';
+import {FederationService} from '@client/modules/federation/services/federation.service';
+import {FederationSettingsService} from '@client/modules/federation/services/federation-settings.service';
+import {settingsComparison, settingsDifference} from '@client/modules/federation/helpers/federation-settings.fixtures';
+import {FederationSettingsComparisonStatus} from '@shared/generated.types';
 /* Native Dependencies */
 import {MintService} from '@client/modules/mint/services/mint/mint.service';
 /* Local Dependencies */
@@ -16,7 +21,7 @@ describe('MintSubsectionConfigComponent', () => {
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			imports: [OrcMintSubsectionConfigModule],
+			imports: [OrcMintSubsectionConfigModule, MatIconTestingModule],
 			declarations: [MintSubsectionConfigComponent],
 			providers: [
 				{
@@ -196,5 +201,40 @@ describe('MintSubsectionConfigComponent', () => {
 			expect(grouped['branch'].map((quote: any) => quote.id)).toEqual(['b']);
 			expect(grouped['onchain']).toBeUndefined();
 		});
+	});
+	it('renders member scope, local TTLs and method-specific limit and option hints', () => {
+		fixture.destroy();
+		TestBed.inject(FederationService).mode.set('member');
+		const load = spyOn(FederationSettingsService.prototype, 'load');
+		const data = TestBed.inject(ActivatedRoute).snapshot.data;
+		data['mint_info'].nuts.nut4.methods = [{method: 'bolt11', unit: 'sat', min_amount: 1, max_amount: 100, description: false}];
+		fixture = TestBed.createComponent(MintSubsectionConfigComponent);
+		component = fixture.componentInstance;
+		fixture.detectChanges();
+		const result = settingsComparison();
+		result.members[1].status = FederationSettingsComparisonStatus.Differs;
+		result.members[1].differences = [
+			settingsDifference({this_member_value: '100', their_value: '200'}),
+			settingsDifference({setting: 'options', this_member_value: null, their_value: '{"description":true}'}),
+			settingsDifference({setting: 'method', nut: 5, method: 'bolt12', unit: 'usd', this_member_value: 'false', their_value: 'true'}),
+		];
+		TestBed.inject(FederationSettingsService).comparison.set(result);
+		fixture.detectChanges();
+		const element: HTMLElement = fixture.nativeElement;
+		expect(element.textContent).toContain('These settings apply to this member only.');
+		expect(element.textContent).toContain('This member only. Not visible to the other members.');
+		expect(element.textContent).toContain('Applies to all methods and units on this member.');
+		expect(element.textContent).toContain('Member 1 is the default quote member.');
+		expect(element.textContent).toContain('NUT-05 bolt12 usd method');
+		const method = element.querySelector('orc-mint-subsection-config-form-method');
+		expect(method?.textContent).toContain('Differs on member 2: 200');
+		expect(method?.textContent).toContain('Differs on member 2: {"description":true}');
+		expect(load).toHaveBeenCalledTimes(1);
+	});
+
+	it('omits member scope and comparisons for a standalone mint', () => {
+		expect(fixture.nativeElement.querySelector('orc-federation-settings-summary')).toBeNull();
+		expect(fixture.nativeElement.textContent).not.toContain('This member only.');
+		expect(fixture.nativeElement.textContent).toContain('Applies to all methods and units on this mint.');
 	});
 });

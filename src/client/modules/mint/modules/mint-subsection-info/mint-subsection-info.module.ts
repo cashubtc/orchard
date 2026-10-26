@@ -15,6 +15,8 @@ import {MatButtonModule} from '@angular/material/button';
 /* Application Dependencies */
 import {OrcFormModule} from '@client/modules/form/form.module';
 import {pendingEventGuard} from '@client/modules/event/guards/pending-event.guard';
+import {FederationSettingsSummaryComponent} from '@client/modules/federation/components/federation-settings-summary/federation-settings-summary.component';
+import {FederationSettingsHintComponent} from '@client/modules/federation/components/federation-settings-hint/federation-settings-hint.component';
 /* Local Dependencies */
 import {MintSubsectionInfoComponent} from './components/mint-subsection-info/mint-subsection-info.component';
 import {MintSubsectionInfoFormNameComponent} from './components/mint-subsection-info-form-name/mint-subsection-info-form-name.component';
@@ -41,6 +43,8 @@ import {MintSubsectionInfoFormMotdComponent} from './components/mint-subsection-
 		MintSubsectionInfoFormMotdComponent,
 	],
 	imports: [
+		FederationSettingsSummaryComponent,
+		FederationSettingsHintComponent,
 		RouterModule.forChild([
 			{
 				path: '',
