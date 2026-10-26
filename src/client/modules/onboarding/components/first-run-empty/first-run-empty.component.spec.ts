@@ -14,11 +14,14 @@ describe('OnboardingFirstRunEmptyComponent', () => {
 			const fixture = TestBed.createComponent(OnboardingFirstRunEmptyComponent);
 			fixture.detectChanges();
 			expect(fixture.nativeElement.textContent).toContain('Nothing connected yet');
-			expect(fixture.nativeElement.querySelectorAll('a').length).toBe(role === UserRole.Admin ? 5 : 0);
+			expect(fixture.nativeElement.querySelectorAll('a').length).toBe(role === UserRole.Admin ? 6 : 0);
 			if (role === UserRole.Admin) {
 				const tile: HTMLAnchorElement = fixture.nativeElement.querySelector('a[aria-label="Add Mint"]');
 				expect(tile.getAttribute('href')).toBe('/onboarding/configure/mint');
 				expect(tile.textContent).toContain('CDK or Nutshell, standalone or a federation member.');
+				const ecash: HTMLAnchorElement = fixture.nativeElement.querySelector('a[aria-label="Add Ecash wallet"]');
+				expect(ecash.getAttribute('href')).toBe('/onboarding/services?picked=ecash');
+				expect(ecash.textContent).not.toContain('Add a mint first');
 			}
 		});
 	}

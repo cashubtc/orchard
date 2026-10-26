@@ -98,20 +98,6 @@
 		height: 1.125rem;
 	}
 }
-.tile-locked {
-	border-style: dashed;
-	background: transparent;
-	@extend %orc-on-surface-variant-color;
-	.tile-icon {
-		@extend %orc-surface-container-bg;
-		@extend %orc-outline-color;
-	}
-	.tile-action {
-		font-size: 0.8125rem;
-		@extend %font-weight-regular;
-		@extend %orc-outline-color;
-	}
-}
 .empty-actions {
 	@extend %flex;
 	@extend %flex-justify-center;

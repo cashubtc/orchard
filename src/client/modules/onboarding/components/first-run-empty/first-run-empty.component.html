@@ -26,14 +26,20 @@
 					<span class="tile-action"><mat-icon>add</mat-icon>Add</span>
 				</a>
 			}
-			<div class="empty-tile tile-locked" aria-disabled="true">
+			<!-- The wallet has no configure step, so its tile opens the picker with it selected -->
+			<a
+				class="empty-tile"
+				routerLink="/onboarding/services"
+				[queryParams]="{picked: 'ecash'}"
+				[attr.aria-label]="'Add ' + descriptors.ecash.name"
+			>
 				<span class="tile-icon"
 					><mat-icon class="mat-symbol-outline">{{ descriptors.ecash.icon }}</mat-icon></span
 				>
 				<strong>{{ descriptors.ecash.name }}</strong>
 				<span class="tile-note">{{ copy.ecash.tile }}</span>
-				<span class="tile-action"><mat-icon class="mat-symbol-outline">lock</mat-icon>Add a mint first</span>
-			</div>
+				<span class="tile-action"><mat-icon>add</mat-icon>Add</span>
+			</a>
 		</div>
 		<div class="empty-actions">
 			<a matButton routerLink="/settings/services">Open Settings</a
