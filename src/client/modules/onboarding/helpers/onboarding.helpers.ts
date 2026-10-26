@@ -5,15 +5,25 @@ import type {ActivatedRouteSnapshot} from '@angular/router';
 import {serviceConfigurationDetail} from '@client/modules/service-config/helpers/service-config.helpers';
 
 /* Native Dependencies */
-import {ONBOARDING_COPY, ONBOARDING_REVIEW_STATUS, ONBOARDING_SERVICES} from '@client/modules/onboarding/constants/onboarding.constants';
-import type {OnboardingOutcomes, OnboardingReviewRow, OnboardingRoute} from '@client/modules/onboarding/types/onboarding.types';
+import {
+	ONBOARDING_CHOICES,
+	ONBOARDING_COPY,
+	ONBOARDING_REVIEW_STATUS,
+	ONBOARDING_SERVICES,
+} from '@client/modules/onboarding/constants/onboarding.constants';
+import type {
+	OnboardingChoice,
+	OnboardingOutcomes,
+	OnboardingReviewRow,
+	OnboardingRoute,
+} from '@client/modules/onboarding/types/onboarding.types';
 
 /* Shared Dependencies */
-import type {OrchardServiceConfiguration, ServiceKind} from '@shared/generated.types';
+import type {OrchardServiceConfiguration} from '@shared/generated.types';
 
-/** Recognize only supported services in direct first-run links. */
-export function onboardingService(value: string | null): ServiceKind | null {
-	return ONBOARDING_SERVICES.find((service) => service === value) ?? null;
+/** Recognize only supported choices in direct first-run links. */
+export function onboardingService(value: string | null): OnboardingChoice | null {
+	return ONBOARDING_CHOICES.find((service) => service === value) ?? null;
 }
 
 /** Read the wizard's step, service, picked services and return target from the onboarding route's URL. */
@@ -23,7 +33,7 @@ export function onboardingRoute(snapshot: ActivatedRouteSnapshot): OnboardingRou
 	return {
 		stage: snapshot.firstChild?.data['stage'] === 'review' ? 'review' : service ? 'configure' : 'services',
 		service,
-		picked: picked ? ONBOARDING_SERVICES.filter((item) => picked.includes(item)) : null,
+		picked: picked ? ONBOARDING_CHOICES.filter((item) => picked.includes(item)) : null,
 		return_to_review: snapshot.queryParamMap.get('return') === 'review',
 	};
 }
@@ -33,9 +43,13 @@ export function onboardingDestination(mode: string | null): string {
 	return mode === 'member' ? '/mint/federation' : '/mint';
 }
 
-/** Summarize applied connections, keeping skipped and untested services neutral. */
-export function onboardingReview(configurations: OrchardServiceConfiguration[], outcomes: OnboardingOutcomes): OnboardingReviewRow[] {
-	return ONBOARDING_SERVICES.map((service) => {
+/** Summarize applied connections and the ecash wallet, keeping skipped and untested services neutral. */
+export function onboardingReview(
+	configurations: OrchardServiceConfiguration[],
+	outcomes: OnboardingOutcomes,
+	ecash_enabled: boolean,
+): OnboardingReviewRow[] {
+	const services = ONBOARDING_SERVICES.map((service): OnboardingReviewRow => {
 		const configuration = configurations.find((item) => item.service === service);
 		if (!configuration?.enabled)
 			return {service, detail: ONBOARDING_COPY[service].skipped, enabled: false, ...ONBOARDING_REVIEW_STATUS['skipped']};
@@ -49,4 +63,8 @@ export function onboardingReview(configurations: OrchardServiceConfiguration[], 
 					: 'untested';
 		return {service, detail, enabled: true, ...ONBOARDING_REVIEW_STATUS[status]};
 	});
+	const ecash: OnboardingReviewRow = ecash_enabled
+		? {service: 'ecash', detail: ONBOARDING_COPY.ecash.note, enabled: true, ...ONBOARDING_REVIEW_STATUS['enabled']}
+		: {service: 'ecash', detail: ONBOARDING_COPY.ecash.skipped, enabled: false, ...ONBOARDING_REVIEW_STATUS['skipped']};
+	return [...services, ecash];
 }

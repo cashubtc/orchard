@@ -1,56 +1,147 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
-.service-grid {
-	@extend %flex-gap-1;
-	@extend %grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.service-card {
+:host {
 	@extend %flex;
 	@extend %flex-column;
+	@extend %flex-gap-2;
+	@extend %w-full;
+	max-width: 55rem;
+	margin: 0 auto;
+}
+.service-grid {
+	@extend %grid;
 	@extend %flex-gap-1;
-	@extend %p-1;
+	grid-template-columns: repeat(auto-fit, minmax(18.75rem, 1fr));
+}
+.service-card {
+	@extend %grid;
+	grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+	grid-template-areas:
+		'icon name check'
+		'description description description'
+		'note note note';
+	align-content: start;
+	@extend %flex-items-center;
+	gap: 0.75rem;
+	min-height: 9.25rem;
+	padding: 1.25rem;
+	box-sizing: border-box;
 	color: inherit;
 	font: inherit;
 	text-align: left;
-	border: 1px solid;
+	// Width and style only: the shorthand would reset the extended border colour to currentColor
+	border-width: 1px;
+	border-style: solid;
 	@extend %orc-outline-variant-border;
+	@extend %orc-surface-container-bg;
+	@extend %orc-corner-large-increased;
 	@extend %cursor-pointer;
+	transition:
+		background-color 150ms ease,
+		border-color 150ms ease;
+	&.selected {
+		// The thicker border keeps its outer edge, so the content doesn't shift
+		border-width: 2px;
+		padding: calc(1.25rem - 1px);
+		@extend %orc-primary-border;
+		@extend %orc-surface-container-high-bg;
+	}
 }
-.selected {
-	@extend %orc-on-primary-container-border;
-}
-.card-heading {
+.service-icon {
+	grid-area: icon;
 	@extend %flex;
 	@extend %flex-items-center;
-	@extend %flex-gap-1;
-	strong {
-		@extend %flex-1;
+	@extend %flex-justify-center;
+	width: 2.75rem;
+	height: 2.75rem;
+	@extend %orc-corner-full;
+	@extend %orc-surface-container-highest-bg;
+	@extend %orc-primary-color;
+}
+.service-name {
+	grid-area: name;
+	font-size: 1.0625rem;
+	@extend %font-weight-semi-bold;
+}
+.service-check {
+	grid-area: check;
+	@extend %orc-outline-color;
+	.selected & {
+		@extend %orc-primary-color;
+	}
+}
+.service-description {
+	grid-area: description;
+	@extend %font-size-s;
+	line-height: 1.5;
+	@extend %orc-on-surface-variant-color;
+}
+.service-note {
+	grid-area: note;
+	@extend %font-size-xs;
+	@extend %orc-outline-color;
+}
+.picker-footer {
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-items-center;
+	gap: 0.75rem;
+}
+.environment-caption {
+	@extend %flex;
+	@extend %flex-grow;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+	@extend %m-0;
+	font-size: 0.8125rem;
+	@extend %orc-outline-color;
+	mat-icon {
+		@extend %flex-shrink-0;
+		font-size: 1.125rem;
+		width: 1.125rem;
+		height: 1.125rem;
 	}
 }
 .picker-actions {
 	@extend %flex;
-	@extend %flex-wrap;
-	@extend %flex-justify-end;
 	@extend %flex-gap-0-5;
-}
-.environment-caption {
-	margin: 1.5rem 0;
 }
 :host(.mobile) {
+	@extend %flex-gap-1-5;
 	.service-grid {
-		@extend %cols-1;
+		gap: 0.625rem;
 	}
-	.description {
+	.service-card {
+		grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+		grid-template-areas:
+			'icon name check'
+			'icon note check';
+		gap: 0.125rem 0.875rem;
+		min-height: 4.75rem;
+		padding: 0.875rem 1rem;
+		&.selected {
+			padding: calc(0.875rem - 1px) calc(1rem - 1px);
+		}
+	}
+	.service-icon {
+		width: 2.5rem;
+		height: 2.5rem;
+	}
+	.service-name {
+		@extend %font-size-m;
+	}
+	.service-description {
 		display: none;
 	}
-	.picker-actions {
-		flex-direction: column-reverse;
+	.service-note {
+		font-size: 0.8125rem;
+		@extend %orc-on-surface-variant-color;
 	}
-}
-
-.environment-caption {
-	@extend %flex;
-	@extend %flex-items-center;
-	@extend %flex-gap-0-5;
+	.picker-actions {
+		@extend %w-full;
+		flex-direction: column-reverse;
+		button {
+			@extend %w-full;
+		}
+	}
 }

@@ -1,12 +1,16 @@
 /* Application Dependencies */
 import {
+	SERVICE_DESCRIPTORS,
 	SERVICE_SOURCE_LABELS,
 	SERVICE_STATUS_ICONS,
 	SERVICE_STATUS_LABELS,
 } from '@client/modules/service-config/constants/service-config.constants';
+import {ECASH_WALLET} from '@client/modules/ecash/constants/ecash.constants';
 
 /* Native Dependencies */
 import type {
+	OnboardingChoice,
+	OnboardingDescriptor,
 	OnboardingReviewStatus,
 	OnboardingStage,
 	OnboardingStageCopy,
@@ -17,6 +21,8 @@ import type {
 import {ServiceKind} from '@shared/generated.types';
 
 export const ONBOARDING_SERVICES = [ServiceKind.Bitcoin, ServiceKind.Lightning, ServiceKind.Mint];
+export const ONBOARDING_CHOICES: OnboardingChoice[] = [...ONBOARDING_SERVICES, 'ecash'];
+export const ONBOARDING_DESCRIPTORS: Record<OnboardingChoice, OnboardingDescriptor> = {...SERVICE_DESCRIPTORS, ecash: ECASH_WALLET};
 export const ONBOARDING_STEPS = ['Account', 'Services', 'Configure', 'Review'];
 export const ONBOARDING_STAGES: Record<OnboardingStage, OnboardingStageCopy> = {
 	services: {
@@ -27,7 +33,7 @@ export const ONBOARDING_STAGES: Record<OnboardingStage, OnboardingStageCopy> = {
 	configure: {title: 'Configure your services', intro: null, step: 2},
 	review: {title: 'Review your setup', intro: 'Your saved connections are already applied. Nothing needs a restart.', step: 3},
 };
-export const ONBOARDING_COPY: Record<ServiceKind, OnboardingServiceCopy> = {
+export const ONBOARDING_COPY: Record<OnboardingChoice, OnboardingServiceCopy> = {
 	bitcoin: {
 		description: 'A Bitcoin Core node. Blocks, fee estimates and the price oracle.',
 		note: 'Bitcoin Core RPC',
@@ -50,6 +56,13 @@ export const ONBOARDING_COPY: Record<ServiceKind, OnboardingServiceCopy> = {
 		configure: "Connect to your mint's management RPC. Orchard detects whether it's a standalone mint or part of a federation.",
 		skipped: 'Optional · add this service whenever you need it',
 	},
+	ecash: {
+		description: 'An operator wallet for issuing and sending ecash.',
+		note: ECASH_WALLET.note,
+		tile: 'An operator wallet that uses your mint.',
+		configure: "An operator wallet for issuing and sending ecash. It uses your mint's connection, so there's nothing to connect here.",
+		skipped: 'Optional · add it whenever you need it',
+	},
 };
 // Keyed by the server's connection status, plus the states only Review shows
 export const ONBOARDING_REVIEW_STATUS: Record<string, OnboardingReviewStatus> = {
@@ -59,4 +72,5 @@ export const ONBOARDING_REVIEW_STATUS: Record<string, OnboardingReviewStatus> = 
 	environment: {status: SERVICE_SOURCE_LABELS['environment'], tone: 'neutral', icon: 'info'},
 	untested: {status: 'Saved in Orchard · not tested this session', tone: 'neutral', icon: 'info'},
 	skipped: {status: 'Skipped', tone: 'neutral', icon: 'do_not_disturb_on'},
+	enabled: {status: 'Enabled', tone: 'success', icon: SERVICE_STATUS_ICONS['connected']},
 };

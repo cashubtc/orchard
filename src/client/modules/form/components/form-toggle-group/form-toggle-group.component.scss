@@ -11,3 +11,15 @@
 	@extend %orc-surface-bg;
 	@extend %overflow-hidden;
 }
+// Segmented control: an outlined pill of options, sized to its content
+:host(.orc-segmented) {
+	flex: none;
+	align-self: flex-start;
+	gap: 0;
+	@extend %p-0;
+	background: transparent;
+	border-width: 1px;
+	border-style: solid;
+	@extend %orc-outline-variant-border;
+	@extend %orc-corner-large-increased;
+}

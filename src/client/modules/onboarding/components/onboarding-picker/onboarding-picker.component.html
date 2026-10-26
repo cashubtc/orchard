@@ -1,29 +1,35 @@
 <div class="service-grid">
 	@for (service of services; track service) {
+		@let picked = selected().includes(service);
 		<button
 			type="button"
-			class="service-card orc-low-card"
-			[class.selected]="selected().includes(service)"
-			[attr.aria-pressed]="selected().includes(service)"
+			class="service-card"
+			[class.selected]="picked"
+			[attr.aria-pressed]="picked"
+			[attr.data-service]="service"
 			(click)="toggled.emit(service)"
 		>
-			<span class="card-heading"
-				><mat-icon>{{ descriptors[service].icon }}</mat-icon
-				><strong>{{ descriptors[service].name }}</strong
-				><mat-icon class="mat-symbol-outline">{{ selected().includes(service) ? 'task_alt' : 'circle' }}</mat-icon></span
+			<span class="service-icon"
+				><mat-icon class="mat-symbol-outline">{{ descriptors[service].icon }}</mat-icon></span
 			>
-			<span class="description">{{ copy[service].description }}</span>
-			<span class="orc-outline-color">{{ copy[service].note }}</span>
+			<strong class="service-name">{{ descriptors[service].name }}</strong>
+			<mat-icon class="service-check" [class.mat-symbol-outline]="!picked">{{
+				picked ? 'check_circle' : 'radio_button_unchecked'
+			}}</mat-icon>
+			<span class="service-description">{{ copy[service].description }}</span>
+			<span class="service-note">{{ copy[service].note }}</span>
 		</button>
 	}
 </div>
-<p class="environment-caption orc-outline-color">
-	<mat-icon>info</mat-icon>Values already set in your environment are filled in on the next step.
-</p>
-<div class="picker-actions">
-	<button matButton type="button" (click)="skipped.emit()">Skip for now</button>
-	<button matButton="filled" type="button" [disabled]="!selected().length" (click)="continued.emit()">
-		Continue with {{ selected().length }} {{ selected().length === 1 ? 'service' : 'services'
-		}}<mat-icon iconPositionEnd>arrow_forward</mat-icon>
-	</button>
+<div class="picker-footer">
+	<p class="environment-caption">
+		<mat-icon class="mat-symbol-outline">info</mat-icon>Values already set in your environment are filled in on the next step.
+	</p>
+	<div class="picker-actions">
+		<button matButton type="button" (click)="skipped.emit()">Skip for now</button>
+		<button matButton="filled" type="button" [disabled]="!selected().length" (click)="continued.emit()">
+			Continue with {{ selected().length }} {{ selected().length === 1 ? 'service' : 'services'
+			}}<mat-icon iconPositionEnd>arrow_forward</mat-icon>
+		</button>
+	</div>
 </div>

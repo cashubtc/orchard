@@ -6,11 +6,11 @@
 			<p>{{ intro }}</p>
 		}
 	</header>
-	<div class="flex flex-justify-center">
-		<orc-nav-setup-steps [steps]="steps" [current]="stage_copy().step"></orc-nav-setup-steps>
-	</div>
+	<orc-nav-setup-steps [steps]="steps" [current]="stage_copy().step"></orc-nav-setup-steps>
 	@if (error()) {
-		<div class="orc-error-card p-1" role="alert">{{ error() }}<button matButton (click)="retry()">Try again</button></div>
+		<div class="onboarding-error orc-error-card p-1" role="alert">
+			{{ error() }}<button matButton (click)="retry()">Try again</button>
+		</div>
 	}
 	@if (busy()) {
 		<mat-progress-bar mode="indeterminate" aria-label="Loading services"></mat-progress-bar>
@@ -30,24 +30,38 @@
 					<nav class="service-list" aria-label="Services to configure">
 						@for (service of selected(); track service) {
 							<button
-								matButton
 								type="button"
+								class="service-step"
 								[disabled]="busy()"
 								[attr.aria-current]="service === active_service() ? 'step' : null"
 								(click)="showService(service)"
 							>
 								<mat-icon [class.mat-symbol-outline]="service !== active_service()">{{
 									descriptors[service].icon
-								}}</mat-icon
-								><span
-									>{{ descriptors[service].name }}<small>{{ service_states()[service] }}</small></span
+								}}</mat-icon>
+								<span class="service-step-label"
+									><strong>{{ descriptors[service].name }}</strong
+									><small>{{ service_states()[service] }}</small></span
 								>
-								@if (outcomes()[service]?.saved_check?.ok) {
-									<mat-icon iconPositionEnd>task_alt</mat-icon>
+								@if (service_done()[service] && service !== active_service()) {
+									<mat-icon class="service-step-done">check_circle</mat-icon>
 								}
 							</button>
 						}
 					</nav>
+					@if (active_service() === 'ecash') {
+						<section class="ecash-card" aria-labelledby="onboarding-ecash-title">
+							<h2 id="onboarding-ecash-title">{{ descriptors.ecash.name }}</h2>
+							<p>{{ copy.ecash.configure }}</p>
+							<div class="ecash-actions">
+								<button matButton type="button" [disabled]="busy()" (click)="back()">Back</button>
+								<button matButton type="button" [disabled]="busy()" (click)="skipService()">Skip this service</button>
+								<button matButton="filled" type="button" [disabled]="busy()" (click)="enableEcash()">
+									{{ ecash_enabled() ? 'Continue' : 'Turn on and continue' }}
+								</button>
+							</div>
+						</section>
+					}
 					@for (configuration of active_configurations(); track configuration.service) {
 						<orc-onboarding-configure
 							[configuration]="configuration"

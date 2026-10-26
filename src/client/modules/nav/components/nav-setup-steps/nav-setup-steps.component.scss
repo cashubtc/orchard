@@ -1,28 +1,94 @@
 @use '@angular/cdk' as cdk;
 @use 'molecule/molecule';
+@use 'nucleus/nucleus';
 ol {
 	@extend %flex;
 	@extend %flex-wrap;
-	@extend %flex-gap-1;
+	@extend %flex-justify-center;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
 	@extend %p-0;
 	@extend %m-0;
 	list-style: none;
+	font-size: 0.8125rem;
 }
 li {
 	@extend %flex;
 	@extend %flex-items-center;
 	@extend %flex-gap-0-5;
+	@extend %orc-outline-color;
+	// Connector between steps
+	& + li::before {
+		content: '';
+		@extend %w-2-5;
+		height: 1px;
+		margin: 0 0.25rem;
+		@extend %orc-outline-variant-bg;
+	}
 }
-@include cdk.a11y-visually-hidden();
+.step-number {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+	@extend %orc-corner-full;
+	box-sizing: border-box;
+	width: 1.375rem;
+	height: 1.375rem;
+	border-width: 1px;
+	border-style: solid;
+	@extend %orc-outline-variant-border;
+	@extend %font-size-xs;
+}
+.step-done {
+	@extend %orc-status-active-color;
+	font-size: 1.375rem;
+	width: 1.375rem;
+	height: 1.375rem;
+}
+.done {
+	@extend %orc-on-surface-variant-color;
+}
 [aria-current='step'] {
-	@extend %orc-primary-color;
+	@extend %orc-on-surface-color;
 	@extend %font-weight-semi-bold;
+	.step-number {
+		border-width: 0;
+		@extend %orc-primary-bg;
+		@extend %orc-on-primary-color;
+		@extend %font-weight-bold;
+	}
 }
-:host(.mobile) {
+:host(.pills) {
 	ol {
-		@extend %flex-gap-0-5;
+		@extend %flex-justify-start;
 	}
 	li {
-		@extend %font-size-xs;
+		padding: 0.5rem 0.875rem;
+		@extend %orc-corner-large-increased;
+		&::before {
+			display: none;
+		}
 	}
+	.step-done,
+	.step-pending {
+		font-size: 1.125rem;
+		width: 1.125rem;
+		height: 1.125rem;
+	}
+	.step-done {
+		@extend %orc-on-surface-variant-color;
+	}
+	[aria-current='step'] {
+		@extend %orc-primary-container-bg;
+		@extend %orc-on-primary-container-color;
+	}
+}
+@include cdk.a11y-visually-hidden();
+.step-eyebrow {
+	@extend %m-0;
+	@extend %font-size-xs;
+	@extend %font-weight-semi-bold;
+	@extend %orc-outline-color;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
 }

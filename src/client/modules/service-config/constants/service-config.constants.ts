@@ -45,6 +45,23 @@ export const SERVICE_FIELDS: ServiceField[] = [
 	},
 	{key: 'api', label: 'Public mint URL', placeholder: 'https://mint.example.com', optional: true},
 ];
+// Columns of a twelve-column row; a client key and CA certificate split the certificate's row three ways
+export const SERVICE_FIELD_SPANS: Record<string, number> = {
+	host: 9,
+	port: 3,
+	user: 6,
+	password: 6,
+	macaroon: 6,
+	cert: 6,
+	ca: 4,
+	key: 4,
+	database: 6,
+	api: 6,
+};
+export const SERVICE_TRANSPORTS = [
+	{value: 'true', label: 'Mutual TLS'},
+	{value: 'false', label: 'Without mTLS'},
+];
 export const SERVICE_DEFAULT_PORTS: Record<string, string> = {
 	core: '8332',
 	lnd: '10009',
@@ -65,11 +82,11 @@ export const SERVICE_STATUS_LABELS: Record<string, string> = {
 	not_configured: 'Not configured',
 };
 export const SERVICE_STATUS_ICONS: Record<string, string> = {
-	connected: 'task_alt',
+	connected: 'check_circle',
 	warning: 'warning',
 	unreachable: 'warning',
 	not_tested: 'circle',
-	not_configured: 'circle',
+	not_configured: 'do_not_disturb_on',
 };
 export const SERVICE_MODE_LABELS: Record<string, string> = {
 	member: 'Federation member',

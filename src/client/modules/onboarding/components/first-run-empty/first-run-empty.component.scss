@@ -1,43 +1,125 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
 .empty-home {
-	@extend %p-2;
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-items-center;
+	gap: 1.75rem;
+	max-width: 55rem;
+	margin: 0 auto;
+	padding: 4.5rem 2.5rem 4rem;
+}
+.empty-icon,
+.tile-icon {
+	@extend %flex;
+	@extend %flex-shrink-0;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+	@extend %orc-corner-full;
+	@extend %orc-primary-color;
+}
+.empty-icon {
+	width: 4rem;
+	height: 4rem;
+	@extend %orc-surface-container-bg;
+	mat-icon {
+		font-size: 2rem;
+		width: 2rem;
+		height: 2rem;
+	}
+}
+.empty-heading {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-items-center;
 	@extend %text-center;
-	max-width: 60rem;
-	margin: 2rem auto;
-	> p {
-		@extend %w-max-36;
-		margin: 0 auto 2rem;
+	gap: 0.625rem;
+	h1,
+	p {
+		@extend %m-0;
+	}
+	h1 {
+		font-size: 1.75rem;
+		@extend %font-weight-semi-bold;
+	}
+	p {
+		max-width: 35rem;
+		font-size: 0.9375rem;
 		line-height: 1.5;
+		@extend %orc-on-surface-variant-color;
 	}
 }
 .empty-tiles {
-	@extend %flex-gap-1;
 	@extend %grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
+	@extend %w-full;
+	@extend %flex-gap-1;
+	grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
 }
 .empty-tile {
 	@extend %flex;
 	@extend %flex-column;
-	@extend %flex-gap-1;
-	@extend %p-1;
+	gap: 0.625rem;
+	min-height: 10.5rem;
+	padding: 1.25rem;
+	box-sizing: border-box;
+	border-width: 1px;
+	border-style: solid;
+	@extend %orc-outline-variant-border;
+	@extend %orc-surface-container-bg;
+	@extend %orc-corner-large-increased;
 	@extend %text-decoration-none;
 	color: inherit;
-	text-align: left;
+	strong {
+		@extend %font-size-m;
+		@extend %font-weight-semi-bold;
+	}
+}
+.tile-icon {
+	width: 2.75rem;
+	height: 2.75rem;
+	@extend %orc-surface-container-highest-bg;
+}
+.tile-note {
+	@extend %flex-grow;
+	font-size: 0.8125rem;
+	line-height: 1.5;
+	@extend %orc-on-surface-variant-color;
+}
+.tile-action {
+	@extend %flex;
+	@extend %flex-items-center;
+	gap: 0.25rem;
+	@extend %font-size-s;
+	@extend %font-weight-semi-bold;
+	@extend %orc-primary-color;
+	mat-icon {
+		font-size: 1.125rem;
+		width: 1.125rem;
+		height: 1.125rem;
+	}
+}
+.tile-locked {
+	border-style: dashed;
+	background: transparent;
+	@extend %orc-on-surface-variant-color;
+	.tile-icon {
+		@extend %orc-surface-container-bg;
+		@extend %orc-outline-color;
+	}
+	.tile-action {
+		font-size: 0.8125rem;
+		@extend %font-weight-regular;
+		@extend %orc-outline-color;
+	}
 }
 .empty-actions {
 	@extend %flex;
 	@extend %flex-justify-center;
 	@extend %flex-wrap;
 	@extend %flex-gap-0-5;
-	margin-top: 2rem;
 }
 :host(.mobile) {
 	.empty-home {
-		@extend %p-1;
-		margin-top: 1rem;
-	}
-	.empty-tiles {
-		@extend %cols-1;
+		padding: 2rem 1rem;
 	}
 }

@@ -10,11 +10,10 @@ import {catchError, of} from 'rxjs';
 
 /* Application Dependencies */
 import {CrewService} from '@client/modules/crew/services/crew/crew.service';
-import {SERVICE_DESCRIPTORS} from '@client/modules/service-config/constants/service-config.constants';
 
 /* Native Dependencies */
 import {OnboardingLayoutService} from '@client/modules/onboarding/services/onboarding-layout.service';
-import {ONBOARDING_COPY, ONBOARDING_SERVICES} from '@client/modules/onboarding/constants/onboarding.constants';
+import {ONBOARDING_COPY, ONBOARDING_DESCRIPTORS, ONBOARDING_SERVICES} from '@client/modules/onboarding/constants/onboarding.constants';
 
 @Component({
 	host: {'[class.mobile]': 'mobile()'},
@@ -30,7 +29,7 @@ export class OnboardingFirstRunEmptyComponent {
 
 	public readonly mobile = this.layout.mobile;
 	public readonly services = ONBOARDING_SERVICES;
-	public readonly descriptors = SERVICE_DESCRIPTORS;
+	public readonly descriptors = ONBOARDING_DESCRIPTORS;
 	public readonly copy = ONBOARDING_COPY;
 	// Setup actions stay hidden until administrator access has been confirmed
 	public readonly is_admin = toSignal(this.crewService.isAdmin().pipe(catchError(() => of(false))), {initialValue: false});

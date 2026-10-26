@@ -17,6 +17,7 @@
 .connection-actions {
 	@extend %flex;
 	@extend %flex-wrap;
+	@extend %flex-justify-end;
 	@extend %flex-gap-0-5;
 	@extend %p-t-1;
 }

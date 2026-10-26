@@ -46,8 +46,8 @@
 	@if (saved() && context() === 'settings') {
 		<button matButton="filled" type="button" [disabled]="busy()" (click)="done.emit()">Done</button>
 	} @else {
-		<button [matButton]="failed() ? 'filled' : 'text'" type="button" [disabled]="busy()" (click)="submit(false)">
-			{{ result() ? 'Test again' : 'Test connection' }}
+		<button [matButton]="failed() ? 'filled' : 'outlined'" type="button" [disabled]="busy()" (click)="submit(false)">
+			<mat-icon>network_check</mat-icon>{{ result() ? 'Test again' : 'Test connection' }}
 		</button>
 		@if (failed()) {
 			<button matButton type="button" [disabled]="busy()" (click)="submit(true, true)">Save without a working connection</button>

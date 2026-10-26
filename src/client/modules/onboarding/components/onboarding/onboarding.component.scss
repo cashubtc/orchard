@@ -6,53 +6,145 @@
 .onboarding-container {
 	@extend %flex;
 	@extend %flex-column;
+	@extend %flex-items-center;
 	@extend %flex-gap-2;
 	max-width: 65rem;
 	margin: auto;
-	padding: 3rem 1.5rem;
-}
-.onboarding-header {
-	@extend %text-center;
-	p {
-		@extend %w-max-36;
-		margin: 0 auto;
-		line-height: 1.5;
+	padding: 3.5rem 1.5rem 4rem;
+	> * {
+		@extend %w-full;
+	}
+	> orc-nav-setup-steps {
+		width: auto;
 	}
 }
+.onboarding-header {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-items-center;
+	@extend %text-center;
+	gap: 0.875rem;
+	h1 {
+		@extend %m-0;
+		font-size: 1.75rem;
+		@extend %font-weight-semi-bold;
+	}
+	p {
+		@extend %m-0;
+		max-width: 32.5rem;
+		font-size: 0.9375rem;
+		line-height: 1.5;
+		@extend %orc-on-surface-variant-color;
+	}
+}
+.onboarding-error {
+	max-width: 55rem;
+}
 .configure-layout {
-	@extend %grid;
-	grid-template-columns: 12rem minmax(0, 1fr);
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-items-start;
 	@extend %flex-gap-1-5;
 }
 .service-list {
 	@extend %flex;
 	@extend %flex-column;
-	@extend %flex-gap-0-5;
-	button {
-		height: auto;
-		min-height: 3.5rem;
-		justify-content: flex-start;
-		text-align: left;
+	gap: 0.25rem;
+	flex: 1 1 13.75rem;
+	max-width: 16.25rem;
+}
+.service-step {
+	@extend %flex;
+	@extend %flex-items-center;
+	gap: 0.75rem;
+	padding: 0.75rem 0.875rem;
+	border: none;
+	@extend %orc-corner-large;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	@extend %cursor-pointer;
+	&[aria-current='step'] {
+		@extend %orc-primary-container-bg;
+		@extend %orc-on-primary-container-color;
+		small {
+			color: inherit;
+		}
+	}
+	&:disabled {
+		cursor: default;
+	}
+}
+.service-step-label {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-grow;
+	gap: 0.125rem;
+	strong {
+		@extend %font-size-s;
+		@extend %font-weight-semi-bold;
 	}
 	small {
-		@extend %block;
+		@extend %font-size-xs;
+		@extend %orc-outline-color;
 	}
+}
+.service-step-done {
+	@extend %orc-status-active-color;
+	font-size: 1.25rem;
+	width: 1.25rem;
+	height: 1.25rem;
+}
+orc-onboarding-configure,
+.ecash-card {
+	flex: 999 1 35rem;
+	min-width: 0;
+}
+.ecash-card {
+	@extend %flex;
+	@extend %flex-column;
+	gap: 1.375rem;
+	padding: 1.75rem;
+	box-sizing: border-box;
+	@extend %orc-surface-container-bg;
+	@extend %orc-corner-large-increased;
+	h2,
+	p {
+		@extend %m-0;
+	}
+	h2 {
+		@extend %font-size-l;
+		@extend %font-weight-semi-bold;
+	}
+	p {
+		@extend %font-size-s;
+		line-height: 1.5;
+		@extend %orc-on-surface-variant-color;
+	}
+}
+.ecash-actions {
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-justify-end;
+	@extend %flex-gap-0-5;
 }
 :host(.mobile) {
 	.onboarding-container {
-		padding: 1.5rem 1rem;
+		@extend %flex-items-start;
+		padding: 1.75rem 1rem 1.5rem;
 		@extend %flex-gap-1-5;
 	}
-	.configure-layout {
-		@extend %cols-1;
+	.onboarding-header {
+		@extend %flex-items-start;
+		@extend %text-left;
 	}
 	.service-list {
 		@extend %flex-row;
 		@extend %flex-wrap;
+		max-width: none;
 	}
-}
-
-.service-list [aria-current='step'] {
-	@extend %orc-primary-container-bg;
-	@extend %orc-on-primary-container-color;
+	.ecash-card {
+		padding: 1.25rem;
+	}
 }

@@ -1,12 +1,20 @@
-<ol aria-label="Setup progress">
-	@for (step of steps(); track step; let index = $index) {
-		<li [attr.aria-current]="current() === index ? 'step' : null">
-			@if (index < current()) {
-				<mat-icon>task_alt</mat-icon><span class="cdk-visually-hidden">Completed: </span>
-			} @else {
-				<span>{{ index + 1 }}</span>
-			}
-			{{ step }}
-		</li>
-	}
-</ol>
+@if (mobile()) {
+	<p class="step-eyebrow">Step {{ current() + 1 }} of {{ steps().length }} · {{ steps()[current()] }}</p>
+} @else {
+	<ol aria-label="Setup progress">
+		@for (step of steps(); track step; let index = $index) {
+			<li [class.done]="index < current()" [attr.aria-current]="current() === index ? 'step' : null">
+				@if (index < current()) {
+					<mat-icon class="step-done">check_circle</mat-icon><span class="cdk-visually-hidden">Completed: </span>
+				} @else if (variant() === 'pills') {
+					<mat-icon class="step-pending" [class.mat-symbol-outline]="index > current()">{{
+						index === current() ? 'radio_button_checked' : 'radio_button_unchecked'
+					}}</mat-icon>
+				} @else {
+					<span class="step-number">{{ index + 1 }}</span>
+				}
+				{{ step }}
+			</li>
+		}
+	</ol>
+}

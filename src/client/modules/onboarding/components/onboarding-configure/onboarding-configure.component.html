@@ -1,6 +1,8 @@
-<section class="configure-card orc-low-card">
-	<h2>{{ descriptors[configuration().service].name }}</h2>
-	<p>{{ copy[configuration().service].configure }}</p>
+<section class="configure-card" [attr.aria-labelledby]="'onboarding-configure-' + configuration().service">
+	<div class="configure-heading">
+		<h2 [id]="'onboarding-configure-' + configuration().service">{{ descriptors[configuration().service].name }}</h2>
+		<p>{{ copy[configuration().service].configure }}</p>
+	</div>
 	<orc-service-connection
 		[configuration]="configuration()"
 		[pending]="pending()"

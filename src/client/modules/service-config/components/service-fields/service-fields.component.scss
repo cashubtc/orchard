@@ -1,9 +1,44 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
+:host {
+	@extend %block;
+	container-type: inline-size;
+}
+// Twelve columns: host and port share a row, as do user and password and the TLS files
 .service-fields {
+	@extend %grid;
+	grid-template-columns: repeat(12, minmax(0, 1fr));
+	gap: 0.5rem 0.75rem;
+	> * {
+		grid-column: span 12;
+	}
+	> .service-field {
+		grid-column: span var(--service-field-span, 12);
+	}
+}
+.field-choice {
 	@extend %flex;
 	@extend %flex-column;
 	@extend %flex-gap-0-5;
+	margin-bottom: 0.75rem;
+}
+.choice-label,
+.field-caption {
+	@extend %font-size-xs;
+	@extend %orc-outline-color;
+}
+.field-caption {
+	margin: -0.25rem 0 0.5rem;
+}
+.optional-fields {
+	margin-top: 0.5rem;
+	summary {
+		@extend %font-size-s;
+		@extend %font-weight-semi-bold;
+		@extend %orc-primary-color;
+		@extend %cursor-pointer;
+		margin-bottom: 0.75rem;
+	}
 }
 .clear-field {
 	color: inherit;
@@ -14,4 +49,10 @@
 }
 textarea {
 	font-family: monospace;
+}
+// A side panel is too narrow for files side by side
+@container (max-width: 34rem) {
+	.service-fields > .service-field-wide {
+		grid-column: span 12;
+	}
 }

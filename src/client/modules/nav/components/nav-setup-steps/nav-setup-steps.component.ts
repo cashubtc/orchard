@@ -9,7 +9,7 @@ import {MatIconModule} from '@angular/material/icon';
 
 @Component({
 	selector: 'orc-nav-setup-steps',
-	host: {'[class.mobile]': 'mobile()'},
+	host: {'[class.mobile]': 'mobile()', '[class.pills]': "variant() === 'pills'"},
 	imports: [MatIconModule],
 	templateUrl: './nav-setup-steps.component.html',
 	styleUrl: './nav-setup-steps.component.scss',
@@ -26,4 +26,6 @@ export class NavSetupStepsComponent {
 		transform: (steps) => steps.map((step) => (typeof step === 'string' ? step : step.title)),
 	});
 	public readonly current = input.required<number>();
+	/** Onboarding uses a centred stepper with connectors; the federation wizard uses left-aligned pills. */
+	public readonly variant = input<'stepper' | 'pills'>('stepper');
 }

@@ -1,12 +1,12 @@
 /* Core Dependencies */
 import {Component, ChangeDetectionStrategy, computed, effect, input, output, signal} from '@angular/core';
+import {NgTemplateOutlet} from '@angular/common';
 import {ReactiveFormsModule} from '@angular/forms';
 
 /* Vendor Dependencies */
 import type {ErrorStateMatcher} from '@angular/material/core';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
-import {MatSelectModule} from '@angular/material/select';
 import {MatButtonModule} from '@angular/material/button';
 
 /* Application Dependencies */
@@ -18,6 +18,8 @@ import {
 	SERVICE_CREDENTIAL_CAPTIONS,
 	SERVICE_DEFAULT_PORTS,
 	SERVICE_DESCRIPTORS,
+	SERVICE_FIELD_SPANS,
+	SERVICE_TRANSPORTS,
 } from '@client/modules/service-config/constants/service-config.constants';
 import {visibleServiceFields} from '@client/modules/service-config/helpers/service-config.helpers';
 
@@ -26,7 +28,7 @@ import type {OrchardServiceConfiguration} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-service-fields',
-	imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule, OrcFormModule],
+	imports: [NgTemplateOutlet, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, OrcFormModule],
 	templateUrl: './service-fields.component.html',
 	styleUrl: './service-fields.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,6 +38,7 @@ export class ServiceFieldsComponent {
 		isErrorState: (control) => this.flagged().some((key) => this.form().controls[key] === control),
 	};
 	public readonly descriptors = SERVICE_DESCRIPTORS;
+	public readonly transports = SERVICE_TRANSPORTS;
 
 	public readonly configuration = input.required<OrchardServiceConfiguration>();
 	public readonly form = input.required<ServiceForm>();
@@ -49,6 +52,7 @@ export class ServiceFieldsComponent {
 		const form = this.form();
 		const visible = visibleServiceFields(configuration.service, form.controls['type'].value, form.controls['mtls']?.value ?? 'false');
 		const last_credential = visible.filter((field) => field.credential || field.password).at(-1)?.key;
+		const three_files = visible.some((field) => field.key === 'ca');
 		return visible
 			.filter((field) => !!form.controls[field.key])
 			.map((field) => {
@@ -66,8 +70,23 @@ export class ServiceFieldsComponent {
 					hot: control.dirty || this.focused() === field.key,
 					flagged: this.flagged().includes(field.key),
 					credential_caption: field.key === last_credential,
+					span: field.key === 'cert' && three_files ? 4 : (SERVICE_FIELD_SPANS[field.key] ?? 12),
 				};
 			});
+	});
+	public readonly connection_fields = computed<ServiceFieldState[]>(() => this.fields().filter((field) => !field.optional));
+	public readonly optional_fields = computed<ServiceFieldState[]>(() => this.fields().filter((field) => field.optional));
+	// Opens for a flagged or filled-in optional value; otherwise the operator expands it
+	public readonly optional_open = computed<boolean>(() =>
+		this.optional_fields().some((field) => field.flagged || field.stored || !!this.form().controls[field.key].value),
+	);
+	public readonly type_value = computed<string>(() => {
+		this.form_revision();
+		return this.form().controls['type'].value;
+	});
+	public readonly mtls_value = computed<string>(() => {
+		this.form_revision();
+		return this.form().controls['mtls']?.value ?? 'false';
 	});
 	public readonly credential_caption = computed<string>(() => {
 		this.form_revision();
@@ -86,6 +105,24 @@ export class ServiceFieldsComponent {
 	/* *******************************************************
 		Form fields
 	******************************************************** */
+
+	/** Pick an implementation from the segmented control. */
+	public setType(value: string): void {
+		const control = this.form().controls['type'];
+		if (this.form().disabled || control.value === value) return;
+		control.setValue(value);
+		control.markAsDirty();
+		this.onTypeChange();
+	}
+
+	/** Pick the mint's transport; mutual TLS reveals the certificate fields. */
+	public setTransport(value: string): void {
+		const control = this.form().controls['mtls'];
+		if (this.form().disabled || control.value === value) return;
+		control.setValue(value);
+		control.markAsDirty();
+		this.changed.emit();
+	}
 
 	/** Clear incompatible credentials when switching between Lightning implementations. */
 	public onTypeChange(): void {

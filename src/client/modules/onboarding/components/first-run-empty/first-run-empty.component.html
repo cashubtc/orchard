@@ -1,27 +1,39 @@
 <section class="empty-home">
-	<mat-icon class="icon-lg orc-primary-color">electrical_services</mat-icon>
-	<h1>Nothing connected yet</h1>
-	<p>
-		{{
-			is_admin()
-				? 'Orchard shows a section for each service you connect. Each one connects on its own, so add what you run and skip the rest.'
-				: 'An administrator can connect services in Settings.'
-		}}
-	</p>
+	<span class="empty-icon"><mat-icon class="mat-symbol-outline">cable</mat-icon></span>
+	<div class="empty-heading">
+		<h1>Nothing connected yet</h1>
+		<p>
+			{{
+				is_admin()
+					? 'Orchard shows a section for each service you connect. Each one connects on its own, so add what you run and skip the rest.'
+					: 'An administrator can connect services in Settings.'
+			}}
+		</p>
+	</div>
 	@if (is_admin()) {
 		<div class="empty-tiles">
 			@for (service of services; track service) {
 				<a
-					class="orc-low-card empty-tile"
+					class="empty-tile"
 					[routerLink]="['/onboarding/configure', service]"
 					[attr.aria-label]="'Add ' + descriptors[service].name"
 				>
-					<mat-icon>{{ descriptors[service].icon }}</mat-icon
-					><strong>{{ descriptors[service].name }}</strong
-					><span>{{ copy[service].tile }}</span
-					><span class="orc-primary-color">+ Add</span>
+					<span class="tile-icon"
+						><mat-icon class="mat-symbol-outline">{{ descriptors[service].icon }}</mat-icon></span
+					>
+					<strong>{{ descriptors[service].name }}</strong>
+					<span class="tile-note">{{ copy[service].tile }}</span>
+					<span class="tile-action"><mat-icon>add</mat-icon>Add</span>
 				</a>
 			}
+			<div class="empty-tile tile-locked" aria-disabled="true">
+				<span class="tile-icon"
+					><mat-icon class="mat-symbol-outline">{{ descriptors.ecash.icon }}</mat-icon></span
+				>
+				<strong>{{ descriptors.ecash.name }}</strong>
+				<span class="tile-note">{{ copy.ecash.tile }}</span>
+				<span class="tile-action"><mat-icon class="mat-symbol-outline">lock</mat-icon>Add a mint first</span>
+			</div>
 		</div>
 		<div class="empty-actions">
 			<a matButton routerLink="/settings/services">Open Settings</a

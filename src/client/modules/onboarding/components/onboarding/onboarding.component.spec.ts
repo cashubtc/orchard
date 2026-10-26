@@ -8,17 +8,22 @@ import {CrewService} from '@client/modules/crew/services/crew/crew.service';
 import {ConfigService} from '@client/modules/config/services/config.service';
 import {FederationService} from '@client/modules/federation/services/federation.service';
 import {ServiceConfigService} from '@client/modules/service-config/services/service-config.service';
+import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 import {onboardingConfiguration} from '@client/modules/onboarding/helpers/onboarding.fixture';
 import {OrcOnboardingModule} from '@client/modules/onboarding/onboarding.module';
-import {ServiceKind, type OrchardServiceConfiguration} from '@shared/generated.types';
+import {ServiceKind, SettingKey, type OrchardServiceConfiguration} from '@shared/generated.types';
 import {OnboardingComponent} from './onboarding.component';
 
 describe('OnboardingComponent', () => {
 	let configurations: OrchardServiceConfiguration[];
 	let harness: RouterTestingHarness;
+	let ecash_enabled: boolean;
 	const mode = signal<string | null>('setup');
+	const updateSettings = jasmine.createSpy().and.returnValue(of([]));
 	beforeEach(async () => {
 		configurations = [ServiceKind.Bitcoin, ServiceKind.Lightning, ServiceKind.Mint].map((service) => onboardingConfiguration(service));
+		ecash_enabled = false;
+		updateSettings.calls.reset();
 		TestBed.configureTestingModule({
 			imports: [MatIconTestingModule],
 			providers: [
@@ -27,6 +32,7 @@ describe('OnboardingComponent', () => {
 				{provide: ConfigService, useValue: {loadStatus: () => of(undefined)}},
 				{provide: ServiceConfigService, useValue: {load: () => of(configurations), refresh_errors: signal({})}},
 				{provide: FederationService, useValue: {mode, loadMode: () => of({mode: mode()})}},
+				{provide: SettingAppService, useValue: {getSetting: () => ({value: ecash_enabled}), updateSettings}},
 			],
 		});
 		harness = await RouterTestingHarness.create();
@@ -112,6 +118,21 @@ describe('OnboardingComponent', () => {
 		const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
 		component.open();
 		expect(navigate).toHaveBeenCalledWith(['/']);
+	});
+	it('preselects an enabled ecash wallet', async () => {
+		ecash_enabled = true;
+		const picker = await harness.navigateByUrl('/onboarding/services', OnboardingComponent);
+		expect(picker.selected()).toEqual(['ecash']);
+		expect(picker.review_rows().at(-1)?.status).toBe('Enabled');
+	});
+	it('turns the ecash wallet on as its own step', async () => {
+		const component = await harness.navigateByUrl('/onboarding/configure/ecash?picked=mint,ecash', OnboardingComponent);
+		expect(component.service_states().ecash).toBe('Configuring');
+		component.enableEcash();
+		await settle();
+		expect(updateSettings).toHaveBeenCalledWith([SettingKey.EcashEnabled], ['true']);
+		expect(component.stage()).toBe('review');
+		expect(component.review_rows().at(-1)).toEqual(jasmine.objectContaining({service: 'ecash', status: 'Enabled'}));
 	});
 	it('continues the saved step after a failed reload is retried', async () => {
 		const component = await harness.navigateByUrl('/onboarding/configure/bitcoin?picked=bitcoin,lightning', OnboardingComponent);

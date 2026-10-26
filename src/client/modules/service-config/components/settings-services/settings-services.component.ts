@@ -1,6 +1,5 @@
 /* Core Dependencies */
 import {Component, ChangeDetectionStrategy, OnInit, inject, signal, DestroyRef, computed} from '@angular/core';
-import {RouterLink} from '@angular/router';
 import {takeUntilDestroyed, toSignal} from '@angular/core/rxjs-interop';
 
 /* Vendor Dependencies */
@@ -16,6 +15,10 @@ import {ConfigService} from '@client/modules/config/services/config.service';
 import {BitcoinService} from '@client/modules/bitcoin/services/bitcoin/bitcoin.service';
 import {LightningService} from '@client/modules/lightning/services/lightning/lightning.service';
 import {FederationService} from '@client/modules/federation/services/federation.service';
+import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
+import {EventService} from '@client/modules/event/services/event/event.service';
+import {EventData} from '@client/modules/event/classes/event-data.class';
+import {ECASH_WALLET} from '@client/modules/ecash/constants/ecash.constants';
 
 /* Native Dependencies */
 import {ServiceConfigService} from '@client/modules/service-config/services/service-config.service';
@@ -29,11 +32,11 @@ import {
 } from '@client/modules/service-config/constants/service-config.constants';
 
 /* Shared Dependencies */
-import type {OrchardServiceConfiguration} from '@shared/generated.types';
+import {SettingKey, type OrchardServiceConfiguration, type ServiceKind} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-settings-services',
-	imports: [RouterLink, MatButtonModule, MatIconModule, MatProgressBarModule],
+	imports: [MatButtonModule, MatIconModule, MatProgressBarModule],
 	templateUrl: './settings-services.component.html',
 	styleUrl: './settings-services.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,8 +50,11 @@ export class SettingsServicesComponent implements OnInit {
 	private readonly bitcoinService = inject(BitcoinService);
 	private readonly lightningService = inject(LightningService);
 	private readonly federationService = inject(FederationService);
+	private readonly settingAppService = inject(SettingAppService);
+	private readonly eventService = inject(EventService);
 
 	public readonly descriptors = SERVICE_DESCRIPTORS;
+	public readonly ecash = ECASH_WALLET;
 	public readonly sources = SERVICE_SOURCE_LABELS;
 	public readonly statuses = SERVICE_STATUS_LABELS;
 	public readonly status_icons = SERVICE_STATUS_ICONS;
@@ -57,6 +63,9 @@ export class SettingsServicesComponent implements OnInit {
 	public readonly loading = signal<boolean>(true);
 	public readonly error = signal<string | null>(null);
 	public readonly is_admin = signal<boolean>(false);
+	public readonly editing = signal<ServiceKind | null>(null);
+	public readonly ecash_enabled = signal<boolean>(this.settingAppService.getSetting('ecash_enabled').value);
+	public readonly ecash_saving = signal<boolean>(false);
 	public readonly rows = computed(() =>
 		this.services().map((service) => {
 			const check = this.serviceConfigService.saved_checks()[service.service];
@@ -114,10 +123,35 @@ export class SettingsServicesComponent implements OnInit {
 
 	/** Open the shared side panel with a snapshot of the effective configuration. */
 	public edit(service: OrchardServiceConfiguration): void {
+		this.editing.set(service.service);
 		this.panel
 			.open<OrchardServiceConfiguration, boolean>(ServiceEditorComponent, {data: service})
 			.afterClosed()
 			.pipe(takeUntilDestroyed(this.destroy_ref))
-			.subscribe(() => this.load());
+			.subscribe(() => {
+				this.editing.set(null);
+				this.load();
+			});
+	}
+
+	/** The ecash wallet has no connection; turning it on or off adds or removes its navigation entry. */
+	public toggleEcash(): void {
+		const enabled = !this.ecash_enabled();
+		this.ecash_saving.set(true);
+		this.settingAppService
+			.updateSettings([SettingKey.EcashEnabled], [String(enabled)])
+			.pipe(
+				takeUntilDestroyed(this.destroy_ref),
+				finalize(() => this.ecash_saving.set(false)),
+			)
+			.subscribe({
+				next: () => {
+					this.ecash_enabled.set(enabled);
+					this.eventService.registerEvent(
+						new EventData({type: 'SUCCESS', message: enabled ? 'Ecash wallet turned on' : 'Ecash wallet turned off'}),
+					);
+				},
+				error: (error: unknown) => this.error.set(serviceErrorMessage(error, 'Could not update the ecash wallet.')),
+			});
 	}
 }

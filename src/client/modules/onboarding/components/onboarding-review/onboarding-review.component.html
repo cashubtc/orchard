@@ -1,20 +1,18 @@
-<section class="review-card orc-low-card" aria-label="Services">
+<section class="review-card" aria-label="Services">
 	@for (row of rows(); track row.service) {
 		<div class="review-row" [attr.data-service]="row.service">
-			<mat-icon>{{ descriptors[row.service].icon }}</mat-icon>
+			<span class="service-icon"
+				><mat-icon class="mat-symbol-outline">{{ descriptors[row.service].icon }}</mat-icon></span
+			>
 			<div class="service-detail">
 				<h2>{{ descriptors[row.service].name }}</h2>
 				<p>{{ row.detail }}</p>
 			</div>
-			<span
-				class="review-status"
-				[class.orc-status-active-color]="row.tone === 'success'"
-				[class.orc-status-warning-color]="row.tone === 'warning'"
-			>
+			<span class="review-status" [class.tone-success]="row.tone === 'success'" [class.tone-warning]="row.tone === 'warning'">
 				@if (row.icon === 'do_not_disturb_on') {
 					<mat-icon svgIcon="do_not_disturb_on"></mat-icon>
 				} @else {
-					<mat-icon>{{ row.icon }}</mat-icon>
+					<mat-icon [class.mat-symbol-outline]="row.tone !== 'success'">{{ row.icon }}</mat-icon>
 				}
 				{{ row.status }}</span
 			>
@@ -31,8 +29,8 @@
 	}
 </section>
 @if (setup_mode()) {
-	<div class="setup-notice orc-high-card">
-		<mat-icon>network_intelligence</mat-icon>
+	<div class="setup-notice">
+		<mat-icon class="mat-symbol-outline">hub</mat-icon>
 		<p>
 			Your mint is in federation setup mode, so Orchard opens <strong>Federation setup</strong> next. The rest of the mint section
 			unlocks once the federation is active.

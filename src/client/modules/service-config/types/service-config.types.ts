@@ -24,6 +24,7 @@ export type ServiceFieldState = ServiceField & {
 	hot: boolean;
 	flagged: boolean;
 	credential_caption: boolean;
+	span: number;
 };
 
 export type ServiceApplied = {

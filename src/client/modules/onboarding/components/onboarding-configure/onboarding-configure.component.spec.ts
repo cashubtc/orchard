@@ -7,10 +7,10 @@ import {ServiceKind} from '@shared/generated.types';
 import {OnboardingConfigureComponent} from './onboarding-configure.component';
 
 describe('OnboardingConfigureComponent', () => {
-	/** Click the button with exactly this label. */
+	/** Click the button with exactly this label, ignoring its icon's ligature text. */
 	function click(fixture: ComponentFixture<OnboardingConfigureComponent>, label: string): void {
 		Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button'))
-			.find((button) => button.textContent?.trim() === label)!
+			.find((button) => button.textContent?.replace(button.querySelector('mat-icon')?.textContent ?? '', '').trim() === label)!
 			.click();
 		fixture.detectChanges();
 	}

@@ -50,8 +50,10 @@ describe('ServiceFieldsComponent', () => {
 		expect(fixture.nativeElement.querySelectorAll('textarea').length).toBe(3);
 		expect(fixture.nativeElement.textContent).toContain('Paste a PEM');
 		const children: HTMLElement[] = Array.from(fixture.nativeElement.querySelector('.service-fields').children);
-		const help_index = children.findIndex((element) => element.tagName === 'ORC-FORM-HELP-TEXT');
+		const help_index = children.findIndex((element) => element.classList.contains('field-caption'));
 		expect(children[help_index - 1].textContent).toContain('Client key');
+		// Three TLS files share one row
+		expect(children[help_index - 1].style.getPropertyValue('--service-field-span')).toBe('4');
 		form.controls['mtls'].setValue('false');
 		fixture.detectChanges();
 		expect(fixture.nativeElement.textContent).not.toContain('Paste a PEM');

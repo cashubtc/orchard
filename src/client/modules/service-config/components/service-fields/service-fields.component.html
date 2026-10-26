@@ -1,25 +1,53 @@
 <div [formGroup]="form()" class="service-fields">
-	<mat-form-field appearance="fill" class="orc-cold-form-field">
-		<mat-label>Implementation</mat-label>
-		<mat-select formControlName="type" (selectionChange)="onTypeChange()">
+	<div class="field-choice">
+		<span class="choice-label" [id]="'service-type-' + configuration().service">Implementation</span>
+		<orc-form-toggle-group class="orc-segmented" role="group" [attr.aria-labelledby]="'service-type-' + configuration().service">
 			@for (type of descriptors[configuration().service].types; track type.value) {
-				<mat-option [value]="type.value">{{ type.label }}</mat-option>
+				<orc-form-toggle [selected]="type_value() === type.value" [disabled]="form().disabled" (click)="setType(type.value)">{{
+					type.label
+				}}</orc-form-toggle>
 			}
-		</mat-select>
-	</mat-form-field>
-	@if (configuration().service === 'mint') {
-		<mat-form-field appearance="fill" class="orc-cold-form-field">
-			<mat-label>Transport</mat-label>
-			<mat-select formControlName="mtls" (selectionChange)="changed.emit()">
-				<mat-option value="false">Without mTLS</mat-option><mat-option value="true">Mutual TLS</mat-option>
-			</mat-select>
-		</mat-form-field>
-	}
-	@for (field of fields(); track field.key) {
-		@if (field.heading) {
-			<h3 class="title-form-section">{{ field.heading }}</h3>
+		</orc-form-toggle-group>
+	</div>
+	@for (field of connection_fields(); track field.key) {
+		<ng-container *ngTemplateOutlet="field_template; context: {$implicit: field}"></ng-container>
+		@if (field.key === 'port' && configuration().service === 'mint') {
+			<div class="field-choice">
+				<span class="choice-label" id="service-transport">Connection security</span>
+				<orc-form-toggle-group class="orc-segmented" role="group" aria-labelledby="service-transport">
+					@for (option of transports; track option.value) {
+						<orc-form-toggle
+							[selected]="mtls_value() === option.value"
+							[disabled]="form().disabled"
+							(click)="setTransport(option.value)"
+							>{{ option.label }}</orc-form-toggle
+						>
+					}
+				</orc-form-toggle-group>
+			</div>
 		}
-		<orc-form-field-dynamic [hot]="field.hot" [invalid]="field.flagged" [standalone]="false" (cancel)="resetField(field.key)">
+	}
+	@if (optional_fields().length) {
+		<details class="optional-fields" [open]="optional_open()">
+			<summary>{{ optional_fields()[0].heading }}</summary>
+			<div class="service-fields">
+				@for (field of optional_fields(); track field.key) {
+					<ng-container *ngTemplateOutlet="field_template; context: {$implicit: field}"></ng-container>
+				}
+			</div>
+		</details>
+	}
+
+	<ng-template #field_template let-field>
+		<orc-form-field-dynamic
+			class="service-field"
+			[class.service-field-wide]="field.credential || field.optional"
+			[style.--service-field-span]="field.span"
+			[hot]="field.hot"
+			[invalid]="field.flagged"
+			[standalone]="false"
+			(cancel)="resetField(field.key)"
+		>
 			<mat-form-field
 				appearance="fill"
 				class="orc-dynamic-form-field w-full"
@@ -73,7 +101,7 @@
 			</mat-form-field>
 		</orc-form-field-dynamic>
 		@if (field.credential_caption) {
-			<orc-form-help-text class="orc-surface-container-high-bg">{{ credential_caption() }}</orc-form-help-text>
+			<p class="field-caption">{{ credential_caption() }}</p>
 		}
-	}
+	</ng-template>
 </div>

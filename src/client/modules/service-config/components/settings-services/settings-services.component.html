@@ -1,7 +1,8 @@
 <section class="services-page">
-	<h1 class="title-l">Services</h1>
-	<p>Connect Orchard to the services you run. Changes apply as soon as you save.</p>
-	<p class="orc-outline-color">Values saved here override your environment. Each connection is independent.</p>
+	<header class="services-header">
+		<h1>Services</h1>
+		<p>Changes apply as soon as you save. Values saved here override your environment.</p>
+	</header>
 	@if (loading()) {
 		<mat-progress-bar mode="indeterminate" aria-label="Loading services"></mat-progress-bar>
 	}
@@ -15,46 +16,73 @@
 	@if (is_admin()) {
 		<div class="service-list">
 			@for (service of rows(); track service.service) {
-				<article class="service-row">
-					<mat-icon>{{ descriptors[service.service].icon }}</mat-icon>
+				<article class="service-row" [class.editing]="editing() === service.service" [attr.data-service]="service.service">
+					<span class="service-icon"
+						><mat-icon class="mat-symbol-outline">{{ descriptors[service.service].icon }}</mat-icon></span
+					>
 					<div class="service-description">
 						<h2>{{ descriptors[service.service].name }}</h2>
 						<p>{{ service.enabled ? service.detail : descriptors[service.service].description }}</p>
-						@if (service.source !== 'none') {
-							<span class="source-label">{{ sources[service.source] }}</span>
+					</div>
+					@if (service.source !== 'none') {
+						<span class="source-label">{{ sources[service.source] }}</span>
+					}
+					<span
+						class="connection-status"
+						[class.tone-success]="service.status === 'connected'"
+						[class.tone-warning]="service.status === 'warning'"
+						[class.tone-error]="service.status === 'unreachable'"
+					>
+						@if (status_icons[service.status] === 'do_not_disturb_on') {
+							<mat-icon svgIcon="do_not_disturb_on"></mat-icon>
+						} @else {
+							<mat-icon [class.mat-symbol-outline]="service.status !== 'connected'">{{
+								status_icons[service.status]
+							}}</mat-icon>
 						}
-						<span
-							class="connection-status"
-							[class.orc-status-active-color]="service.status === 'connected'"
-							[class.orc-status-warning-color]="service.status === 'warning'"
-							[class.orc-error-color]="service.status === 'unreachable'"
-						>
-							<mat-icon>{{ status_icons[service.status] }}</mat-icon>
-							{{ statuses[service.status] }}
-						</span>
-					</div>
-					<div class="service-actions">
-						<button matButton="tonal" [disabled]="loading()" (click)="edit(service)">
-							{{ service.enabled ? 'Edit' : 'Add' }} {{ descriptors[service.service].name }}
-						</button>
-					</div>
+						{{ statuses[service.status] }}
+					</span>
+					<button
+						matIconButton
+						type="button"
+						[attr.aria-label]="(service.enabled ? 'Edit ' : 'Add ') + descriptors[service.service].name"
+						[disabled]="loading()"
+						(click)="edit(service)"
+					>
+						<mat-icon class="mat-symbol-outline">{{ service.enabled ? 'edit' : 'add' }}</mat-icon>
+					</button>
 				</article>
 			}
+			<article class="service-row" data-service="ecash">
+				<span class="service-icon"
+					><mat-icon class="mat-symbol-outline">{{ ecash.icon }}</mat-icon></span
+				>
+				<div class="service-description">
+					<h2>{{ ecash.name }}</h2>
+					<p>{{ ecash.note }}</p>
+				</div>
+				@if (ecash_enabled()) {
+					<span class="source-label">{{ sources['orchard'] }}</span>
+				}
+				<span class="connection-status" [class.tone-success]="ecash_enabled()">
+					@if (ecash_enabled()) {
+						<mat-icon>{{ status_icons['connected'] }}</mat-icon
+						>Enabled
+					} @else {
+						<mat-icon svgIcon="do_not_disturb_on"></mat-icon>Off
+					}
+				</span>
+				<button matButton type="button" [disabled]="ecash_saving()" (click)="toggleEcash()">
+					{{ ecash_enabled() ? 'Turn off' : 'Turn on' }}
+				</button>
+			</article>
 			<article class="service-row">
-				<mat-icon>deployed_code</mat-icon>
+				<span class="service-icon"><mat-icon class="mat-symbol-outline">token</mat-icon></span>
 				<div class="service-description">
 					<h2>Taproot Assets</h2>
 					<p>Set by environment variables only</p>
-					<span class="source-label">{{ taproot_enabled ? 'From environment' : 'Not configured' }}</span>
 				</div>
-			</article>
-			<article class="service-row">
-				<mat-icon>smart_toy</mat-icon>
-				<div class="service-description">
-					<h2>AI</h2>
-					<p>Managed in application settings</p>
-				</div>
-				<a matButton routerLink="/settings/app">AI settings</a>
+				<span class="source-label">{{ taproot_enabled ? sources['environment'] : sources['none'] }}</span>
 			</article>
 		</div>
 	}

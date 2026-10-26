@@ -24,22 +24,28 @@ import {catchError, filter, finalize, forkJoin, map, of} from 'rxjs';
 import {ConfigService} from '@client/modules/config/services/config.service';
 import {FederationService} from '@client/modules/federation/services/federation.service';
 import {ServiceConfigService} from '@client/modules/service-config/services/service-config.service';
-import {SERVICE_DESCRIPTORS} from '@client/modules/service-config/constants/service-config.constants';
 import {serviceErrorMessage} from '@client/modules/service-config/helpers/service-config.helpers';
+import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 import {OrcGraphicModule} from '@client/modules/graphic/graphic.module';
 import {NavSetupStepsComponent} from '@client/modules/nav/components/nav-setup-steps/nav-setup-steps.component';
 
 /* Native Dependencies */
 import {OnboardingLayoutService} from '@client/modules/onboarding/services/onboarding-layout.service';
-import {ONBOARDING_SERVICES, ONBOARDING_STAGES, ONBOARDING_STEPS} from '@client/modules/onboarding/constants/onboarding.constants';
+import {
+	ONBOARDING_CHOICES,
+	ONBOARDING_COPY,
+	ONBOARDING_DESCRIPTORS,
+	ONBOARDING_STAGES,
+	ONBOARDING_STEPS,
+} from '@client/modules/onboarding/constants/onboarding.constants';
 import {onboardingDestination, onboardingReview, onboardingRoute} from '@client/modules/onboarding/helpers/onboarding.helpers';
-import type {OnboardingOutcomes, OnboardingStage} from '@client/modules/onboarding/types/onboarding.types';
+import type {OnboardingChoice, OnboardingOutcomes, OnboardingStage} from '@client/modules/onboarding/types/onboarding.types';
 import {OnboardingPickerComponent} from '@client/modules/onboarding/components/onboarding-picker/onboarding-picker.component';
 import {OnboardingConfigureComponent} from '@client/modules/onboarding/components/onboarding-configure/onboarding-configure.component';
 import {OnboardingReviewComponent} from '@client/modules/onboarding/components/onboarding-review/onboarding-review.component';
 
 /* Shared Dependencies */
-import {ServiceKind, type OrchardConnectionCheck, type OrchardServiceConfiguration} from '@shared/generated.types';
+import {ServiceKind, SettingKey, type OrchardConnectionCheck, type OrchardServiceConfiguration} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-onboarding',
@@ -64,41 +70,60 @@ export class OnboardingComponent implements OnInit {
 	private readonly api = inject(ServiceConfigService);
 	private readonly configService = inject(ConfigService);
 	private readonly federationService = inject(FederationService);
+	private readonly settingAppService = inject(SettingAppService);
 	private readonly router = inject(Router);
 	private readonly route = inject(ActivatedRoute);
 	private readonly destroy_ref = inject(DestroyRef);
 
-	public readonly descriptors = SERVICE_DESCRIPTORS;
+	public readonly descriptors = ONBOARDING_DESCRIPTORS;
+	public readonly copy = ONBOARDING_COPY;
 	public readonly steps = ONBOARDING_STEPS;
 
 	public readonly mobile = this.layout.mobile;
 	public readonly configurations = signal<OrchardServiceConfiguration[]>([]);
 	public readonly outcomes = signal<OnboardingOutcomes>({});
+	public readonly ecash_enabled = signal<boolean>(this.settingAppService.getSetting('ecash_enabled').value);
 	public readonly loading = signal<boolean>(true);
 	public readonly opening = signal<boolean>(false);
+	public readonly saving = signal<boolean>(false);
 	public readonly error = signal<string | null>(null);
 
 	// The URL is the only record of the step, service, picked services and return target
 	public readonly stage = computed<OnboardingStage>(() => this.route_state().stage);
-	public readonly active_service = computed<ServiceKind | null>(() => this.route_state().service);
-	// Until the URL records a choice: the service a first-run tile opened, else what's already connected
-	public readonly selected = computed<ServiceKind[]>(() => {
+	public readonly active_service = computed<OnboardingChoice | null>(() => this.route_state().service);
+	// Until the URL records a choice: the service a first-run tile opened, else what's already connected or enabled
+	public readonly selected = computed<OnboardingChoice[]>(() => {
 		const {picked, service} = this.route_state();
 		if (picked) return picked;
 		if (service) return [service];
-		return ONBOARDING_SERVICES.filter((item) =>
-			this.configurations().some((configuration) => configuration.service === item && configuration.enabled),
+		return ONBOARDING_CHOICES.filter((item) =>
+			item === 'ecash'
+				? this.ecash_enabled()
+				: this.configurations().some((configuration) => configuration.service === item && configuration.enabled),
 		);
 	});
 	public readonly stage_copy = computed(() => ONBOARDING_STAGES[this.stage()]);
 	public readonly active_configurations = computed(() => this.configurations().filter((item) => item.service === this.active_service()));
-	public readonly review_rows = computed(() => onboardingReview(this.configurations(), this.outcomes()));
+	public readonly review_rows = computed(() => onboardingReview(this.configurations(), this.outcomes(), this.ecash_enabled()));
 	public readonly service_states = computed(
 		() =>
-			Object.fromEntries(ONBOARDING_SERVICES.map((service) => [service, this.serviceState(service)])) as Record<ServiceKind, string>,
+			Object.fromEntries(ONBOARDING_CHOICES.map((service) => [service, this.serviceState(service)])) as Record<
+				OnboardingChoice,
+				string
+			>,
+	);
+	// A completed step shows a trailing check in the side list
+	public readonly service_done = computed(
+		() =>
+			Object.fromEntries(
+				ONBOARDING_CHOICES.map((service) => [
+					service,
+					service === 'ecash' ? this.ecash_enabled() : !!this.outcomes()[service]?.saved_check?.ok,
+				]),
+			) as Record<OnboardingChoice, boolean>,
 	);
 	public readonly setup_mode = computed(() => this.mint_enabled() && this.federationService.mode() === 'setup');
-	public readonly busy = computed(() => this.loading() || this.opening() || (this.configure()?.busy() ?? false));
+	public readonly busy = computed(() => this.loading() || this.opening() || this.saving() || (this.configure()?.busy() ?? false));
 
 	private pending_advance = false;
 
@@ -168,9 +193,9 @@ export class OnboardingComponent implements OnInit {
 	******************************************************** */
 
 	/** Toggle optional services while retaining the required configuration order. */
-	public toggle(service: ServiceKind): void {
+	public toggle(service: OnboardingChoice): void {
 		const selected = this.selected();
-		const picked = ONBOARDING_SERVICES.filter((item) => (item === service ? !selected.includes(item) : selected.includes(item)));
+		const picked = ONBOARDING_CHOICES.filter((item) => (item === service ? !selected.includes(item) : selected.includes(item)));
 		void this.router.navigate([], {queryParams: {picked: picked.join(',')}, queryParamsHandling: 'merge', replaceUrl: true});
 	}
 
@@ -181,7 +206,7 @@ export class OnboardingComponent implements OnInit {
 	}
 
 	/** Display one service using a new isolated form instance. */
-	public showService(service: ServiceKind): void {
+	public showService(service: OnboardingChoice): void {
 		this.transition('configure', service);
 	}
 
@@ -200,6 +225,27 @@ export class OnboardingComponent implements OnInit {
 		this.outcomes.update((outcomes) => ({...outcomes, [service]: {saved_check: check, check: undefined, skipped: false}}));
 		this.pending_advance = true;
 		this.refresh();
+	}
+
+	/** The ecash wallet has nothing to connect; turning it on adds it to the navigation. */
+	public enableEcash(): void {
+		if (this.busy()) return;
+		this.saving.set(true);
+		this.error.set(null);
+		this.settingAppService
+			.updateSettings([SettingKey.EcashEnabled], ['true'])
+			.pipe(
+				takeUntilDestroyed(this.destroy_ref),
+				finalize(() => this.saving.set(false)),
+			)
+			.subscribe({
+				next: () => {
+					this.ecash_enabled.set(true);
+					this.outcomes.update((outcomes) => ({...outcomes, ecash: {skipped: false}}));
+					this.advance();
+				},
+				error: (error: unknown) => this.error.set(serviceErrorMessage(error, 'Could not turn on the ecash wallet.')),
+			});
 	}
 
 	/** Skip only this step; an existing live service is never silently disconnected. */
@@ -226,8 +272,8 @@ export class OnboardingComponent implements OnInit {
 	}
 
 	/** Add or edit a service from Review and return there after its step completes. */
-	public edit(service: ServiceKind): void {
-		const selected = ONBOARDING_SERVICES.filter((item) => item === service || this.selected().includes(item));
+	public edit(service: OnboardingChoice): void {
+		const selected = ONBOARDING_CHOICES.filter((item) => item === service || this.selected().includes(item));
 		this.transition('configure', service, selected, true);
 	}
 
@@ -284,14 +330,15 @@ export class OnboardingComponent implements OnInit {
 	}
 
 	/** The selected service before or after the active one. */
-	private sibling(offset: 1 | -1): ServiceKind | undefined {
+	private sibling(offset: 1 | -1): OnboardingChoice | undefined {
 		const selected = this.selected();
 		return selected[selected.indexOf(this.active_service()!) + offset];
 	}
 
 	/** Describe the applied result before showing any unsaved test feedback. */
-	private serviceState(service: ServiceKind): string {
+	private serviceState(service: OnboardingChoice): string {
 		const outcome = this.outcomes()[service];
+		if (service === 'ecash' && this.ecash_enabled()) return 'Enabled';
 		if (outcome?.saved_check) {
 			if (!outcome.saved_check.ok) return 'Saved · test failed';
 			if (outcome.saved_check.warning && outcome.saved_check.fields.includes('database')) return 'Connected · database missing';
@@ -309,8 +356,8 @@ export class OnboardingComponent implements OnInit {
 	/** Navigate to a step; the view follows the URL, which keeps only non-secret navigation choices. */
 	private transition(
 		stage: OnboardingStage,
-		service: ServiceKind | null = null,
-		selected: ServiceKind[] = this.selected(),
+		service: OnboardingChoice | null = null,
+		selected: OnboardingChoice[] = this.selected(),
 		return_to_review: boolean = this.return_to_review(),
 	): void {
 		this.pending_advance = false;

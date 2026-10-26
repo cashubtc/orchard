@@ -100,6 +100,7 @@
     #{$c}orc-corner-extra-small-top { border-radius: var(--mat-sys-corner-extra-small-top); }
     #{$c}orc-corner-full { border-radius: var(--mat-sys-corner-full); }
     #{$c}orc-corner-large { border-radius: var(--mat-sys-corner-large); }
+    #{$c}orc-corner-large-increased { border-radius: var(--mat-sys-corner-large-increased, 1.25rem); }
     #{$c}orc-corner-large-start { border-radius: var(--mat-sys-corner-large-start); }
     #{$c}orc-corner-large-top { border-radius: var(--mat-sys-corner-large-top); }
     #{$c}orc-corner-large-bottom { border-radius: 0 0 var(--mat-sys-corner-large) var(--mat-sys-corner-large); }
@@ -114,6 +115,8 @@
     #{$c}orc-surface-variant-border { border-color: var(--mat-sys-surface-variant); }
     #{$c}orc-outline-border { border-color: var(--mat-sys-outline); }
     #{$c}orc-outline-variant-border { border-color: var(--mat-sys-outline-variant); }
+    #{$c}orc-primary-border { border-color: var(--mat-sys-primary); }
+    #{$c}orc-status-warning-border { border-color: var(--orc-status-warning); }
     #{$c}orc-on-primary-container-border { border-color: var(--mat-sys-on-primary-container); }
     #{$c}orc-surface-container-lowest-border { border-color: var(--mat-sys-surface-container-lowest); }
     // Border Specific
