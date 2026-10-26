@@ -1,8 +1,15 @@
 import {normalizeFederationEnums} from '#server/modules/federation/helpers/federation-enums.helpers';
-import {FEDERATION_ABSENT_ENUMS} from '#server/modules/federation/constants/federation.constants';
+import {readFileSync, readdirSync} from 'node:fs';
+import path from 'node:path';
+
+const absent_enums = readdirSync('proto/cdk')
+	.filter((file) => file.endsWith('.proto'))
+	.flatMap((file) =>
+		[...readFileSync(path.join('proto/cdk', file), 'utf8').matchAll(/(\w+_UNSPECIFIED)\s*=\s*0/g)].map((match) => match[1]),
+	);
 
 describe('Federation enum boundary', () => {
-	it.each(FEDERATION_ABSENT_ENUMS)('treats %s as absent, including nested peer and custody sections', (value) => {
+	it.each([...absent_enums, 'FUTURE_ENUM_UNSPECIFIED'])('treats %s as absent, including nested peer and custody sections', (value) => {
 		expect(normalizeFederationEnums({members: [{status: {sync: {state: value}}}], bark: null})).toEqual({
 			members: [{status: {sync: {state: undefined}}}],
 			bark: null,

@@ -1,6 +1,7 @@
 import {Test} from '@nestjs/testing';
 import {status} from '@grpc/grpc-js';
-import {CdkRpcError, CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
+import {CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
+import {CdkRpcError} from '#server/modules/cashu/cdk/classes/cdk-rpc-error.class';
 import {FederationSetupService} from './federation-setup.service.js';
 
 describe('FederationSetupService', () => {

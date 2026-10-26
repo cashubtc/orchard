@@ -6,7 +6,8 @@ import {Client, credentials, Metadata, status, type ServiceError} from '@grpc/gr
 /* Native Dependencies */
 import {Logger} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
-import {CdkRpcError, CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
+import {CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
+import {CdkRpcError} from '#server/modules/cashu/cdk/classes/cdk-rpc-error.class';
 import {FederationService} from '#server/modules/federation/federation.service';
 import {NutshellService} from '#server/modules/cashu/nutshell/nutshell.service';
 /* Local Dependencies */
@@ -461,6 +462,30 @@ describe('CashuMintRpcService split CDK adapter', () => {
 		const error = new Error('unsupported method');
 		request.mockRejectedValueOnce(error);
 		await expect(service.updateNut04({unit: 'sat', method: 'unknown', min_amount: 1, disabled: true})).rejects.toBe(error);
+		expect(request).toHaveBeenCalledTimes(1);
+	});
+	it.each(['updateNut04', 'updateNut05'] as const)(
+		'reports the saved method settings when %s fails to update the global flag',
+		async (method) => {
+			const failure = new CdkRpcError(status.DEADLINE_EXCEEDED, 'Deadline exceeded after 5.000s');
+			request.mockResolvedValueOnce({}).mockRejectedValueOnce(failure);
+			const operation = method === 'updateNut04' ? 'minting' : 'melting';
+			await expect(service[method]({unit: 'sat', method: 'bolt11', min_amount: 1, disabled: false})).rejects.toMatchObject({
+				code: OrchardErrorCode.MintRpcConnectionError,
+				grpc_code: status.DEADLINE_EXCEEDED,
+				details: `Payment method settings saved; mint-wide ${operation} disabled flag update failed: ${failure.details}`,
+			});
+			expect(request).toHaveBeenCalledTimes(2);
+			expect(request).toHaveBeenLastCalledWith(
+				'UpdateDisabled',
+				method === 'updateNut04' ? {mint_disabled: false} : {melt_disabled: false},
+			);
+		},
+	);
+	it('preserves a flag-only failure without claiming partial success', async () => {
+		const failure = new CdkRpcError(status.UNAVAILABLE, 'Connection dropped');
+		request.mockRejectedValueOnce(failure);
+		await expect(service.updateNut04({unit: 'sat', method: 'bolt11', disabled: true})).rejects.toBe(failure);
 		expect(request).toHaveBeenCalledTimes(1);
 	});
 	it('translates quote states in both directions and leaves unknown states for the mint to refuse', async () => {

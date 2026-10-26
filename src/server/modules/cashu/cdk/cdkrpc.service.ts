@@ -6,45 +6,22 @@ import path from 'node:path';
 
 /* Vendor Dependencies */
 import {Client, credentials, Metadata, status, type ChannelOptions, type ServiceError} from '@grpc/grpc-js';
-import {loadSync, type ServiceDefinition} from '@grpc/proto-loader';
+import {loadSync, type ServiceDefinition, type PackageDefinition} from '@grpc/proto-loader';
 
 /* Application Dependencies */
 import {CredentialService} from '#server/modules/credential/credential.service';
-import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {INTEGRATION_REQUEST_TIMEOUT_MS} from '#server/modules/integration/constants/integration.constants';
 
 /* Native Dependencies */
+import {CdkRpcError} from './classes/cdk-rpc-error.class.js';
+import {normalizeCdkResponseEnums} from './helpers/cdkrpc-enums.helpers.js';
 import type {CdkRpcMethods} from './cdkrpc.types.js';
-
-/** An Orchard error retaining both the transport status and CDK's exact diagnostic. */
-export class CdkRpcError extends Error {
-	public readonly code: OrchardErrorCode;
-	public readonly grpc_code: number;
-	public readonly details: string;
-
-	constructor(grpc_code: number, details: string) {
-		// An unknown service answers with an empty message; the status name is the only diagnostic left
-		const diagnostic = details || status[grpc_code] || `gRPC status ${grpc_code}`;
-		super(diagnostic);
-		this.grpc_code = grpc_code;
-		this.details = diagnostic;
-		const codes: Partial<Record<status, OrchardErrorCode>> = {
-			[status.INVALID_ARGUMENT]: OrchardErrorCode.MintRpcInvalidArgumentError,
-			[status.FAILED_PRECONDITION]: OrchardErrorCode.MintRpcPreconditionError,
-			[status.RESOURCE_EXHAUSTED]: OrchardErrorCode.MintRpcBusyError,
-			[status.UNIMPLEMENTED]: OrchardErrorCode.MintSupportError,
-			[status.UNAVAILABLE]: OrchardErrorCode.MintRpcConnectionError,
-			[status.DEADLINE_EXCEEDED]: OrchardErrorCode.MintRpcConnectionError,
-			[status.INTERNAL]: OrchardErrorCode.MintRpcInternalError,
-		};
-		this.code = codes[grpc_code] ?? OrchardErrorCode.MintRpcActionError;
-	}
-}
 
 @Injectable()
 export class CdkRpcService implements OnModuleDestroy {
 	private client: Client | null = null;
 	private methods: ServiceDefinition | null = null;
+	private definitions: PackageDefinition = {};
 
 	constructor(
 		private configService: ConfigService,
@@ -95,6 +72,7 @@ export class CdkRpcService implements OnModuleDestroy {
 				oneofs: true,
 			},
 		);
+		this.definitions = definitions;
 		this.methods = {};
 		for (const [name, definition] of Object.entries(definitions)) {
 			if (name.endsWith('Service')) Object.assign(this.methods, definition);
@@ -121,6 +99,7 @@ export class CdkRpcService implements OnModuleDestroy {
 		const previous = this.client;
 		this.client = null;
 		this.methods = null;
+		this.definitions = {};
 		previous?.close();
 	}
 
@@ -133,6 +112,7 @@ export class CdkRpcService implements OnModuleDestroy {
 		return new Promise((resolve, reject) => {
 			const client = this.getClient();
 			const definition = this.methods[method];
+			const definitions = this.definitions;
 			if (!definition) throw new CdkRpcError(status.UNIMPLEMENTED, `CDK RPC method ${method} is unavailable`);
 			client.makeUnaryRequest(
 				definition.path,
@@ -143,7 +123,14 @@ export class CdkRpcService implements OnModuleDestroy {
 				{deadline: Date.now() + timeout_ms},
 				(error: ServiceError | null, response: CdkRpcMethods[M]['response']) => {
 					if (error) return reject(new CdkRpcError(error.code, error.details));
-					resolve(response);
+					resolve(
+						normalizeCdkResponseEnums(
+							response,
+							definition.responseType,
+							definitions,
+							definition.path.split('/')[1].split('.')[0],
+						),
+					);
 				},
 			);
 		});

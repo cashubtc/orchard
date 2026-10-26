@@ -1,6 +1,8 @@
-import type {CashuMintInfo} from '#server/modules/cashu/mintapi/cashumintapi.types';
+/* Application Dependencies */
+import type {CdkRpcMethods} from '#server/modules/cashu/cdk/cdkrpc.types';
 
-export type CashuMintInfoRpc = Omit<CashuMintInfo, 'nuts'> & {
-	total_issued: string;
-	total_redeemed: string;
+export type CashuMintInfoRpc = CdkRpcMethods['GetInfo']['response'] & {
+	description_long?: string;
+	total_issued?: string;
+	total_redeemed?: string;
 };

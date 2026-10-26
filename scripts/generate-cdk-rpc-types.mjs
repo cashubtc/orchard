@@ -14,9 +14,11 @@ function typeName(type) {
 /** Match proto-loader's lossless longs and string enums. */
 function fieldType(field, output) {
 	if (field.resolvedType instanceof protobuf.Enum)
-		return Object.keys(field.resolvedType.values)
-			.map((v) => JSON.stringify(v))
-			.join(' | ');
+		return (
+			Object.keys(field.resolvedType.values)
+				.map((v) => JSON.stringify(v))
+				.join(' | ') + (output ? ' | `Unknown enum (${number})`' : '')
+		);
 	if (field.resolvedType) return typeName(field.resolvedType) + (output ? 'Output' : '');
 	if (field.type === 'string') return 'string';
 	if (field.type === 'bool') return 'boolean';

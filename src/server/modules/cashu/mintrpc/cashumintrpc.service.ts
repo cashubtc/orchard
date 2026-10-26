@@ -6,6 +6,7 @@ import {Metadata, type Client, type ServiceError, status} from '@grpc/grpc-js';
 /* Application Dependencies */
 import {closeGrpcChannel} from '#server/modules/grpc/helpers/grpc-client.helpers';
 import {INTEGRATION_REQUEST_TIMEOUT_MS} from '#server/modules/integration/constants/integration.constants';
+import {CdkRpcError} from '#server/modules/cashu/cdk/classes/cdk-rpc-error.class';
 import {CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
 import type {CdkRpcMethods} from '#server/modules/cashu/cdk/cdkrpc.types';
 import {FederationService} from '#server/modules/federation/federation.service';
@@ -92,35 +93,49 @@ export class CashuMintRpcService implements OnModuleInit, OnModuleDestroy {
 	}
 
 	/** CDK's split services keep the legacy method names and request shapes for these calls. */
-	private callRpc<M extends keyof CdkRpcMethods>(method: M, request: CdkRpcMethods[M]['request']): Promise<any> {
-		if (this.type === 'cdk') return this.cdkRpcService.request(method, request);
+	private callRpc<M extends keyof CdkRpcMethods>(method: M, request: CdkRpcMethods[M]['request']): Promise<CdkRpcMethods[M]['response']> {
+		if (this.type === MintType.CDK) return this.cdkRpcService.request(method, request);
 		return this.makeGrpcRequest(method, request);
 	}
 
 	/** CDK splits method limits and the mint-wide disabled flag into separate calls. */
-	private async updateCdkMethod(method: 'UpdateMintMethod' | 'UpdateMeltMethod', {disabled, ...request}: any): Promise<{}> {
-		if (disabled === undefined || Object.keys(request).length > 2) await this.cdkRpcService.request(method, request);
+	private async updateCdkMethod<M extends 'UpdateMintMethod' | 'UpdateMeltMethod'>(
+		method: M,
+		{disabled, ...request}: CdkRpcMethods[M]['request'] & {disabled?: boolean},
+	): Promise<object> {
+		const update_method = disabled === undefined || Object.keys(request).some((key) => key !== 'unit' && key !== 'method');
+		if (update_method) await this.cdkRpcService.request(method, request as CdkRpcMethods[M]['request']);
 		if (disabled === undefined) return {};
 		const flag = method === 'UpdateMintMethod' ? {mint_disabled: disabled} : {melt_disabled: disabled};
-		return this.cdkRpcService.request('UpdateDisabled', flag);
+		try {
+			return await this.cdkRpcService.request('UpdateDisabled', flag);
+		} catch (error) {
+			if (!update_method) throw error;
+			const diagnostic = error instanceof CdkRpcError ? error.details : error instanceof Error ? error.message : String(error);
+			const operation = method === 'UpdateMintMethod' ? 'minting' : 'melting';
+			throw new CdkRpcError(
+				error instanceof CdkRpcError ? error.grpc_code : status.UNKNOWN,
+				`Payment method settings saved; mint-wide ${operation} disabled flag update failed: ${diagnostic}`,
+			);
+		}
 	}
 
+	/** Adapt the typed RPC metadata for the mint info API. */
 	async getMintInfo(): Promise<CashuMintInfoRpc> {
 		const info = await this.callRpc('GetInfo', {});
-		info.description_long = info.long_description;
-		return info;
+		return {...info, description_long: info.long_description};
 	}
 
 	async getQuoteTtl(): Promise<{mint_ttl: number; melt_ttl: number}> {
-		if (this.type === 'cdk') {
+		if (this.type === MintType.CDK) {
 			const {mint_ttl, melt_ttl} = await this.cdkRpcService.request('GetQuoteTtl', {});
 			return {mint_ttl: Number(mint_ttl), melt_ttl: Number(melt_ttl)};
 		}
-		if (this.type === 'nutshell') return {mint_ttl: null, melt_ttl: null};
+		if (this.type === MintType.NUTSHELL) return {mint_ttl: null, melt_ttl: null};
 	}
 
 	async updateName({name}: {name: string | null}): Promise<{}> {
-		if (this.type === 'cdk') return this.cdkRpcService.request('UpdateName', {name: name ?? ''});
+		if (this.type === MintType.CDK) return this.cdkRpcService.request('UpdateName', {name: name ?? ''});
 		return this.makeGrpcRequest('UpdateName', {name});
 	}
 
@@ -133,7 +148,7 @@ export class CashuMintRpcService implements OnModuleInit, OnModuleDestroy {
 	}
 
 	async updateLongDescription({description}: {description: string}): Promise<{}> {
-		if (this.type === 'cdk') return this.cdkRpcService.request('UpdateLongDescription', {long_description: description});
+		if (this.type === MintType.CDK) return this.cdkRpcService.request('UpdateLongDescription', {long_description: description});
 		return this.makeGrpcRequest('UpdateLongDescription', {description});
 	}
 
@@ -172,14 +187,14 @@ export class CashuMintRpcService implements OnModuleInit, OnModuleDestroy {
 		max_amount?: number;
 		description?: boolean;
 	}): Promise<{}> {
-		const request: any = {unit, method};
+		const request: CdkRpcMethods['UpdateMintMethod']['request'] & {disabled?: boolean} = {unit, method};
 		if (disabled !== undefined) request.disabled = disabled;
 		if (min_amount !== undefined) request.min_amount = min_amount;
 		if (max_amount !== undefined) request.max_amount = max_amount;
 		if (description !== undefined) {
 			request.options = {description};
 		}
-		if (this.type === 'cdk') return this.updateCdkMethod('UpdateMintMethod', request);
+		if (this.type === MintType.CDK) return this.updateCdkMethod('UpdateMintMethod', request);
 		return this.makeGrpcRequest('UpdateNut04', request);
 	}
 
@@ -198,26 +213,26 @@ export class CashuMintRpcService implements OnModuleInit, OnModuleDestroy {
 		max_amount?: number;
 		amountless?: boolean;
 	}): Promise<{}> {
-		const request: any = {unit, method};
+		const request: CdkRpcMethods['UpdateMeltMethod']['request'] & {disabled?: boolean} = {unit, method};
 		if (disabled !== undefined) request.disabled = disabled;
 		if (min_amount !== undefined) request.min_amount = min_amount;
 		if (max_amount !== undefined) request.max_amount = max_amount;
 		if (amountless !== undefined) {
 			request.options = {amountless};
 		}
-		if (this.type === 'cdk') return this.updateCdkMethod('UpdateMeltMethod', request);
+		if (this.type === MintType.CDK) return this.updateCdkMethod('UpdateMeltMethod', request);
 		return this.makeGrpcRequest('UpdateNut05', request);
 	}
 
 	async updateQuoteTtl({mint_ttl, melt_ttl}: {mint_ttl?: number; melt_ttl?: number}): Promise<{}> {
-		const request: any = {};
+		const request: CdkRpcMethods['UpdateQuoteTtl']['request'] = {};
 		if (mint_ttl !== undefined) request.mint_ttl = mint_ttl;
 		if (melt_ttl !== undefined) request.melt_ttl = melt_ttl;
 		return this.callRpc('UpdateQuoteTtl', request);
 	}
 
 	async updateNut04Quote({quote_id, state}: {quote_id: string; state: string}): Promise<{quote_id: string; state: string}> {
-		if (this.type === 'cdk') {
+		if (this.type === MintType.CDK) {
 			await this.federationService.assertStandaloneOperation();
 			const response = await this.cdkRpcService.request('UpdateMintQuoteState', {
 				quote_id,
@@ -229,9 +244,9 @@ export class CashuMintRpcService implements OnModuleInit, OnModuleDestroy {
 	}
 
 	async updateNut05Quote({quote_id, state}: {quote_id: string; state: string}): Promise<{quote_id: string; state: string}> {
-		if (this.type === 'cdk')
+		if (this.type === MintType.CDK)
 			throw {code: OrchardErrorCode.MintSupportError, details: 'Updating melt quotes is not supported in CDK mints'};
-		if (this.type === 'nutshell') return this.makeGrpcRequest('UpdateNut05Quote', {quote_id, state});
+		if (this.type === MintType.NUTSHELL) return this.makeGrpcRequest('UpdateNut05Quote', {quote_id, state});
 	}
 
 	async rotateNextKeyset({
@@ -247,13 +262,13 @@ export class CashuMintRpcService implements OnModuleInit, OnModuleDestroy {
 		keyset_v2?: boolean;
 		final_expiry?: number | null;
 	}): Promise<{id: string; unit: string; amounts: number[]; input_fee_ppk: number}> {
-		const request: any = {unit};
+		const request: CdkRpcMethods['RotateNextKeyset']['request'] = {unit};
 		if (amounts !== undefined) request.amounts = amounts;
 		if (input_fee_ppk !== undefined) request.input_fee_ppk = input_fee_ppk;
 		if (keyset_v2 !== undefined) request.use_keyset_v2 = keyset_v2;
 		// Nullish, not undefined-only: an explicit null would encode as proto3 0 (epoch), stamping a bogus expiry.
 		if (final_expiry != null) request.final_expiry = final_expiry;
-		if (this.type === 'cdk') {
+		if (this.type === MintType.CDK) {
 			await this.federationService.assertStandaloneOperation();
 			const response = await this.cdkRpcService.request('RotateNextKeyset', request);
 			return {...response, amounts: response.amounts.map(Number), input_fee_ppk: Number(response.input_fee_ppk)};

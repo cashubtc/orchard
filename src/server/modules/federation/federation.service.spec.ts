@@ -4,7 +4,8 @@ import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {status} from '@grpc/grpc-js';
 /* Application Dependencies */
-import {CdkRpcError, CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
+import {CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
+import {CdkRpcError} from '#server/modules/cashu/cdk/classes/cdk-rpc-error.class';
 /* Native Dependencies */
 import {FederationService} from './federation.service.js';
 
@@ -47,6 +48,8 @@ describe('FederationService', () => {
 	it('recognizes a setup daemon whose status call is slow', async () => {
 		respond(new CdkRpcError(status.DEADLINE_EXCEEDED, 'Deadline exceeded'), new CdkRpcError(status.UNIMPLEMENTED, ''));
 		await expect(service.getMode()).resolves.toEqual({mode: 'setup', details: null});
+		expect(request).toHaveBeenCalledWith('GetSetupStatus', {}, 5000);
+		expect(request).toHaveBeenCalledWith('GetFederationInfo', {}, 5000);
 	});
 	it('treats a daemon without either federation service as standalone', async () => {
 		respond(absent, absent);
@@ -66,6 +69,14 @@ describe('FederationService', () => {
 		get.mockReturnValue('nutshell');
 		await expect(service.getMode()).resolves.toEqual({mode: 'standalone', details: null});
 		expect(request).not.toHaveBeenCalled();
+	});
+	it('normalizes the payment policy in federation info', async () => {
+		request.mockResolvedValue({
+			payment_observation_policy: {mint_quotes: {kind: 'PAYMENT_VERIFICATION_POLICY_KIND_UNSPECIFIED', required_observations: 2}},
+		});
+		await expect(service.getInfo()).resolves.toEqual({
+			payment_observation_policy: {mint_quotes: {kind: undefined, required_observations: 2}},
+		});
 	});
 	it('rejects standalone mutations in setup and allows them in standalone mode', async () => {
 		respond({}, absent);

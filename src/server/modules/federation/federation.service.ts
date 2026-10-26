@@ -7,7 +7,8 @@ import {status} from '@grpc/grpc-js';
 
 /* Application Dependencies */
 import type {CdkRpcMethods} from '#server/modules/cashu/cdk/cdkrpc.types';
-import {CdkRpcError, CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
+import {CdkRpcService} from '#server/modules/cashu/cdk/cdkrpc.service';
+import {CdkRpcError} from '#server/modules/cashu/cdk/classes/cdk-rpc-error.class';
 import {MintType} from '#server/modules/cashu/cashu.enums';
 
 /* Native Dependencies */
@@ -54,8 +55,8 @@ export class FederationService {
     ******************************************************** */
 
 	/** Read the current public federation configuration. */
-	public getInfo(): Promise<CdkRpcMethods['GetFederationInfo']['response']> {
-		return this.cdkRpcService.request('GetFederationInfo', {});
+	public async getInfo(): Promise<NormalizedFederation<CdkRpcMethods['GetFederationInfo']['response']>> {
+		return normalizeFederationEnums(await this.cdkRpcService.request('GetFederationInfo', {}));
 	}
 
 	/** Read local consensus and checkpoint state without contacting peers. */

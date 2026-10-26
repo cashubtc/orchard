@@ -9,16 +9,19 @@ import {loadSync, type ServiceDefinition} from '@grpc/proto-loader';
 import {CredentialService} from '#server/modules/credential/credential.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 /* Native Dependencies */
-import {CdkRpcError, CdkRpcService} from './cdkrpc.service.js';
+import {CdkRpcService} from './cdkrpc.service.js';
+import {CdkRpcError} from './classes/cdk-rpc-error.class.js';
 
 describe('CdkRpcService wire contracts', () => {
 	let server: Server;
 	let module: TestingModule;
 	let service: CdkRpcService;
 	const config: Record<string, unknown> = {};
+	const responses: Record<string, object> = {};
 	const observed: Array<{method: string; request: unknown; header: unknown[]}> = [];
 	beforeEach(async () => {
 		observed.length = 0;
+		for (const key of Object.keys(responses)) delete responses[key];
 		server = new Server();
 		const names = ['info', 'keyset', 'payment_method', 'quote', 'wallet', 'federation', 'federation_setup'];
 		const definitions = loadSync(
@@ -46,7 +49,7 @@ describe('CdkRpcService wire contracts', () => {
 							: method === 'UpdateMintQuoteState'
 								? call.request
 								: {initialized: false};
-					callback(null, response);
+					callback(null, responses[method] ?? response);
 				};
 			server.addService(definition as ServiceDefinition, handlers);
 		}
@@ -93,6 +96,46 @@ describe('CdkRpcService wire contracts', () => {
 		expect(response.participant_phase).toBe('SETUP_PARTICIPANT_PHASE_UNSPECIFIED');
 		expect(response).not.toHaveProperty('coordinator_phase');
 		expect(response).not.toHaveProperty('identity_fingerprint');
+	});
+	it('labels unknown wire enums throughout nested messages without changing numeric fields', async () => {
+		responses.GetFederationInfo = {
+			local_member_id: 13,
+			payment_observation_policy: {mint_quotes: {kind: 13, required_observations: 13}},
+		};
+		await expect(service.request('GetFederationInfo', {})).resolves.toMatchObject({
+			local_member_id: 13,
+			payment_observation_policy: {mint_quotes: {kind: 'Unknown enum (13)', required_observations: 13}},
+		});
+		responses.GetSetupStatus = {role: 13, dkg: {phase: 13, commitments: '9007199254740993'}};
+		await expect(service.request('GetSetupStatus', {})).resolves.toMatchObject({
+			role: 'Unknown enum (13)',
+			dkg: {phase: 'Unknown enum (13)', commitments: '9007199254740993'},
+		});
+		responses.GetMemberStatuses = {
+			members: [
+				{
+					member_id: 13,
+					status: {sync: {state: 13}, payment_observations: {reports: [{status: 13, context: 13, recommended_action: 13}]}},
+				},
+			],
+		};
+		await expect(service.request('GetMemberStatuses', {})).resolves.toMatchObject({
+			members: [
+				{
+					member_id: 13,
+					status: {
+						sync: {state: 'Unknown enum (13)'},
+						payment_observations: {
+							reports: [{status: 'Unknown enum (13)', context: 'Unknown enum (13)', recommended_action: 'Unknown enum (13)'}],
+						},
+					},
+				},
+			],
+		});
+		responses.GetCustodyStatus = {wallet_operator: {utxos: [{state: 13, count: '13'}], broadcast_health: 13}};
+		await expect(service.request('GetCustodyStatus', {})).resolves.toMatchObject({
+			wallet_operator: {utxos: [{state: 'Unknown enum (13)', count: '13'}], broadcast_health: 'Unknown enum (13)'},
+		});
 	});
 	it('preserves the exact upstream diagnostic and maps precondition status', async () => {
 		await expect(service.request('UpdateName', {name: 'mint'})).rejects.toMatchObject({

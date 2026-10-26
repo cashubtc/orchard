@@ -58,7 +58,8 @@ export interface cdk_mint_federation_v1_PaymentVerificationPolicyOutput {
 	kind:
 		| 'PAYMENT_VERIFICATION_POLICY_KIND_UNSPECIFIED'
 		| 'PAYMENT_VERIFICATION_POLICY_KIND_DEVELOPMENT_SINGLE_OBSERVATION'
-		| 'PAYMENT_VERIFICATION_POLICY_KIND_MEMBER_QUORUM';
+		| 'PAYMENT_VERIFICATION_POLICY_KIND_MEMBER_QUORUM'
+		| `Unknown enum (${number})`;
 	required_observations: number;
 }
 
@@ -133,7 +134,8 @@ export interface cdk_mint_federation_v1_SyncStatusOutput {
 		| 'SYNC_STATE_AWAITING_QUORUM'
 		| 'SYNC_STATE_LAGGING'
 		| 'SYNC_STATE_CATCHING_UP'
-		| 'SYNC_STATE_HALTED';
+		| 'SYNC_STATE_HALTED'
+		| `Unknown enum (${number})`;
 	ready: boolean;
 	message: string;
 	peer_member_id?: number;
@@ -303,18 +305,23 @@ export interface cdk_mint_federation_v1_PaymentObservationReport {
 
 export interface cdk_mint_federation_v1_PaymentObservationReportOutput {
 	context:
-		'PAYMENT_OBSERVATION_CONTEXT_UNSPECIFIED' | 'PAYMENT_OBSERVATION_CONTEXT_MINT_QUOTE' | 'PAYMENT_OBSERVATION_CONTEXT_MELT_QUOTE';
+		| 'PAYMENT_OBSERVATION_CONTEXT_UNSPECIFIED'
+		| 'PAYMENT_OBSERVATION_CONTEXT_MINT_QUOTE'
+		| 'PAYMENT_OBSERVATION_CONTEXT_MELT_QUOTE'
+		| `Unknown enum (${number})`;
 	quote: string;
 	status:
 		| 'PAYMENT_OBSERVATION_REPORT_STATUS_UNSPECIFIED'
 		| 'PAYMENT_OBSERVATION_REPORT_STATUS_EMPTY'
 		| 'PAYMENT_OBSERVATION_REPORT_STATUS_AWAITING_QUORUM'
 		| 'PAYMENT_OBSERVATION_REPORT_STATUS_QUORUM_REACHED'
-		| 'PAYMENT_OBSERVATION_REPORT_STATUS_CONFLICTING';
+		| 'PAYMENT_OBSERVATION_REPORT_STATUS_CONFLICTING'
+		| `Unknown enum (${number})`;
 	recommended_action:
 		| 'PAYMENT_OBSERVATION_REPORT_ACTION_UNSPECIFIED'
 		| 'PAYMENT_OBSERVATION_REPORT_ACTION_NONE'
-		| 'PAYMENT_OBSERVATION_REPORT_ACTION_INSPECT';
+		| 'PAYMENT_OBSERVATION_REPORT_ACTION_INSPECT'
+		| `Unknown enum (${number})`;
 	required: number;
 	total_observations: string;
 	quote_age_secs?: string;
@@ -432,7 +439,8 @@ export interface cdk_mint_federation_v1_DigestConflictOutput {
 		| 'DIGEST_CONFLICT_KIND_UNSPECIFIED'
 		| 'DIGEST_CONFLICT_KIND_ORDER_DIGEST'
 		| 'DIGEST_CONFLICT_KIND_CHECKPOINT_AUDIT'
-		| 'DIGEST_CONFLICT_KIND_APPLICATION_DIGEST';
+		| 'DIGEST_CONFLICT_KIND_APPLICATION_DIGEST'
+		| `Unknown enum (${number})`;
 	first_member_id: number;
 	second_member_id: number;
 	operation_count: string;
@@ -476,7 +484,8 @@ export interface cdk_mint_federation_v1_DigestAgreementOutput {
 		| 'DIGEST_AGREEMENT_STATE_UNKNOWN'
 		| 'DIGEST_AGREEMENT_STATE_CONVERGED'
 		| 'DIGEST_AGREEMENT_STATE_CONVERGING'
-		| 'DIGEST_AGREEMENT_STATE_DIVERGED';
+		| 'DIGEST_AGREEMENT_STATE_DIVERGED'
+		| `Unknown enum (${number})`;
 	compared_members: number[];
 	groups: cdk_mint_federation_v1_DigestGroupOutput[];
 	digest_alert_members: number[];
@@ -525,7 +534,8 @@ export interface cdk_mint_federation_v1_OnchainWalletSourceOutput {
 		| 'ONCHAIN_SOURCE_HEALTH_UNSPECIFIED'
 		| 'ONCHAIN_SOURCE_HEALTH_NEVER_SYNCED'
 		| 'ONCHAIN_SOURCE_HEALTH_HEALTHY'
-		| 'ONCHAIN_SOURCE_HEALTH_DEGRADED';
+		| 'ONCHAIN_SOURCE_HEALTH_DEGRADED'
+		| `Unknown enum (${number})`;
 	local_tip_height: number;
 	local_tip_hash: string;
 	last_success_unix?: string;
@@ -555,7 +565,8 @@ export interface cdk_mint_federation_v1_WalletUtxoCountOutput {
 		| 'WALLET_UTXO_STATE_RESERVED'
 		| 'WALLET_UTXO_STATE_SPENT'
 		| 'WALLET_UTXO_STATE_REORGED'
-		| 'WALLET_UTXO_STATE_QUARANTINED';
+		| 'WALLET_UTXO_STATE_QUARANTINED'
+		| `Unknown enum (${number})`;
 	count: string;
 	value_sat: string;
 }
@@ -582,7 +593,8 @@ export interface cdk_mint_federation_v1_WalletOperationPhaseCountOutput {
 		| 'WALLET_OPERATION_PHASE_BROADCAST_AUTHORIZATION'
 		| 'WALLET_OPERATION_PHASE_BROADCAST'
 		| 'WALLET_OPERATION_PHASE_CONFIRMATION'
-		| 'WALLET_OPERATION_PHASE_TERMINAL';
+		| 'WALLET_OPERATION_PHASE_TERMINAL'
+		| `Unknown enum (${number})`;
 	count: string;
 }
 
@@ -632,7 +644,8 @@ export interface cdk_mint_federation_v1_WalletOperatorStatusOutput {
 		| 'WALLET_BROADCAST_HEALTH_AWAITING_AUTHORIZATION'
 		| 'WALLET_BROADCAST_HEALTH_BROADCASTING'
 		| 'WALLET_BROADCAST_HEALTH_CONFIRMING'
-		| 'WALLET_BROADCAST_HEALTH_DEGRADED';
+		| 'WALLET_BROADCAST_HEALTH_DEGRADED'
+		| `Unknown enum (${number})`;
 	broadcast_failures: string;
 }
 
@@ -678,7 +691,8 @@ export interface cdk_mint_federation_v1_WalletRecoveryActionCountOutput {
 		| 'WALLET_RECOVERY_PHASE_BROADCAST'
 		| 'WALLET_RECOVERY_PHASE_CONFIRMATION'
 		| 'WALLET_RECOVERY_PHASE_REPLACEMENT'
-		| 'WALLET_RECOVERY_PHASE_TERMINAL';
+		| 'WALLET_RECOVERY_PHASE_TERMINAL'
+		| `Unknown enum (${number})`;
 	state: string;
 	action:
 		| 'WALLET_RECOVERY_ACTION_UNSPECIFIED'
@@ -692,7 +706,8 @@ export interface cdk_mint_federation_v1_WalletRecoveryActionCountOutput {
 		| 'WALLET_RECOVERY_ACTION_REBROADCAST_PERSISTED_TRANSACTION'
 		| 'WALLET_RECOVERY_ACTION_COLLECT_CONFIRMATION_EVIDENCE'
 		| 'WALLET_RECOVERY_ACTION_OPERATOR_REVIEW'
-		| 'WALLET_RECOVERY_ACTION_NO_OP';
+		| 'WALLET_RECOVERY_ACTION_NO_OP'
+		| `Unknown enum (${number})`;
 	count: string;
 }
 
@@ -741,7 +756,8 @@ export interface cdk_mint_federation_v1_WalletLivenessStatusOutput {
 		| 'WALLET_LIVENESS_ACTIVITY_WAITING_FOR_LEASE'
 		| 'WALLET_LIVENESS_ACTIVITY_PROPOSING'
 		| 'WALLET_LIVENESS_ACTIVITY_SIGNING'
-		| 'WALLET_LIVENESS_ACTIVITY_BACKOFF';
+		| 'WALLET_LIVENESS_ACTIVITY_BACKOFF'
+		| `Unknown enum (${number})`;
 }
 
 export interface cdk_mint_federation_v1_BarkVtxoCount {
@@ -777,7 +793,12 @@ export interface cdk_mint_federation_v1_BarkOperatorStatus {
 }
 
 export interface cdk_mint_federation_v1_BarkOperatorStatusOutput {
-	readiness: 'BARK_READINESS_UNSPECIFIED' | 'BARK_READINESS_READY' | 'BARK_READINESS_BEHIND_CONSENSUS' | 'BARK_READINESS_DEGRADED';
+	readiness:
+		| 'BARK_READINESS_UNSPECIFIED'
+		| 'BARK_READINESS_READY'
+		| 'BARK_READINESS_BEHIND_CONSENSUS'
+		| 'BARK_READINESS_DEGRADED'
+		| `Unknown enum (${number})`;
 	degraded_reason?: string;
 	accepted_frontier: string;
 	local_frontier: string;
@@ -1037,7 +1058,8 @@ export interface cdk_mint_federation_setup_v1_SetupDkgProgressOutput {
 		| 'SETUP_DKG_PHASE_FROST_ROUND_2'
 		| 'SETUP_DKG_PHASE_FROST_CONFIRMATION'
 		| 'SETUP_DKG_PHASE_COMPLETE'
-		| 'SETUP_DKG_PHASE_INVALID';
+		| 'SETUP_DKG_PHASE_INVALID'
+		| `Unknown enum (${number})`;
 	participant_states: string;
 	commitments: string;
 	reveals: string;
@@ -1111,7 +1133,7 @@ export interface cdk_mint_federation_setup_v1_GetSetupStatusResponseOutput {
 	initialized: boolean;
 	setup_id?: string;
 	member_id?: number;
-	role: 'SETUP_ROLE_UNSPECIFIED' | 'SETUP_ROLE_COORDINATOR' | 'SETUP_ROLE_MEMBER';
+	role: 'SETUP_ROLE_UNSPECIFIED' | 'SETUP_ROLE_COORDINATOR' | 'SETUP_ROLE_MEMBER' | `Unknown enum (${number})`;
 	participant_phase:
 		| 'SETUP_PARTICIPANT_PHASE_UNSPECIFIED'
 		| 'SETUP_PARTICIPANT_PHASE_IDENTITY_CREATED'
@@ -1122,14 +1144,16 @@ export interface cdk_mint_federation_setup_v1_GetSetupStatusResponseOutput {
 		| 'SETUP_PARTICIPANT_PHASE_DKG_RUNNING'
 		| 'SETUP_PARTICIPANT_PHASE_READY_TO_ACTIVATE'
 		| 'SETUP_PARTICIPANT_PHASE_ACTIVATED'
-		| 'SETUP_PARTICIPANT_PHASE_ABORTED';
+		| 'SETUP_PARTICIPANT_PHASE_ABORTED'
+		| `Unknown enum (${number})`;
 	coordinator_phase?:
 		| 'SETUP_COORDINATOR_PHASE_UNSPECIFIED'
 		| 'SETUP_COORDINATOR_PHASE_COLLECTING_ENROLLMENTS'
 		| 'SETUP_COORDINATOR_PHASE_PROPOSAL_PUBLISHED'
 		| 'SETUP_COORDINATOR_PHASE_CERTIFIED'
 		| 'SETUP_COORDINATOR_PHASE_CLOSED'
-		| 'SETUP_COORDINATOR_PHASE_ABORTED';
+		| 'SETUP_COORDINATOR_PHASE_ABORTED'
+		| `Unknown enum (${number})`;
 	member_count: number;
 	enrolled_members: number[];
 	missing_enrollments: number[];
@@ -1563,7 +1587,12 @@ export interface cdk_mint_quote_v1_UpdateMintQuoteStateRequest {
 
 export interface cdk_mint_quote_v1_UpdateMintQuoteStateRequestOutput {
 	quote_id: string;
-	state: 'MINT_QUOTE_STATE_UNSPECIFIED' | 'MINT_QUOTE_STATE_UNPAID' | 'MINT_QUOTE_STATE_PAID' | 'MINT_QUOTE_STATE_ISSUED';
+	state:
+		| 'MINT_QUOTE_STATE_UNSPECIFIED'
+		| 'MINT_QUOTE_STATE_UNPAID'
+		| 'MINT_QUOTE_STATE_PAID'
+		| 'MINT_QUOTE_STATE_ISSUED'
+		| `Unknown enum (${number})`;
 }
 
 export interface cdk_mint_quote_v1_UpdateMintQuoteStateResponse {
@@ -1573,7 +1602,12 @@ export interface cdk_mint_quote_v1_UpdateMintQuoteStateResponse {
 
 export interface cdk_mint_quote_v1_UpdateMintQuoteStateResponseOutput {
 	quote_id: string;
-	state: 'MINT_QUOTE_STATE_UNSPECIFIED' | 'MINT_QUOTE_STATE_UNPAID' | 'MINT_QUOTE_STATE_PAID' | 'MINT_QUOTE_STATE_ISSUED';
+	state:
+		| 'MINT_QUOTE_STATE_UNSPECIFIED'
+		| 'MINT_QUOTE_STATE_UNPAID'
+		| 'MINT_QUOTE_STATE_PAID'
+		| 'MINT_QUOTE_STATE_ISSUED'
+		| `Unknown enum (${number})`;
 }
 
 export interface cdk_mint_wallet_v1_CreateDepositAddressRequest {}
@@ -1709,7 +1743,7 @@ export interface cdk_mint_wallet_v1_WalletAddress {
 
 export interface cdk_mint_wallet_v1_WalletAddressOutput {
 	address: string;
-	keychain: 'KEYCHAIN_KIND_UNSPECIFIED' | 'KEYCHAIN_KIND_EXTERNAL' | 'KEYCHAIN_KIND_INTERNAL';
+	keychain: 'KEYCHAIN_KIND_UNSPECIFIED' | 'KEYCHAIN_KIND_EXTERNAL' | 'KEYCHAIN_KIND_INTERNAL' | `Unknown enum (${number})`;
 	derivation_index: number;
 	used: boolean;
 	balance_sat: string;
