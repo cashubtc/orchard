@@ -37,7 +37,7 @@
 			></orc-index-subsection-dashboard-bitcoin-enabled>
 		} @else {
 			<orc-index-subsection-dashboard-bitcoin-disabled
-				(navigate)="onNavigate('bitcoin')"
+				(navigate)="onNavigate('settings/services')"
 			></orc-index-subsection-dashboard-bitcoin-disabled>
 		}
 		@if (errors_bitcoin.length > 0) {
@@ -76,7 +76,7 @@
 			></orc-index-subsection-dashboard-lightning-enabled>
 		} @else {
 			<orc-index-subsection-dashboard-lightning-disabled
-				(navigate)="onNavigate('lightning')"
+				(navigate)="onNavigate('settings/services')"
 			></orc-index-subsection-dashboard-lightning-disabled>
 		}
 		@if (errors_lightning.length > 0) {
@@ -136,7 +136,9 @@
 				(period_change)="onMintActivityPeriodChange($event)"
 			></orc-index-subsection-dashboard-mint-enabled>
 		} @else {
-			<orc-index-subsection-dashboard-mint-disabled (navigate)="onNavigate('mint')"></orc-index-subsection-dashboard-mint-disabled>
+			<orc-index-subsection-dashboard-mint-disabled
+				(navigate)="onNavigate('settings/services')"
+			></orc-index-subsection-dashboard-mint-disabled>
 		}
 		@if (errors_mint.length > 0) {
 			<div animate.enter="orc-animation-fadein" class="index-section-error">

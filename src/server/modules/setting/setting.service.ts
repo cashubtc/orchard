@@ -2,18 +2,18 @@
 import {Injectable, Logger, type OnModuleInit} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {ConfigService} from '@nestjs/config';
+
 /* Vendor Dependencies */
 import {EntityManager, Repository} from 'typeorm';
-/* Application Dependencies */
-import {SERVICE_SETTING_KEYS} from '#server/modules/service-config/constants/service-config.constants';
+
 /* Local Dependencies */
 import {Setting} from './setting.entity.js';
 import {DEFAULT_SETTINGS} from './setting.config.js';
 import {SettingKey} from './setting.enums.js';
+import type {StoredSettingKey} from './setting.types.js';
 import {
 	isSettingSensitive,
 	isEncrypted,
-	maskSensitiveValue,
 	deriveEncryptionKey,
 	deriveEncryptionKeyFromHex,
 	encryptValue,
@@ -142,10 +142,12 @@ export class SettingService implements OnModuleInit {
 	 * Get all settings
 	 * @returns {Promise<Setting[]>} All settings with decrypted values
 	 */
-	public async getSettings(): Promise<Setting[]> {
-		const valid_keys = new Set(Object.values(SettingKey));
+	public async getSettings<K extends StoredSettingKey = SettingKey>(
+		keys: readonly K[] = Object.values(SettingKey) as K[],
+	): Promise<Setting<K>[]> {
+		const valid_keys = new Set<StoredSettingKey>(keys);
 		const settings = await this.settingRepository.find();
-		return settings.filter((s) => valid_keys.has(s.key)).map((s) => this.decryptSetting(s));
+		return settings.filter((s): s is Setting<K> => valid_keys.has(s.key)).map((s) => this.decryptSetting(s));
 	}
 
 	/**
@@ -153,7 +155,7 @@ export class SettingService implements OnModuleInit {
 	 * @param {SettingKey} key - The setting key to get
 	 * @returns {Promise<Setting>} The setting with decrypted value
 	 */
-	public async getSetting(key: SettingKey): Promise<Setting> {
+	public async getSetting(key: StoredSettingKey): Promise<Setting> {
 		const setting = await this.settingRepository.findOne({where: {key}});
 		return setting ? this.decryptSetting(setting) : setting;
 	}
@@ -163,7 +165,7 @@ export class SettingService implements OnModuleInit {
 	 * @param {SettingKey} key - The setting key to get
 	 * @returns {Promise<boolean>} The parsed boolean value, false if missing or empty
 	 */
-	public async getBooleanSetting(key: SettingKey): Promise<boolean> {
+	public async getBooleanSetting(key: StoredSettingKey): Promise<boolean> {
 		const setting = await this.getSetting(key);
 		if (!setting?.value) return false;
 		return parseSettingValue(setting) === true;
@@ -174,7 +176,7 @@ export class SettingService implements OnModuleInit {
 	 * @param {SettingKey} key - The setting key to get
 	 * @returns {Promise<string | null>} The string value, null if missing or empty
 	 */
-	public async getStringSetting(key: SettingKey): Promise<string | null> {
+	public async getStringSetting(key: StoredSettingKey): Promise<string | null> {
 		const setting = await this.getSetting(key);
 		if (!setting?.value) return null;
 		return String(parseSettingValue(setting)) || null;
@@ -185,7 +187,7 @@ export class SettingService implements OnModuleInit {
 	 * @param {SettingKey} key - The setting key to get
 	 * @returns {Promise<number | null>} The parsed number value, null if missing, empty, or NaN
 	 */
-	public async getNumberSetting(key: SettingKey): Promise<number | null> {
+	public async getNumberSetting(key: StoredSettingKey): Promise<number | null> {
 		const setting = await this.getSetting(key);
 		if (!setting?.value) return null;
 		const parsed = parseSettingValue(setting);
@@ -202,9 +204,9 @@ export class SettingService implements OnModuleInit {
 	 * @param {string[]} values - The new values for the settings
 	 * @returns {Promise<Setting[]>} The updated settings with decrypted values
 	 */
-	public async updateSettings(keys: SettingKey[], values: string[]): Promise<Setting[]> {
+	public async updateSettings<K extends StoredSettingKey>(keys: K[], values: string[]): Promise<Setting<K>[]> {
 		return this.settingRepository.manager.transaction(async (manager) => {
-			const results: Setting[] = [];
+			const results: Setting<K>[] = [];
 			for (let i = 0; i < keys.length; i++) {
 				results.push(await this.updateSetting(keys[i], values[i], manager));
 			}
@@ -219,7 +221,7 @@ export class SettingService implements OnModuleInit {
 	 * @param {EntityManager} manager - Optional transactional entity manager
 	 * @returns {Promise<Setting>} The updated setting with decrypted value
 	 */
-	private async updateSetting(key: SettingKey, value: string, manager?: EntityManager): Promise<Setting> {
+	private async updateSetting<K extends StoredSettingKey>(key: K, value: string, manager?: EntityManager): Promise<Setting<K>> {
 		const repo = manager ? manager.getRepository(Setting) : this.settingRepository;
 		const setting = await repo.findOne({
 			where: {key},
@@ -227,13 +229,8 @@ export class SettingService implements OnModuleInit {
 		if (!setting) throw new Error(`Setting with key ${key} not found`);
 		setting.value = this.encryptIfSensitive(key, value);
 		const updated_setting = await repo.save(setting);
-		const log_value = SERVICE_SETTING_KEYS.has(key)
-			? '[configured]'
-			: isSettingSensitive(key, value)
-				? maskSensitiveValue(value)
-				: value;
-		this.logger.debug(`Updated setting: ${key} = ${log_value}`);
-		return this.decryptSetting(updated_setting);
+		this.logger.debug(`Updated setting: ${key}`);
+		return this.decryptSetting({...updated_setting, key});
 	}
 
 	/* *******************************************************
@@ -246,7 +243,7 @@ export class SettingService implements OnModuleInit {
 	 * @param {Setting} setting - The setting from the database
 	 * @returns {Setting} A copy with decrypted value
 	 */
-	private decryptSetting(setting: Setting): Setting {
+	private decryptSetting<K extends StoredSettingKey>(setting: Setting<K>): Setting<K> {
 		if (!this.encryption_key) return setting;
 		try {
 			return {
@@ -266,7 +263,7 @@ export class SettingService implements OnModuleInit {
 	 * @param {string} value - The plaintext value
 	 * @returns {string} The encrypted value or the original value
 	 */
-	private encryptIfSensitive(key: SettingKey, value: string): string {
+	private encryptIfSensitive(key: StoredSettingKey, value: string): string {
 		if (!this.encryption_key) return value;
 		if (!value) return value;
 		if (!isSettingSensitive(key, value)) return value;

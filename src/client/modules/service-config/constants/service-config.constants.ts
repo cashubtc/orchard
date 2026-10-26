@@ -64,3 +64,26 @@ export const SERVICE_STATUS_LABELS: Record<string, string> = {
 	not_tested: 'Not tested',
 	not_configured: 'Not configured',
 };
+export const SERVICE_STATUS_ICONS: Record<string, string> = {
+	connected: 'task_alt',
+	warning: 'warning',
+	unreachable: 'warning',
+	not_tested: 'circle',
+	not_configured: 'circle',
+};
+export const SERVICE_MODE_LABELS: Record<string, string> = {
+	member: 'Federation member',
+	standalone: 'Standalone mint',
+	setup: 'Federation setup',
+	unreachable: 'Unreachable',
+};
+const SERVICE_MTLS_CAPTION =
+	'Mutual TLS uses a CA certificate, client certificate and client key. Paste a PEM or enter a file path. Pasted keys are stored encrypted.';
+// Keyed by implementation, like the default ports
+export const SERVICE_CREDENTIAL_CAPTIONS: Record<string, string> = {
+	core: 'The password is stored encrypted.',
+	lnd: 'Paste the macaroon as hex or the certificate as PEM, or enter a file path. Pasted values are stored encrypted.',
+	cln: SERVICE_MTLS_CAPTION,
+	cdk: SERVICE_MTLS_CAPTION,
+	nutshell: SERVICE_MTLS_CAPTION,
+};

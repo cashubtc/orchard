@@ -1,4 +1,5 @@
 /* Core Dependencies */
+import type {Client} from '@grpc/grpc-js';
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
@@ -82,6 +83,17 @@ describe('LightningService', () => {
 		await expect(lightningService.getLightningInfo()).resolves.toEqual({version: 'v2'});
 		await expect(lightningService.getLightningChannelBalance()).resolves.toEqual({balance: '0'});
 		await expect(lightningService.getLightningRequest('str')).resolves.toEqual({valid: true});
+	});
+
+	it('leaves shared CLN transport ownership with ClnService during reload and shutdown', async () => {
+		const close = jest.fn();
+		const client = {getChannel: () => ({close})} as unknown as Client;
+		clnService.initializeLightningClient.mockReturnValue(client);
+		configService.get.mockReturnValue('cln');
+		lightningService.reinitialize();
+		lightningService.reinitialize();
+		lightningService.onModuleDestroy();
+		expect(close).not.toHaveBeenCalled();
 	});
 
 	it('maps UNAVAILABLE error to connection code', async () => {

@@ -1,12 +1,14 @@
 /* Vendor Dependencies */
 import {Entity, Column, PrimaryColumn} from 'typeorm';
+
 /* Local Dependencies */
-import {SettingKey, SettingValue} from './setting.enums.js';
+import {SettingValue} from './setting.enums.js';
+import type {StoredSettingKey} from './setting.types.js';
 
 @Entity('settings')
-export class Setting {
+export class Setting<K extends StoredSettingKey = StoredSettingKey> {
 	@PrimaryColumn({type: 'varchar', length: 100})
-	key: SettingKey; // unique setting key
+	key: K; // unique setting key
 
 	@Column({type: 'text'})
 	value: string; // JSON-serialized value for flexibility

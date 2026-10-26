@@ -29,9 +29,15 @@ import {ServiceFieldError} from '#server/modules/service-config/classes/service-
 import {
 	SERVICE_DEFINITIONS,
 	SERVICE_FAILURE_TITLES,
+	SERVICE_TLS_FAILURE_TITLE,
 	CONNECTION_TIMEOUT_MS,
 } from '#server/modules/service-config/constants/service-config.constants';
-import {connectionConfig, diagnosticFields, redactDiagnostic} from '#server/modules/service-config/helpers/service-config.helpers';
+import {
+	connectionConfig,
+	diagnosticFields,
+	redactDiagnostic,
+	isTlsDiagnostic,
+} from '#server/modules/service-config/helpers/service-config.helpers';
 import type {
 	ConnectionCheck,
 	ConnectionValues,
@@ -77,22 +83,28 @@ export class ServiceTestService {
 			chain: null,
 			chain_match: null,
 			mode: null,
+			bitcoin_version: null,
+			bitcoin_blocks: null,
+			mint_member_id: null,
+			mint_member_count: null,
 		};
 		try {
 			this.validate(values, service);
-			if (service === 'bitcoin') result.chain = await this.testBitcoin(config);
+			if (service === 'bitcoin') Object.assign(result, await this.testBitcoin(config));
 			if (service === 'lightning') {
 				result.chain = await this.testLightning(config, values);
 				await this.compareBitcoinChain(result);
 			}
 			if (service === 'mint') {
-				result.mode = await this.testMint(config, values);
+				Object.assign(result, await this.testMint(config, values));
 				if (values.database) await this.checkMintDatabase(config, result, secrets);
 			}
 		} catch (error) {
 			result.ok = false;
-			result.title = SERVICE_FAILURE_TITLES[service];
 			result.diagnostic = redactDiagnostic(error, secrets);
+			const tls_failure =
+				isTlsDiagnostic(result.diagnostic) || (error instanceof ServiceFieldError && ['ca', 'cert', 'key'].includes(error.field));
+			result.title = tls_failure ? SERVICE_TLS_FAILURE_TITLE : SERVICE_FAILURE_TITLES[service];
 			result.fields = error instanceof ServiceFieldError ? [error.field] : diagnosticFields(result.diagnostic, service);
 		}
 		return result;
@@ -164,11 +176,24 @@ export class ServiceTestService {
 	}
 
 	/** Read the actual Bitcoin network through the same HTTP/proxy transport as normal RPCs. */
-	private async testBitcoin(config: ConfigService): Promise<string> {
+	private async testBitcoin(
+		config: ConfigService,
+		include_version = true,
+	): Promise<Pick<ConnectionCheck, 'chain' | 'bitcoin_version' | 'bitcoin_blocks'>> {
 		const core = new CoreService(config, this.fetchService);
 		core.initializeRpc();
-		const info: {chain: string} = await core.makeRpcRequest('getblockchaininfo', [], CONNECTION_TIMEOUT_MS);
-		return info.chain;
+		const [info, network] = await Promise.all([
+			core.makeRpcRequest('getblockchaininfo', [], CONNECTION_TIMEOUT_MS) as Promise<{chain: string; blocks?: number}>,
+			// The version is cosmetic; a node that whitelists RPCs may refuse getnetworkinfo
+			include_version
+				? (core.makeRpcRequest('getnetworkinfo', [], CONNECTION_TIMEOUT_MS) as Promise<{subversion?: string}>).catch(() => null)
+				: Promise.resolve(null),
+		]);
+		return {
+			chain: info.chain,
+			bitcoin_blocks: info.blocks ?? null,
+			bitcoin_version: network?.subversion?.match(/\/Satoshi:([^/]+)\//)?.[1] ?? network?.subversion ?? null,
+		};
 	}
 
 	/** Test LND or CLN and always release the temporary channel. */
@@ -189,7 +214,7 @@ export class ServiceTestService {
 	private async compareBitcoinChain(result: ConnectionCheck): Promise<void> {
 		if (!this.bitcoinRpcService.isConfigured() || !result.chain) return;
 		try {
-			const chain = await this.testBitcoin(this.configService);
+			const {chain} = await this.testBitcoin(this.configService, false);
 			result.chain_match = bitcoinNetworksMatch(chain, result.chain);
 			if (result.chain_match) return;
 			result.warning = true;
@@ -203,12 +228,15 @@ export class ServiceTestService {
 	}
 
 	/** Setup daemons answer their mode probe but do not implement management GetInfo yet. */
-	private async testMint(config: ConfigService, values: ConnectionValues): Promise<string> {
+	private async testMint(
+		config: ConfigService,
+		values: ConnectionValues,
+	): Promise<Pick<ConnectionCheck, 'mode' | 'mint_member_id' | 'mint_member_count'>> {
 		if (values.type === MintType.NUTSHELL) {
 			const client = new NutshellService(config, this.credentialService).initializeGrpcClient();
 			try {
 				await this.call(client, 'GetInfo');
-				return 'standalone';
+				return {mode: 'standalone', mint_member_id: null, mint_member_count: null};
 			} finally {
 				closeGrpcChannel(client);
 			}
@@ -217,8 +245,19 @@ export class ServiceTestService {
 		try {
 			const result = await new FederationService(config, rpc).getMode();
 			if (result.mode === 'unreachable') throw new Error(result.details);
+			if (result.mode === 'member') {
+				const [, info] = await Promise.all([
+					rpc.request('GetInfo', {}, CONNECTION_TIMEOUT_MS),
+					rpc.request('GetFederationInfo', {}, CONNECTION_TIMEOUT_MS),
+				]);
+				return {
+					mode: result.mode,
+					mint_member_id: info.local_member_id ?? null,
+					mint_member_count: info.threshold_params?.member_count ?? info.members?.length ?? null,
+				};
+			}
 			if (result.mode !== 'setup') await rpc.request('GetInfo', {}, CONNECTION_TIMEOUT_MS);
-			return result.mode;
+			return {mode: result.mode, mint_member_id: null, mint_member_count: null};
 		} finally {
 			rpc.onModuleDestroy();
 		}

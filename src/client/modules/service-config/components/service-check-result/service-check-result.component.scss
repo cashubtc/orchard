@@ -12,3 +12,6 @@ pre {
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
 }
+.copy-feedback {
+	@extend %m-0;
+}

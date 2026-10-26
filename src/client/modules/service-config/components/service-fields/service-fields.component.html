@@ -1,5 +1,5 @@
 <div [formGroup]="form()" class="service-fields">
-	<mat-form-field appearance="outline">
+	<mat-form-field appearance="fill" class="orc-cold-form-field">
 		<mat-label>Implementation</mat-label>
 		<mat-select formControlName="type" (selectionChange)="onTypeChange()">
 			@for (type of descriptors[configuration().service].types; track type.value) {
@@ -8,7 +8,7 @@
 		</mat-select>
 	</mat-form-field>
 	@if (configuration().service === 'mint') {
-		<mat-form-field appearance="outline">
+		<mat-form-field appearance="fill" class="orc-cold-form-field">
 			<mat-label>Transport</mat-label>
 			<mat-select formControlName="mtls" (selectionChange)="changed.emit()">
 				<mat-option value="false">Without mTLS</mat-option><mat-option value="true">Mutual TLS</mat-option>
@@ -17,40 +17,63 @@
 	}
 	@for (field of fields(); track field.key) {
 		@if (field.heading) {
-			<h3>{{ field.heading }}</h3>
+			<h3 class="title-form-section">{{ field.heading }}</h3>
 		}
-		<mat-form-field appearance="outline">
-			<mat-label>{{ field.label }}{{ field.optional ? ' (optional)' : '' }}</mat-label>
-			@if (field.multiline) {
-				<textarea
-					matInput
-					[errorStateMatcher]="error_matcher"
-					[formControlName]="field.key"
-					[placeholder]="placeholder(field)"
-					rows="2"
-					(input)="changed.emit()"
-					autocomplete="off"
-					spellcheck="false"
-				></textarea>
-			} @else {
-				<input
-					matInput
-					[errorStateMatcher]="error_matcher"
-					[formControlName]="field.key"
-					[placeholder]="placeholder(field)"
-					[type]="field.password ? 'password' : 'text'"
-					(input)="changed.emit()"
-					autocomplete="off"
-				/>
-			}
-			@if ((field.credential || field.password) && stored(field)) {
-				<mat-hint
-					>Leave unchanged to keep it.
-					<button type="button" class="clear-field" (click)="clearField(field.key)">Clear</button></mat-hint
-				>
-			} @else if ((field.credential || field.password) && cleared(field)) {
-				<mat-hint>Cleared. Saving removes it.</mat-hint>
-			}
-		</mat-form-field>
+		<orc-form-field-dynamic [hot]="field.hot" [invalid]="field.flagged" [standalone]="false" (cancel)="resetField(field.key)">
+			<mat-form-field
+				appearance="fill"
+				class="orc-dynamic-form-field w-full"
+				[class.orc-hot-form-field]="field.hot"
+				[class.orc-cold-form-field]="!field.hot"
+			>
+				<mat-label>{{ field.label }}</mat-label>
+				@if (field.multiline) {
+					<textarea
+						matInput
+						[errorStateMatcher]="error_matcher"
+						[formControlName]="field.key"
+						[placeholder]="field.placeholder"
+						rows="2"
+						[formAutogrow]="true"
+						(input)="changed.emit()"
+						(focus)="focused.set(field.key)"
+						(blur)="focused.set(null)"
+						autocomplete="off"
+						spellcheck="false"
+					></textarea>
+				} @else {
+					<input
+						matInput
+						[errorStateMatcher]="error_matcher"
+						[formControlName]="field.key"
+						[placeholder]="field.placeholder"
+						[type]="field.password ? 'password' : 'text'"
+						(input)="changed.emit()"
+						(focus)="focused.set(field.key)"
+						(blur)="focused.set(null)"
+						[autocomplete]="field.password ? 'new-password' : 'off'"
+					/>
+				}
+				@if ((field.credential || field.password) && field.stored) {
+					<mat-hint
+						>Leave unchanged to keep it.
+						<button
+							type="button"
+							class="clear-field"
+							[disabled]="form().disabled"
+							[attr.aria-label]="'Clear ' + field.label"
+							(click)="clearField(field.key)"
+						>
+							Clear
+						</button></mat-hint
+					>
+				} @else if ((field.credential || field.password) && field.cleared) {
+					<mat-hint>Cleared. Saving removes it.</mat-hint>
+				}
+			</mat-form-field>
+		</orc-form-field-dynamic>
+		@if (field.credential_caption) {
+			<orc-form-help-text class="orc-surface-container-high-bg">{{ credential_caption() }}</orc-form-help-text>
+		}
 	}
 </div>

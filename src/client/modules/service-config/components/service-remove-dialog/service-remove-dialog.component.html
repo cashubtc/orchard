@@ -1,0 +1,15 @@
+<h2 mat-dialog-title>Remove {{ descriptor.name }}?</h2>
+<mat-dialog-content>
+	<p>Orchard disconnects from {{ endpoint }} and hides the {{ descriptor.name }} section.</p>
+	<p>Nothing changes on the node itself. Analytics already collected stay in Orchard.</p>
+	@if (configuration.service === 'lightning') {
+		<p>Your mint isn't affected. It takes payments through its own backend.</p>
+	} @else {
+		<p>Your other service connections keep working.</p>
+	}
+	<p>If your environment also sets {{ environment_prefix }}, Orchard ignores it until you add {{ descriptor.name }} again.</p>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+	<button matButton [mat-dialog-close]="false">Cancel</button>
+	<button matButton="filled" [mat-dialog-close]="true">Remove {{ descriptor.name }}</button>
+</mat-dialog-actions>

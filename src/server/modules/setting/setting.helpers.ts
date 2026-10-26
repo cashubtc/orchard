@@ -1,23 +1,28 @@
 /* Core Dependencies */
 import {createHash, hkdfSync, randomBytes, createCipheriv, createDecipheriv} from 'crypto';
+
+/* Application Dependencies */
+import {ServiceSettingKey} from '#server/modules/service-config/enums/service-config.enums';
+
 /* Local Dependencies */
 import {Setting} from './setting.entity.js';
 import {SettingKey, SettingSensitivity, SettingValue} from './setting.enums.js';
+import type {StoredSettingKey} from './setting.types.js';
 
 /**
  * Map of setting keys to their sensitivity level.
  * Settings not listed here default to NONE.
  */
-export const SETTING_SENSITIVITY: Partial<Record<SettingKey, SettingSensitivity>> = {
-	[SettingKey.SERVICE_BITCOIN_PASSWORD]: SettingSensitivity.ALWAYS,
-	[SettingKey.SERVICE_LIGHTNING_MACAROON]: SettingSensitivity.CONTENT,
-	[SettingKey.SERVICE_LIGHTNING_CERT]: SettingSensitivity.CONTENT,
-	[SettingKey.SERVICE_LIGHTNING_KEY]: SettingSensitivity.CONTENT,
-	[SettingKey.SERVICE_LIGHTNING_CA]: SettingSensitivity.CONTENT,
-	[SettingKey.SERVICE_MINT_CA]: SettingSensitivity.CONTENT,
-	[SettingKey.SERVICE_MINT_CERT]: SettingSensitivity.CONTENT,
-	[SettingKey.SERVICE_MINT_KEY]: SettingSensitivity.CONTENT,
-	[SettingKey.SERVICE_MINT_DATABASE]: SettingSensitivity.CONTENT,
+export const SETTING_SENSITIVITY: Partial<Record<StoredSettingKey, SettingSensitivity>> = {
+	[ServiceSettingKey.SERVICE_BITCOIN_PASSWORD]: SettingSensitivity.ALWAYS,
+	[ServiceSettingKey.SERVICE_LIGHTNING_MACAROON]: SettingSensitivity.CONTENT,
+	[ServiceSettingKey.SERVICE_LIGHTNING_CERT]: SettingSensitivity.CONTENT,
+	[ServiceSettingKey.SERVICE_LIGHTNING_KEY]: SettingSensitivity.CONTENT,
+	[ServiceSettingKey.SERVICE_LIGHTNING_CA]: SettingSensitivity.CONTENT,
+	[ServiceSettingKey.SERVICE_MINT_CA]: SettingSensitivity.CONTENT,
+	[ServiceSettingKey.SERVICE_MINT_CERT]: SettingSensitivity.CONTENT,
+	[ServiceSettingKey.SERVICE_MINT_KEY]: SettingSensitivity.CONTENT,
+	[ServiceSettingKey.SERVICE_MINT_DATABASE]: SettingSensitivity.CONTENT,
 	[SettingKey.AI_OPENROUTER_KEY]: SettingSensitivity.ALWAYS,
 	[SettingKey.MESSAGES_TELEGRAM_BOT_TOKEN]: SettingSensitivity.ALWAYS,
 };
@@ -38,7 +43,7 @@ export const isFilePath = (value: string): boolean => {
  * @param {SettingKey} key - The setting key
  * @returns {SettingSensitivity} The sensitivity level
  */
-export const getSettingSensitivity = (key: SettingKey): SettingSensitivity => {
+export const getSettingSensitivity = (key: StoredSettingKey): SettingSensitivity => {
 	return SETTING_SENSITIVITY[key] ?? SettingSensitivity.NONE;
 };
 
@@ -49,7 +54,7 @@ export const getSettingSensitivity = (key: SettingKey): SettingSensitivity => {
  * @param {string} value - The current value
  * @returns {boolean} True if the value should be treated as sensitive
  */
-export const isSettingSensitive = (key: SettingKey, value: string): boolean => {
+export const isSettingSensitive = (key: StoredSettingKey, value: string): boolean => {
 	const sensitivity = getSettingSensitivity(key);
 	if (sensitivity === SettingSensitivity.NONE) return false;
 	if (sensitivity === SettingSensitivity.ALWAYS) return true;

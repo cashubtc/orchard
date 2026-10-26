@@ -7,6 +7,7 @@ import {MintMetricsService} from '#server/modules/cashu/mintmetrics/mintmetrics.
 import {SettingService} from '#server/modules/setting/setting.service';
 import {isSettingSensitive} from '#server/modules/setting/setting.helpers';
 import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
+import {ClnService} from '#server/modules/lightning/cln/cln.service';
 import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
 import {LightningWalletKitService} from '#server/modules/lightning/walletkit/lnwalletkit.service';
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
@@ -19,8 +20,13 @@ import {CashuMintAnalyticsService} from '#server/modules/cashu/mintanalytics/min
 
 /* Native Dependencies */
 import {ServiceTestService} from '#server/modules/service-config/service-test.service';
-import {SERVICE_NAMES, SERVICE_DEFINITIONS, DATABASE_RECHECK_MS} from '#server/modules/service-config/constants/service-config.constants';
-import {applyServiceSettings} from '#server/modules/service-config/helpers/service-config.helpers';
+import {
+	SERVICE_NAMES,
+	SERVICE_DEFINITIONS,
+	DATABASE_RECHECK_MS,
+	SERVICE_SETTING_KEYS,
+} from '#server/modules/service-config/constants/service-config.constants';
+import {applyServiceSettings, normalizeConnectionValue} from '#server/modules/service-config/helpers/service-config.helpers';
 import type {
 	ConnectionInput,
 	ConnectionValues,
@@ -47,6 +53,7 @@ export class ServiceConfigService implements OnApplicationBootstrap {
 		private bitcoinRpcService: BitcoinRpcService,
 		private lightningService: LightningService,
 		private walletKitService: LightningWalletKitService,
+		private clnService: ClnService,
 		private mintRpcService: CashuMintRpcService,
 		private mintDatabaseService: CashuMintDatabaseService,
 		private cdkRpcService: CdkRpcService,
@@ -68,7 +75,9 @@ export class ServiceConfigService implements OnApplicationBootstrap {
 
 	/** Nonsecret runtime flags are available to authenticated users for navigation. */
 	public async getStatus(): Promise<ServiceState[]> {
-		const settings = new Map((await this.settingService.getSettings()).map((setting) => [setting.key, setting.value]));
+		const settings = new Map(
+			(await this.settingService.getSettings([...SERVICE_SETTING_KEYS])).map((setting) => [setting.key, setting.value]),
+		);
 		const database = await this.databaseAvailable();
 		return SERVICE_NAMES.map((service) => {
 			const definition = SERVICE_DEFINITIONS[service];
@@ -140,7 +149,10 @@ export class ServiceConfigService implements OnApplicationBootstrap {
 		const config = this.configService.get<IntegrationConfig>(definition.group) ?? {};
 		const values: ConnectionValues = {};
 		for (const field of definition.fields)
-			values[field.name] = input.values.find((entry) => entry.key === field.name)?.value ?? String(config[field.config] ?? '');
+			values[field.name] = normalizeConnectionValue(
+				field.name,
+				input.values.find((entry) => entry.key === field.name)?.value ?? String(config[field.config] ?? ''),
+			);
 		if (!definition.types.includes(values.type ?? '')) throw new BadRequestException('Unsupported service type');
 		if (values.api) {
 			try {
@@ -174,6 +186,7 @@ export class ServiceConfigService implements OnApplicationBootstrap {
 			// The chain is read in the background, so an unreachable node can't hold the save past a proxy's timeout
 			if (service === 'bitcoin') void this.bitcoinRpcService.reinitialize();
 			if (service === 'lightning') {
+				this.clnService.reinitialize();
 				this.lightningService.reinitialize();
 				this.walletKitService.reinitialize();
 			}

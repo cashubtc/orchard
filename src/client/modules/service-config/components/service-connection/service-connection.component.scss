@@ -1,0 +1,25 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+:host {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-1;
+}
+.environment-notice {
+	@extend %flex;
+	@extend %flex-gap-0-5;
+	@extend %font-size-s;
+	@extend %orc-outline-color;
+	mat-icon {
+		@extend %flex-shrink-0;
+	}
+}
+.connection-actions {
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-gap-0-5;
+	@extend %p-t-1;
+}
+p {
+	@extend %m-0;
+}

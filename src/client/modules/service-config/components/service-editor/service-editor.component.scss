@@ -13,22 +13,11 @@
 	@extend %p-1;
 }
 h2 {
-	margin: 0;
-	font-size: 1.25rem;
+	@extend %m-0;
+	@extend %font-size-l;
 }
 .editor-content {
 	@extend %p-1;
 	@extend %overflow-y-auto;
-	flex: 1;
-}
-.editor-footer {
-	@extend %flex;
-	@extend %flex-gap-0-5;
-	@extend %p-1;
-	flex-wrap: wrap;
-}
-.environment-notice {
-	@extend %p-1;
-	@extend %orc-corner-small;
-	@extend %orc-secondary-container-bg;
+	@extend %flex-1;
 }

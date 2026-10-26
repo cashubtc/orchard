@@ -9,32 +9,34 @@
 		<p class="orc-error-color" role="alert">{{ error() }}</p>
 		<button matButton (click)="load()">Retry</button>
 	}
-	@if (confirmation()) {
-		<p role="status">{{ confirmation() }}</p>
-	}
 	@if (!loading() && !is_admin()) {
 		<p>Service configuration is available to administrators.</p>
 	}
 	@if (is_admin()) {
 		<div class="service-list">
-			@for (service of services(); track service.service) {
+			@for (service of rows(); track service.service) {
 				<article class="service-row">
 					<mat-icon>{{ descriptors[service.service].icon }}</mat-icon>
 					<div class="service-description">
 						<h2>{{ descriptors[service.service].name }}</h2>
-						<p>{{ service.enabled ? (service.type | uppercase) : descriptors[service.service].description }}</p>
+						<p>{{ service.enabled ? service.detail : descriptors[service.service].description }}</p>
 						@if (service.source !== 'none') {
 							<span class="source-label">{{ sources[service.source] }}</span>
 						}
-						<span class="connection-status">{{ statuses[service.status] }}</span>
+						<span
+							class="connection-status"
+							[class.orc-status-active-color]="service.status === 'connected'"
+							[class.orc-status-warning-color]="service.status === 'warning'"
+							[class.orc-error-color]="service.status === 'unreachable'"
+						>
+							<mat-icon>{{ status_icons[service.status] }}</mat-icon>
+							{{ statuses[service.status] }}
+						</span>
 					</div>
 					<div class="service-actions">
 						<button matButton="tonal" [disabled]="loading()" (click)="edit(service)">
 							{{ service.enabled ? 'Edit' : 'Add' }} {{ descriptors[service.service].name }}
 						</button>
-						@if (service.enabled) {
-							<button matButton [disabled]="loading()" (click)="confirmRemove(service)">Remove</button>
-						}
 					</div>
 				</article>
 			}
@@ -57,23 +59,3 @@
 		</div>
 	}
 </section>
-<ng-template #removeDialog>
-	@if (removing(); as service) {
-		<h2 mat-dialog-title>Remove {{ descriptors[service.service].name }}?</h2>
-		<mat-dialog-content>
-			<p>Orchard will disconnect and hide the {{ descriptors[service.service].name }} section.</p>
-			<ul>
-				<li>Analytics already collected stay in Orchard.</li>
-				<li>Your node, its data and its configuration are not changed.</li>
-				<li>Environment values for this service are ignored until you add it again.</li>
-				<li>Your other service connections keep working.</li>
-			</ul>
-		</mat-dialog-content>
-		<mat-dialog-actions align="end"
-			><button matButton [mat-dialog-close]="false">Keep {{ descriptors[service.service].name }}</button
-			><button matButton="filled" [mat-dialog-close]="true">
-				Remove {{ descriptors[service.service].name }}
-			</button></mat-dialog-actions
-		>
-	}
-</ng-template>

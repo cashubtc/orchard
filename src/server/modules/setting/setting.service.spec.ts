@@ -5,6 +5,9 @@ import {getRepositoryToken} from '@nestjs/typeorm';
 import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {Repository} from 'typeorm';
+/* Application Dependencies */
+import {ServiceSettingKey} from '#server/modules/service-config/enums/service-config.enums';
+
 /* Local Dependencies */
 import {SettingService} from './setting.service.js';
 import {Setting} from './setting.entity.js';
@@ -142,6 +145,13 @@ describe('SettingService', () => {
 	 * Test getSettings method
 	 */
 	describe('getSettings', () => {
+		it('keeps internal service keys out of the public enum and default reads', async () => {
+			const internal: Setting = {...mock_setting, key: ServiceSettingKey.SERVICE_BITCOIN_PASSWORD, value: 'private-password'};
+			mock_repository.find.mockResolvedValue([internal, mock_setting]);
+			expect(Object.values(SettingKey).some((key) => key.startsWith('service.'))).toBe(false);
+			expect(await service.getSettings()).toEqual([mock_setting]);
+			expect(await service.getSettings([ServiceSettingKey.SERVICE_BITCOIN_PASSWORD])).toEqual([internal]);
+		});
 		it('should return all settings', async () => {
 			// arrange
 			const mock_settings = [mock_setting];

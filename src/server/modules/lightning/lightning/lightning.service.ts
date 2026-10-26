@@ -1,8 +1,10 @@
 /* Core Dependencies */
 import {Injectable, Logger, type OnModuleInit, type OnModuleDestroy} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
+
 /* Vendor Dependencies */
 import type {Client} from '@grpc/grpc-js';
+
 /* Application Dependencies */
 import {closeGrpcChannel} from '#server/modules/grpc/helpers/grpc-client.helpers';
 import {INTEGRATION_REQUEST_TIMEOUT_MS} from '#server/modules/integration/constants/integration.constants';
@@ -11,6 +13,7 @@ import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
 import {LightningType} from '#server/modules/lightning/lightning.enums';
 import {LndService} from '#server/modules/lightning/lnd/lnd.service';
 import {ClnService} from '#server/modules/lightning/cln/cln.service';
+
 /* Local Dependencies */
 import type {
 	LightningInfo,
@@ -75,14 +78,15 @@ export class LightningService implements OnModuleInit, OnModuleDestroy {
 			this.logger.warn(`Lightning credentials could not be loaded: ${(error as Error).message}`);
 		}
 		const previous = this.grpc_client;
+		const previous_type = this.type;
 		this.type = type;
 		this.grpc_client = client;
-		closeGrpcChannel(previous);
+		if (previous_type !== LightningType.CLN) closeGrpcChannel(previous);
 	}
 
-	/** Release this service's channel on shutdown. */
+	/** Release owned transports; ClnService owns the shared CLN channel. */
 	public onModuleDestroy(): void {
-		closeGrpcChannel(this.grpc_client);
+		if (this.type !== LightningType.CLN) closeGrpcChannel(this.grpc_client);
 	}
 
 	private makeGrpcRequest(method: string, request: any): Promise<any> {

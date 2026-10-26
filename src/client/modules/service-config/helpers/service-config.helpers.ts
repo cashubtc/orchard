@@ -7,6 +7,7 @@ import {
 	SERVICE_DEFAULT_PORTS,
 	SERVICE_DESCRIPTORS,
 	SERVICE_FIELDS,
+	SERVICE_MODE_LABELS,
 } from '@client/modules/service-config/constants/service-config.constants';
 import type {ServiceForm, ServiceField} from '@client/modules/service-config/types/service-config.types';
 /* Shared Dependencies */
@@ -33,6 +34,16 @@ export function serviceFormInput(configuration: OrchardServiceConfiguration, for
 	};
 }
 
+/** The effective configuration after a save: the submitted non-secret values, with secrets kept as presence flags. */
+export function serviceAppliedConfiguration(configuration: OrchardServiceConfiguration, form: ServiceForm): OrchardServiceConfiguration {
+	return {
+		...configuration,
+		enabled: true,
+		source: 'orchard',
+		fields: configuration.fields.map((field) => (field.secret ? field : {...field, value: form.controls[field.key].value})),
+	};
+}
+
 /** Keep the server's diagnostic and code in a failure message, since operators paste it into issues. */
 export function serviceErrorMessage(error: unknown, fallback: string): string {
 	const orchard_error = error instanceof OrchardErrors ? error.errors[0] : undefined;
@@ -50,4 +61,37 @@ export function visibleServiceFields(service: ServiceKind, type: string, mtls: s
 		keys.push('database', 'api');
 	}
 	return SERVICE_FIELDS.filter((field) => keys.includes(field.key));
+}
+
+/** Show an effective RPC endpoint without any credentials. */
+export function serviceEndpoint(configuration: OrchardServiceConfiguration): string {
+	const host = configuration.fields.find((field) => field.key === 'host')?.value;
+	const port = configuration.fields.find((field) => field.key === 'port')?.value;
+	if (!host) return 'RPC endpoint not configured';
+	const address = host.includes(':') && !host.startsWith('[') && !host.includes('://') ? `[${host}]` : host;
+	return port ? `${address}:${port}` : address;
+}
+
+/** Describe a connection using the available implementation, endpoint, mint transport, network and mint role. */
+export function serviceConfigurationDetail(
+	configuration: OrchardServiceConfiguration,
+	chain?: string | null,
+	mode?: string | null,
+): string {
+	const descriptor = SERVICE_DESCRIPTORS[configuration.service];
+	const type = descriptor.types.find((type) => type.value === configuration.type)?.label ?? configuration.type;
+	if (configuration.service !== 'mint') return [type, serviceEndpoint(configuration), chain].filter(Boolean).join(' · ');
+	const mtls = configuration.fields.find((field) => field.key === 'mtls')?.value === 'true';
+	return [type, serviceEndpoint(configuration), mtls ? 'mutual TLS' : 'without mTLS', serviceModeLabel(mode)].filter(Boolean).join(' · ');
+}
+
+/** Keep mode names readable without inventing a role when the probe has not answered. */
+export function serviceModeLabel(mode?: string | null): string {
+	if (!mode) return '';
+	return SERVICE_MODE_LABELS[mode] ?? mode;
+}
+
+/** Name the environment variables that can also configure a service. */
+export function serviceEnvironmentPrefix(service: ServiceKind): string {
+	return `${service.toUpperCase()}_*`;
 }

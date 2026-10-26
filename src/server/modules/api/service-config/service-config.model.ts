@@ -1,6 +1,7 @@
 /* Core Dependencies */
-import {Field, ObjectType, InputType, registerEnumType} from '@nestjs/graphql';
-/* Native Dependencies */
+import {Field, ObjectType, InputType, Int, registerEnumType} from '@nestjs/graphql';
+
+/* Application Dependencies */
 import type {ServiceName} from '#server/modules/service-config/types/service-config.types';
 
 export enum ServiceKind {
@@ -66,6 +67,14 @@ export class OrchardConnectionCheck {
 	chain_match: boolean | null;
 	@Field(() => String, {nullable: true})
 	mode: string | null;
+	@Field(() => String, {nullable: true, description: 'Bitcoin Core version returned by the node'})
+	bitcoin_version: string | null;
+	@Field(() => Int, {nullable: true, description: 'Current Bitcoin block height'})
+	bitcoin_blocks: number | null;
+	@Field(() => Int, {nullable: true, description: 'Local federation member identifier'})
+	mint_member_id: number | null;
+	@Field(() => Int, {nullable: true, description: 'Number of members in the federation'})
+	mint_member_count: number | null;
 }
 
 @ObjectType()

@@ -113,6 +113,11 @@ export class CrewService {
 		return this.user_observable;
 	}
 
+	/** Resolve administrator access from the same cached authenticated user everywhere. */
+	public isAdmin(): Observable<boolean> {
+		return this.loadUser().pipe(map((user) => user.role === UserRole.Admin));
+	}
+
 	public loadUsers(): Observable<User[]> {
 		if (this.users_subject.value && this.cache.isCacheValid(this.CACHE_KEYS.USERS)) return of(this.users_subject.value);
 

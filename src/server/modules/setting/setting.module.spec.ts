@@ -4,54 +4,28 @@ import {getRepositoryToken} from '@nestjs/typeorm';
 import {SettingModule} from './setting.module.js';
 import {Setting} from './setting.entity.js';
 import {SettingKey, SettingValue} from './setting.enums.js';
-import {encryptValue, deriveEncryptionKeyFromHex} from './setting.helpers.js';
+import {SettingService} from './setting.service.js';
 
-describe('SettingModule early configuration', () => {
-	it('decrypts and merges saved service settings before lifecycle initialization', async () => {
-		const crypto_key = '12'.repeat(32);
-		const rows = new Map<SettingKey, Setting>();
-		for (const [key, value] of [
-			[SettingKey.SERVICE_BITCOIN_ENABLED, 'true'],
-			[SettingKey.SERVICE_BITCOIN_TYPE, 'core'],
-			[SettingKey.SERVICE_BITCOIN_HOST, 'saved-node'],
-			[SettingKey.SERVICE_BITCOIN_PASSWORD, encryptValue('saved-password', deriveEncryptionKeyFromHex(crypto_key))],
-		] as [SettingKey, string][])
-			rows.set(key, {key, value, description: null, value_type: SettingValue.STRING});
+describe('SettingModule', () => {
+	it('initializes settings without replacing integration configuration', async () => {
 		const repository = {
-			find: async () => [...rows.values()],
-			findOne: async ({where}: {where: {key: SettingKey}}) => rows.get(where.key),
-			create: (setting: Setting) => setting,
-			save: async (setting: Setting) => {
-				rows.set(setting.key, setting);
-				return setting;
-			},
+			find: async () => [],
+			findOne: async () => ({key: SettingKey.BITCOIN_ORACLE, value: 'true', value_type: SettingValue.BOOLEAN}),
 		};
 		const module = await Test.createTestingModule({
 			imports: [
-				ConfigModule.forRoot({
-					isGlobal: true,
-					ignoreEnvFile: true,
-					load: [
-						() => ({
-							server: {crypto_key},
-							bitcoin: {type: 'core', host: 'env-node', pass: 'env-password'},
-							lightning: {},
-							cashu: {},
-						}),
-					],
-				}),
+				ConfigModule.forRoot({isGlobal: true, ignoreEnvFile: true, load: [() => ({bitcoin: {host: 'environment'}})]}),
 				SettingModule,
 			],
 		})
 			.overrideProvider(getRepositoryToken(Setting))
 			.useValue(repository)
 			.compile();
-		const config = module.get(ConfigService);
-		expect(config.get('bitcoin.host')).toBe('saved-node');
-		expect(config.get('bitcoin.pass')).toBe('saved-password');
-		expect(config.get('service_environment.bitcoin.host')).toBe('env-node');
 		await module.init();
-		expect(config.get('bitcoin.host')).toBe('saved-node');
+		const config = module.get(ConfigService);
+		expect(config.get('service_environment')).toBeUndefined();
+		expect(config.get('bitcoin.host')).toBe('environment');
+		expect(await module.get(SettingService).getBooleanSetting(SettingKey.BITCOIN_ORACLE)).toBe(true);
 		await module.close();
 	});
 });

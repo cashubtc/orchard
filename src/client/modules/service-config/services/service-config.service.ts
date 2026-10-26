@@ -1,9 +1,9 @@
 /* Core Dependencies */
-import {Injectable, inject} from '@angular/core';
+import {Injectable, inject, signal} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 
 /* Vendor Dependencies */
-import {map, switchMap, of, catchError, type Observable} from 'rxjs';
+import {map, switchMap, of, catchError, defer, shareReplay, tap, type Observable} from 'rxjs';
 
 /* Application Dependencies */
 import {ApiService} from '@client/modules/api/services/api/api.service';
@@ -24,6 +24,7 @@ import {
 	SAVE_MUTATION,
 	REMOVE_MUTATION,
 } from '@client/modules/service-config/services/service-config.queries';
+import {serviceErrorMessage} from '@client/modules/service-config/helpers/service-config.helpers';
 
 /* Shared Dependencies */
 import {
@@ -44,9 +45,12 @@ export class ServiceConfigService {
 	private readonly lightningService = inject(LightningService);
 	private readonly mintService = inject(MintService);
 
+	public readonly refresh_errors = signal<Partial<Record<ServiceKind, string | null>>>({});
+	public readonly saved_checks = signal<Partial<Record<ServiceKind, OrchardConnectionCheck>>>({});
+
 	/* *******************************************************
-        Connections
-    ******************************************************** */
+		Connections
+	******************************************************** */
 
 	/** Load administrator-only form values. */
 	public load(): Observable<OrchardServiceConfiguration[]> {
@@ -66,14 +70,42 @@ export class ServiceConfigService {
 	public save(input: ServiceConnectionInput, save_unreachable = false): Observable<OrchardConnectionCheck> {
 		return this.request<{service_configuration_save: OrchardConnectionCheck}>(SAVE_MUTATION, {input, save_unreachable}).pipe(
 			map((data) => data.service_configuration_save),
-			switchMap((result) => (result.saved ? this.refresh(input.service).pipe(map(() => result)) : of(result))),
+			tap((result) => {
+				if (result.saved) this.saved_checks.update((checks) => ({...checks, [input.service]: result}));
+			}),
+			switchMap((result) => (result.saved ? this.refreshStatus(input.service).pipe(map(() => result)) : of(result))),
+			shareReplay({bufferSize: 1, refCount: false}),
 		);
 	}
 
 	/** Disconnect one integration and refresh runtime flags. */
 	public remove(service: ServiceKind): Observable<void> {
 		return this.request<{service_configuration_remove: boolean}>(REMOVE_MUTATION, {service}).pipe(
-			switchMap(() => this.refresh(service)),
+			tap(() => this.saved_checks.update((checks) => ({...checks, [service]: undefined}))),
+			switchMap(() => this.refreshStatus(service)),
+			shareReplay({bufferSize: 1, refCount: false}),
+		);
+	}
+
+	/** Retry a failed status refresh without repeating the save or removal before it; it outlives the view that asked. */
+	public retry(service: ServiceKind): void {
+		this.refreshStatus(service).subscribe();
+	}
+
+	/** Refresh status independently of an editor, recording a failure without undoing an applied connection. */
+	private refreshStatus(service: ServiceKind): Observable<void> {
+		return defer(() => {
+			this.refresh_errors.update((errors) => ({...errors, [service]: null}));
+			return this.refresh(service);
+		}).pipe(
+			catchError((error: unknown) => {
+				this.refresh_errors.update((errors) => ({
+					...errors,
+					[service]: serviceErrorMessage(error, 'Refreshing status failed.'),
+				}));
+				return of(undefined);
+			}),
+			shareReplay({bufferSize: 1, refCount: false}),
 		);
 	}
 

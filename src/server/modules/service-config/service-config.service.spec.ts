@@ -2,8 +2,9 @@ import {Test} from '@nestjs/testing';
 import {ConfigService} from '@nestjs/config';
 import {MintMetricsService} from '#server/modules/cashu/mintmetrics/mintmetrics.service';
 import {SettingService} from '#server/modules/setting/setting.service';
-import {SettingKey} from '#server/modules/setting/setting.enums';
+import {ServiceSettingKey} from '#server/modules/service-config/enums/service-config.enums';
 import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
+import {ClnService} from '#server/modules/lightning/cln/cln.service';
 import {LightningService} from '#server/modules/lightning/lightning/lightning.service';
 import {LightningWalletKitService} from '#server/modules/lightning/walletkit/lnwalletkit.service';
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
@@ -27,14 +28,18 @@ const success: ConnectionCheck = {
 	chain: 'regtest',
 	chain_match: null,
 	mode: null,
+	bitcoin_version: null,
+	bitcoin_blocks: null,
+	mint_member_id: null,
+	mint_member_count: null,
 };
 
 describe('ServiceConfigService', () => {
 	let service: ServiceConfigService;
 	let config: ConfigService;
-	const rows = new Map<SettingKey, string>();
+	const rows = new Map<ServiceSettingKey, string>();
 	const test = jest.fn();
-	const update = jest.fn(async (keys: SettingKey[], values: string[]) => {
+	const update = jest.fn(async (keys: ServiceSettingKey[], values: string[]) => {
 		keys.forEach((key, index) => rows.set(key, values[index]));
 		return keys.map((key, index) => ({key, value: values[index]}));
 	});
@@ -75,6 +80,7 @@ describe('ServiceConfigService', () => {
 				...[
 					BitcoinRpcService,
 					LightningService,
+					ClnService,
 					LightningWalletKitService,
 					CashuMintRpcService,
 					CashuMintDatabaseService,
@@ -100,7 +106,7 @@ describe('ServiceConfigService', () => {
 	it('copies unchanged env credentials to Orchard and applies the new connection', async () => {
 		await service.save(input, false);
 		expect(test.mock.calls[0][1].password).toBe('env-secret');
-		expect(rows.get(SettingKey.SERVICE_BITCOIN_PASSWORD)).toBe('env-secret');
+		expect(rows.get(ServiceSettingKey.SERVICE_BITCOIN_PASSWORD)).toBe('env-secret');
 		expect(config.get('bitcoin.host')).toBe('new-node');
 		expect((await service.getStatus())[0].source).toBe('orchard');
 		expect(pause).not.toHaveBeenCalled();
@@ -149,10 +155,60 @@ describe('ServiceConfigService', () => {
 
 	it('removes without reactivating environment settings and clears retained credentials', async () => {
 		await service.remove('bitcoin');
-		expect(rows.get(SettingKey.SERVICE_BITCOIN_ENABLED)).toBe('false');
+		expect(rows.get(ServiceSettingKey.SERVICE_BITCOIN_ENABLED)).toBe('false');
 		expect(config.get('bitcoin.type')).toBe('');
 		expect(config.get('bitcoin.pass')).toBe('');
 		expect((await service.getStatus())[0]).toMatchObject({enabled: false, source: 'none', status: 'not_configured'});
+	});
+
+	it('normalizes submitted and persisted connection values before testing', async () => {
+		const normalized_input: ConnectionInput = {
+			service: 'bitcoin',
+			values: [
+				{key: 'type', value: ' core '},
+				{key: 'host', value: ' new-node '},
+				{key: 'port', value: ' 18443 '},
+				{key: 'user', value: ' operator '},
+				{key: 'password', value: ' keep spaces '},
+			],
+		};
+		await service.save(normalized_input, false);
+		expect(test).toHaveBeenCalledWith('bitcoin', {
+			type: 'core',
+			host: 'new-node',
+			port: '18443',
+			user: 'operator',
+			password: ' keep spaces ',
+		});
+		expect(rows.get(ServiceSettingKey.SERVICE_BITCOIN_HOST)).toBe('new-node');
+	});
+
+	it('drops env metrics for another mint but keeps database TLS for the same database', async () => {
+		config.set('service_environment.mint', {
+			type: 'cdk',
+			metrics_api: 'http://old/metrics',
+			database_ca: 'old-ca',
+			database_cert: 'old-cert',
+			database_key: 'old-key',
+		});
+		await service.save(
+			{
+				service: 'mint',
+				values: [
+					{key: 'type', value: 'cdk'},
+					{key: 'host', value: 'new-mint'},
+				],
+			},
+			false,
+		);
+		expect(config.get('cashu')).toMatchObject({
+			metrics_api: '',
+			database_ca: 'old-ca',
+			database_cert: 'old-cert',
+			database_key: 'old-key',
+		});
+		await service.remove('mint');
+		expect(config.get('cashu')).toMatchObject({type: ''});
 	});
 
 	it('rejects unknown fields before touching settings', async () => {

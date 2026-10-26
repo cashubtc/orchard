@@ -10,7 +10,7 @@
 	background: none;
 	border: 0;
 	text-decoration: underline;
-	cursor: pointer;
+	@extend %cursor-pointer;
 }
 textarea {
 	font-family: monospace;

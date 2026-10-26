@@ -59,8 +59,34 @@ describe('ClnService', () => {
 		credentialService.loadPemOrPath.mockReturnValue(Buffer.from('x'));
 		const createSsl = jest.spyOn(grpc.credentials, 'createSsl').mockReturnValue({} as any);
 		proto_loader.loadSync.mockReturnValue({});
-		grpc.loadPackageDefinition.mockReturnValue({cln: {Node: jest.fn()}});
-		clnService.initializeLightningClient();
+		const close = jest.fn();
+		const constructor = jest.fn(() => ({getChannel: () => ({close})}));
+		grpc.loadPackageDefinition.mockReturnValue({cln: {Node: constructor}});
+		const client = clnService.initializeLightningClient();
+		expect(clnService.initializeWalletKitClient()).toBe(client);
+		expect(constructor).toHaveBeenCalledTimes(1);
+		clnService.reinitialize();
+		expect(close).toHaveBeenCalledTimes(1);
+		const replacement = clnService.initializeWalletKitClient();
+		expect(replacement).not.toBe(client);
+		expect(clnService.initializeLightningClient()).toBe(replacement);
+		expect(constructor).toHaveBeenCalledTimes(2);
+		expect(proto_loader.loadSync).toHaveBeenCalledTimes(1);
+		const separate = new ClnService(configService, credentialService);
+		separate.initializeLightningClient();
+		expect(proto_loader.loadSync).toHaveBeenCalledTimes(1);
+		separate.onModuleDestroy();
+		clnService.onModuleDestroy();
+		expect(close).toHaveBeenCalledTimes(3);
+		const cwd = jest.spyOn(process, 'cwd').mockReturnValue('/different/cln-installation');
+		try {
+			const other_path = new ClnService(configService, credentialService);
+			other_path.initializeLightningClient();
+			expect(proto_loader.loadSync).toHaveBeenCalledTimes(2);
+			other_path.onModuleDestroy();
+		} finally {
+			cwd.mockRestore();
+		}
 		expect(createSsl).toHaveBeenCalled();
 		expect(proto_loader.loadSync).toHaveBeenCalled();
 		expect(grpc.loadPackageDefinition).toHaveBeenCalled();

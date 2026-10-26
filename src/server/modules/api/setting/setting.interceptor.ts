@@ -1,10 +1,11 @@
 /* Core Dependencies */
 import {Injectable, Logger, type CallHandler, type ExecutionContext, type NestInterceptor} from '@nestjs/common';
 import {Reflector} from '@nestjs/core';
+
 /* Vendor Dependencies */
 import {Observable, tap, catchError} from 'rxjs';
+
 /* Application Dependencies */
-import {SERVICE_SETTING_KEYS} from '#server/modules/service-config/constants/service-config.constants';
 import {EventLogService} from '#server/modules/event/event.service';
 import type {EventLogMetadata} from '#server/modules/event/event.decorator';
 import {
@@ -35,7 +36,6 @@ export class SettingInterceptor implements NestInterceptor {
 		if (!event_context) return next.handle();
 		const {metadata, args, actor_id, actor_type} = event_context;
 		const keys: SettingKey[] = args.keys ?? [];
-		if (keys.some((key) => SERVICE_SETTING_KEYS.has(key))) return next.handle();
 		const values: string[] = args.values ?? [];
 		const old_values = await this.fetchOldValues(keys);
 

@@ -2,6 +2,9 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
+/* Vendor Dependencies */
+import type {Client} from '@grpc/grpc-js';
+
 /* Native Dependencies */
 import {LndService} from '#server/modules/lightning/lnd/lnd.service';
 import {ClnService} from '#server/modules/lightning/cln/cln.service';
@@ -33,6 +36,16 @@ describe('LightningWalletKitService', () => {
 
 	it('should be defined', () => {
 		expect(lightningWalletKitService).toBeDefined();
+	});
+
+	it('leaves shared CLN transport ownership with ClnService during reload and shutdown', () => {
+		const close = jest.fn();
+		clnService.initializeWalletKitClient.mockReturnValue({getChannel: () => ({close})} as unknown as Client);
+		configService.get.mockReturnValue('cln');
+		lightningWalletKitService.reinitialize();
+		lightningWalletKitService.reinitialize();
+		lightningWalletKitService.onModuleDestroy();
+		expect(close).not.toHaveBeenCalled();
 	});
 
 	it('throws connection error when no client', async () => {

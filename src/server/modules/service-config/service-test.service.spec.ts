@@ -103,6 +103,50 @@ describe('ServiceTestService', () => {
 		expect(service.isValid('lightning', {...values, cert: pem, macaroon: 'aabb'})).toBe(false);
 	});
 
+	it('returns Bitcoin version and block height from bounded RPC reads', async () => {
+		const rpc = jest
+			.spyOn(CoreService.prototype, 'makeRpcRequest')
+			.mockImplementation(async (method) =>
+				method === 'getnetworkinfo' ? {subversion: '/Satoshi:28.1.0/'} : {chain: 'signet', blocks: 210000},
+			);
+		const result = await service.test('bitcoin', {type: 'core', host: 'node', port: '38332'});
+		expect(result).toMatchObject({
+			ok: true,
+			bitcoin_version: '28.1.0',
+			chain: 'signet',
+			bitcoin_blocks: 210000,
+			mint_member_id: null,
+			mint_member_count: null,
+		});
+		expect(rpc).toHaveBeenCalledWith('getnetworkinfo', [], 5000);
+	});
+
+	it('returns federation membership metadata and releases the isolated RPC client', async () => {
+		jest.spyOn(FederationService.prototype, 'getMode').mockResolvedValue({mode: 'member', details: null});
+		const info = {local_member_id: 3, threshold_params: {member_count: 5}};
+		const rpc = jest.spyOn(CdkRpcService.prototype, 'request').mockResolvedValue(info as never);
+		const close = jest.spyOn(CdkRpcService.prototype, 'onModuleDestroy');
+		expect(await service.test('mint', {type: 'cdk', host: 'mint', port: '8091'})).toMatchObject({
+			ok: true,
+			mode: 'member',
+			mint_member_id: 3,
+			mint_member_count: 5,
+		});
+		expect(rpc).toHaveBeenCalledWith('GetFederationInfo', {}, 5000);
+		expect(close).toHaveBeenCalled();
+	});
+
+	it('gives certificate failures a TLS title and preserves the upstream diagnostic', async () => {
+		const diagnostic = 'self-signed certificate in certificate chain';
+		jest.spyOn(CoreService.prototype, 'makeRpcRequest').mockRejectedValue(new Error(diagnostic));
+		expect(await service.test('bitcoin', {type: 'core', host: 'node', port: '8332'})).toMatchObject({
+			ok: false,
+			title: 'TLS connection failed',
+			diagnostic,
+			fields: ['host'],
+		});
+	});
+
 	it('flags the field Orchard rejected before contacting the node', async () => {
 		const result = await service.test('mint', {type: 'cdk', host: 'localhost', port: '99999', mtls: 'false'});
 		expect(result).toMatchObject({ok: false, diagnostic: 'Invalid RPC port', fields: ['port']});

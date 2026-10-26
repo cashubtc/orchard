@@ -1,0 +1,6 @@
+@if (error(); as error) {
+	<div class="orc-warning-card p-1 flex flex-column flex-items-start flex-gap-0-5" role="alert">
+		<p class="m-0">{{ error }}</p>
+		<button matButton type="button" [disabled]="disabled()" (click)="retry()">Retry status refresh</button>
+	</div>
+}

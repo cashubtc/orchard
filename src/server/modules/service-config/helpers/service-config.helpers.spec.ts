@@ -1,6 +1,12 @@
-import {SettingKey} from '#server/modules/setting/setting.enums';
+import {ServiceSettingKey} from '#server/modules/service-config/enums/service-config.enums';
 import {isSettingSensitive} from '#server/modules/setting/setting.helpers';
-import {connectionConfig, diagnosticFields, mergeServiceConfig} from './service-config.helpers.js';
+import {
+	connectionConfig,
+	diagnosticFields,
+	mergeServiceConfig,
+	normalizeConnectionValue,
+	redactDiagnostic,
+} from './service-config.helpers.js';
 
 describe('diagnosticFields', () => {
 	it('does not mistake a port containing 401 for an authentication failure', () => {
@@ -19,7 +25,7 @@ describe('service configuration precedence', () => {
 	const env = {type: 'core', host: 'environment', pass: 'env-password'};
 	it('uses environment until an override exists', () => expect(mergeServiceConfig('bitcoin', env, new Map())).toEqual(env));
 	it('retains removal across a fresh merge', () => {
-		expect(mergeServiceConfig('bitcoin', env, new Map([[SettingKey.SERVICE_BITCOIN_ENABLED, 'false']])).type).toBe('');
+		expect(mergeServiceConfig('bitcoin', env, new Map([[ServiceSettingKey.SERVICE_BITCOIN_ENABLED, 'false']])).type).toBe('');
 	});
 	it('uses saved blanks as deliberate overrides', () => {
 		expect(
@@ -27,8 +33,8 @@ describe('service configuration precedence', () => {
 				'bitcoin',
 				env,
 				new Map([
-					[SettingKey.SERVICE_BITCOIN_ENABLED, 'true'],
-					[SettingKey.SERVICE_BITCOIN_TYPE, 'core'],
+					[ServiceSettingKey.SERVICE_BITCOIN_ENABLED, 'true'],
+					[ServiceSettingKey.SERVICE_BITCOIN_TYPE, 'core'],
 				]),
 			).pass,
 		).toBe('');
@@ -51,9 +57,76 @@ describe('service configuration precedence', () => {
 		}
 	});
 	it('encrypts passwords and pasted credentials, but permits credential paths', () => {
-		expect(isSettingSensitive(SettingKey.SERVICE_BITCOIN_PASSWORD, '/still-a-password')).toBe(true);
-		expect(isSettingSensitive(SettingKey.SERVICE_LIGHTNING_CERT, '-----BEGIN CERTIFICATE-----')).toBe(true);
-		expect(isSettingSensitive(SettingKey.SERVICE_LIGHTNING_CERT, '/cert.pem')).toBe(false);
-		expect(isSettingSensitive(SettingKey.SERVICE_MINT_DATABASE, 'postgres://user:password@db/mint')).toBe(true);
+		expect(isSettingSensitive(ServiceSettingKey.SERVICE_BITCOIN_PASSWORD, '/still-a-password')).toBe(true);
+		expect(isSettingSensitive(ServiceSettingKey.SERVICE_LIGHTNING_CERT, '-----BEGIN CERTIFICATE-----')).toBe(true);
+		expect(isSettingSensitive(ServiceSettingKey.SERVICE_LIGHTNING_CERT, '/cert.pem')).toBe(false);
+		expect(isSettingSensitive(ServiceSettingKey.SERVICE_MINT_DATABASE, 'postgres://user:password@db/mint')).toBe(true);
+	});
+});
+
+describe('connection normalization', () => {
+	it('trims addresses, usernames, URLs and paths without changing PEM content or passwords', () => {
+		const pem = '  -----BEGIN CERTIFICATE-----\nabc\n-----END CERTIFICATE-----\n';
+		expect(normalizeConnectionValue('cert', pem)).toBe(pem);
+		expect(normalizeConnectionValue('cert', '  /tmp/cert.pem  ')).toBe('/tmp/cert.pem');
+		expect(normalizeConnectionValue('password', ' pass ')).toBe(' pass ');
+		expect(connectionConfig('bitcoin', {host: ' node ', user: ' user ', port: ' 8332 '})).toMatchObject({
+			host: 'node',
+			user: 'user',
+			port: '8332',
+		});
+		expect(connectionConfig('mint', {api: ' https://mint.test ', database: ' /data/mint.db '})).toMatchObject({
+			api: 'https://mint.test',
+			database: '/data/mint.db',
+		});
+	});
+	describe('environment-only mint metrics and database TLS', () => {
+		const environment = {
+			type: 'cdk',
+			rpc_host: 'mint',
+			rpc_port: '8086',
+			database: 'postgres://mint-db/mint',
+			metrics_api: 'http://mint/metrics',
+			database_ca: 'ca',
+			database_cert: 'cert',
+			database_key: 'key',
+		};
+		const stored = (values: Record<string, string>): Map<ServiceSettingKey, string> =>
+			new Map([
+				[ServiceSettingKey.SERVICE_MINT_ENABLED, 'true'],
+				[ServiceSettingKey.SERVICE_MINT_TYPE, 'cdk'],
+				[ServiceSettingKey.SERVICE_MINT_HOST, values.host ?? 'mint'],
+				[ServiceSettingKey.SERVICE_MINT_PORT, values.port ?? '8086'],
+				[ServiceSettingKey.SERVICE_MINT_DATABASE, values.database ?? 'postgres://mint-db/mint'],
+			]);
+		it('keeps them when the override points at the same mint and database', () => {
+			expect(mergeServiceConfig('mint', environment, stored({}))).toMatchObject({
+				metrics_api: 'http://mint/metrics',
+				database_ca: 'ca',
+				database_cert: 'cert',
+				database_key: 'key',
+			});
+		});
+		it('drops metrics for another mint and database TLS for another database', () => {
+			expect(mergeServiceConfig('mint', environment, stored({host: 'other-mint'}))).toMatchObject({
+				metrics_api: '',
+				database_ca: 'ca',
+			});
+			expect(mergeServiceConfig('mint', environment, stored({database: '/data/other.sqlite'}))).toMatchObject({
+				metrics_api: 'http://mint/metrics',
+				database_ca: '',
+				database_cert: '',
+				database_key: '',
+			});
+		});
+	});
+});
+
+describe('redactDiagnostic', () => {
+	it('keeps short-secret substrings readable while removing longer secrets and database credentials', () => {
+		const error = new Error('password bypass failed; pass; very-private; postgres://u:p@db/mint');
+		expect(redactDiagnostic(error, ['pass', 'very-private', ''])).toBe(
+			'password bypass failed; pass; [redacted]; postgres://[redacted]@db/mint',
+		);
 	});
 });

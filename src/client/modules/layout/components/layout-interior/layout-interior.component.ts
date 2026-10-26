@@ -92,7 +92,9 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	public active_event = signal<EventData | null>(null);
 	public online_bitcoin = signal<boolean>(false);
 	public online_lightning = signal<boolean>(false);
-	public online_mint = signal<boolean>(false);
+	public readonly online_mint = computed(
+		() => this.enabled_mint() && (this.federation_service.mode() === 'setup' || this.mint_info_online()),
+	);
 	public syncing_bitcoin = signal<boolean>(false);
 	public syncing_lightning = signal<boolean>(false);
 	public block_count = signal<number>(0);
@@ -135,6 +137,15 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 	private ai_initialized: boolean = false;
 	private connection_subscriptions = new Subscription();
 	private bitcoin_polling_active: boolean = false;
+	private readonly mint_info_online = signal<boolean>(false);
+	// Compared flag by flag, so a status refresh with unchanged flags doesn't restart polling
+	private readonly connection_flags = computed<boolean[]>(
+		() => {
+			const config = this.configService.config;
+			return [config.bitcoin.enabled, config.lightning.enabled, config.mint.enabled, config.mint.public_api];
+		},
+		{equal: (previous, next) => previous.every((flag, index) => flag === next[index])},
+	);
 
 	constructor() {
 		this.ai_enabled.set(this.settingAppService.getSetting('ai_enabled').value);
@@ -142,14 +153,14 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 		this.ai_favorites.set(this.settingDeviceService.getAiFavorites());
 		// Restart connection polling whenever the server's service flags change
 		effect(() => {
-			this.configService.config;
+			this.connection_flags();
 			untracked(() => {
 				this.connection_subscriptions.unsubscribe();
 				this.connection_subscriptions = new Subscription();
 				this.bitcoin_polling_active = false;
 				this.online_bitcoin.set(false);
 				this.online_lightning.set(false);
-				this.online_mint.set(false);
+				this.mint_info_online.set(false);
 				this.orchardOptionalInit();
 			});
 		});
@@ -336,11 +347,11 @@ export class LayoutInteriorComponent implements OnInit, OnDestroy {
 		return this.mintService.mint_info$.subscribe({
 			next: (info: MintInfo | null) => {
 				if (info === undefined) return;
-				this.online_mint.set(info !== null ? true : false);
+				this.mint_info_online.set(info !== null ? true : false);
 			},
 			error: (error) => {
 				console.error(error);
-				this.online_mint.set(false);
+				this.mint_info_online.set(false);
 			},
 		});
 	}

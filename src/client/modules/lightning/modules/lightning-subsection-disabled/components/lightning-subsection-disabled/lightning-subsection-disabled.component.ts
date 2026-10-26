@@ -8,6 +8,4 @@ import {ChangeDetectionStrategy, Component} from '@angular/core';
 	styleUrl: './lightning-subsection-disabled.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LightningSubsectionDisabledComponent {
-	public readonly docs_link = 'https://docs.orchard.space/install/configuration/#lightning'; // Official Lightning configuration docs URL.
-}
+export class LightningSubsectionDisabledComponent {}

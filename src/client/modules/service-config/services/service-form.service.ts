@@ -19,16 +19,16 @@ export class ServiceFormService {
 	private readonly destroy_ref = inject(DestroyRef);
 
 	public readonly result = signal<OrchardConnectionCheck | null>(null);
-	public readonly busy = signal(false);
+	public readonly busy = signal<boolean>(false);
 	public readonly error = signal<string | null>(null);
-	public readonly saved = signal(false);
+	public readonly saved = signal<boolean>(false);
 
 	private configuration!: OrchardServiceConfiguration;
 	private form!: ServiceForm;
 
 	/* *******************************************************
-        Form lifecycle
-    ******************************************************** */
+		Form lifecycle
+	******************************************************** */
 
 	/** Start an isolated editor using the effective values and secret presence flags. */
 	public initialize(configuration: OrchardServiceConfiguration): ServiceForm {

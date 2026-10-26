@@ -1,5 +1,5 @@
-/* Application Dependencies */
-import type {SettingKey} from '#server/modules/setting/setting.enums';
+/* Native Dependencies */
+import type {ServiceSettingKey} from '#server/modules/service-config/enums/service-config.enums';
 
 export type ServiceName = 'bitcoin' | 'lightning' | 'mint';
 export type ServiceFieldName =
@@ -11,9 +11,9 @@ export type IntegrationConfig = Record<string, string | boolean>;
 export type ServiceEnvironment = Record<ServiceName, IntegrationConfig>;
 export type ServiceDefinition = {
 	group: string;
-	enabled_key: SettingKey;
+	enabled_key: ServiceSettingKey;
 	types: string[];
-	fields: {name: ServiceFieldName; config: string; key: SettingKey}[];
+	fields: {name: ServiceFieldName; config: string; key: ServiceSettingKey}[];
 };
 export type ConnectionCheck = {
 	ok: boolean;
@@ -26,6 +26,10 @@ export type ConnectionCheck = {
 	chain: string | null;
 	chain_match: boolean | null;
 	mode: string | null;
+	bitcoin_version: string | null;
+	bitcoin_blocks: number | null;
+	mint_member_id: number | null;
+	mint_member_count: number | null;
 };
 export type ServiceState = {
 	service: ServiceName;

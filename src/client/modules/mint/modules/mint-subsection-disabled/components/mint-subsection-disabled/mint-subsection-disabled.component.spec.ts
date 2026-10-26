@@ -1,5 +1,6 @@
 /* Core Dependencies */
 import {ComponentFixture, TestBed} from '@angular/core/testing';
+import {Router, provideRouter, type UrlTree} from '@angular/router';
 /* Native Dependencies */
 import {OrcMintSubsectionDisabledModule} from '@client/modules/mint/modules/mint-subsection-disabled/mint-subsection-disabled.module';
 /* Local Dependencies */
@@ -11,6 +12,7 @@ describe('MintSubsectionDisabledComponent', () => {
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
+			providers: [provideRouter([])],
 			imports: [OrcMintSubsectionDisabledModule],
 		}).compileComponents();
 
@@ -19,7 +21,11 @@ describe('MintSubsectionDisabledComponent', () => {
 		fixture.detectChanges();
 	});
 
-	it('should create', () => {
+	it('links to service settings', () => {
 		expect(component).toBeTruthy();
+		const router = TestBed.inject(Router);
+		const navigate = spyOn(router, 'navigateByUrl').and.resolveTo(true);
+		fixture.nativeElement.querySelector('button').click();
+		expect(router.serializeUrl(navigate.calls.mostRecent().args[0] as UrlTree)).toBe('/settings/services');
 	});
 });

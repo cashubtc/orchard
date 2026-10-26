@@ -1,10 +1,12 @@
 /* Core Dependencies */
 import type {ConfigService} from '@nestjs/config';
+
 /* Application Dependencies */
 import {replaceLocalhostInDocker} from '#server/config/configuration';
-import type {SettingKey} from '#server/modules/setting/setting.enums';
+import type {StoredSettingKey} from '#server/modules/setting/setting.types';
 import type {Setting} from '#server/modules/setting/setting.entity';
 import {MintDatabaseType} from '#server/modules/cashu/mintdb/cashumintdb.enums';
+
 /* Native Dependencies */
 import {
 	SERVICE_ADDRESS_FIELDS,
@@ -17,6 +19,7 @@ import type {
 	IntegrationConfig,
 	ServiceEnvironment,
 	ServiceName,
+	ServiceFieldName,
 } from '#server/modules/service-config/types/service-config.types';
 
 /** Classify a mint database value the same way as MINT_DATABASE. */
@@ -24,15 +27,31 @@ export function mintDatabaseType(database: string): MintDatabaseType {
 	return /postgres(ql)?:\/\//.test(database) ? MintDatabaseType.postgres : MintDatabaseType.sqlite;
 }
 
+/** Trim form values while preserving password bytes and pasted PEM content. */
+export function normalizeConnectionValue(field: ServiceFieldName, value: string): string {
+	return field === 'password' || value.includes('-----BEGIN ') ? value : value.trim();
+}
+
+/** Identify certificate and TLS diagnostics without changing their upstream text. */
+export function isTlsDiagnostic(diagnostic: string): boolean {
+	return /certificate|\bSSL\b|\bTLS\b|\bPEM\b|private key/i.test(diagnostic);
+}
+
 /** Map connection form fields onto the integration config shape, normalized like env values. */
 export function connectionConfig(service: ServiceName, values: ConnectionValues, base: IntegrationConfig = {}): IntegrationConfig {
 	const config = {...base};
 	for (const field of SERVICE_DEFINITIONS[service].fields) {
-		const value = values[field.name] ?? '';
+		const value = normalizeConnectionValue(field.name, values[field.name] ?? '');
 		if (field.name === 'mtls') config[field.config] = value === 'true';
 		else config[field.config] = SERVICE_ADDRESS_FIELDS.includes(field.name) ? (replaceLocalhostInDocker(value) ?? '') : value;
 	}
-	if (service === 'mint') config.database_type = mintDatabaseType(String(config.database));
+	if (service === 'mint') {
+		config.database_type = mintDatabaseType(String(config.database));
+		// Env-only metrics and database TLS belong to the env mint; keep them unless Orchard now points elsewhere
+		const moved = (key: string): boolean => String(config[key] ?? '') !== String(base[key] ?? '');
+		if (moved('rpc_host') || moved('rpc_port') || moved('api')) config.metrics_api = '';
+		if (moved('database')) Object.assign(config, {database_ca: '', database_cert: '', database_key: ''});
+	}
 	return config;
 }
 
@@ -40,7 +59,7 @@ export function connectionConfig(service: ServiceName, values: ConnectionValues,
 export function mergeServiceConfig(
 	service: ServiceName,
 	environment: IntegrationConfig,
-	settings: Map<SettingKey, string>,
+	settings: Map<StoredSettingKey, string>,
 ): IntegrationConfig {
 	const definition = SERVICE_DEFINITIONS[service];
 	const enabled = settings.get(definition.enabled_key);
@@ -59,10 +78,10 @@ export function applyServiceSettings(config: ConfigService, settings: Setting[],
 		config.set(SERVICE_DEFINITIONS[service].group, mergeServiceConfig(service, environment?.[service] ?? {}, stored));
 }
 
-/** Preserve upstream text, except credential material which must never cross the API boundary. */
+/** Keep upstream diagnostics readable while redacting long secrets and database credentials. */
 export function redactDiagnostic(error: unknown, secrets: string[]): string {
 	let diagnostic = error instanceof Error ? error.message : String(error);
-	for (const secret of secrets.filter(Boolean).sort((a, b) => b.length - a.length))
+	for (const secret of secrets.filter((secret) => secret.length >= 8).sort((a, b) => b.length - a.length))
 		diagnostic = diagnostic.split(secret).join('[redacted]');
 	return diagnostic.replace(/(postgres(?:ql)?:\/\/)[^@\s]+@/g, '$1[redacted]@');
 }
@@ -71,7 +90,7 @@ export function redactDiagnostic(error: unknown, secrets: string[]): string {
 export function diagnosticFields(diagnostic: string, service: ServiceName): string[] {
 	// LND rejects a macaroon from another node with "verification failed: signature mismatch"
 	if (service === 'lightning' && /macaroon|signature mismatch/i.test(diagnostic)) return ['macaroon'];
-	if (/certificate|SSL|TLS|PEM|private key/i.test(diagnostic))
+	if (isTlsDiagnostic(diagnostic))
 		return service === 'bitcoin' ? ['host'] : service === 'lightning' ? ['cert', 'ca', 'key'] : ['mtls', 'cert', 'ca', 'key'];
 	if (/\b(401|403)\b|unauth|password|permission denied/i.test(diagnostic))
 		return service === 'bitcoin' ? ['user', 'password'] : ['macaroon', 'cert', 'key'];

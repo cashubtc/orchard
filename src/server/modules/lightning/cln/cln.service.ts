@@ -1,29 +1,37 @@
 /* Core Dependencies */
-import {Injectable, Logger} from '@nestjs/common';
+import {Injectable, Logger, type OnModuleDestroy} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 import * as path from 'path';
+
 /* Vendor Dependencies */
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
+
 /* Application Dependencies */
+import {closeGrpcChannel} from '#server/modules/grpc/helpers/grpc-client.helpers';
 import {CredentialService} from '#server/modules/credential/credential.service';
+
 /* Native Dependencies */
 import type {LightningInfo, LightningChannelBalance, LightningRequest} from '#server/modules/lightning/lightning/lightning.types';
 import type {LightningAddresses} from '#server/modules/lightning/walletkit/lnwalletkit.types';
 import {LightningAddressType} from '#server/modules/lightning/lightning.enums';
+
 /* Local Dependencies */
 import {asBigIntMsat, sumMsat, mapRequestType, mapRequestExpiry, mapRequestDescription} from './cln.helpers.js';
 
 @Injectable()
-export class ClnService {
+export class ClnService implements OnModuleDestroy {
 	private readonly logger = new Logger(ClnService.name);
+	private static readonly clients_by_proto = new Map<string, grpc.ServiceClientConstructor>();
+	private grpc_client: grpc.Client | undefined;
 
 	constructor(
 		private configService: ConfigService,
 		private credentialService: CredentialService,
 	) {}
 
-	private createGrpcCredentials() {
+	/** Load the configured credentials for the shared CLN channel. */
+	private createGrpcCredentials(): {rpc_url: string; creds: grpc.ChannelCredentials; channel_options: grpc.ChannelOptions} | null {
 		const rpc_host = this.configService.get('lightning.host');
 		const rpc_port = this.configService.get('lightning.port');
 		const client_cert = this.configService.get('lightning.cert');
@@ -54,7 +62,7 @@ export class ClnService {
 
 		const ssl_creds = grpc.credentials.createSsl(ca_cert_content, client_key_content, client_cert_content);
 
-		let channel_options: Record<string, any> | undefined = undefined;
+		let channel_options: grpc.ChannelOptions;
 		if (rpc_host?.includes('host.docker.internal')) {
 			channel_options = {
 				'grpc.ssl_target_name_override': 'cln',
@@ -70,35 +78,52 @@ export class ClnService {
 		return {rpc_url, creds: ssl_creds, channel_options};
 	}
 
-	private initializeGrpcClient(proto_paths: string[], package_namespace: string, client_class: string): grpc.Client {
+	/** Cache the parsed service constructor by its absolute proto paths. */
+	private initializeGrpcClient(proto_paths: string[], package_namespace: string, client_class: string): grpc.Client | undefined {
 		const credentials = this.createGrpcCredentials();
 		if (!credentials) return;
 
 		try {
-			const package_definition = protoLoader.loadSync(proto_paths, {
-				keepCase: true,
-				longs: String,
-				enums: String,
-				defaults: true,
-				oneofs: true,
-			});
-			const grpc_package: any = grpc.loadPackageDefinition(package_definition)[package_namespace];
+			const cache_key = JSON.stringify([proto_paths.map((proto_path) => path.resolve(proto_path)), package_namespace, client_class]);
+			let client_constructor = ClnService.clients_by_proto.get(cache_key);
+			if (!client_constructor) {
+				const package_definition = protoLoader.loadSync(proto_paths, {
+					keepCase: true,
+					longs: String,
+					enums: String,
+					defaults: true,
+					oneofs: true,
+				});
+				const grpc_package = grpc.loadPackageDefinition(package_definition)[package_namespace] as grpc.GrpcObject;
+				client_constructor = grpc_package[client_class] as grpc.ServiceClientConstructor;
+				ClnService.clients_by_proto.set(cache_key, client_constructor);
+			}
 			this.logger.log(`${client_class} gRPC client initialized with mTLS`);
-			return new grpc_package[client_class](credentials.rpc_url, credentials.creds, credentials.channel_options);
+			return new client_constructor(credentials.rpc_url, credentials.creds, credentials.channel_options);
 		} catch (error) {
 			this.logger.error(`Failed to initialize ${client_class} gRPC client: ${error.message}`);
 			throw error;
 		}
 	}
 
-	public initializeLightningClient(): grpc.Client {
+	/** Reuse one CLN transport for Lightning and wallet operations. */
+	public initializeLightningClient(): grpc.Client | undefined {
+		if (this.grpc_client) return this.grpc_client;
 		const node_proto_path = path.join(process.cwd(), 'proto/cln/node.proto');
 		const primitives_proto_path = path.join(process.cwd(), 'proto/cln/primitives.proto');
-		return this.initializeGrpcClient([node_proto_path, primitives_proto_path], 'cln', 'Node');
+		this.grpc_client = this.initializeGrpcClient([node_proto_path, primitives_proto_path], 'cln', 'Node');
+		return this.grpc_client;
 	}
 
-	public initializeWalletKitClient(): grpc.Client {
+	/** Share the Lightning channel with the wallet kit. */
+	public initializeWalletKitClient(): grpc.Client | undefined {
 		return this.initializeLightningClient();
+	}
+
+	/** Release the shared channel before both consumers reload their connection. */
+	public reinitialize(): void {
+		closeGrpcChannel(this.grpc_client);
+		this.grpc_client = undefined;
 	}
 
 	public async mapClnInfo(info: any): Promise<LightningInfo> {
@@ -295,5 +320,10 @@ export class ClnService {
 			description: mapRequestDescription(request?.description),
 			offer_quantity_max: request?.offer_quantity_max ?? null,
 		};
+	}
+
+	/** Release the channel once when the module shuts down. */
+	public onModuleDestroy(): void {
+		this.reinitialize();
 	}
 }

@@ -1,37 +1,39 @@
 /* Core Dependencies */
-import {Component, ChangeDetectionStrategy, OnInit, inject, signal, DestroyRef, TemplateRef, viewChild} from '@angular/core';
-import {UpperCasePipe} from '@angular/common';
+import {Component, ChangeDetectionStrategy, OnInit, inject, signal, DestroyRef, computed} from '@angular/core';
 import {RouterLink} from '@angular/router';
-import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {takeUntilDestroyed, toSignal} from '@angular/core/rxjs-interop';
 
 /* Vendor Dependencies */
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatProgressBarModule} from '@angular/material/progress-bar';
-import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import {finalize} from 'rxjs';
 
 /* Application Dependencies */
 import {FormPanelService} from '@client/modules/form/services/form-panel';
 import {CrewService} from '@client/modules/crew/services/crew/crew.service';
 import {ConfigService} from '@client/modules/config/services/config.service';
+import {BitcoinService} from '@client/modules/bitcoin/services/bitcoin/bitcoin.service';
+import {LightningService} from '@client/modules/lightning/services/lightning/lightning.service';
+import {FederationService} from '@client/modules/federation/services/federation.service';
 
 /* Native Dependencies */
 import {ServiceConfigService} from '@client/modules/service-config/services/service-config.service';
 import {ServiceEditorComponent} from '@client/modules/service-config/components/service-editor/service-editor.component';
-import {serviceErrorMessage} from '@client/modules/service-config/helpers/service-config.helpers';
+import {serviceErrorMessage, serviceConfigurationDetail} from '@client/modules/service-config/helpers/service-config.helpers';
 import {
 	SERVICE_DESCRIPTORS,
 	SERVICE_SOURCE_LABELS,
+	SERVICE_STATUS_ICONS,
 	SERVICE_STATUS_LABELS,
 } from '@client/modules/service-config/constants/service-config.constants';
 
 /* Shared Dependencies */
-import {UserRole, type OrchardServiceConfiguration} from '@shared/generated.types';
+import type {OrchardServiceConfiguration} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-settings-services',
-	imports: [UpperCasePipe, RouterLink, MatButtonModule, MatIconModule, MatProgressBarModule, MatDialogModule],
+	imports: [RouterLink, MatButtonModule, MatIconModule, MatProgressBarModule],
 	templateUrl: './settings-services.component.html',
 	styleUrl: './settings-services.component.scss',
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,32 +41,43 @@ import {UserRole, type OrchardServiceConfiguration} from '@shared/generated.type
 export class SettingsServicesComponent implements OnInit {
 	private readonly serviceConfigService = inject(ServiceConfigService);
 	private readonly panel = inject(FormPanelService);
-	private readonly dialog = inject(MatDialog);
 	private readonly crewService = inject(CrewService);
 	private readonly configService = inject(ConfigService);
 	private readonly destroy_ref = inject(DestroyRef);
+	private readonly bitcoinService = inject(BitcoinService);
+	private readonly lightningService = inject(LightningService);
+	private readonly federationService = inject(FederationService);
 
 	public readonly descriptors = SERVICE_DESCRIPTORS;
 	public readonly sources = SERVICE_SOURCE_LABELS;
 	public readonly statuses = SERVICE_STATUS_LABELS;
+	public readonly status_icons = SERVICE_STATUS_ICONS;
 	public readonly taproot_enabled = this.configService.config.taproot_assets.enabled;
 	public readonly services = signal<OrchardServiceConfiguration[]>([]);
-	public readonly loading = signal(true);
+	public readonly loading = signal<boolean>(true);
 	public readonly error = signal<string | null>(null);
-	public readonly is_admin = signal(false);
-	public readonly removing = signal<OrchardServiceConfiguration | null>(null);
-	public readonly confirmation = signal<string | null>(null);
+	public readonly is_admin = signal<boolean>(false);
+	public readonly rows = computed(() =>
+		this.services().map((service) => {
+			const check = this.serviceConfigService.saved_checks()[service.service];
+			const chain =
+				check?.chain ?? (service.service === 'bitcoin' ? this.bitcoin_info()?.chain : this.lightning_info()?.chains[0]?.network);
+			const mode = check?.mode ?? (service.service === 'mint' ? this.federationService.mode() : null);
+			return {...service, detail: serviceConfigurationDetail(service, chain, mode)};
+		}),
+	);
 
-	private readonly remove_dialog = viewChild.required<TemplateRef<unknown>>('removeDialog');
+	private readonly bitcoin_info = toSignal(this.bitcoinService.bitcoin_blockchain_info$);
+	private readonly lightning_info = toSignal(this.lightningService.lightning_info$);
 
 	/** Configuration is shown only after the current user is known to be an administrator. */
 	public ngOnInit(): void {
 		this.crewService
-			.loadUser()
+			.isAdmin()
 			.pipe(takeUntilDestroyed(this.destroy_ref))
 			.subscribe({
-				next: (user) => {
-					this.is_admin.set(user.role === UserRole.Admin);
+				next: (is_admin) => {
+					this.is_admin.set(is_admin);
 					if (this.is_admin()) this.load();
 					else this.loading.set(false);
 				},
@@ -76,8 +89,8 @@ export class SettingsServicesComponent implements OnInit {
 	}
 
 	/* *******************************************************
-        Data and actions
-    ******************************************************** */
+		Data
+	******************************************************** */
 
 	/** Refresh sources and statuses after closing an editor or removing a connection. */
 	public load(): void {
@@ -95,6 +108,10 @@ export class SettingsServicesComponent implements OnInit {
 			});
 	}
 
+	/* *******************************************************
+		Actions Up
+	******************************************************** */
+
 	/** Open the shared side panel with a snapshot of the effective configuration. */
 	public edit(service: OrchardServiceConfiguration): void {
 		this.panel
@@ -102,31 +119,5 @@ export class SettingsServicesComponent implements OnInit {
 			.afterClosed()
 			.pipe(takeUntilDestroyed(this.destroy_ref))
 			.subscribe(() => this.load());
-	}
-
-	/** Explain and confirm disconnection before writing the disabled override. */
-	public confirmRemove(service: OrchardServiceConfiguration): void {
-		this.removing.set(service);
-		this.dialog
-			.open(this.remove_dialog(), {width: '32rem', maxWidth: '95vw'})
-			.afterClosed()
-			.pipe(takeUntilDestroyed(this.destroy_ref))
-			.subscribe((confirmed: boolean) => {
-				if (!confirmed) return;
-				this.loading.set(true);
-				this.serviceConfigService
-					.remove(service.service)
-					.pipe(
-						takeUntilDestroyed(this.destroy_ref),
-						finalize(() => this.loading.set(false)),
-					)
-					.subscribe({
-						next: () => {
-							this.confirmation.set(`${this.descriptors[service.service].name} removed. No restart needed.`);
-							this.load();
-						},
-						error: (error: unknown) => this.error.set(serviceErrorMessage(error, 'Could not remove the service.')),
-					});
-			});
 	}
 }
