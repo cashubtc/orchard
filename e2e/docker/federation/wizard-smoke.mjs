@@ -42,7 +42,9 @@ try {
 		await page.getByLabel('Password', {exact: true}).fill(password);
 		await page.getByLabel('Confirm Password').fill(password);
 		await page.getByRole('button', {name: /start/i}).click();
-		await page.waitForURL((url) => !url.pathname.includes('/auth/setup'));
+		await page.waitForURL('**/onboarding');
+		await page.getByRole('button', {name: 'Skip for now', exact: true}).click();
+		await page.waitForURL((url) => !url.pathname.includes('/onboarding'));
 		await expect(page.getByRole('heading', {name: 'Federation setup', exact: true})).toBeVisible();
 		assert(
 			!queries[index].some((query) => /\bmint_info\b|\bmint_activity_summary\b|\bmint_balances\b/.test(query)),

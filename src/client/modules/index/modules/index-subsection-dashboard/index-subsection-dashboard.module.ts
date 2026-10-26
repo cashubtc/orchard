@@ -15,6 +15,7 @@ import {MatSelectModule} from '@angular/material/select';
 import {MatMenuModule} from '@angular/material/menu';
 import {MatListModule} from '@angular/material/list';
 /* Application Dependencies */
+import {firstRunGuard} from '@client/modules/onboarding/guards/first-run.guard';
 import {OrcLocalModule} from '@client/modules/local/local.module';
 import {OrcDataModule} from '@client/modules/data/data.module';
 import {OrcGraphicModule} from '@client/modules/graphic/graphic.module';
@@ -65,6 +66,14 @@ import {IndexSubsectionDashboardEcashEnabledComponent} from './components/index-
 	imports: [
 		[
 			CoreRouterModule.forChild([
+				{
+					path: '',
+					canMatch: [firstRunGuard],
+					loadComponent: () =>
+						import('@client/modules/onboarding/components/first-run-empty/first-run-empty.component').then(
+							(m) => m.FirstRunEmptyComponent,
+						),
+				},
 				{
 					path: '',
 					component: IndexSubsectionDashboardComponent,

@@ -73,25 +73,26 @@
 					<orc-graphic-status [status]="mint_status"></orc-graphic-status>
 				</div>
 			</a>
-		}
-		<a
-			mat-list-item
-			routerLink="/ecash"
-			(click)="onItemClick('ecash')"
-			(mouseenter)="hovered.set('ecash')"
-			(mouseleave)="hovered.set('')"
-			[class.active]="active_section() === 'ecash'"
-		>
-			<div class="flex flex-items-center flex-justify-between">
-				<div class="flex flex-items-center flex-gap-1">
-					<mat-icon class="icon-md" [class.mat-symbol-outline]="active_section() !== 'ecash' && hovered() !== 'ecash'"
-						>payments</mat-icon
-					>
-					<span>Ecash</span>
+			<a
+				mat-list-item
+				routerLink="/ecash"
+				title="Ecash · coming soon"
+				(click)="onItemClick('ecash')"
+				(mouseenter)="hovered.set('ecash')"
+				(mouseleave)="hovered.set('')"
+				[class.active]="active_section() === 'ecash'"
+			>
+				<div class="flex flex-items-center flex-justify-between">
+					<div class="flex flex-items-center flex-gap-1">
+						<mat-icon class="icon-md" [class.mat-symbol-outline]="active_section() !== 'ecash' && hovered() !== 'ecash'"
+							>payments</mat-icon
+						>
+						<span>Ecash</span>
+					</div>
+					<orc-graphic-status></orc-graphic-status>
 				</div>
-				<orc-graphic-status></orc-graphic-status>
-			</div>
-		</a>
+			</a>
+		}
 		<a
 			mat-list-item
 			routerLink="/settings"

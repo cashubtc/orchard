@@ -36,7 +36,13 @@ export const SERVICE_FIELDS: ServiceField[] = [
 	{key: 'ca', label: 'CA certificate', credential: true, multiline: true},
 	{key: 'cert', label: 'TLS / client certificate', credential: true, multiline: true},
 	{key: 'key', label: 'Client key', credential: true, multiline: true},
-	{key: 'database', label: 'Mint database', placeholder: '/path/to/mint.sqlite or PostgreSQL URL', optional: true},
+	{
+		key: 'database',
+		label: 'Mint database',
+		placeholder: '/path/to/mint.sqlite or PostgreSQL URL',
+		optional: true,
+		heading: 'Analytics and public URL (optional)',
+	},
 	{key: 'api', label: 'Public mint URL', placeholder: 'https://mint.example.com', optional: true},
 ];
 export const SERVICE_DEFAULT_PORTS: Record<string, string> = {

@@ -1,0 +1,27 @@
+@use 'molecule/molecule';
+.configure-card {
+	padding: 1.5rem;
+	h2 {
+		margin-top: 0;
+	}
+	p {
+		line-height: 1.5;
+	}
+}
+.step-actions {
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-justify-end;
+	@extend %flex-gap-0-5;
+	margin-top: 1.5rem;
+}
+@media (max-width: 600px) {
+	.configure-card {
+		padding: 1rem;
+	}
+	.step-actions {
+		button {
+			flex: 1 1 auto;
+		}
+	}
+}

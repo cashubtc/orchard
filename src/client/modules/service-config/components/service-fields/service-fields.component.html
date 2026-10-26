@@ -16,6 +16,9 @@
 		</mat-form-field>
 	}
 	@for (field of fields(); track field.key) {
+		@if (field.heading) {
+			<h3>{{ field.heading }}</h3>
+		}
 		<mat-form-field appearance="outline">
 			<mat-label>{{ field.label }}{{ field.optional ? ' (optional)' : '' }}</mat-label>
 			@if (field.multiline) {
@@ -40,7 +43,7 @@
 					autocomplete="off"
 				/>
 			}
-			@if (field.credential || field.password) {
+			@if ((field.credential || field.password) && stored(field)) {
 				<mat-hint
 					>Leave unchanged to keep it.
 					<button type="button" class="clear-field" (click)="clearField(field.key)">Clear</button></mat-hint

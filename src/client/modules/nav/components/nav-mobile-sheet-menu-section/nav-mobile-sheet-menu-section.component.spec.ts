@@ -45,12 +45,21 @@ describe('NavMobileSheetMenuSectionComponent', () => {
 		fixture.detectChanges();
 	});
 
+	it('shows the coming-soon Ecash entry only when the mint is configured', () => {
+		const data = TestBed.inject(MAT_BOTTOM_SHEET_DATA);
+		data.enabled_mint = true;
+		const configured = TestBed.createComponent(NavMobileSheetMenuSectionComponent);
+		configured.detectChanges();
+		expect(configured.nativeElement.querySelector('a[href="/ecash"]').title).toContain('coming soon');
+		configured.destroy();
+	});
+
 	it('should create', () => {
 		expect(component).toBeTruthy();
 	});
 
 	it('leaves home and settings available when no services are configured', () => {
 		const links = Array.from(fixture.nativeElement.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>);
-		expect(links.map((link) => link.getAttribute('href'))).toEqual(['/', '/ecash', '/settings']);
+		expect(links.map((link) => link.getAttribute('href'))).toEqual(['/', '/settings']);
 	});
 });

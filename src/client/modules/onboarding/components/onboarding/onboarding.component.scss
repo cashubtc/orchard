@@ -1,0 +1,75 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+:host {
+	display: block;
+}
+.onboarding-container {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-2;
+	max-width: 65rem;
+	margin: auto;
+	padding: 3rem 1.5rem;
+}
+.onboarding-header {
+	@extend %text-center;
+	p {
+		@extend %w-max-36;
+		margin: 0 auto;
+		line-height: 1.5;
+	}
+}
+.setup-steps {
+	@extend %flex;
+	@extend %flex-justify-center;
+	@extend %flex-wrap;
+	@extend %flex-gap-1-5;
+	padding: 0;
+	margin: 0;
+	list-style: none;
+	li {
+		@extend %flex;
+		@extend %flex-items-center;
+		@extend %flex-gap-0-5;
+	}
+}
+.current {
+	@extend %orc-primary-color;
+	font-weight: 600;
+}
+.configure-layout {
+	display: grid;
+	grid-template-columns: 12rem minmax(0, 1fr);
+	gap: 1.5rem;
+}
+.service-list {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-0-5;
+	button {
+		height: auto;
+		min-height: 3.5rem;
+		justify-content: flex-start;
+		text-align: left;
+	}
+	small {
+		display: block;
+	}
+}
+@media (max-width: 700px) {
+	.onboarding-container {
+		padding: 1.5rem 1rem;
+		gap: 1.5rem;
+	}
+	.configure-layout {
+		grid-template-columns: 1fr;
+	}
+	.service-list {
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+	.setup-steps {
+		gap: 0.75rem;
+		font-size: 0.75rem;
+	}
+}

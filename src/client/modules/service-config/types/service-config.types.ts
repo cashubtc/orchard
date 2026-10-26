@@ -12,6 +12,7 @@ export type ServiceField = {
 	password?: boolean;
 	multiline?: boolean;
 	optional?: boolean;
+	heading?: string;
 };
 export type ServiceDescriptor = {name: string; icon: string; description: string; types: {value: string; label: string}[]};
 export type ServiceDescriptors = Record<ServiceKind, ServiceDescriptor>;

@@ -31,6 +31,13 @@
 			[enabled]="enabled_mint()"
 			[online]="online_mint()"
 		></orc-nav-primary-item>
+		<orc-nav-primary-item
+			title="Ecash · coming soon"
+			navroute="ecash"
+			icon="payments"
+			name="Ecash"
+			[active]="active_section() === 'ecash'"
+		>
+		</orc-nav-primary-item>
 	}
-	<orc-nav-primary-item navroute="ecash" icon="payments" name="Ecash" [active]="active_section() === 'ecash'"> </orc-nav-primary-item>
 </div>

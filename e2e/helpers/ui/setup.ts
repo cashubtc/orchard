@@ -31,5 +31,7 @@ export async function completeSetup(page: Page, config: ConfigInfo): Promise<voi
 	await page.getByLabel('Confirm Password').fill(TEST_ADMIN.password);
 
 	await page.getByRole('button', {name: /start/i}).click();
-	await expect(page).not.toHaveURL(/\/auth\/setup/);
+	await expect(page).toHaveURL(/\/onboarding$/);
+	await page.getByRole('button', {name: 'Skip for now', exact: true}).click();
+	await expect(page).not.toHaveURL(/\/onboarding/);
 }

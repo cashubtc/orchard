@@ -112,7 +112,7 @@ export class AuthSubsectionInitializationComponent implements OnInit, OnDestroy 
 		this.authService.initialize(this.form_init.value.key, this.form_init.value.name, this.form_init.value.password).subscribe({
 			next: () => {
 				this.authService.clearInitializationCache();
-				this.router.navigate(['/']);
+				this.router.navigate(['/onboarding']);
 			},
 			error: (error) => {
 				this.errorControl(error);

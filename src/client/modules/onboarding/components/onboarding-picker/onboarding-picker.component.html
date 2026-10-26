@@ -1,0 +1,27 @@
+<div class="service-grid">
+	@for (service of services; track service) {
+		<button
+			type="button"
+			class="service-card orc-low-card"
+			[class.selected]="selected().includes(service)"
+			[attr.aria-pressed]="selected().includes(service)"
+			(click)="toggled.emit(service)"
+		>
+			<span class="card-heading"
+				><mat-icon>{{ descriptors[service].icon }}</mat-icon
+				><strong>{{ descriptors[service].name }}</strong
+				><mat-icon class="mat-symbol-outline">{{ selected().includes(service) ? 'task_alt' : 'circle' }}</mat-icon></span
+			>
+			<span class="description">{{ copy[service].description }}</span>
+			<span class="orc-outline-color">{{ copy[service].note }}</span>
+		</button>
+	}
+</div>
+<p class="environment-caption">Values already set in your environment are filled in on the next step.</p>
+<div class="picker-actions">
+	<button matButton type="button" (click)="skipped.emit()">Skip for now</button>
+	<button matButton="filled" type="button" [disabled]="!selected().length" (click)="continued.emit()">
+		Continue with {{ selected().length }} {{ selected().length === 1 ? 'service' : 'services'
+		}}<mat-icon iconPositionEnd>arrow_forward</mat-icon>
+	</button>
+</div>

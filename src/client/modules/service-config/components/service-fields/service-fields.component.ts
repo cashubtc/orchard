@@ -47,6 +47,11 @@ export class ServiceFieldsComponent {
 		);
 	}
 
+	/** Whether Orchard already holds a value that leaving the field unchanged would keep. */
+	public stored(field: ServiceField): boolean {
+		return !!this.configuration().fields.find((item) => item.key === field.key)?.set;
+	}
+
 	/** A placeholder communicates presence without sending or resubmitting a secret. */
 	public placeholder(field: ServiceField): string {
 		const stored = this.configuration().fields.find((item) => item.key === field.key);

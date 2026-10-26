@@ -1,0 +1,49 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+.service-grid {
+	@extend %flex-gap-1;
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.service-card {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-1;
+	padding: 1.5rem;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	border: 2px solid transparent;
+	cursor: pointer;
+}
+.selected {
+	border-color: var(--mat-sys-primary);
+}
+.card-heading {
+	@extend %flex;
+	@extend %flex-items-center;
+	gap: 0.75rem;
+	strong {
+		flex: 1;
+	}
+}
+.picker-actions {
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-justify-end;
+	@extend %flex-gap-0-5;
+}
+.environment-caption {
+	margin: 1.5rem 0;
+}
+@media (max-width: 700px) {
+	.service-grid {
+		grid-template-columns: 1fr;
+	}
+	.description {
+		display: none;
+	}
+	.picker-actions {
+		flex-direction: column-reverse;
+	}
+}

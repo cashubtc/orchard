@@ -1,0 +1,79 @@
+<main class="onboarding-container">
+	<header class="onboarding-header">
+		<orc-graphic-orchard-logo height="3rem"></orc-graphic-orchard-logo>
+		<h1>{{ stage_copy().title }}</h1>
+		@if (stage_copy().intro; as intro) {
+			<p>{{ intro }}</p>
+		}
+	</header>
+	<ol class="setup-steps" aria-label="Setup steps">
+		@for (step of steps; track step; let index = $index) {
+			<li [attr.aria-current]="index === stage_copy().step ? 'step' : null" [class.current]="index === stage_copy().step">
+				@if (index < stage_copy().step) {
+					<mat-icon aria-label="Done">task_alt</mat-icon>
+				} @else {
+					<span>{{ index + 1 }}</span>
+				}
+				{{ step }}
+			</li>
+		}
+	</ol>
+	@if (error()) {
+		<div class="orc-error-card p-1" role="alert">{{ error() }}<button matButton (click)="retry()">Try again</button></div>
+	}
+	@if (loading()) {
+		<mat-progress-bar mode="indeterminate" aria-label="Loading services"></mat-progress-bar>
+	}
+	@if (configurations().length) {
+		@switch (stage()) {
+			@case ('services') {
+				<orc-onboarding-picker
+					[selected]="selected()"
+					(toggled)="toggle($event)"
+					(continued)="continue()"
+					(skipped)="skip()"
+				></orc-onboarding-picker>
+			}
+			@case ('configure') {
+				<div class="configure-layout">
+					<nav class="service-list" aria-label="Services to configure">
+						@for (service of selected(); track service) {
+							<button
+								matButton
+								type="button"
+								[disabled]="busy()"
+								[attr.aria-current]="service === active_service() ? 'step' : null"
+								(click)="showService(service)"
+							>
+								<mat-icon>{{ descriptors[service].icon }}</mat-icon
+								><span
+									>{{ descriptors[service].name }}<small>{{ service_states()[service] }}</small></span
+								>
+							</button>
+						}
+					</nav>
+					@for (configuration of active_configurations(); track configuration.service) {
+						<orc-onboarding-configure
+							[configuration]="configuration"
+							[pending]="loading()"
+							(checked)="checked(configuration.service, $event)"
+							(applied)="applied(configuration.service, $event)"
+							(skipped)="skipService()"
+							(backed)="back()"
+						></orc-onboarding-configure>
+					}
+				</div>
+			}
+			@case ('review') {
+				<orc-onboarding-review
+					[rows]="review_rows()"
+					[setup_mode]="setup_mode()"
+					[busy]="busy()"
+					(edited)="edit($event)"
+					(backed)="back()"
+					(opened)="open()"
+				></orc-onboarding-review>
+			}
+		}
+	}
+</main>

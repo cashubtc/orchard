@@ -60,6 +60,12 @@ const interior_routes = [
 
 const routes: Routes = [
 	{
+		path: 'onboarding',
+		component: LayoutExteriorComponent,
+		canActivate: [initializationGuard, authenticationGuard],
+		loadChildren: () => import('@client/modules/onboarding/onboarding.module').then((m) => m.OrcOnboardingModule),
+	},
+	{
 		path: '',
 		component: LayoutInteriorComponent,
 		canMatch: [serviceStatusGuard],

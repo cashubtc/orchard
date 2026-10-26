@@ -1,0 +1,42 @@
+<section class="review-card orc-low-card" aria-label="Services">
+	@for (row of rows(); track row.service) {
+		<div class="review-row" [attr.data-service]="row.service">
+			<mat-icon>{{ descriptors[row.service].icon }}</mat-icon>
+			<div class="service-detail">
+				<h2>{{ descriptors[row.service].name }}</h2>
+				<p>{{ row.detail }}</p>
+			</div>
+			<span
+				class="review-status"
+				[class.orc-status-active-color]="row.tone === 'success'"
+				[class.orc-status-warning-color]="row.tone === 'warning'"
+				><mat-icon aria-hidden="true">{{ row.icon }}</mat-icon
+				>{{ row.status }}</span
+			>
+			<button
+				matButton
+				type="button"
+				[attr.aria-label]="(row.enabled ? 'Edit ' : 'Add ') + descriptors[row.service].name"
+				[disabled]="busy()"
+				(click)="edited.emit(row.service)"
+			>
+				{{ row.enabled ? 'Edit' : 'Add' }}
+			</button>
+		</div>
+	}
+</section>
+@if (setup_mode()) {
+	<div class="setup-notice orc-high-card">
+		<mat-icon>network_intelligence</mat-icon>
+		<p>
+			Your mint is in federation setup mode, so Orchard opens <strong>Federation setup</strong> next. The rest of the mint section
+			unlocks once the federation is active.
+		</p>
+	</div>
+}
+<div class="review-actions">
+	<button matButton type="button" [disabled]="busy()" (click)="backed.emit()">Back</button>
+	<button matButton="filled" type="button" [disabled]="busy()" (click)="opened.emit()">
+		Open Orchard<mat-icon iconPositionEnd>arrow_forward</mat-icon>
+	</button>
+</div>

@@ -1,0 +1,61 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+.review-card {
+	padding: 1.5rem;
+}
+.review-row {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-1;
+	@extend %flex-wrap;
+	padding: 1rem 0;
+	&:not(:last-child) {
+		@extend %border-bottom;
+		@extend %border-bottom-solid;
+		@extend %orc-outline-variant-border-bottom;
+	}
+}
+.service-detail {
+	flex: 1 1 220px;
+	min-width: 0;
+	h2,
+	p {
+		margin: 0;
+		overflow-wrap: anywhere;
+	}
+	h2 {
+		@extend %font-size-m;
+	}
+}
+.review-status,
+.setup-notice,
+.review-actions {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+}
+.review-status {
+	@extend %font-size-s;
+}
+.setup-notice {
+	@extend %p-1;
+	margin-top: 1rem;
+	p {
+		margin: 0;
+	}
+	mat-icon {
+		flex-shrink: 0;
+	}
+}
+.review-actions {
+	@extend %flex-justify-end;
+	margin-top: 1.5rem;
+}
+@media (max-width: 600px) {
+	.review-card {
+		padding: 1rem;
+	}
+	.service-detail {
+		flex-basis: calc(100% - 3rem);
+	}
+}
