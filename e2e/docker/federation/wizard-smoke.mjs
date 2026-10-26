@@ -8,7 +8,8 @@ const browser = await chromium.launch({headless: true, channel: process.env.CHRO
 const pages = [];
 const queries = [[], [], []];
 const failures = [];
-const password = 'FederationWizardTest2026!';
+// The same account as every other e2e stack
+const admin = {name: 'admin', password: 'tester'};
 
 /** Observe operation names and errors without logging invitation-bearing payloads. */
 function observe(page, index) {
@@ -92,9 +93,9 @@ try {
 		await page.goto(base);
 		await page.waitForURL('**/auth/setup');
 		await page.getByLabel('Setup Key').fill('orchard-e2e-admin-key');
-		await page.getByLabel('Username').fill(`wizard-admin-${index + 1}`);
-		await page.getByLabel('Password', {exact: true}).fill(password);
-		await page.getByLabel('Confirm Password').fill(password);
+		await page.getByLabel('Username').fill(admin.name);
+		await page.getByLabel('Password', {exact: true}).fill(admin.password);
+		await page.getByLabel('Confirm Password').fill(admin.password);
 		await page.getByRole('button', {name: /start/i}).click();
 		await page.waitForURL((url) => url.pathname === '/onboarding/services');
 		if (index === 0) await checkOnboardingConnection(page, base);
@@ -121,7 +122,7 @@ try {
 	const aborted_setup_id = await checkSetupLifecycle(pages);
 	const created = await createSetup(coordinator);
 	assert.notEqual(created.setup_id, aborted_setup_id, 'A new ceremony reused the aborted setup ID');
-	await expect(coordinator.getByRole('button', {name: 'Propose once everyone has joined'})).toBeDisabled();
+	await expect(coordinator.getByRole('button', {name: 'Propose federation', exact: true})).toBeDisabled();
 	const fingerprints = [await coordinator.getByTestId('identity-fingerprint').innerText()];
 	for (let index = 1; index < 3; index++) {
 		fingerprints.push(
@@ -148,7 +149,7 @@ try {
 		await expect(own_card).toContainText(fingerprints[index]);
 		await expect(own_card.getByRole('checkbox')).toHaveCount(0);
 		await expect(review.getByRole('checkbox')).toHaveCount(2);
-		await expect(page.getByRole('button', {name: 'Check every member to approve'})).toBeDisabled();
+		await expect(page.getByRole('button', {name: 'Approve proposal', exact: true})).toBeDisabled();
 		if (index === 1) {
 			await expect(page.locator('orc-nav-secondary')).toHaveClass(/collapsed/);
 			await checkWidth(page);
@@ -156,7 +157,7 @@ try {
 		}
 		const other_members = [1, 2, 3].filter((member) => member !== index + 1);
 		await review.getByRole('checkbox', {name: `Checked member ${other_members[0]} with its operator`, exact: true}).check();
-		await expect(page.getByRole('button', {name: 'Check every member to approve'})).toBeDisabled();
+		await expect(page.getByRole('button', {name: 'Approve proposal', exact: true})).toBeDisabled();
 		await review.getByRole('checkbox', {name: `Checked member ${other_members[1]} with its operator`, exact: true}).check();
 		await expect(page.getByRole('button', {name: /^Approve proposal [0-9a-f]{8}$/})).toBeEnabled();
 	}

@@ -32,7 +32,8 @@ takes several minutes.
 | 2 | http://localhost:3362 | http://localhost:3352 | http://127.0.0.1:8092 |
 | 3 | http://localhost:3363 | http://localhost:3353 | http://127.0.0.1:8093 |
 
-Orchard's setup key is `orchard-e2e-admin-key`.
+Orchard's setup key is `orchard-e2e-admin-key`, and the wizard smoke signs each member in as `admin` / `tester`, the same
+as every other e2e stack.
 
 ## Caveats
 

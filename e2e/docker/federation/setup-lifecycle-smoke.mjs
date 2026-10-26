@@ -50,8 +50,9 @@ export async function createSetup(page) {
 	await page.getByRole('button', {name: 'Create', exact: true}).click();
 	await page.getByRole('button', {name: 'Fewer members', exact: true}).click({clickCount: 2});
 	await expect(page.getByTestId('members-count')).toHaveText('3');
-	await page.getByRole('button', {name: 'Lower signing threshold'}).click();
-	await page.getByRole('button', {name: 'Regtest', exact: true}).click();
+	// Three members default to 2 of 3, the lowest cdk's key generation accepts
+	await expect(page.getByRole('button', {name: 'Lower signing threshold'})).toBeDisabled();
+	await page.getByRole('group', {name: 'Bitcoin network'}).getByRole('button', {name: /^Regtest\b/}).click();
 	await page.getByLabel('Federation API URL, for other members', {exact: true}).fill('http://127.0.0.1:3351');
 	await page.getByLabel('Allow local HTTP for development').check();
 	const response = page.waitForResponse((response) => response.request().postData()?.includes('federation_setup_create') ?? false);
@@ -74,7 +75,8 @@ async function submitJoin(page, member, invitation) {
 	await page.getByLabel('Invitation', {exact: true}).fill(invitation);
 	await page.getByLabel('Your federation API URL, for other members').fill(`http://127.0.0.1:${3350 + member}`);
 	await page.getByLabel('Allow local HTTP for development').check();
-	await page.getByRole('button', {name: 'Join federation', exact: true}).click();
+	// The button names the slot the invitation holds
+	await page.getByRole('button', {name: /^Join as member \d+$/}).click();
 }
 
 /** Enroll a local member and read its fingerprint before a proposal exists. */
@@ -110,9 +112,9 @@ export async function checkSetupLifecycle(pages) {
 		}),
 		page.reload(),
 	]);
-	await expect(page.getByRole('heading', {name: 'Invitation unavailable'})).toBeVisible();
-	await expect(page.getByLabel('Invitation', {exact: true})).toHaveCount(0);
 	const slot = page.getByTestId('member-slot').filter({hasText: 'Member 2'});
+	await expect(slot).toContainText('Invitation not held on this page');
+	await expect(page.getByLabel('Invitation', {exact: true})).toHaveCount(0);
 	await slot.getByRole('button', {name: 'Replace invitation', exact: true}).click();
 	const dialog = page.getByRole('dialog');
 	await expect(dialog).toContainText('old invitation for member 2 stops working');
