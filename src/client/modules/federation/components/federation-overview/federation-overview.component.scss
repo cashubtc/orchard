@@ -48,7 +48,8 @@ td {
 	@extend %text-left;
 	vertical-align: top;
 	overflow-wrap: anywhere;
-	border-bottom: 1px solid;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
 	@extend %orc-outline-variant-border;
 }
 th:first-child {

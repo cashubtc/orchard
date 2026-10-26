@@ -141,7 +141,7 @@
 						<p>{{ vtxo.count | federationCount }} VTXOs · <span [innerHTML]="+vtxo.value_sat | localAmount: 'sat'"></span></p>
 					</div>
 				}
-				@if (bark.expiring_vtxo_count != null || bark.expiring_value_sat != null) {
+				@if (+(bark.expiring_vtxo_count ?? 0) > 0 || +(bark.expiring_value_sat ?? 0) > 0) {
 					<p class="orc-warning-card p-1">
 						Close to expiry: {{ bark.expiring_vtxo_count | federationCount }} VTXOs ·
 						@if (bark.expiring_value_sat != null) {

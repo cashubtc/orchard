@@ -43,11 +43,13 @@ dd {
 }
 .entry {
 	@extend %p-v-1;
-	border-bottom: 1px solid;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
 	@extend %orc-outline-variant-border;
 }
 .off-card {
-	border: 1px dashed;
+	border-width: 1px;
+	border-style: dashed;
 	@extend %orc-outline-variant-border;
 }
 summary {

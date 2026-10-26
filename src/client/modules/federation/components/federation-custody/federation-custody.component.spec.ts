@@ -40,6 +40,21 @@ describe('FederationCustodyComponent', () => {
 		expect(fixture.nativeElement.textContent).toContain('future_bark_phase');
 		expect(fixture.nativeElement.textContent).toContain('18446744073709551615');
 	});
+	it('warns about expiring VTXOs only when some are expiring', () => {
+		const fixture = TestBed.createComponent(FederationCustodyComponent);
+		fixture.componentRef.setInput('custody', {
+			onchain_wallets: [],
+			bark: {...barkWallet(), expiring_vtxo_count: '0', expiring_value_sat: '0'},
+		});
+		fixture.detectChanges();
+		expect(fixture.nativeElement.textContent).not.toContain('Close to expiry');
+		fixture.componentRef.setInput('custody', {
+			onchain_wallets: [],
+			bark: {...barkWallet(), expiring_vtxo_count: '2', expiring_value_sat: '5000'},
+		});
+		fixture.detectChanges();
+		expect(fixture.nativeElement.textContent).toContain('Close to expiry');
+	});
 	it('keeps the on-chain slot active if only recovery is reported', () => {
 		const fixture = TestBed.createComponent(FederationCustodyComponent);
 		fixture.componentRef.setInput('custody', {
