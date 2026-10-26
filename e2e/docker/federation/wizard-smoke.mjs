@@ -139,13 +139,13 @@ try {
 	const hashes = [];
 	for (const [index, page] of pages.entries()) {
 		await expect(page.getByRole('heading', {name: 'Review the proposal', exact: true})).toBeVisible({timeout: 30000});
-		hashes.push(await page.getByTestId('proposal-hash').innerText());
+		// The hash is shown shortened; its title carries the full value
+		hashes.push(await page.getByTestId('proposal-hash').getAttribute('title'));
 		for (const fingerprint of fingerprints) await expect(page.locator('orc-federation-setup-review')).toContainText(fingerprint);
 		const review = page.locator('orc-federation-setup-review');
-		const own_card = review
-			.getByRole('article')
-			.filter({has: page.getByRole('heading', {name: `Member ${index + 1} · This is you`, exact: true})});
+		const own_card = review.getByRole('article').filter({hasText: 'This is you'});
 		await expect(own_card).toHaveCount(1);
+		await expect(own_card).toContainText(fingerprints[index]);
 		await expect(own_card.getByRole('checkbox')).toHaveCount(0);
 		await expect(review.getByRole('checkbox')).toHaveCount(2);
 		await expect(page.getByRole('button', {name: 'Check every member to approve'})).toBeDisabled();
@@ -158,7 +158,7 @@ try {
 		await review.getByRole('checkbox', {name: `Checked member ${other_members[0]} with its operator`, exact: true}).check();
 		await expect(page.getByRole('button', {name: 'Check every member to approve'})).toBeDisabled();
 		await review.getByRole('checkbox', {name: `Checked member ${other_members[1]} with its operator`, exact: true}).check();
-		await expect(page.getByRole('button', {name: 'Approve proposal', exact: true})).toBeEnabled();
+		await expect(page.getByRole('button', {name: /^Approve proposal [0-9a-f]{8}$/})).toBeEnabled();
 	}
 	assert(
 		hashes.every((hash) => hash === hashes[0]),
@@ -168,7 +168,7 @@ try {
 		element.scrollTop = 0;
 	});
 	await coordinator.screenshot({path: '/tmp/orchard-m3-desktop-review.png', fullPage: true});
-	for (const index of [1, 2, 0]) await pages[index].getByRole('button', {name: 'Approve proposal', exact: true}).click();
+	for (const index of [1, 2, 0]) await pages[index].getByRole('button', {name: /^Approve proposal [0-9a-f]{8}$/}).click();
 	console.log('PASS: enrollment, proposal, identical hashes, other-member fingerprint approval gate, phone layout');
 	for (const page of pages)
 		await expect(page.getByRole('button', {name: 'Activate my mint', exact: true})).toBeEnabled({timeout: 180000});
@@ -176,13 +176,14 @@ try {
 		await expect(page.getByRole('button', {name: 'Abort setup', exact: true})).toHaveCount(0);
 		await page.getByRole('button', {name: 'Activate my mint', exact: true}).click();
 		await expect(page.getByRole('heading', {name: 'Back up before using real funds'})).toBeVisible({timeout: 30000});
-		await expect(page.getByRole('button', {name: 'Open the mint', exact: true})).toBeDisabled();
+		await expect(page.getByRole('button', {name: 'Open the federation', exact: true})).toBeDisabled();
 	}
 	for (const page of pages) {
-		await expect(page.getByText('Member mode confirmed.', {exact: true})).toBeVisible({timeout: 90000});
-		// Synthetic test data only: this tests the acknowledgments, not a real backup or restore.
+		// Shown only once the mint reports member mode
+		await expect(page.getByText('Confirm your backup to open the federation.', {exact: true})).toBeVisible({timeout: 90000});
+		// Synthetic test data only: this tests the acknowledgment, not a real backup or restore.
 		for (const checkbox of await page.getByRole('checkbox').all()) await checkbox.check();
-		await expect(page.getByRole('button', {name: 'Open the mint', exact: true})).toBeEnabled();
+		await expect(page.getByRole('button', {name: 'Open the federation', exact: true})).toBeEnabled();
 	}
 	for (const [index, page] of pages.entries()) await checkMemberDashboard(page, index);
 	assert.deepEqual(failures, [], 'Unexpected browser errors');

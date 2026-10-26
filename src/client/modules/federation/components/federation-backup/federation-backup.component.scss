@@ -1,18 +1,76 @@
 @use 'molecule/molecule';
 @use 'nucleus/nucleus';
 :host {
-	@extend %block;
+	@extend %flex;
+	@extend %flex-column;
+	gap: 1.75rem;
+	@extend %w-full;
+	max-width: 40rem;
 }
 .backup-card {
-	@extend %w-max-54;
-	@extend %p-1;
 	@extend %flex;
 	@extend %flex-column;
 	@extend %flex-gap-1;
+	padding: 1.75rem;
+	box-sizing: border-box;
+	border-width: 1px;
+	border-style: solid;
+	@extend %orc-status-warning-border;
+	@extend %orc-surface-container-bg;
+	@extend %orc-corner-large-increased;
+	p {
+		@extend %m-0;
+		@extend %font-size-s;
+		line-height: 1.55;
+		@extend %orc-on-surface-variant-color;
+	}
 }
-.backup-warning {
+.backup-heading {
+	@extend %flex;
+	@extend %flex-items-center;
+	gap: 0.625rem;
+	mat-icon {
+		@extend %orc-status-warning-color;
+	}
+	h2 {
+		@extend %m-0;
+		font-size: 1.125rem;
+		@extend %font-weight-semi-bold;
+	}
+}
+.backup-card .backup-warning {
 	white-space: pre-wrap;
+	@extend %orc-status-warning-color;
 }
-p {
-	@extend %line-height-1-4;
+.backup-contents {
+	@extend %flex;
+	@extend %flex-column;
+	gap: 0.625rem;
+	@extend %m-0;
+	@extend %p-0;
+	list-style: none;
+	li {
+		@extend %flex;
+		@extend %flex-items-center;
+		gap: 0.75rem;
+		@extend %font-size-s;
+	}
+	mat-icon {
+		@extend %flex-shrink-0;
+		font-size: 1.25rem;
+		width: 1.25rem;
+		height: 1.25rem;
+		@extend %orc-primary-color;
+	}
+}
+.backup-confirm {
+	padding-top: 0.75rem;
+	border-top-width: 1px;
+	border-top-style: solid;
+	@extend %orc-outline-variant-border;
+	@extend %font-weight-semi-bold;
+}
+.backup-card .backup-note {
+	@extend %font-size-xs;
+	@extend %orc-outline-color;
 }

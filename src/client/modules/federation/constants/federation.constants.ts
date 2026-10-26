@@ -1,3 +1,6 @@
+/* Native Dependencies */
+import type {FederationSetupStageState} from '@client/modules/federation/types/federation-setup.types';
+
 /* Shared Dependencies */
 import type {OrchardFederationSetupDkg} from '@shared/generated.types';
 
@@ -10,13 +13,18 @@ export const FEDERATION_SETUP_STEPS = [
 	{title: 'Activate', detail: 'Each operator activates and backs up. The mint starts serving wallets.'},
 ];
 
-/** What the operator confirms after activation; Orchard can't back up the mint itself. */
-export const FEDERATION_BACKUP_ITEMS = [
-	'Setup state: the federation-setup folder in the mint’s work directory',
-	'The mint database',
-	'The activated private federation config',
-	'I’ve made an encrypted backup and checked that it restores',
+/** Short labels for the wizard's progress pills. */
+export const FEDERATION_SETUP_PHASES = ['Create', 'Enroll', 'Review', 'Generate keys', 'Activate'];
+
+/** What belongs in the backup; Orchard can't back up the mint itself. */
+export const FEDERATION_BACKUP_CONTENTS = [
+	{icon: 'folder', label: 'Setup state, the federation-setup folder in the mint’s work directory'},
+	{icon: 'database', label: 'The mint database'},
+	{icon: 'key', label: 'The activated private federation config'},
 ];
+
+/** The one statement the operator confirms after making and testing a backup. */
+export const FEDERATION_BACKUP_ACKNOWLEDGEMENT = 'I’ve made an encrypted backup and checked that it restores';
 
 /** Key-generation counters reported by GetSetupStatus. */
 export const FEDERATION_DKG_STAGES: Array<{field: keyof OrchardFederationSetupDkg; label: string}> = [
@@ -25,10 +33,17 @@ export const FEDERATION_DKG_STAGES: Array<{field: keyof OrchardFederationSetupDk
 	{field: 'reveals', label: 'Reveals'},
 	{field: 'secret_share_contributions', label: 'Secret share contributions'},
 	{field: 'keyset_shares', label: 'Keyset shares'},
-	{field: 'frost_root_public_configs', label: 'FROST root public configs'},
+	{field: 'frost_root_public_configs', label: 'On-chain wallet keys (FROST)'},
 	{field: 'transcript_signatures', label: 'Transcript signatures'},
 	{field: 'final_config_confirmations', label: 'Final config confirmations'},
 ];
+
+/** Icons for the key-generation stage rows. */
+export const FEDERATION_DKG_STAGE_ICONS: Record<FederationSetupStageState, string> = {
+	done: 'check_circle',
+	active: 'progress_activity',
+	pending: 'radio_button_unchecked',
+};
 
 /** Bitcoin networks CreateSetup accepts. */
 export const FEDERATION_NETWORKS = ['bitcoin', 'signet', 'testnet', 'regtest'];

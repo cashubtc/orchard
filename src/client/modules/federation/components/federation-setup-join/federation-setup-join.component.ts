@@ -6,6 +6,7 @@ import {FormsModule} from '@angular/forms';
 import {MatButtonModule} from '@angular/material/button';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
 
 /* Shared Dependencies */
@@ -18,9 +19,9 @@ type QrDetectorConstructor = new (options: {formats: string[]}) => QrDetector;
 
 @Component({
 	selector: 'orc-federation-setup-join',
-	imports: [FormsModule, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatInputModule],
+	imports: [FormsModule, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatIconModule, MatInputModule],
 	templateUrl: './federation-setup-join.component.html',
-	styleUrl: '../federation-setup/federation-setup-forms.scss',
+	styleUrls: ['../federation-setup/federation-setup-shared.scss', '../federation-setup/federation-setup-forms.scss'],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FederationSetupJoinComponent {

@@ -25,6 +25,15 @@
         @extend %p-h-1;
     }
 
+    // Compact status badge, as in section headers
+    &.label-xs{
+        @extend %orc-corner-small;
+        font-size: 0.6875rem;
+        @extend %font-weight-bold;
+        letter-spacing: 0.05em;
+        padding: 0.1875rem 0.5rem;
+    }
+
     &.label-success{
         @extend %orc-inverse-tertiary-bg;
     }

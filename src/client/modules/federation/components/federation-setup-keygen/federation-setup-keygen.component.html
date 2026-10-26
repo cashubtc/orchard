@@ -1,0 +1,66 @@
+<div class="setup-title">
+	<h1 tabindex="-1">Generating the federation keys</h1>
+	<p>
+		All {{ member_count() }} members approved. The mints are creating the keys together; no single mint ever holds a whole key. Keep the
+		mints running until generation finishes.
+	</p>
+</div>
+@if (dkg(); as dkg) {
+	@if (dkg.error) {
+		<p class="orc-error-card p-1" role="alert">{{ dkg.error }}</p>
+	}
+	<div class="setup-columns">
+		<section class="setup-card stage-card" aria-labelledby="stages-title">
+			<h2 id="stages-title">Progress on your mint</h2>
+			<ol class="stage-list">
+				@for (stage of stages(); track stage.label) {
+					<li [attr.data-state]="stage.state">
+						<mat-icon [class.mat-symbol-outline]="stage.state === 'pending'">{{ stage_icons[stage.state] }}</mat-icon>
+						<span>{{ stage.label }}</span>
+						<strong>{{ stage.count | federationCount }}</strong>
+					</li>
+				}
+			</ol>
+			<p class="setup-caption">
+				{{ statusLabel(dkg.phase) }} · counts reported by your mint. Totals depend on the keysets and custody.
+			</p>
+		</section>
+		<div class="setup-stack">
+			<section class="setup-card" aria-labelledby="confirmed-title">
+				<h2 id="confirmed-title">Members confirmed</h2>
+				<div class="member-chips">
+					@for (member of members(); track member) {
+						@let confirmed = dkg.confirmed_members.includes(member);
+						<span class="member-chip" [class.confirmed]="confirmed"
+							><mat-icon>{{ confirmed ? 'check' : 'more_horiz' }}</mat-icon
+							>Member {{ member }}</span
+						>
+					}
+				</div>
+				<dl class="digest-list">
+					<dt>Transcript</dt>
+					<dd [title]="dkg.transcript_hash ?? ''">{{ (dkg.transcript_hash | dataTruncate: 18 : 8 : 6) || 'Pending' }}</dd>
+					<dt>Final config</dt>
+					<dd [title]="dkg.final_config_digest ?? ''">{{ (dkg.final_config_digest | dataTruncate: 18 : 8 : 6) || 'Pending' }}</dd>
+					<dt>DKG confirmation</dt>
+					<dd [title]="dkg.dkg_confirmation_digest ?? ''">
+						{{ (dkg.dkg_confirmation_digest | dataTruncate: 18 : 8 : 6) || 'Pending' }}
+					</dd>
+				</dl>
+				<p class="setup-caption">Every operator should see the same values.</p>
+			</section>
+			<section class="setup-aside" aria-labelledby="activate-title">
+				<span class="activate-heading"
+					><mat-icon [class.tone-success]="dkg.finalized_ready" [class.mat-symbol-outline]="!dkg.finalized_ready">{{
+						dkg.finalized_ready ? 'task_alt' : 'hourglass_top'
+					}}</mat-icon>
+					<h2 id="activate-title">{{ dkg.finalized_ready ? 'Ready to activate' : 'Waiting for final configuration' }}</h2></span
+				>
+				<p>Members can activate in any order. Your mint is ready only when key generation reports a finalized configuration.</p>
+				<button matButton="filled" [disabled]="!dkg.finalized_ready || locked()" (click)="activate.emit()">Activate my mint</button>
+			</section>
+		</div>
+	</div>
+} @else {
+	<p class="setup-caption">All approvals are certified. Waiting for key generation progress.</p>
+}

@@ -1,12 +1,16 @@
-<button mat-button (click)="cancel.emit()" [disabled]="busy()">Back to Federation setup</button>
-<h1 tabindex="-1">Create a federation</h1>
+<div class="setup-title">
+	<button type="button" class="back-link" [disabled]="busy()" (click)="cancel.emit()">
+		<mat-icon>arrow_back</mat-icon>Federation setup
+	</button>
+	<h1 tabindex="-1">Create a federation</h1>
+</div>
 <div class="setup-columns">
-	<form #create_form="ngForm" class="setup-form" (ngSubmit)="submit()">
-		<fieldset class="orc-low-card setup-card" [disabled]="busy()">
+	<form id="federation-create-form" #create_form="ngForm" class="setup-form" (ngSubmit)="submit()">
+		<fieldset class="setup-card" [disabled]="busy()">
 			<legend>Members and thresholds</legend>
-			<div class="setup-fields">
-				<div>
-					<label id="members-label">Members, including you</label>
+			<div class="stepper-row">
+				<div class="stepper-field">
+					<span id="members-label" class="field-label">Members, including you</span>
 					<div class="stepper" role="group" aria-labelledby="members-label">
 						<button
 							mat-icon-button
@@ -15,7 +19,7 @@
 							[disabled]="members() <= 1"
 							(click)="changeMembers(-1)"
 						>
-							−
+							<mat-icon>remove</mat-icon>
 						</button>
 						<output data-testid="members-count">{{ members() }}</output>
 						<button
@@ -25,12 +29,12 @@
 							[disabled]="members() >= 15"
 							(click)="changeMembers(1)"
 						>
-							+
+							<mat-icon>add</mat-icon>
 						</button>
 					</div>
 				</div>
-				<div>
-					<label id="signing-label">Members needed to sign</label>
+				<div class="stepper-field">
+					<span id="signing-label" class="field-label">Members needed to sign</span>
 					<div class="stepper" role="group" aria-labelledby="signing-label">
 						<button
 							mat-icon-button
@@ -39,7 +43,7 @@
 							[disabled]="threshold() <= 1"
 							(click)="threshold.set(threshold() - 1)"
 						>
-							−
+							<mat-icon>remove</mat-icon>
 						</button>
 						<output>{{ threshold() }}</output>
 						<button
@@ -49,60 +53,69 @@
 							[disabled]="threshold() >= members()"
 							(click)="threshold.set(threshold() + 1)"
 						>
-							+
+							<mat-icon>add</mat-icon>
 						</button>
+						<span class="stepper-of">of {{ members() }}</span>
 					</div>
 				</div>
-				<div>
-					<label>Members needed to agree</label>
-					<p class="threshold-value">{{ consensus() }} of {{ members() }}</p>
-					<span>Set by the protocol</span>
+				<div class="stepper-field">
+					<span class="field-label">Members needed to agree</span>
+					<span class="threshold-value"
+						>{{ consensus() }}<span class="stepper-of">of {{ members() }}, set by the protocol</span></span
+					>
 				</div>
 			</div>
-			<p>{{ offline_copy() }}</p>
+			<p class="setup-caption">{{ offline_copy() }}</p>
 		</fieldset>
-		<fieldset class="orc-low-card setup-card" [disabled]="busy()">
+		<fieldset class="setup-card" [disabled]="busy()">
 			<legend>Payment checks</legend>
-			<label id="payment-label">Members who must see a payment</label>
-			<div class="stepper" role="group" aria-labelledby="payment-label">
-				<button
-					mat-icon-button
-					type="button"
-					aria-label="Fewer members must see a payment"
-					[disabled]="payment_checks() <= consensus()"
-					(click)="observation.set(payment_checks() - 1)"
-				>
-					−
-				</button>
-				<output>{{ payment_checks() }}</output>
-				<button
-					mat-icon-button
-					type="button"
-					aria-label="More members must see a payment"
-					[disabled]="payment_checks() >= members()"
-					(click)="observation.set(payment_checks() + 1)"
-				>
-					+
-				</button>
-				<span>of {{ members() }}{{ payment_checks() === consensus() ? ', the default' : '' }}</span>
+			<div class="payment-row">
+				<div class="stepper-field">
+					<span id="payment-label" class="field-label">Members who must see a payment</span>
+					<div class="stepper" role="group" aria-labelledby="payment-label">
+						<button
+							mat-icon-button
+							type="button"
+							aria-label="Fewer members must see a payment"
+							[disabled]="payment_checks() <= consensus()"
+							(click)="observation.set(payment_checks() - 1)"
+						>
+							<mat-icon>remove</mat-icon>
+						</button>
+						<output>{{ payment_checks() }}</output>
+						<button
+							mat-icon-button
+							type="button"
+							aria-label="More members must see a payment"
+							[disabled]="payment_checks() >= members()"
+							(click)="observation.set(payment_checks() + 1)"
+						>
+							<mat-icon>add</mat-icon>
+						</button>
+						<span class="stepper-of">of {{ members() }}{{ payment_checks() === consensus() ? ', the default' : '' }}</span>
+					</div>
+				</div>
+				<p>
+					A payment counts as paid only once this many members have seen it. It starts at the members needed to agree and can't go
+					lower.
+				</p>
 			</div>
-			<p>
-				A payment counts as paid only once this many members have seen it. It starts at the members needed to agree and can't go
-				lower.
+			<p class="setup-note">
+				<mat-icon class="mat-symbol-outline">info</mat-icon>How the mint takes payments (federated Bark for Lightning, federated BDK
+				for on-chain) is set in each member's mintd config, not here. Orchard shows it once the federation is active.
 			</p>
-			<p>How the mint takes payments is set in each member's mintd config. Orchard shows it once the federation is active.</p>
 		</fieldset>
-		<fieldset class="orc-low-card setup-card" [disabled]="busy()">
+		<fieldset class="setup-card" [disabled]="busy()">
 			<legend>Network</legend>
-			<orc-form-toggle-group role="group" aria-label="Bitcoin network">
+			<orc-form-toggle-group class="orc-segmented" role="group" aria-label="Bitcoin network">
 				@for (item of networks; track item) {
-					<orc-form-toggle class="flex-1" [selected]="network() === item" (click)="network.set(item)">{{ item }}</orc-form-toggle>
+					<orc-form-toggle [selected]="network() === item" (click)="network.set(item)">{{ item | titlecase }}</orc-form-toggle>
 				}
 			</orc-form-toggle-group>
 		</fieldset>
-		<fieldset class="orc-low-card setup-card" [disabled]="busy()">
+		<fieldset class="setup-card" [disabled]="busy()">
 			<legend>First keyset</legend>
-			<div class="setup-fields">
+			<div class="keyset-fields">
 				<mat-form-field
 					><mat-label>Unit</mat-label><input matInput name="unit" [ngModel]="unit()" (ngModelChange)="unit.set($event)" required
 				/></mat-form-field>
@@ -115,6 +128,7 @@
 					><input
 						matInput
 						name="expiry"
+						placeholder="Never"
 						[matDatepicker]="expiry_picker"
 						[min]="today"
 						[ngModel]="expiry()"
@@ -124,14 +138,30 @@
 					><mat-error>Choose a future date, or leave it blank</mat-error></mat-form-field
 				>
 			</div>
-			<mat-form-field class="w-full"
-				><mat-label>Denominations</mat-label
-				><input matInput name="amounts" [ngModel]="amounts_text()" (ngModelChange)="amounts_text.set($event)" required /><mat-hint
-					>Positive whole amounts, separated by commas</mat-hint
-				></mat-form-field
-			>
+			<div class="denominations">
+				<span id="denominations-label" class="field-label">Denominations</span>
+				@if (editing_amounts()) {
+					<mat-form-field class="w-full"
+						><mat-label>Denominations</mat-label
+						><input
+							matInput
+							name="amounts"
+							[ngModel]="amounts_text()"
+							(ngModelChange)="amounts_text.set($event)"
+							required
+						/><mat-hint>Positive whole amounts, separated by commas</mat-hint></mat-form-field
+					>
+				} @else {
+					<div class="amount-chips" role="group" aria-labelledby="denominations-label">
+						@for (amount of amounts(); track amount) {
+							<span class="amount-chip">{{ amount }}</span>
+						}
+						<button type="button" class="amount-chip amount-edit" (click)="editing_amounts.set(true)">Edit</button>
+					</div>
+				}
+			</div>
 		</fieldset>
-		<fieldset class="orc-low-card setup-card" [disabled]="busy()">
+		<fieldset class="setup-card" [disabled]="busy()">
 			<legend>How others reach your mint</legend>
 			<mat-form-field
 				><mat-label>Public mint URL, for wallets</mat-label
@@ -152,16 +182,17 @@
 					(ngModelChange)="coordinator_url.set($event)"
 				/><mat-hint>Blank uses the federation API URL</mat-hint></mat-form-field
 			>
-			<p>Use HTTPS or Iroh. The public and federation URLs must differ unless both are the same Iroh endpoint.</p>
+			<p class="setup-caption">
+				Use HTTPS or Iroh. The public and federation URLs must differ unless both are the same Iroh endpoint.
+			</p>
 			<mat-checkbox name="allow_local" [ngModel]="allow_local()" (ngModelChange)="allow_local.set($event)"
 				>Allow local HTTP for development</mat-checkbox
 			>
 		</fieldset>
-		<button mat-flat-button type="submit" [disabled]="!valid() || busy() || create_form.invalid">Create and get invitations</button>
 	</form>
-	<aside class="orc-low-card setup-card setup-summary">
-		<h2>Summary</h2>
-		<dl>
+	<aside class="setup-aside setup-summary" aria-labelledby="summary-title">
+		<h2 id="summary-title">Summary</h2>
+		<dl class="summary-list">
 			<dt>Members</dt>
 			<dd>{{ members() }}</dd>
 			<dt>To sign</dt>
@@ -171,12 +202,19 @@
 			<dt>Payment checks</dt>
 			<dd>{{ payment_checks() }} of {{ members() }}</dd>
 			<dt>Network</dt>
-			<dd>{{ network() }}</dd>
+			<dd>{{ network() | titlecase }}</dd>
 			<dt>Keyset</dt>
-			<dd>{{ unit() }} · {{ amounts().length }} denominations · {{ fee() }} ppk</dd>
+			<dd>{{ keyset_summary() }}</dd>
 			<dt>Invitations</dt>
 			<dd>Valid for 24 hours</dd>
 		</dl>
-		<p>These choices are locked in once every member approves the proposal.</p>
+		<p class="lock-note">
+			<mat-icon class="mat-symbol-outline tone-warning">lock</mat-icon>These choices are locked in once every member approves the
+			proposal.
+		</p>
+		<button matButton="filled" type="submit" form="federation-create-form" [disabled]="!valid() || busy() || create_form.invalid">
+			Create and get invitations
+		</button>
+		<button matButton type="button" [disabled]="busy()" (click)="cancel.emit()">Cancel</button>
 	</aside>
 </div>

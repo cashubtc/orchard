@@ -27,6 +27,32 @@ export function toOrchardError(error: unknown): OrchardError {
 	return (error instanceof OrchardErrors && error.errors[0]) || toConnectionError(error);
 }
 
+/** "sat · 1 to 128 · no fee", ordering whole amounts without losing uint64 precision; the mint validates anything else. */
+export function setupKeysetSummary(unit: string, amounts: string[], fee: string): string {
+	const sorted = amounts.every((amount) => /^\d+$/.test(amount))
+		? [...amounts].sort((left, right) => (BigInt(left) < BigInt(right) ? -1 : BigInt(left) > BigInt(right) ? 1 : 0))
+		: amounts;
+	const range = sorted.length > 1 ? `${sorted[0]} to ${sorted.at(-1)}` : (sorted[0] ?? 'no denominations');
+	const trimmed = fee.trim();
+	return [unit.trim(), range, !trimmed || trimmed === '0' ? 'no fee' : `${trimmed} ppk fee`].join(' · ');
+}
+
+/** The host of a member URL for a compact title, or the value itself when it isn't a URL. */
+export function setupUrlHost(url: string): string {
+	try {
+		return new URL(url).host || url;
+	} catch {
+		return url;
+	}
+}
+
+/** "members 1 and 5" or "members 1, 2 and 5". */
+export function setupMemberList(members: number[]): string {
+	if (!members.length) return 'none yet';
+	if (members.length === 1) return `member ${members[0]}`;
+	return `members ${members.slice(0, -1).join(', ')} and ${members.at(-1)}`;
+}
+
 /** Group a hexadecimal identity fingerprint for comparison without changing unknown formats. */
 export function displayFingerprint(fingerprint: string): string {
 	return /^[0-9a-f]{16}$/i.test(fingerprint) ? fingerprint.match(/.{4}/g)!.join(' ') : fingerprint;

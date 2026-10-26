@@ -1,36 +1,49 @@
-<button mat-button (click)="cancel.emit()" [disabled]="busy()">Back to Federation setup</button>
-<h1 tabindex="-1">Join a federation</h1>
+<div class="setup-title">
+	<button type="button" class="back-link" [disabled]="busy()" (click)="cancel.emit()">
+		<mat-icon>arrow_back</mat-icon>Federation setup
+	</button>
+	<h1 tabindex="-1">Join a federation</h1>
+</div>
 <div class="setup-columns">
-	<form class="setup-form orc-low-card setup-card" (ngSubmit)="submit()">
-		<fieldset [disabled]="busy() || reading()" class="setup-fields-vertical">
-			<mat-form-field
-				><mat-label>Invitation</mat-label
-				><textarea
-					matInput
-					name="invitation"
-					rows="5"
-					autocomplete="off"
-					spellcheck="false"
-					[ngModel]="invitation()"
-					(ngModelChange)="invitation.set($event)"
-					required
-				></textarea>
-			</mat-form-field>
-			<div class="setup-actions">
-				<input #invitation_file type="file" accept=".invite,.txt,text/plain" hidden (change)="openFile($event)" />
-				<button mat-stroked-button type="button" (click)="invitation_file.click()">Open file</button>
-				@if (scanner) {
-					<input #qr_file type="file" accept="image/*" capture="environment" hidden (change)="openFile($event, true)" />
-					<button mat-stroked-button type="button" (click)="qr_file.click()">Scan QR photo</button>
+	<form class="setup-card setup-form" (ngSubmit)="submit()">
+		<fieldset [disabled]="busy() || reading()" class="setup-form">
+			<div class="invitation-field">
+				<mat-form-field subscriptSizing="dynamic"
+					><mat-label>Invitation</mat-label
+					><textarea
+						matInput
+						name="invitation"
+						rows="4"
+						autocomplete="off"
+						spellcheck="false"
+						[ngModel]="invitation()"
+						(ngModelChange)="invitation.set($event)"
+						required
+					></textarea>
+				</mat-form-field>
+				<div class="setup-actions">
+					@if (scanner) {
+						<input #qr_file type="file" accept="image/*" capture="environment" hidden (change)="openFile($event, true)" />
+						<button matButton="outlined" type="button" (click)="qr_file.click()">
+							<mat-icon>qr_code_scanner</mat-icon>Scan QR photo
+						</button>
+					}
+					<input #invitation_file type="file" accept=".invite,.txt,text/plain" hidden (change)="openFile($event)" />
+					<button matButton="outlined" type="button" (click)="invitation_file.click()">
+						<mat-icon>upload_file</mat-icon>Open file
+					</button>
+				</div>
+				@if (!scanner) {
+					<p class="setup-caption">QR scanning isn't available in this browser. Paste the invitation or open its text file.</p>
+				}
+				@if (file_error()) {
+					<p class="orc-error-card p-1" role="alert">{{ file_error() }}</p>
 				}
 			</div>
-			@if (!scanner) {
-				<p>QR scanning isn't available in this browser. Paste the invitation or open its text file.</p>
-			}
-			@if (file_error()) {
-				<p class="orc-error-card" role="alert">{{ file_error() }}</p>
-			}
-			<p>Keep the invitation private. The coordinator and member slot are verified by your mint when you join.</p>
+			<p class="setup-note">
+				<mat-icon class="mat-symbol-outline">info</mat-icon>Keep the invitation private. Your mint verifies the coordinator and
+				member slot when you join.
+			</p>
 			<mat-form-field
 				><mat-label>Your public mint URL, for wallets</mat-label
 				><input matInput name="public_url" [ngModel]="public_url()" (ngModelChange)="public_url.set($event)" /><mat-hint
@@ -41,21 +54,26 @@
 				><mat-label>Your federation API URL, for other members</mat-label
 				><input matInput name="federation_url" [ngModel]="federation_url()" (ngModelChange)="federation_url.set($event)"
 			/></mat-form-field>
-			<p>Use HTTPS or Iroh. The public and federation URLs must differ unless both are the same Iroh endpoint.</p>
+			<p class="setup-caption">
+				Use HTTPS or Iroh. The public and federation URLs must differ unless both are the same Iroh endpoint.
+			</p>
 			<mat-checkbox name="allow_local" [ngModel]="allow_local()" (ngModelChange)="allow_local.set($event)"
 				>Allow local HTTP for development</mat-checkbox
 			>
 		</fieldset>
-		<button mat-flat-button type="submit" [disabled]="!valid() || busy() || reading()">Join federation</button>
+		<div class="setup-actions form-footer">
+			<button matButton type="button" [disabled]="busy()" (click)="cancel.emit()">Cancel</button>
+			<button matButton="filled" type="submit" [disabled]="!valid() || busy() || reading()">Join federation</button>
+		</div>
 	</form>
-	<aside class="orc-low-card setup-card setup-summary">
-		<p>AFTER YOU JOIN</p>
-		<h2>Waiting for the coordinator to propose</h2>
+	<aside class="setup-aside join-preview" aria-labelledby="after-join-title">
+		<span class="eyebrow">AFTER YOU JOIN</span>
+		<h2 id="after-join-title">Waiting for the coordinator to propose</h2>
 		<p>Your mint enrolls in its assigned slot. Once every operator has joined, the coordinator publishes the proposal.</p>
 		<p>
-			You'll check each member's fingerprint before approving. Your own fingerprint appears after joining so you can share it with the
-			other operators.
+			Your identity fingerprint appears as soon as you join. Read it to the other operators over a call or chat you trust; they'll
+			check it against the proposal before approving.
 		</p>
-		<p>You can return to this page to resume. Orchard checks for a proposal while this page is open.</p>
+		<p class="setup-caption">You can leave this page. Orchard checks for the proposal when you return.</p>
 	</aside>
 </div>

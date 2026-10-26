@@ -22,7 +22,7 @@ describe('FederationSetupReviewComponent', () => {
 		fixture.componentRef.setInput('approved_members', [1]);
 		expect(component.ready()).toBeFalse();
 	});
-	it('words the payment rule as the dashboard does and shows Never for a keyset without expiry', () => {
+	it('words the payment rule as the dashboard does and says when a keyset never expires', () => {
 		const fixture = TestBed.createComponent(FederationSetupReviewComponent);
 		const policy = {type: 'member_quorum', required: 3};
 		const details_json = JSON.stringify({payment_observation_policy: {mint_quotes: policy, melt_quotes: policy}});
@@ -30,7 +30,9 @@ describe('FederationSetupReviewComponent', () => {
 		fixture.detectChanges();
 		const text: string = fixture.nativeElement.textContent;
 		expect(text).toContain(paymentRule({kind: 'PAYMENT_VERIFICATION_POLICY_KIND_MEMBER_QUORUM', required_observations: 3}));
-		expect(text).toContain('Expiry: Never');
+		expect(text).toContain('sat · 1 to 9007199254740993 · no fee · never expires');
+		// The full hash stays available beside its shortened display
+		expect(fixture.nativeElement.querySelector('[data-testid="proposal-hash"]').title).toBe('hash');
 	});
 	it('displays the original proposal JSON without rounding uint64 numbers', () => {
 		const fixture = TestBed.createComponent(FederationSetupReviewComponent);

@@ -13,8 +13,11 @@ import {FederationSetupComponent} from './federation-setup.component';
 import {UserRole, type OrchardFederationSetupJoined, type OrchardFederationSetupStatus} from '@shared/generated.types';
 
 /** Visible labels of the buttons inside an element. */
+/** Button labels without their icons' ligature text. */
 function buttonTexts(element: Element): string[] {
-	return Array.from(element.querySelectorAll('button')).map((button) => button.textContent?.trim() ?? '');
+	return Array.from(element.querySelectorAll('button')).map(
+		(button) => button.textContent?.replace(button.querySelector('mat-icon')?.textContent ?? '', '').trim() ?? '',
+	);
 }
 
 describe('FederationSetupComponent', () => {
@@ -107,11 +110,10 @@ describe('FederationSetupComponent', () => {
 		component.create({members: 3, threshold: 2, network: 'regtest'});
 		fixture.detectChanges();
 		expect(component.invitation_expired()).toBeTrue();
-		const buttons = [...fixture.nativeElement.querySelectorAll('button')] as HTMLButtonElement[];
-		const invitation_actions = buttons.filter((button) => ['Copy invitation', 'Save file'].includes(button.textContent?.trim() ?? ''));
-		expect(invitation_actions.length).toBe(2);
+		const invitation_actions = Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('.invitation-actions button'));
+		expect(buttonTexts(fixture.nativeElement.querySelector('.invitation-actions'))).toEqual(['Copy', 'Save file']);
 		expect(invitation_actions.every((button) => button.disabled)).toBeTrue();
-		expect(fixture.nativeElement.querySelector('.selected-slot button[aria-pressed="true"]')).not.toBeNull();
+		expect(fixture.nativeElement.querySelector('.member-slot.selected button[aria-pressed="true"]')).not.toBeNull();
 		component.copy_result.set('Copied');
 		setup.getStatus.and.returnValue(of({...setupStatus(), enrolled_members: [1, 2]}));
 		tick(3000);
@@ -133,11 +135,11 @@ describe('FederationSetupComponent', () => {
 		tick(0);
 		fixture.componentInstance.create({members: 3, threshold: 2, network: 'regtest'});
 		fixture.detectChanges();
-		const region: HTMLElement = fixture.nativeElement.querySelector('aside [role="status"]');
-		expect(region.textContent?.trim()).toBe('');
+		const region: HTMLElement = fixture.nativeElement.querySelector('.setup-expiry[role="status"]');
+		expect(region.textContent).toContain('Expires in');
 		fixture.componentInstance.now.set(DateTime.now().toUnixInteger() + 3);
 		fixture.detectChanges();
-		expect(fixture.nativeElement.querySelector('aside [role="status"]')).toBe(region);
+		expect(fixture.nativeElement.querySelector('.setup-expiry[role="status"]')).toBe(region);
 		expect(region.textContent).toContain('Expired, replace it');
 		fixture.destroy();
 	}));
@@ -173,6 +175,21 @@ describe('FederationSetupComponent', () => {
 		fixture.detectChanges();
 		tick(3000);
 		expect(setup.getStatus).toHaveBeenCalled();
+		fixture.destroy();
+	}));
+	it('shows the own fingerprint once, in the slot for the coordinator and in the aside for a joining member', fakeAsync(() => {
+		const fixture = TestBed.createComponent(FederationSetupComponent);
+		fixture.detectChanges();
+		tick(0);
+		fixture.detectChanges();
+		const fingerprints = (): HTMLElement[] =>
+			Array.from(fixture.nativeElement.querySelectorAll('[data-testid="identity-fingerprint"]'));
+		expect(fingerprints().length).toBe(1);
+		expect(fingerprints()[0].closest('.member-slot')).not.toBeNull();
+		fixture.componentInstance.status.set({...setupStatus(), role: 'SETUP_ROLE_PARTICIPANT', member_id: 2, enrolled_members: [1, 2]});
+		fixture.detectChanges();
+		expect(fingerprints().length).toBe(1);
+		expect(fingerprints()[0].closest('.fingerprint-box')).not.toBeNull();
 		fixture.destroy();
 	}));
 	it('coalesces polls and cancels in-flight requests on navigation', fakeAsync(() => {
@@ -332,7 +349,7 @@ describe('FederationSetupComponent', () => {
 		const element: HTMLElement = fixture.nativeElement;
 		expect(component.view()).toBe('waiting');
 		fixture.detectChanges();
-		expect(buttonTexts(element.querySelector('.setup-card .setup-actions')!)).toContain('Abort setup');
+		expect(buttonTexts(element.querySelector('.enrollment-row .setup-actions')!)).toContain('Abort setup');
 		component.proposal.set(setupProposal());
 		component.status.set({...setupStatus(), proposal_hash: 'hash'});
 		expect(component.view()).toBe('review');

@@ -1,16 +1,25 @@
 /* Core Dependencies */
 import {ChangeDetectionStrategy, Component, computed, input, linkedSignal, output, signal} from '@angular/core';
+import {TitleCasePipe} from '@angular/common';
 import {ClipboardModule} from '@angular/cdk/clipboard';
 
 /* Vendor Dependencies */
 import {MatButtonModule} from '@angular/material/button';
 import {MatCheckboxModule} from '@angular/material/checkbox';
+import {MatIconModule} from '@angular/material/icon';
 
 /* Application Dependencies */
 import {OrcLocalModule} from '@client/modules/local/local.module';
+import {OrcDataModule} from '@client/modules/data/data.module';
 
 /* Native Dependencies */
-import {displayFingerprint, setupPaymentRule} from '@client/modules/federation/helpers/federation-setup.helpers';
+import {
+	displayFingerprint,
+	setupKeysetSummary,
+	setupMemberList,
+	setupPaymentRule,
+	setupUrlHost,
+} from '@client/modules/federation/helpers/federation-setup.helpers';
 import {timestamp} from '@client/modules/federation/helpers/federation-status.helpers';
 
 /* Shared Dependencies */
@@ -18,9 +27,9 @@ import type {OrchardFederationSetupReview} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-federation-setup-review',
-	imports: [ClipboardModule, MatButtonModule, MatCheckboxModule, OrcLocalModule],
+	imports: [ClipboardModule, TitleCasePipe, MatButtonModule, MatCheckboxModule, MatIconModule, OrcLocalModule, OrcDataModule],
 	templateUrl: './federation-setup-review.component.html',
-	styleUrl: '../federation-setup/federation-setup-forms.scss',
+	styleUrls: ['../federation-setup/federation-setup-shared.scss', './federation-setup-review.component.scss'],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FederationSetupReviewComponent {
@@ -31,11 +40,19 @@ export class FederationSetupReviewComponent {
 	public readonly approve = output<string>();
 
 	public readonly displayFingerprint = displayFingerprint;
-	public readonly timestamp = timestamp;
+	public readonly hostOf = setupUrlHost;
 
 	public readonly copied = signal<boolean>(false);
 
 	public readonly payment_rule = computed<string>(() => setupPaymentRule(this.proposal().details_json));
+	public readonly keysets = computed(() =>
+		this.proposal().keysets.map((keyset) => ({
+			summary: setupKeysetSummary(keyset.unit, keyset.amounts, keyset.input_fee_ppk),
+			expiry: timestamp(keyset.final_expiry),
+		})),
+	);
+	public readonly short_hash = computed<string>(() => this.proposal().proposal_hash.slice(0, 8));
+	public readonly approved_text = computed<string>(() => setupMemberList(this.approved_members()));
 	public readonly other_members = computed(() => this.proposal().members.filter((member) => member.member_id !== this.member_id()));
 
 	/** Resets whenever a different proposal arrives, so a changed proposal needs a fresh review. */

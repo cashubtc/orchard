@@ -1,0 +1,193 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+:host {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-1-5;
+}
+// The proposal is the narrow column here and the members the wide one
+.review-columns {
+	> :first-child {
+		flex: 1 1 21.25rem;
+		max-width: 26.25rem;
+	}
+	> :last-child:not(:first-child) {
+		flex: 999 1 32.5rem;
+		max-width: none;
+	}
+}
+.hash-box {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-gap-0-5;
+	@extend %p-1;
+	@extend %orc-corner-large;
+	@extend %orc-surface-container-high-bg;
+}
+.hash-row {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+}
+.hash {
+	@extend %flex-grow;
+	font-size: 1.125rem;
+	@extend %font-weight-semi-bold;
+	letter-spacing: 0.04em;
+	overflow-wrap: anywhere;
+}
+.proposal-summary {
+	display: none;
+}
+dl.proposal-details {
+	@extend %grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: 0.625rem 1rem;
+	@extend %m-0;
+	@extend %font-size-s;
+	dt {
+		@extend %orc-outline-color;
+	}
+	dd {
+		@extend %m-0;
+		@extend %font-weight-semi-bold;
+	}
+}
+summary {
+	padding: 0.375rem 0;
+	font-size: 0.8125rem;
+	@extend %font-weight-semi-bold;
+	@extend %orc-primary-color;
+	@extend %cursor-pointer;
+}
+pre {
+	margin: 0.5rem 0 0;
+	padding: 0.75rem;
+	@extend %orc-corner-medium;
+	@extend %orc-surface-bg;
+	font-size: 0.75rem;
+	line-height: 1.5;
+	@extend %orc-on-surface-variant-color;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.review-members {
+	@extend %flex;
+	@extend %flex-column;
+	gap: 0.75rem;
+}
+.member-row {
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-items-center;
+	@extend %flex-gap-1;
+	padding: 1rem 1.125rem;
+	@extend %orc-surface-container-bg;
+	@extend %orc-corner-large-increased;
+	&.checked {
+		@extend %orc-surface-container-high-bg;
+	}
+}
+.member-text {
+	@extend %flex;
+	@extend %flex-column;
+	gap: 0.25rem;
+	flex: 1 1 15rem;
+	min-width: 0;
+	h3 {
+		@extend %m-0;
+		font-size: 0.9375rem;
+		@extend %font-weight-semi-bold;
+	}
+	span {
+		@extend %font-size-xs;
+		@extend %orc-on-surface-variant-color;
+		@extend %text-overflow-ellipsis;
+	}
+}
+.member-fingerprint {
+	@extend %flex;
+	@extend %flex-column;
+	gap: 0.125rem;
+	span {
+		font-size: 0.6875rem;
+		@extend %orc-on-surface-variant-color;
+	}
+	strong {
+		@extend %font-size-m;
+		@extend %font-weight-semi-bold;
+		letter-spacing: 0.05em;
+	}
+}
+.member-check {
+	min-width: 10.625rem;
+	font-size: 0.8125rem;
+}
+span.member-check {
+	@extend %flex;
+	@extend %flex-items-center;
+	gap: 0.375rem;
+	@extend %orc-on-surface-variant-color;
+	mat-icon {
+		font-size: 1.125rem;
+		width: 1.125rem;
+		height: 1.125rem;
+	}
+}
+.review-footer {
+	@extend %flex;
+	@extend %flex-wrap;
+	@extend %flex-items-center;
+	@extend %flex-gap-1;
+	position: sticky;
+	bottom: 0;
+	@extend %z-index-1;
+	margin-top: 0.375rem;
+	padding: 1.125rem;
+	@extend %orc-surface-container-high-bg;
+	@extend %orc-corner-large-increased;
+}
+.review-counts {
+	@extend %flex;
+	@extend %flex-column;
+	gap: 0.25rem;
+	flex: 1 1 16rem;
+	strong {
+		@extend %font-size-s;
+		@extend %font-weight-semi-bold;
+	}
+	span {
+		font-size: 0.8125rem;
+		@extend %orc-on-surface-variant-color;
+	}
+}
+// Phone: a compact proposal summary, and a footer whose actions span its width
+@media (max-width: 599px) {
+	.proposal-summary {
+		display: block;
+	}
+	dl.proposal-details,
+	details.proposal-details {
+		display: none;
+	}
+	.member-row {
+		gap: 0.75rem;
+		padding: 0.75rem 0.875rem;
+	}
+	.member-text span {
+		display: none;
+	}
+	.review-counts {
+		flex: none;
+	}
+	.review-footer {
+		flex-direction: column;
+		align-items: stretch;
+		text-align: center;
+		.setup-actions {
+			flex-direction: column;
+			align-items: stretch;
+		}
+	}
+}

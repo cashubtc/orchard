@@ -51,7 +51,7 @@ export async function createSetup(page) {
 	await page.getByRole('button', {name: 'Fewer members', exact: true}).click({clickCount: 2});
 	await expect(page.getByTestId('members-count')).toHaveText('3');
 	await page.getByRole('button', {name: 'Lower signing threshold'}).click();
-	await page.getByRole('button', {name: 'regtest', exact: true}).click();
+	await page.getByRole('button', {name: 'Regtest', exact: true}).click();
 	await page.getByLabel('Federation API URL, for other members', {exact: true}).fill('http://127.0.0.1:3351');
 	await page.getByLabel('Allow local HTTP for development').check();
 	const response = page.waitForResponse((response) => response.request().postData()?.includes('federation_setup_create') ?? false);
@@ -63,7 +63,7 @@ export async function createSetup(page) {
 	const member_two = created.invitations.find((invitation) => invitation.member_id === 2);
 	assert(member_two, 'Create did not return an invitation for member 2');
 	await expect(page.getByLabel('Invitation', {exact: true})).toHaveValue(member_two.invitation);
-	await expect(page.getByText(/^Expires /)).toBeVisible();
+	await expect(page.getByRole('status').filter({hasText: 'Expires in'})).toBeVisible();
 	await expect(page.getByTestId('identity-fingerprint')).toHaveText(fingerprint_pattern);
 	return created;
 }

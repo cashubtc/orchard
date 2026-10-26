@@ -4,7 +4,10 @@ import {
 	parseAmounts,
 	toOrchardError,
 	displayFingerprint,
+	setupKeysetSummary,
+	setupMemberList,
 	setupPaymentRule,
+	setupUrlHost,
 } from '@client/modules/federation/helpers/federation-setup.helpers';
 import {paymentRule} from '@client/modules/federation/helpers/federation-status.helpers';
 describe('Federation setup helpers', () => {
@@ -38,6 +41,18 @@ describe('Federation setup helpers', () => {
 	it('treats only standalone and member daemons as serving the mint', () => {
 		expect(['standalone', 'member', 'unreachable'].every(isMintAvailable)).toBeTrue();
 		expect(isMintAvailable('setup')).toBeFalse();
+	});
+	it('summarizes a keyset by its range and fee without losing uint64 precision', () => {
+		expect(setupKeysetSummary('sat', ['128', '1', '9007199254740993', '2'], '0')).toBe('sat · 1 to 9007199254740993 · no fee');
+		expect(setupKeysetSummary(' usd ', ['5'], '100')).toBe('usd · 5 · 100 ppk fee');
+		expect(setupKeysetSummary('sat', ['8', 'x2'], '')).toBe('sat · 8 to x2 · no fee');
+	});
+	it('shortens member URLs to their host and lists approvals in words', () => {
+		expect(setupUrlHost('https://mint.oak.example:3338/path')).toBe('mint.oak.example:3338');
+		expect(setupUrlHost('not a url')).toBe('not a url');
+		expect(setupMemberList([])).toBe('none yet');
+		expect(setupMemberList([3])).toBe('member 3');
+		expect(setupMemberList([1, 2, 5])).toBe('members 1, 2 and 5');
 	});
 	it('keeps the Orchard error code and the mint diagnostic', () => {
 		const error = new OrchardErrors([{message: 'Busy', extensions: {code: 40015, details: 'the setup is certified'}}]);

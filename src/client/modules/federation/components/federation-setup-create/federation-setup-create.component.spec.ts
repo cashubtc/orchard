@@ -12,8 +12,25 @@ describe('FederationSetupCreateComponent', () => {
 			expect(element.querySelector('#' + group.getAttribute('aria-labelledby'))).not.toBeNull();
 		}
 		const pressed = element.querySelector('button[aria-pressed="true"]');
-		expect(pressed?.textContent).toContain('signet');
+		expect(pressed?.textContent).toContain('Signet');
 		expect(element.querySelectorAll('orc-form-toggle[aria-pressed]').length).toBe(0);
+	});
+	it('shows denominations as chips until edited, summarizes the keyset and submits from the summary card', async () => {
+		const fixture = TestBed.createComponent(FederationSetupCreateComponent);
+		const emitted = jasmine.createSpy();
+		fixture.componentInstance.create.subscribe(emitted);
+		fixture.detectChanges();
+		await fixture.whenStable();
+		const element: HTMLElement = fixture.nativeElement;
+		expect(element.querySelectorAll('.amount-chip:not(.amount-edit)').length).toBe(8);
+		expect(element.querySelector('.summary-list')?.textContent).toContain('sat · 1 to 128 · no fee');
+		element.querySelector<HTMLButtonElement>('.amount-edit')!.click();
+		fixture.detectChanges();
+		expect(element.querySelector('input[name="amounts"]')).not.toBeNull();
+		await fixture.whenStable();
+		fixture.detectChanges();
+		element.querySelector<HTMLButtonElement>('aside button[type="submit"]')!.click();
+		expect(emitted).toHaveBeenCalledTimes(1);
 	});
 	it('sends the end of the chosen day as whole Unix seconds and no expiry when blank', () => {
 		const component = TestBed.createComponent(FederationSetupCreateComponent).componentInstance;

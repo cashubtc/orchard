@@ -1,5 +1,6 @@
 /* Core Dependencies */
 import {ChangeDetectionStrategy, Component, computed, input, output, signal} from '@angular/core';
+import {TitleCasePipe} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 
 /* Vendor Dependencies */
@@ -8,13 +9,14 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatCheckboxModule} from '@angular/material/checkbox';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatIconModule} from '@angular/material/icon';
 import {MatInputModule} from '@angular/material/input';
 
 /* Application Dependencies */
 import {OrcFormModule} from '@client/modules/form/form.module';
 
 /* Native Dependencies */
-import {parseAmounts} from '@client/modules/federation/helpers/federation-setup.helpers';
+import {parseAmounts, setupKeysetSummary} from '@client/modules/federation/helpers/federation-setup.helpers';
 import {FEDERATION_NETWORKS} from '@client/modules/federation/constants/federation.constants';
 
 /* Shared Dependencies */
@@ -22,9 +24,19 @@ import type {FederationSetupCreateInput} from '@shared/generated.types';
 
 @Component({
 	selector: 'orc-federation-setup-create',
-	imports: [FormsModule, MatButtonModule, MatCheckboxModule, MatDatepickerModule, MatFormFieldModule, MatInputModule, OrcFormModule],
+	imports: [
+		FormsModule,
+		TitleCasePipe,
+		MatButtonModule,
+		MatCheckboxModule,
+		MatDatepickerModule,
+		MatFormFieldModule,
+		MatIconModule,
+		MatInputModule,
+		OrcFormModule,
+	],
 	templateUrl: './federation-setup-create.component.html',
-	styleUrl: '../federation-setup/federation-setup-forms.scss',
+	styleUrls: ['../federation-setup/federation-setup-shared.scss', '../federation-setup/federation-setup-forms.scss'],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FederationSetupCreateComponent {
@@ -47,6 +59,7 @@ export class FederationSetupCreateComponent {
 	public readonly federation_url = signal<string>('');
 	public readonly coordinator_url = signal<string>('');
 	public readonly allow_local = signal<boolean>(false);
+	public readonly editing_amounts = signal<boolean>(false);
 
 	public readonly consensus = computed<number>(() => this.members() - Math.floor((this.members() - 1) / 3));
 	public readonly payment_checks = computed<number>(() =>
@@ -60,6 +73,7 @@ export class FederationSetupCreateComponent {
 	});
 	public readonly amounts = computed<string[]>(() => parseAmounts(this.amounts_text()));
 	public readonly valid = computed<boolean>(() => !!this.unit().trim() && !!this.fee().trim() && this.amounts().length > 0);
+	public readonly keyset_summary = computed<string>(() => setupKeysetSummary(this.unit(), this.amounts(), this.fee()));
 
 	/* *******************************************************
         Actions Up

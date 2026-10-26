@@ -48,6 +48,7 @@ import {OrcErrorModule} from '@client/modules/error/error.module';
 import type {OrchardError} from '@client/modules/error/types/error.types';
 import {OrcGraphicModule} from '@client/modules/graphic/graphic.module';
 import {OrcLocalModule} from '@client/modules/local/local.module';
+import {OrcDataModule} from '@client/modules/data/data.module';
 import {OrcNavModule} from '@client/modules/nav/nav.module';
 import {NavSetupStepsComponent} from '@client/modules/nav/components/nav-setup-steps/nav-setup-steps.component';
 import type {ComponentCanDeactivate} from '@client/modules/routing/interfaces/routing.interfaces';
@@ -56,10 +57,12 @@ import type {ComponentCanDeactivate} from '@client/modules/routing/interfaces/ro
 import {FederationService} from '@client/modules/federation/services/federation.service';
 import {FederationSetupService} from '@client/modules/federation/services/federation-setup.service';
 import {displayFingerprint, toOrchardError} from '@client/modules/federation/helpers/federation-setup.helpers';
-import {statusLabel, timestamp} from '@client/modules/federation/helpers/federation-status.helpers';
+import {timestamp} from '@client/modules/federation/helpers/federation-status.helpers';
 import type {FederationSetupConfirm} from '@client/modules/federation/types/federation-setup.types';
-import {FEDERATION_DKG_STAGES, FEDERATION_SETUP_STEPS} from '@client/modules/federation/constants/federation.constants';
+import {FEDERATION_SETUP_PHASES} from '@client/modules/federation/constants/federation.constants';
 import {FederationBackupComponent} from '@client/modules/federation/components/federation-backup/federation-backup.component';
+import {FederationSetupStartComponent} from '@client/modules/federation/components/federation-setup-start/federation-setup-start.component';
+import {FederationSetupKeygenComponent} from '@client/modules/federation/components/federation-setup-keygen/federation-setup-keygen.component';
 import {FederationSetupCreateComponent} from '@client/modules/federation/components/federation-setup-create/federation-setup-create.component';
 import {FederationSetupJoinComponent} from '@client/modules/federation/components/federation-setup-join/federation-setup-join.component';
 import {FederationSetupReviewComponent} from '@client/modules/federation/components/federation-setup-review/federation-setup-review.component';
@@ -90,14 +93,17 @@ type SetupView = 'start' | 'create' | 'join' | 'waiting' | 'review' | 'keygen' |
 		OrcErrorModule,
 		OrcGraphicModule,
 		OrcLocalModule,
+		OrcDataModule,
 		OrcNavModule,
 		FederationBackupComponent,
+		FederationSetupStartComponent,
+		FederationSetupKeygenComponent,
 		FederationSetupCreateComponent,
 		FederationSetupJoinComponent,
 		FederationSetupReviewComponent,
 	],
 	templateUrl: './federation-setup.component.html',
-	styleUrl: './federation-setup.component.scss',
+	styleUrls: ['./federation-setup-shared.scss', './federation-setup.component.scss'],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FederationSetupComponent implements ComponentCanDeactivate, OnInit, OnDestroy {
@@ -108,10 +114,8 @@ export class FederationSetupComponent implements ComponentCanDeactivate, OnInit,
 	private readonly router = inject(Router);
 	private readonly dialog = inject(MatDialog);
 
-	public readonly statusLabel = statusLabel;
 	public readonly displayFingerprint = displayFingerprint;
-	public readonly steps = FEDERATION_SETUP_STEPS;
-	public readonly stage_fields = FEDERATION_DKG_STAGES;
+	public readonly phases = FEDERATION_SETUP_PHASES;
 
 	public readonly mode = this.federation_service.mode;
 	public readonly details = this.federation_service.details;
@@ -180,6 +184,33 @@ export class FederationSetupComponent implements ComponentCanDeactivate, OnInit,
 	});
 	/** Render setup views only once the daemon is known to be in setup, so an unknown mode never offers Create or Join. */
 	public readonly show_setup = computed<boolean>(() => this.mode() === 'setup' || this.view() === 'activated');
+	public readonly centred = computed<boolean>(() => ['start', 'activated', 'aborted'].includes(this.view()));
+	/** Slots whose invitation this page still holds; the others can only be replaced. */
+	public readonly held_members = computed<Set<number>>(() => new Set(this.invitations().map((invitation) => invitation.member_id)));
+	public readonly enrolled_percent = computed<number>(() => {
+		const status = this.status();
+		return status?.member_count ? (status.enrolled_members.length / status.member_count) * 100 : 0;
+	});
+	public readonly invitation_expiry = computed<string | null>(() => {
+		const expires = this.invitation_expires_at();
+		if (expires === null) return null;
+		if (this.invitation_expired()) return 'Expired, replace it';
+		return `Expires ${DateTime.fromSeconds(expires).toRelative({base: DateTime.fromSeconds(this.now())})}`;
+	});
+	public readonly slot_details = computed<Record<number, string>>(() => {
+		const status = this.status();
+		return Object.fromEntries(
+			this.slots().map((member) => {
+				if (status?.enrolled_members.includes(member)) return [member, 'Enrolled'];
+				if (this.held_members().has(member)) return [member, 'Invitation not used yet'];
+				return [member, this.is_coordinator() ? 'Invitation not held on this page' : 'Waiting for its operator to join'];
+			}),
+		);
+	});
+	public readonly activated_status = computed<string>(() => {
+		if (this.mode() !== 'member') return 'Waiting for the mint to report member mode…';
+		return this.backup_complete() ? 'Backup confirmed.' : 'Confirm your backup to open the federation.';
+	});
 
 	private invitation_setup_id: string | null = null;
 	private polling_error = false;

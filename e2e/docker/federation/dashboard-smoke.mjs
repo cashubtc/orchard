@@ -31,7 +31,7 @@ export async function checkMemberDashboard(page, index) {
 	page.on('request', on_request);
 	page.on('response', on_response);
 	try {
-		await page.getByRole('button', {name: 'Open the mint', exact: true}).click();
+		await page.getByRole('button', {name: 'Open the federation', exact: true}).click();
 		await expect(page.getByRole('heading', {name: 'Federation overview', exact: true})).toBeVisible();
 		await expect(page.getByRole('heading', {name: 'Payments', exact: true})).toBeVisible();
 		await expect(page.locator('orc-federation-overview')).toContainText('BOLT 11', {timeout: 30000});
