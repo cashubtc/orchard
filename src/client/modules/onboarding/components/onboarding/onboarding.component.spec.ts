@@ -125,14 +125,33 @@ describe('OnboardingComponent', () => {
 		expect(picker.selected()).toEqual(['ecash']);
 		expect(picker.review_rows().at(-1)?.status).toBe('Enabled');
 	});
-	it('turns the ecash wallet on as its own step', async () => {
-		const component = await harness.navigateByUrl('/onboarding/configure/ecash?picked=mint,ecash', OnboardingComponent);
-		expect(component.service_states().ecash).toBe('Configuring');
-		component.enableEcash();
+	it('turns a picked ecash wallet on without a configure step', async () => {
+		const component = await harness.navigateByUrl('/onboarding/services?picked=mint,ecash', OnboardingComponent);
+		expect(component.service_steps()).toEqual([ServiceKind.Mint]);
+		component.continue();
 		await settle();
 		expect(updateSettings).toHaveBeenCalledWith([SettingKey.EcashEnabled], ['true']);
+		expect(component.active_service()).toBe(ServiceKind.Mint);
+		expect(harness.routeNativeElement?.querySelectorAll('.service-step').length).toBe(1);
+		component.skipService();
+		await settle();
 		expect(component.stage()).toBe('review');
 		expect(component.review_rows().at(-1)).toEqual(jasmine.objectContaining({service: 'ecash', status: 'Enabled'}));
+	});
+	it('reviews right away when only the ecash wallet is picked, and toggles it from its row', async () => {
+		const component = await harness.navigateByUrl('/onboarding/services?picked=ecash', OnboardingComponent);
+		component.continue();
+		await settle();
+		expect(component.stage()).toBe('review');
+		component.edit('ecash');
+		await settle();
+		expect(updateSettings).toHaveBeenCalledWith([SettingKey.EcashEnabled], ['false']);
+		expect(component.review_rows().at(-1)).toEqual(jasmine.objectContaining({status: 'Skipped', action: 'Turn on'}));
+		expect(component.stage()).toBe('review');
+	});
+	it('has no configure step for the ecash wallet', async () => {
+		const component = await harness.navigateByUrl('/onboarding/configure/ecash', OnboardingComponent);
+		expect(component.stage()).toBe('services');
 	});
 	it('continues the saved step after a failed reload is retried', async () => {
 		const component = await harness.navigateByUrl('/onboarding/configure/bitcoin?picked=bitcoin,lightning', OnboardingComponent);

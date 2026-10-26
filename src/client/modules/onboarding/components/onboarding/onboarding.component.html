@@ -28,7 +28,7 @@
 			@case ('configure') {
 				<div class="configure-layout">
 					<nav class="service-list" aria-label="Services to configure">
-						@for (service of selected(); track service) {
+						@for (service of service_steps(); track service) {
 							<button
 								type="button"
 								class="service-step"
@@ -49,19 +49,6 @@
 							</button>
 						}
 					</nav>
-					@if (active_service() === 'ecash') {
-						<section class="ecash-card" aria-labelledby="onboarding-ecash-title">
-							<h2 id="onboarding-ecash-title">{{ descriptors.ecash.name }}</h2>
-							<p>{{ copy.ecash.configure }}</p>
-							<div class="ecash-actions">
-								<button matButton type="button" [disabled]="busy()" (click)="back()">Back</button>
-								<button matButton type="button" [disabled]="busy()" (click)="skipService()">Skip this service</button>
-								<button matButton="filled" type="button" [disabled]="busy()" (click)="enableEcash()">
-									{{ ecash_enabled() ? 'Continue' : 'Turn on and continue' }}
-								</button>
-							</div>
-						</section>
-					}
 					@for (configuration of active_configurations(); track configuration.service) {
 						<orc-onboarding-configure
 							[configuration]="configuration"

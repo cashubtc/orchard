@@ -16,7 +16,7 @@ export interface OnboardingDescriptor {
 }
 export interface OnboardingRoute {
 	stage: OnboardingStage;
-	service: OnboardingChoice | null;
+	service: ServiceKind | null;
 	picked: OnboardingChoice[] | null;
 	return_to_review: boolean;
 }
@@ -25,7 +25,7 @@ export interface OnboardingOutcome {
 	saved_check?: OrchardConnectionCheck;
 	skipped?: boolean;
 }
-export type OnboardingOutcomes = Partial<Record<OnboardingChoice, OnboardingOutcome>>;
+export type OnboardingOutcomes = Partial<Record<ServiceKind, OnboardingOutcome>>;
 export interface OnboardingReviewStatus {
 	status: string;
 	tone: OnboardingTone;
@@ -35,12 +35,15 @@ export interface OnboardingReviewRow extends OnboardingReviewStatus {
 	service: OnboardingChoice;
 	detail: string;
 	enabled: boolean;
+	action: string;
 }
 
-export interface OnboardingServiceCopy {
+export interface OnboardingChoiceCopy {
 	description: string;
 	note: string;
 	tile: string;
-	configure: string;
 	skipped: string;
+}
+export interface OnboardingServiceCopy extends OnboardingChoiceCopy {
+	configure: string;
 }

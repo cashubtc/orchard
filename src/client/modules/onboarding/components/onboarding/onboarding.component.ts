@@ -33,8 +33,8 @@ import {NavSetupStepsComponent} from '@client/modules/nav/components/nav-setup-s
 import {OnboardingLayoutService} from '@client/modules/onboarding/services/onboarding-layout.service';
 import {
 	ONBOARDING_CHOICES,
-	ONBOARDING_COPY,
 	ONBOARDING_DESCRIPTORS,
+	ONBOARDING_SERVICES,
 	ONBOARDING_STAGES,
 	ONBOARDING_STEPS,
 } from '@client/modules/onboarding/constants/onboarding.constants';
@@ -76,7 +76,6 @@ export class OnboardingComponent implements OnInit {
 	private readonly destroy_ref = inject(DestroyRef);
 
 	public readonly descriptors = ONBOARDING_DESCRIPTORS;
-	public readonly copy = ONBOARDING_COPY;
 	public readonly steps = ONBOARDING_STEPS;
 
 	public readonly mobile = this.layout.mobile;
@@ -90,7 +89,7 @@ export class OnboardingComponent implements OnInit {
 
 	// The URL is the only record of the step, service, picked services and return target
 	public readonly stage = computed<OnboardingStage>(() => this.route_state().stage);
-	public readonly active_service = computed<OnboardingChoice | null>(() => this.route_state().service);
+	public readonly active_service = computed<ServiceKind | null>(() => this.route_state().service);
 	// Until the URL records a choice: the service a first-run tile opened, else what's already connected or enabled
 	public readonly selected = computed<OnboardingChoice[]>(() => {
 		const {picked, service} = this.route_state();
@@ -102,25 +101,24 @@ export class OnboardingComponent implements OnInit {
 				: this.configurations().some((configuration) => configuration.service === item && configuration.enabled),
 		);
 	});
+	// Only connections get a configure step; a picked ecash wallet turns on when the picker continues
+	public readonly service_steps = computed<ServiceKind[]>(() =>
+		ONBOARDING_SERVICES.filter((service) => this.selected().includes(service)),
+	);
 	public readonly stage_copy = computed(() => ONBOARDING_STAGES[this.stage()]);
 	public readonly active_configurations = computed(() => this.configurations().filter((item) => item.service === this.active_service()));
 	public readonly review_rows = computed(() => onboardingReview(this.configurations(), this.outcomes(), this.ecash_enabled()));
 	public readonly service_states = computed(
 		() =>
-			Object.fromEntries(ONBOARDING_CHOICES.map((service) => [service, this.serviceState(service)])) as Record<
-				OnboardingChoice,
-				string
-			>,
+			Object.fromEntries(ONBOARDING_SERVICES.map((service) => [service, this.serviceState(service)])) as Record<ServiceKind, string>,
 	);
 	// A completed step shows a trailing check in the side list
 	public readonly service_done = computed(
 		() =>
-			Object.fromEntries(
-				ONBOARDING_CHOICES.map((service) => [
-					service,
-					service === 'ecash' ? this.ecash_enabled() : !!this.outcomes()[service]?.saved_check?.ok,
-				]),
-			) as Record<OnboardingChoice, boolean>,
+			Object.fromEntries(ONBOARDING_SERVICES.map((service) => [service, !!this.outcomes()[service]?.saved_check?.ok])) as Record<
+				ServiceKind,
+				boolean
+			>,
 	);
 	public readonly setup_mode = computed(() => this.mint_enabled() && this.federationService.mode() === 'setup');
 	public readonly busy = computed(() => this.loading() || this.opening() || this.saving() || (this.configure()?.busy() ?? false));
@@ -199,14 +197,15 @@ export class OnboardingComponent implements OnInit {
 		void this.router.navigate([], {queryParams: {picked: picked.join(',')}, queryParamsHandling: 'merge', replaceUrl: true});
 	}
 
-	/** Enter the first selected step, or review when no steps were selected. */
+	/** Turn on a picked ecash wallet, then enter the first selected step. */
 	public continue(): void {
-		const first = this.selected()[0] ?? null;
-		this.transition(first ? 'configure' : 'review', first, this.selected(), false);
+		if (this.busy()) return;
+		if (this.selected().includes('ecash') && !this.ecash_enabled()) this.setEcash(true, () => this.enterSteps());
+		else this.enterSteps();
 	}
 
 	/** Display one service using a new isolated form instance. */
-	public showService(service: OnboardingChoice): void {
+	public showService(service: ServiceKind): void {
 		this.transition('configure', service);
 	}
 
@@ -225,27 +224,6 @@ export class OnboardingComponent implements OnInit {
 		this.outcomes.update((outcomes) => ({...outcomes, [service]: {saved_check: check, check: undefined, skipped: false}}));
 		this.pending_advance = true;
 		this.refresh();
-	}
-
-	/** The ecash wallet has nothing to connect; turning it on adds it to the navigation. */
-	public enableEcash(): void {
-		if (this.busy()) return;
-		this.saving.set(true);
-		this.error.set(null);
-		this.settingAppService
-			.updateSettings([SettingKey.EcashEnabled], ['true'])
-			.pipe(
-				takeUntilDestroyed(this.destroy_ref),
-				finalize(() => this.saving.set(false)),
-			)
-			.subscribe({
-				next: () => {
-					this.ecash_enabled.set(true);
-					this.outcomes.update((outcomes) => ({...outcomes, ecash: {skipped: false}}));
-					this.advance();
-				},
-				error: (error: unknown) => this.error.set(serviceErrorMessage(error, 'Could not turn on the ecash wallet.')),
-			});
 	}
 
 	/** Skip only this step; an existing live service is never silently disconnected. */
@@ -267,12 +245,16 @@ export class OnboardingComponent implements OnInit {
 			this.transition('review');
 			return;
 		}
-		const service = (this.stage() === 'review' ? this.selected().at(-1) : this.sibling(-1)) ?? null;
+		const service = (this.stage() === 'review' ? this.service_steps().at(-1) : this.sibling(-1)) ?? null;
 		this.transition(service ? 'configure' : 'services', service, this.selected(), false);
 	}
 
-	/** Add or edit a service from Review and return there after its step completes. */
+	/** Add or edit a service from Review and return there after its step completes; the ecash wallet toggles in place. */
 	public edit(service: OnboardingChoice): void {
+		if (service === 'ecash') {
+			if (!this.busy()) this.setEcash(!this.ecash_enabled());
+			return;
+		}
 		const selected = ONBOARDING_CHOICES.filter((item) => item === service || this.selected().includes(item));
 		this.transition('configure', service, selected, true);
 	}
@@ -322,6 +304,31 @@ export class OnboardingComponent implements OnInit {
 			});
 	}
 
+	/** The ecash wallet has nothing to configure; turning it on or off adds or removes its navigation entry. */
+	private setEcash(enabled: boolean, next?: () => void): void {
+		this.saving.set(true);
+		this.error.set(null);
+		this.settingAppService
+			.updateSettings([SettingKey.EcashEnabled], [String(enabled)])
+			.pipe(
+				takeUntilDestroyed(this.destroy_ref),
+				finalize(() => this.saving.set(false)),
+			)
+			.subscribe({
+				next: () => {
+					this.ecash_enabled.set(enabled);
+					next?.();
+				},
+				error: (error: unknown) => this.error.set(serviceErrorMessage(error, 'Could not update the ecash wallet.')),
+			});
+	}
+
+	/** Enter the first selected service, or review when no service was selected. */
+	private enterSteps(): void {
+		const first = this.service_steps()[0] ?? null;
+		this.transition(first ? 'configure' : 'review', first, this.selected(), false);
+	}
+
 	/** Continue the selected sequence, or return to Review after editing a summary row. */
 	private advance(): void {
 		const next = this.sibling(1);
@@ -330,15 +337,14 @@ export class OnboardingComponent implements OnInit {
 	}
 
 	/** The selected service before or after the active one. */
-	private sibling(offset: 1 | -1): OnboardingChoice | undefined {
-		const selected = this.selected();
-		return selected[selected.indexOf(this.active_service()!) + offset];
+	private sibling(offset: 1 | -1): ServiceKind | undefined {
+		const steps = this.service_steps();
+		return steps[steps.indexOf(this.active_service()!) + offset];
 	}
 
 	/** Describe the applied result before showing any unsaved test feedback. */
-	private serviceState(service: OnboardingChoice): string {
+	private serviceState(service: ServiceKind): string {
 		const outcome = this.outcomes()[service];
-		if (service === 'ecash' && this.ecash_enabled()) return 'Enabled';
 		if (outcome?.saved_check) {
 			if (!outcome.saved_check.ok) return 'Saved · test failed';
 			if (outcome.saved_check.warning && outcome.saved_check.fields.includes('database')) return 'Connected · database missing';
@@ -356,7 +362,7 @@ export class OnboardingComponent implements OnInit {
 	/** Navigate to a step; the view follows the URL, which keeps only non-secret navigation choices. */
 	private transition(
 		stage: OnboardingStage,
-		service: OnboardingChoice | null = null,
+		service: ServiceKind | null = null,
 		selected: OnboardingChoice[] = this.selected(),
 		return_to_review: boolean = this.return_to_review(),
 	): void {

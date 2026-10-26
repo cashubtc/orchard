@@ -11,19 +11,14 @@ import {
 	ONBOARDING_REVIEW_STATUS,
 	ONBOARDING_SERVICES,
 } from '@client/modules/onboarding/constants/onboarding.constants';
-import type {
-	OnboardingChoice,
-	OnboardingOutcomes,
-	OnboardingReviewRow,
-	OnboardingRoute,
-} from '@client/modules/onboarding/types/onboarding.types';
+import type {OnboardingOutcomes, OnboardingReviewRow, OnboardingRoute} from '@client/modules/onboarding/types/onboarding.types';
 
 /* Shared Dependencies */
-import type {OrchardServiceConfiguration} from '@shared/generated.types';
+import type {OrchardServiceConfiguration, ServiceKind} from '@shared/generated.types';
 
-/** Recognize only supported choices in direct first-run links. */
-export function onboardingService(value: string | null): OnboardingChoice | null {
-	return ONBOARDING_CHOICES.find((service) => service === value) ?? null;
+/** Recognize only services with a configure step in direct first-run links. */
+export function onboardingService(value: string | null): ServiceKind | null {
+	return ONBOARDING_SERVICES.find((service) => service === value) ?? null;
 }
 
 /** Read the wizard's step, service, picked services and return target from the onboarding route's URL. */
@@ -52,7 +47,13 @@ export function onboardingReview(
 	const services = ONBOARDING_SERVICES.map((service): OnboardingReviewRow => {
 		const configuration = configurations.find((item) => item.service === service);
 		if (!configuration?.enabled)
-			return {service, detail: ONBOARDING_COPY[service].skipped, enabled: false, ...ONBOARDING_REVIEW_STATUS['skipped']};
+			return {
+				service,
+				detail: ONBOARDING_COPY[service].skipped,
+				enabled: false,
+				action: 'Add',
+				...ONBOARDING_REVIEW_STATUS['skipped'],
+			};
 		const saved = outcomes[service]?.saved_check;
 		const detail = serviceConfigurationDetail(configuration, saved?.chain, saved?.mode);
 		const status =
@@ -61,10 +62,17 @@ export function onboardingReview(
 				: configuration.status in ONBOARDING_REVIEW_STATUS
 					? configuration.status
 					: 'untested';
-		return {service, detail, enabled: true, ...ONBOARDING_REVIEW_STATUS[status]};
+		return {service, detail, enabled: true, action: 'Edit', ...ONBOARDING_REVIEW_STATUS[status]};
 	});
+	// The wallet has nothing to edit, so its row toggles it in place
 	const ecash: OnboardingReviewRow = ecash_enabled
-		? {service: 'ecash', detail: ONBOARDING_COPY.ecash.note, enabled: true, ...ONBOARDING_REVIEW_STATUS['enabled']}
-		: {service: 'ecash', detail: ONBOARDING_COPY.ecash.skipped, enabled: false, ...ONBOARDING_REVIEW_STATUS['skipped']};
+		? {service: 'ecash', detail: ONBOARDING_COPY.ecash.note, enabled: true, action: 'Turn off', ...ONBOARDING_REVIEW_STATUS['enabled']}
+		: {
+				service: 'ecash',
+				detail: ONBOARDING_COPY.ecash.skipped,
+				enabled: false,
+				action: 'Turn on',
+				...ONBOARDING_REVIEW_STATUS['skipped'],
+			};
 	return [...services, ecash];
 }

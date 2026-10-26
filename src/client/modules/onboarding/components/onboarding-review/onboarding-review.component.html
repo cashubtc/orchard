@@ -19,11 +19,11 @@
 			<button
 				matButton
 				type="button"
-				[attr.aria-label]="(row.enabled ? 'Edit ' : 'Add ') + descriptors[row.service].name"
+				[attr.aria-label]="row.action + ' ' + descriptors[row.service].name"
 				[disabled]="busy()"
 				(click)="edited.emit(row.service)"
 			>
-				{{ row.enabled ? 'Edit' : 'Add' }}
+				{{ row.action }}
 			</button>
 		</div>
 	}

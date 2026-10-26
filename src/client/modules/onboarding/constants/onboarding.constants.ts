@@ -10,6 +10,7 @@ import {ECASH_WALLET} from '@client/modules/ecash/constants/ecash.constants';
 /* Native Dependencies */
 import type {
 	OnboardingChoice,
+	OnboardingChoiceCopy,
 	OnboardingDescriptor,
 	OnboardingReviewStatus,
 	OnboardingStage,
@@ -33,7 +34,8 @@ export const ONBOARDING_STAGES: Record<OnboardingStage, OnboardingStageCopy> = {
 	configure: {title: 'Configure your services', intro: null, step: 2},
 	review: {title: 'Review your setup', intro: 'Your saved connections are already applied. Nothing needs a restart.', step: 3},
 };
-export const ONBOARDING_COPY: Record<OnboardingChoice, OnboardingServiceCopy> = {
+// The ecash wallet has no configure step, so it has no configure copy
+export const ONBOARDING_COPY: Record<ServiceKind, OnboardingServiceCopy> & Record<'ecash', OnboardingChoiceCopy> = {
 	bitcoin: {
 		description: 'A Bitcoin Core node. Blocks, fee estimates and the price oracle.',
 		note: 'Bitcoin Core RPC',
@@ -60,8 +62,6 @@ export const ONBOARDING_COPY: Record<OnboardingChoice, OnboardingServiceCopy> = 
 		description: 'A hosted ecash wallet that works with any mint. Connecting your own mint adds advanced features.',
 		note: ECASH_WALLET.note,
 		tile: 'A hosted ecash wallet for any mint.',
-		configure:
-			"A hosted ecash wallet that works with any mint, so there's nothing to connect here. Connecting your own mint adds advanced features.",
 		skipped: 'Optional · add it whenever you need it',
 	},
 };

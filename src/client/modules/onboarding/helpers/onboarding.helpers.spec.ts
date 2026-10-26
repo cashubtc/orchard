@@ -12,7 +12,7 @@ describe('onboarding helpers', () => {
 
 	it('only accepts supported direct links and sends members to their dashboard', () => {
 		expect(onboardingService('taproot')).toBeNull();
-		expect(onboardingService('ecash')).toBe('ecash');
+		expect(onboardingService('ecash')).toBeNull();
 		expect(onboardingService('mint')).toBe(ServiceKind.Mint);
 		expect(onboardingDestination('member')).toBe('/mint/federation');
 		for (const mode of ['standalone', 'setup', 'unreachable', null]) expect(onboardingDestination(mode)).toBe('/mint');
@@ -30,7 +30,7 @@ describe('onboarding helpers', () => {
 			jasmine.objectContaining({stage: 'services', service: null, picked: null}),
 		);
 		expect(onboardingRoute(snapshot('configure', {service: 'ecash'}, {}))).toEqual(
-			jasmine.objectContaining({stage: 'configure', service: 'ecash'}),
+			jasmine.objectContaining({stage: 'services', service: null}),
 		);
 		expect(onboardingRoute(snapshot('review', {}, {picked: ''}))).toEqual(jasmine.objectContaining({stage: 'review', picked: []}));
 		expect(onboardingRoute(snapshot(null, {}, {})).stage).toBe('services');
@@ -42,10 +42,17 @@ describe('onboarding helpers', () => {
 	});
 	it('lists the ecash wallet last, as enabled or skipped', () => {
 		expect(onboardingReview([], {}, true).at(-1)).toEqual(
-			jasmine.objectContaining({service: 'ecash', status: 'Enabled', tone: 'success', enabled: true, detail: 'Works with any mint'}),
+			jasmine.objectContaining({
+				service: 'ecash',
+				status: 'Enabled',
+				tone: 'success',
+				enabled: true,
+				detail: 'Works with any mint',
+				action: 'Turn off',
+			}),
 		);
 		expect(onboardingReview([], {}, false).at(-1)).toEqual(
-			jasmine.objectContaining({service: 'ecash', status: 'Skipped', tone: 'neutral', enabled: false}),
+			jasmine.objectContaining({service: 'ecash', status: 'Skipped', tone: 'neutral', enabled: false, action: 'Turn on'}),
 		);
 	});
 	it('reports the applied status, environment values and an untested saved connection', () => {
