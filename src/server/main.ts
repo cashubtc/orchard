@@ -41,8 +41,8 @@ async function bootstrap() {
 	app.getHttpAdapter().getInstance().disable('x-powered-by');
 	const compression_enabled = configService.get<boolean>('server.compression');
 	if (compression_enabled) app.use(compression());
-	app.use(express.json({limit: '10mb'}));
-	app.use(express.urlencoded({limit: '10mb', extended: true}));
+	app.use(express.json({limit: '10mb', inflate: false}));
+	app.use(express.urlencoded({limit: '10mb', extended: true, inflate: false}));
 	const port = configService.get<number>('server.port');
 	const path = configService.get<string>('server.path');
 	const host = configService.get<string>('server.host');

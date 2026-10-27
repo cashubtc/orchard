@@ -1,13 +1,13 @@
 {
   "name": "orchard",
-  "version": "1.12.0",
+  "version": "1.12.1",
   "description": "Web application for Cashu mint management",
   "author": "shyguy",
   "private": true,
   "license": "MIT",
   "type": "module",
   "engines": {
-    "node": ">=22.12 <23"
+    "node": ">=22.23.4 <23"
   },
   "imports": {
     "#server/*": {
