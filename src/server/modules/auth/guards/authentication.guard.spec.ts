@@ -1,6 +1,6 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
-import type {ExecutionContext} from '@nestjs/common';
+import {UnauthorizedException, type ExecutionContext} from '@nestjs/common';
 import {Reflector} from '@nestjs/core';
 import {ConfigService} from '@nestjs/config';
 import {GqlExecutionContext} from '@nestjs/graphql';
@@ -24,7 +24,7 @@ describe('GqlAuthenticationGuard', () => {
 				GqlAuthenticationGuard,
 				{provide: Reflector, useValue: {getAllAndOverride: jest.fn()}},
 				{provide: ConfigService, useValue: {get: jest.fn()}},
-				{provide: AuthService, useValue: {validateAccessToken: jest.fn()}},
+				{provide: AuthService, useValue: {validateAccessToken: jest.fn(), getAuthenticatedUser: jest.fn()}},
 			],
 		}).compile();
 
@@ -65,22 +65,31 @@ describe('GqlAuthenticationGuard', () => {
 		expect(result).toBe(true);
 	});
 
-	it('validates the subscription token from connectionParams and attaches user', async () => {
+	it('validates the subscription token from connectionParams and attaches the stored user', async () => {
 		reflector.getAllAndOverride.mockReturnValueOnce(false);
 		const req: any = {connectionParams: {authorization: 'jwt-access-token'}};
 		stubGqlContext({operation: {operation: 'subscription'}}, req);
-		authService.validateAccessToken.mockResolvedValueOnce({
-			sub: 'user-1',
-			username: 'alice',
-			role: UserRole.ADMIN,
-			type: 'access',
-		} as any);
+		const payload = {sub: 'user-1', username: 'alice', role: UserRole.ADMIN, type: 'access'} as const;
+		authService.validateAccessToken.mockResolvedValueOnce(payload);
+		authService.getAuthenticatedUser.mockResolvedValueOnce({id: 'user-1', name: 'alice', role: UserRole.READER, active: true} as any);
 
 		const result = await guard.canActivate(makeContext());
 
 		expect(result).toBe(true);
 		expect(authService.validateAccessToken).toHaveBeenCalledWith('jwt-access-token');
-		expect(req.user).toEqual({id: 'user-1', name: 'alice', role: UserRole.ADMIN, auth_token: 'jwt-access-token'});
+		expect(authService.getAuthenticatedUser).toHaveBeenCalledWith(payload);
+		expect(req.user).toEqual({id: 'user-1', name: 'alice', role: UserRole.READER, auth_token: 'jwt-access-token'});
+	});
+
+	it('throws AuthenticationError when the subscription token is valid but the stored user is rejected', async () => {
+		reflector.getAllAndOverride.mockReturnValueOnce(false);
+		const req: any = {connectionParams: {authorization: 'jwt-access-token'}};
+		stubGqlContext({operation: {operation: 'subscription'}}, req);
+		authService.validateAccessToken.mockResolvedValueOnce({sub: 'user-1', username: 'alice', role: UserRole.ADMIN, type: 'access'});
+		authService.getAuthenticatedUser.mockRejectedValueOnce(new UnauthorizedException('User account has been deactivated'));
+
+		await expect(guard.canActivate(makeContext())).rejects.toThrow(OrchardApiError);
+		expect(req.user).toBeUndefined();
 	});
 
 	it('throws AuthenticationError when subscription connectionParams lack a token and dev bypass is off', async () => {

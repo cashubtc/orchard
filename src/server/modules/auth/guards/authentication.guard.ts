@@ -42,8 +42,8 @@ export class GqlAuthenticationGuard extends AuthGuard('jwt') {
 
 	/**
 	 * Authenticates a GraphQL subscription by reading the access token from
-	 * the graphql-ws connectionParams, validating it, and attaching a user
-	 * object to the request in the same shape the HTTP passport-jwt path uses.
+	 * the graphql-ws connectionParams, validating it, and attaching the stored
+	 * user to the request in the same shape the HTTP passport-jwt path uses.
 	 */
 	private async handleSubscription(gql_ctx: GqlExecutionContext): Promise<boolean> {
 		const request = gql_ctx.getContext().req;
@@ -60,10 +60,11 @@ export class GqlAuthenticationGuard extends AuthGuard('jwt') {
 
 		try {
 			const payload = await this.authService.validateAccessToken(token);
+			const user = await this.authService.getAuthenticatedUser(payload);
 			request.user = {
-				id: payload.sub,
-				name: payload.username,
-				role: payload.role,
+				id: user.id,
+				name: user.name,
+				role: user.role,
 				auth_token: token,
 			};
 			return true;
