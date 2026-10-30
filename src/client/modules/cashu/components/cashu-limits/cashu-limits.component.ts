@@ -1,9 +1,15 @@
 /* Core Dependencies */
 import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core';
-/* Native Dependencies */
-import {CashuLimit} from '@client/modules/cashu/types/cashu.types';
 /* Shared Dependencies */
 import {OrchardNut4Method, OrchardNut5Method, OrchardNuts} from '@shared/generated.types';
+
+/** One method and unit's bounds for minting or melting, in the unit's base units; null when the mint sets none */
+type CashuLimit = {
+	method: string;
+	unit: string;
+	min_amount: number | null;
+	max_amount: number | null;
+};
 
 @Component({
 	selector: 'orc-cashu-limits',

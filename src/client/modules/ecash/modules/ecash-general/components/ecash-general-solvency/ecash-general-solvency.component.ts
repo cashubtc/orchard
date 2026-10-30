@@ -9,9 +9,21 @@ import {
 	getUnitLiabilities,
 	roundSolvencyMultiple,
 } from '@client/modules/mint/helpers/mint-solvency.helpers';
-/* Native Dependencies */
-import {SOLVENCY_VERDICTS} from '@client/modules/ecash/modules/ecash-general/constants/ecash-general.constants';
-import {EcashSolvencyVerdict} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
+
+/** Whether a mint's reserves cover its liabilities */
+type EcashSolvencyVerdict = 'backed' | 'short' | 'none' | 'unknown';
+
+const SOLVENCY_VERDICTS: Record<EcashSolvencyVerdict, {icon: string; label: string; impact_label?: string; short_before_label?: string}> = {
+	backed: {icon: 'check', label: 'Fully backed', impact_label: 'Still fully backed'},
+	short: {
+		icon: 'error',
+		label: 'Not fully backed',
+		impact_label: 'Not fully backed after this',
+		short_before_label: 'Currently not fully backed',
+	},
+	none: {icon: 'tune', label: 'No assets selected'},
+	unknown: {icon: 'warning', label: 'Assets unavailable'},
+};
 
 @Component({
 	selector: 'orc-ecash-general-solvency',

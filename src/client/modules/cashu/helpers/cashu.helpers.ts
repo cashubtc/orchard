@@ -1,6 +1,8 @@
 /* Native Dependencies */
-import {CASHU_METHOD_CUSTOM_ICON, CASHU_METHOD_DISPLAY} from '@client/modules/cashu/constants/cashu.constants';
+import {CASHU_METHOD_DISPLAY} from '@client/modules/cashu/constants/cashu.constants';
 import {CashuMethodDisplay} from '@client/modules/cashu/types/cashu.types';
+
+const CASHU_METHOD_CUSTOM_ICON = 'money_bag';
 
 /**
  * Label and icon for a payment method, labels uppercase; methods Orchard doesn't recognize show the mint's own name for them

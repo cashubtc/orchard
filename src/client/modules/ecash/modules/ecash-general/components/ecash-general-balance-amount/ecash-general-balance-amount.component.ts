@@ -5,7 +5,8 @@ import {SettingDeviceService} from '@client/modules/settings/services/setting-de
 import {getUnitMeta, getUnitSign, toDisplayAmountFor} from '@client/modules/local/helpers/unit.helpers';
 /* Native Dependencies */
 import {buildBalanceCells, getBalanceCellsWidth} from '@client/modules/ecash/modules/ecash-general/helpers/ecash-general.helpers';
-import {BALANCE_COUNT_MS} from '@client/modules/ecash/modules/ecash-general/constants/ecash-general.constants';
+
+const BALANCE_COUNT_MS = 1100;
 
 @Component({
 	selector: 'orc-ecash-general-balance-amount',

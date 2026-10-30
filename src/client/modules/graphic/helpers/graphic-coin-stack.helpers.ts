@@ -1,5 +1,5 @@
-/* Native Dependencies */
-import {COIN_STACK_MAX} from '@client/modules/graphic/constants/graphic.constants';
+/** Most coins a coin stack holds */
+const COIN_STACK_MAX = 18;
 
 /**
  * How many coins a value gets beside its counterpart: the larger side a full stack, the smaller its share of it, rounded down

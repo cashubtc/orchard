@@ -17,10 +17,29 @@ import {isMintAuthOffered} from '@client/modules/mint/helpers/mint-nut.helpers';
 /* Native Dependencies */
 import {EcashService} from '@client/modules/ecash/services/ecash/ecash.service';
 import {EcashMintLookup} from '@client/modules/ecash/classes/ecash-mint-lookup.class';
-import {EcashMintAddPanelData, EcashMintAddState} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
-import {MINT_ADD_HINTS, MINT_ADD_ICONS} from '@client/modules/ecash/modules/ecash-general/constants/ecash-general.constants';
+import {EcashMintAddPanelData} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
 /* Shared Dependencies */
 import {WalletMintMatch} from '@shared/generated.types';
+
+/** Where an add-mint lookup stands: a new mint (needing sign-in or not), a new URL joining a wallet mint, or a URL already in the wallet */
+type EcashMintAddState = 'idle' | 'loading' | 'error' | 'found' | 'sign_in' | 'joins' | 'exists';
+
+/** The icon beside the mint URL for a lookup state, with its colour class */
+type EcashMintAddIcon = {icon: string; color: string};
+
+const MINT_ADD_HINTS: Partial<Record<EcashMintAddState, string>> = {
+	found: 'Mint online. Review it before adding.',
+	sign_in: 'Mint online, but it requires sign-in.',
+	exists: 'Already in your wallet.',
+};
+
+const MINT_ADD_ICONS: Partial<Record<EcashMintAddState, EcashMintAddIcon>> = {
+	found: {icon: 'check_circle', color: 'orc-status-active-color'},
+	joins: {icon: 'check_circle', color: 'orc-status-active-color'},
+	sign_in: {icon: 'lock', color: 'orc-status-warning-color'},
+	exists: {icon: 'info', color: 'orc-outline-color'},
+	error: {icon: 'error', color: 'orc-error-color'},
+};
 
 @Component({
 	selector: 'orc-ecash-general-mint-add',

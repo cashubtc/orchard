@@ -1,8 +1,14 @@
 /* Core Dependencies */
 import {ChangeDetectionStrategy, Component, computed, input, output} from '@angular/core';
 /* Native Dependencies */
-import {CashuMethodChip} from '@client/modules/cashu/types/cashu.types';
+import {CashuMethodDisplay} from '@client/modules/cashu/types/cashu.types';
 import {getCashuMethodDisplay} from '@client/modules/cashu/helpers/cashu.helpers';
+
+/** A payment method to offer, with how it's shown */
+type CashuMethodChip = {
+	method: string;
+	display: CashuMethodDisplay;
+};
 
 @Component({
 	selector: 'orc-cashu-method-chips',

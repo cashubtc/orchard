@@ -9,16 +9,11 @@ import {MINT_NUT_TITLES} from '@client/modules/mint/constants/mint.constants';
 import {MintNut} from '@client/modules/mint/types/nut.types';
 import {CashuUnitChip} from '@client/modules/cashu/types/cashu.types';
 import {getCashuMethodDisplay} from '@client/modules/cashu/helpers/cashu.helpers';
+import {CashuMethodDisplay} from '@client/modules/cashu/types/cashu.types';
 /* Native Dependencies */
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 import {EcashMintStatus} from '@client/modules/ecash/classes/ecash-mint-status.class';
 import {EcashOperation} from '@client/modules/ecash/classes/ecash-operation.class';
-import {
-	ACTIVITY_KINDS,
-	BALANCE_DIGIT_EM,
-	BALANCE_SEPARATOR_EM,
-	MINT_TIME_SYNC_S,
-} from '@client/modules/ecash/modules/ecash-general/constants/ecash-general.constants';
 import {
 	EcashActivityGroup,
 	EcashActivityProgress,
@@ -29,7 +24,27 @@ import {
 	EcashMintStatusPill,
 } from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
 /* Shared Dependencies */
-import {OrchardNuts, WalletOperationState} from '@shared/generated.types';
+import {OrchardNuts, WalletOperationState, WalletOperationType} from '@shared/generated.types';
+
+/** How a kind of operation reads in the activity list; without a method it shows the operation's payment method */
+type EcashActivityKind = {
+	method?: CashuMethodDisplay;
+	titles: Record<EcashActivityProgress, string>;
+};
+
+const ACTIVITY_KINDS: Record<WalletOperationType, EcashActivityKind> = {
+	[WalletOperationType.Issue]: {
+		method: {label: 'Ecash', icon: 'payments', svg_icon: false},
+		titles: {done: 'Issued', open: 'Issuing', failed: 'Issue failed'},
+	},
+	[WalletOperationType.Mint]: {
+		titles: {done: 'Received', open: 'Receiving', failed: 'Receive failed'},
+	},
+};
+
+const MINT_TIME_SYNC_S = 60;
+const BALANCE_DIGIT_EM = 0.665;
+const BALANCE_SEPARATOR_EM = 0.24;
 
 /**
  * A mint's status pill: online with latency or unreachable with the reason, checking while a mint with no status yet is being checked

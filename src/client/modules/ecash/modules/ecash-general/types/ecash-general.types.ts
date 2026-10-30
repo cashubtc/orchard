@@ -21,9 +21,6 @@ export type EcashBalanceCell = {
 	width: number;
 };
 
-/** Whether a mint's reserves cover its liabilities */
-export type EcashSolvencyVerdict = 'backed' | 'short' | 'none' | 'unknown';
-
 /** A mint's status pill, with the reason it is unreachable */
 export type EcashMintStatusPill = {
 	state: GraphicStatusState;
@@ -45,12 +42,6 @@ export type EcashMintAddPanelData = {
 	mints: Signal<EcashMint[]>;
 };
 
-/** Where an add-mint lookup stands: a new mint (needing sign-in or not), a new URL joining a wallet mint, or a URL already in the wallet */
-export type EcashMintAddState = 'idle' | 'loading' | 'error' | 'found' | 'sign_in' | 'joins' | 'exists';
-
-/** The icon beside the mint URL for a lookup state, with its colour class */
-export type EcashMintAddIcon = {icon: string; color: string};
-
 /** A protocol feature and whether a mint offers it */
 export type EcashMintFeature = {
 	label: string;
@@ -60,12 +51,6 @@ export type EcashMintFeature = {
 
 /** Where an operation stands: settled, still running, or given up */
 export type EcashActivityProgress = 'done' | 'open' | 'failed';
-
-/** How a kind of operation reads in the activity list; without a method it shows the operation's payment method */
-export type EcashActivityKind = {
-	method?: CashuMethodDisplay;
-	titles: Record<EcashActivityProgress, string>;
-};
 
 /** One operation laid out for its activity row */
 export type EcashActivityRow = {

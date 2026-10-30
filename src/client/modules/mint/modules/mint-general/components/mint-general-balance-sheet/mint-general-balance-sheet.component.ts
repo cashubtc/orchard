@@ -10,11 +10,17 @@ import {MintBalance} from '@client/modules/mint/classes/mint-balance.class';
 import {MintKeyset} from '@client/modules/mint/classes/mint-keyset.class';
 import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
 import {getReserveSourcesLabel} from '@client/modules/mint/helpers/mint-solvency.helpers';
-import {RESERVE_SOURCE_GROUPS, RESERVE_SOURCE_LABELS} from '@client/modules/mint/constants/mint.constants';
+import {CHANNEL_RESERVE_SOURCES, RESERVE_SOURCE_LABELS} from '@client/modules/mint/constants/mint.constants';
 /* Local Dependencies */
 import {MintGeneralBalanceRow} from './mint-general-balance-row.class';
 /* Shared Dependencies */
 import {MintReserveSource, MintReserveStatus} from '@shared/generated.types';
+
+/** Reserve sources grouped by the backend that holds them */
+const RESERVE_SOURCE_GROUPS: readonly {label: string; sources: readonly MintReserveSource[]}[] = [
+	{label: 'Lightning', sources: [...CHANNEL_RESERVE_SOURCES, MintReserveSource.LightningWallet]},
+	{label: 'Mint', sources: [MintReserveSource.MintWallet]},
+];
 
 @Component({
 	selector: 'orc-mint-general-balance-sheet',

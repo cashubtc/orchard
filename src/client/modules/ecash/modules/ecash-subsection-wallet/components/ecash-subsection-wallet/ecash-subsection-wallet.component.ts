@@ -24,7 +24,8 @@ import {EcashGeneralIssueComponent} from '@client/modules/ecash/modules/ecash-ge
 import {getMintStatusPill} from '@client/modules/ecash/modules/ecash-general/helpers/ecash-general.helpers';
 import {EcashGeneralMintAddComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-mint-add/ecash-general-mint-add.component';
 import {EcashIssuePanelData, EcashMintAddPanelData} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
-import {ACTIVITY_RECENT_COUNT} from '@client/modules/ecash/modules/ecash-general/constants/ecash-general.constants';
+
+const ACTIVITY_RECENT_COUNT = 8;
 
 @Component({
 	selector: 'orc-ecash-subsection-wallet',
