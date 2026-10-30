@@ -9,7 +9,6 @@ permissions:
   packages: write
 
 env:
-  IMAGE: ghcr.io/${{ github.repository }}
   IMAGE_TAGS: |
     type=semver,pattern={{version}}
     type=semver,pattern={{major}}.{{minor}}
@@ -33,6 +32,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
+
+      # Image names must be lowercase, and github.repository keeps the owner's casing.
+      - name: Image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
       - name: Docker meta
         id: meta
@@ -71,7 +74,8 @@ jobs:
           name: digests-${{ matrix.runner }}
           path: ${{ runner.temp }}/digests/*
           if-no-files-found: error
-          retention-days: 1
+          # "Re-run failed jobs" reuses the other platform's digest, and runs can be re-run for 30 days.
+          retention-days: 30
 
   # Combine the per-platform digests into one multi-arch tag set.
   merge:
@@ -86,6 +90,9 @@ jobs:
           merge-multiple: true
 
       - uses: docker/setup-buildx-action@v3
+
+      - name: Image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
       - name: Docker meta
         id: meta
@@ -104,9 +111,16 @@ jobs:
       - name: Create and push manifest list
         working-directory: ${{ runner.temp }}/digests
         run: |
+          # One digest per platform in the build matrix. Merging fewer would publish a partial image.
+          shopt -s nullglob
+          digests=(*)
+          if [ "${#digests[@]}" -ne 2 ]; then
+            echo "::error::Expected 2 platform digests, found ${#digests[@]}. Use \"Re-run all jobs\" to rebuild both platforms."
+            exit 1
+          fi
           mapfile -t tag_args < <(jq -r '.tags[] | "-t", .' <<< "$DOCKER_METADATA_OUTPUT_JSON")
           sources=()
-          for digest in *; do sources+=("$IMAGE@sha256:$digest"); done
+          for digest in "${digests[@]}"; do sources+=("$IMAGE@sha256:$digest"); done
           docker buildx imagetools create "${tag_args[@]}" "${sources[@]}"
 
       - name: Inspect image
