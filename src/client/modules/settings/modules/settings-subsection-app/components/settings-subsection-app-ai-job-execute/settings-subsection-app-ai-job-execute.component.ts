@@ -3,6 +3,7 @@ import {ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 /* Vendor Dependencies */
 import {marked} from 'marked';
+import {MatBottomSheetRef} from '@angular/material/bottom-sheet';
 /* Application Dependencies */
 import {AiService} from '@client/modules/ai/services/ai/ai.service';
 import {AiAgentRun} from '@client/modules/ai/classes/ai-agent-run.class';
@@ -22,6 +23,10 @@ export class SettingsSubsectionAppAiJobExecuteComponent implements OnInit, OnDes
 	private readonly destroyRef = inject(DestroyRef);
 	private readonly panelRef = inject(FormPanelRef);
 	public readonly data: {id: string; name: string} = inject(FORM_PANEL_DATA);
+
+	// ── Public properties ──
+	/** The host opened this panel as a bottom sheet */
+	public readonly sheet: boolean = inject(MatBottomSheetRef, {optional: true}) !== null;
 
 	// ── Public signals ──
 	public readonly loading = signal<boolean>(true);

@@ -9,6 +9,7 @@ import {
 	ViewContainerRef,
 	viewChild,
 	inject,
+	computed,
 } from '@angular/core';
 import {Router, Event, ActivatedRoute, NavigationStart, NavigationEnd, NavigationCancel, NavigationError} from '@angular/router';
 /* Vendor Dependencies */
@@ -51,6 +52,10 @@ export class SettingsSectionComponent implements OnInit, AfterViewInit, OnDestro
 	public overlayed = signal<boolean>(false);
 	public device_type = signal<DeviceType>('desktop');
 
+	/* ── Private computed signals ── */
+	/** Mobile devices get panels in a bottom sheet instead of the sidenav */
+	private readonly sheet = computed(() => this.device_type() === 'mobile');
+
 	/* ── Private fields ── */
 	private subscriptions: Subscription = new Subscription();
 
@@ -68,7 +73,7 @@ export class SettingsSectionComponent implements OnInit, AfterViewInit, OnDestro
 	ngAfterViewInit(): void {
 		const host = this.formPanelHost();
 		if (host) {
-			this.formPanelService.registerContainer(host);
+			this.formPanelService.registerContainer(host, {sheet: this.sheet});
 		}
 	}
 

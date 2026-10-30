@@ -1,207 +1,226 @@
-<div class="orc-form-panel">
-	<div class="orc-form-panel-header">
-		<div class="p-l-0-5" [class.orc-error-color]="form.invalid && submitted()">{{ form_title() }}</div>
-		<div class="flex flex-items-center flex-gap-1">
-			<button matButton="filled" (click)="onSave()">Save</button>
-			<button mat-icon-button type="button" class="orc-icon-button" (click)="onClose()">
+@if (!sheet) {
+	<div class="orc-form-panel">
+		<div class="orc-form-panel-header">
+			<div class="p-l-0-5" [class.orc-error-color]="form.invalid && submitted()">{{ form_title() }}</div>
+			<div class="flex flex-items-center flex-gap-1">
+				<button matButton="filled" (click)="onSave()">Save</button>
+				<button mat-icon-button type="button" class="orc-icon-button" aria-label="Close" (click)="onClose()">
+					<mat-icon>close</mat-icon>
+				</button>
+			</div>
+		</div>
+		<div class="category-rule"></div>
+		<div class="orc-form-panel-content">
+			<ng-container *ngTemplateOutlet="body"></ng-container>
+		</div>
+	</div>
+} @else {
+	<div class="orc-form-panel-sheet">
+		<div class="flex flex-items-center flex-justify-between">
+			<div class="title-l" [class.orc-error-color]="form.invalid && submitted()">{{ form_title() }}</div>
+			<button mat-icon-button type="button" class="orc-icon-button" aria-label="Close" (click)="onClose()">
 				<mat-icon>close</mat-icon>
 			</button>
 		</div>
+		<ng-container *ngTemplateOutlet="body"></ng-container>
 	</div>
-	<div class="category-rule"></div>
-	<div class="orc-form-panel-content">
-		<form [formGroup]="form" (ngSubmit)="$event.preventDefault()" class="flex flex-column flex-gap-1">
-			@if (data.mode !== 'groundskeeper') {
-				<div class="flex p-b-1">
-					<orc-form-toggle-group>
-						<orc-form-toggle [selected]="!form.get('active')?.value" (click)="onActiveChange(false)">
-							<div class="font-size-s">Inactive</div>
-						</orc-form-toggle>
-						<orc-form-toggle [selected]="form.get('active')?.value" (click)="onActiveChange(true)">
-							<div class="font-size-s">Active</div>
-						</orc-form-toggle>
-					</orc-form-toggle-group>
-				</div>
-			}
-			<div class="flex flex-row flex-gap-1">
-				<div class="flex-1">
-					<div class="flex flex-column flex-gap-0-5">
-						<orc-form-field-dynamic
-							[hot]="focused_name() || form.get('name')?.dirty || false"
-							[invalid]="form.get('name')?.invalid || false"
-							[info]="true"
-							[standalone]="false"
-							(inform)="help_name.set(!help_name())"
-							(cancel)="onCancel($event, 'name')"
-						>
-							<mat-form-field
-								appearance="fill"
-								hideRequiredMarker="true"
-								[ngClass]="
-									focused_name() || form.get('name')?.dirty || false ? 'orc-hot-form-field' : 'orc-cold-form-field'
-								"
-								class="orc-dynamic-form-field w-full"
-							>
-								<mat-label>Name</mat-label>
-								<input
-									type="text"
-									matInput
-									formControlName="name"
-									(focus)="focused_name.set(true)"
-									(blur)="focused_name.set(false)"
-								/>
-								<mat-error>
-									<orc-form-error [errors]="form.get('name')?.errors">Invalid name</orc-form-error>
-								</mat-error>
-							</mat-form-field>
-						</orc-form-field-dynamic>
-						<div class="orc-animation-expand-collapse" [class.animation-expanded]="help_name()">
-							<div class="orc-animation-expand-collapse-inner">
-								<div class="flex">
-									<orc-form-help-text class="orc-surface-container-high-bg">
-										@if (data.mode === 'groundskeeper') {
-											Displayed in conversations and used to identify your agent.
-										} @else {
-											Displayed in the job list and execution results.
-										}
-									</orc-form-help-text>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="flex-1">
-					<div class="flex flex-column flex-gap-0-5">
-						<div>
-							<div class="flex flex-items-center flex-gap-1 p-t-0-5">
-								<div class="title-form-section p-l-1">
-									<span [class.orc-error-color]="form.get('model')?.invalid && submitted()">Model</span>
-								</div>
-								<orc-ai-model
-									[model]="form.get('model')?.value ?? null"
-									[model_options]="data.models"
-									[device_type]="data.device_type"
-									[vendor]="data.vendor"
-									[favorites]="ai_favorites()"
-									(modelChange)="onModelChange($event)"
-									(favoritesChange)="onFavoritesChange($event)"
-								>
-									<button
-										class="z-index-0"
-										matButton="outlined"
-										type="button"
-										[class.orc-status-warning-color]="!form.get('model')?.value"
-									>
-										<div class="font-size-s" [class.orc-error-color]="form.get('model')?.invalid && submitted()">
-											{{ form.get('model')?.value ?? 'choose a model' }}
-										</div>
-									</button>
-								</orc-ai-model>
-								<button
-									type="button"
-									tabindex="-1"
-									mat-icon-button
-									class="orc-icon-button"
-									(click)="help_model.set(!help_model())"
-								>
-									<mat-icon class="orc-outline-color">info</mat-icon>
-								</button>
-							</div>
-						</div>
-						<div class="orc-animation-expand-collapse" [class.animation-expanded]="help_model()">
-							<div class="orc-animation-expand-collapse-inner">
-								<div class="flex p-t-1">
-									<orc-form-help-text class="orc-surface-container-high-bg">
-										@if (data.mode === 'groundskeeper') {
-											The LLM that powers your agent. Stronger models tend to produce better conversations.
-										} @else {
-											The LLM used for this job. Simpler models can help limit resource usage and cost.
-										}
-									</orc-form-help-text>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
+	<div class="orc-form-panel-sheet-actions">
+		<button matButton="filled" class="w-full h-3" (click)="onSave()">Save</button>
+	</div>
+}
+
+<ng-template #body>
+	<form [formGroup]="form" (ngSubmit)="$event.preventDefault()" class="flex flex-column flex-gap-1">
+		@if (data.mode !== 'groundskeeper') {
+			<div class="flex p-b-1">
+				<orc-form-toggle-group>
+					<orc-form-toggle [selected]="!form.get('active')?.value" (click)="onActiveChange(false)">
+						<div class="font-size-s">Inactive</div>
+					</orc-form-toggle>
+					<orc-form-toggle [selected]="form.get('active')?.value" (click)="onActiveChange(true)">
+						<div class="font-size-s">Active</div>
+					</orc-form-toggle>
+				</orc-form-toggle-group>
 			</div>
-			<div class="flex flex-column flex-gap-1">
-				<orc-form-field-dynamic
-					[hot]="focused_description() || form.get('description')?.dirty || false"
-					[invalid]="form.get('description')?.invalid || false"
-					[info]="true"
-					[standalone]="false"
-					(inform)="help_description.set(!help_description())"
-					(cancel)="onCancel($event, 'description')"
-				>
-					<mat-form-field
-						appearance="fill"
-						hideRequiredMarker="true"
-						[ngClass]="
-							focused_description() || form.get('description')?.dirty || false ? 'orc-hot-form-field' : 'orc-cold-form-field'
-						"
-						class="orc-dynamic-form-field w-full"
+		}
+		<div class="flex flex-row flex-gap-1">
+			<div class="flex-1">
+				<div class="flex flex-column flex-gap-0-5">
+					<orc-form-field-dynamic
+						[hot]="focused_name() || form.get('name')?.dirty || false"
+						[invalid]="form.get('name')?.invalid || false"
+						[info]="true"
+						[standalone]="false"
+						(inform)="help_name.set(!help_name())"
+						(cancel)="onCancel($event, 'name')"
 					>
-						<mat-label>Description</mat-label>
-						<textarea
-							rows="4"
-							matInput
-							[formAutogrow]="true"
-							formControlName="description"
-							placeholder="Ex. Describe your agent"
-							(focus)="focused_description.set(true)"
-							(blur)="focused_description.set(false)"
+						<mat-form-field
+							appearance="fill"
+							hideRequiredMarker="true"
+							[ngClass]="focused_name() || form.get('name')?.dirty || false ? 'orc-hot-form-field' : 'orc-cold-form-field'"
+							class="orc-dynamic-form-field w-full"
 						>
-						</textarea>
-						<mat-error>
-							<orc-form-error [errors]="form.get('description')?.errors">Invalid description</orc-form-error>
-						</mat-error>
-					</mat-form-field>
-				</orc-form-field-dynamic>
-				<div class="orc-animation-expand-collapse" [class.animation-expanded]="help_description()">
-					<div class="orc-animation-expand-collapse-inner">
-						<div class="flex">
-							<orc-form-help-text class="orc-surface-container-high-bg">
-								@if (data.mode === 'groundskeeper') {
-									A short summary of what your agent does. Shown in settings only, not sent to the model.
-								} @else {
-									A short summary of what this job does. Shown in settings only, not sent to the model.
-								}
-							</orc-form-help-text>
+							<mat-label>Name</mat-label>
+							<input
+								type="text"
+								matInput
+								formControlName="name"
+								(focus)="focused_name.set(true)"
+								(blur)="focused_name.set(false)"
+							/>
+							<mat-error>
+								<orc-form-error [errors]="form.get('name')?.errors">Invalid name</orc-form-error>
+							</mat-error>
+						</mat-form-field>
+					</orc-form-field-dynamic>
+					<div class="orc-animation-expand-collapse" [class.animation-expanded]="help_name()">
+						<div class="orc-animation-expand-collapse-inner">
+							<div class="flex">
+								<orc-form-help-text class="orc-surface-container-high-bg">
+									@if (data.mode === 'groundskeeper') {
+										Displayed in conversations and used to identify your agent.
+									} @else {
+										Displayed in the job list and execution results.
+									}
+								</orc-form-help-text>
+							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-			<div class="flex flex-column p-t-1">
-				<orc-form-markdown-editor
-					[class.fullscreen-system-message]="fullscreen_system_message()"
-					formControlName="system_message"
-					[hot]="focused_system_message() || form.get('system_message')?.dirty || false"
-					[invalid]="
-						(form.get('system_message')?.invalid && form.get('system_message')?.dirty) ||
-						(form.get('system_message')?.invalid && submitted()) ||
-						false
-					"
-					placeholder="Enter system prompt..."
-					[height]="fullscreen_system_message() ? '100%' : '20rem'"
-					(focusChange)="focused_system_message.set($event)"
-				>
-					<div class="flex flex-justify-between flex-items-center orc-surface-container-high-bg p-0-25">
-						<div class="title-form-section p-l-1">
-							<span
-								[class.orc-error-color]="
-									(form.get('system_message')?.invalid && form.get('system_message')?.dirty) ||
-									(form.get('system_message')?.invalid && submitted())
-								"
-								>System Prompt</span
+			<div class="flex-1">
+				<div class="flex flex-column flex-gap-0-5">
+					<div>
+						<div class="flex flex-items-center flex-gap-1 p-t-0-5">
+							<div class="title-form-section p-l-1">
+								<span [class.orc-error-color]="form.get('model')?.invalid && submitted()">Model</span>
+							</div>
+							<orc-ai-model
+								[model]="form.get('model')?.value ?? null"
+								[model_options]="data.models"
+								[device_type]="data.device_type"
+								[vendor]="data.vendor"
+								[favorites]="ai_favorites()"
+								(modelChange)="onModelChange($event)"
+								(favoritesChange)="onFavoritesChange($event)"
 							>
-						</div>
-						<div class="flex flex-items-center flex-gap-0-5">
-							@if (data.agent?.agent_key !== null) {
-								<button matButton [disabled]="is_default_system_message()" (click)="onResetSystemMessage()">
-									<span class="font-size-xs">Default Prompt</span>
+								<button
+									class="z-index-0"
+									matButton="outlined"
+									type="button"
+									[class.orc-status-warning-color]="!form.get('model')?.value"
+								>
+									<div class="font-size-s" [class.orc-error-color]="form.get('model')?.invalid && submitted()">
+										{{ form.get('model')?.value ?? 'choose a model' }}
+									</div>
 								</button>
+							</orc-ai-model>
+							<button
+								type="button"
+								tabindex="-1"
+								mat-icon-button
+								class="orc-icon-button"
+								(click)="help_model.set(!help_model())"
+							>
+								<mat-icon class="orc-outline-color">info</mat-icon>
+							</button>
+						</div>
+					</div>
+					<div class="orc-animation-expand-collapse" [class.animation-expanded]="help_model()">
+						<div class="orc-animation-expand-collapse-inner">
+							<div class="flex p-t-1">
+								<orc-form-help-text class="orc-surface-container-high-bg">
+									@if (data.mode === 'groundskeeper') {
+										The LLM that powers your agent. Stronger models tend to produce better conversations.
+									} @else {
+										The LLM used for this job. Simpler models can help limit resource usage and cost.
+									}
+								</orc-form-help-text>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="flex flex-column flex-gap-1">
+			<orc-form-field-dynamic
+				[hot]="focused_description() || form.get('description')?.dirty || false"
+				[invalid]="form.get('description')?.invalid || false"
+				[info]="true"
+				[standalone]="false"
+				(inform)="help_description.set(!help_description())"
+				(cancel)="onCancel($event, 'description')"
+			>
+				<mat-form-field
+					appearance="fill"
+					hideRequiredMarker="true"
+					[ngClass]="
+						focused_description() || form.get('description')?.dirty || false ? 'orc-hot-form-field' : 'orc-cold-form-field'
+					"
+					class="orc-dynamic-form-field w-full"
+				>
+					<mat-label>Description</mat-label>
+					<textarea
+						rows="4"
+						matInput
+						[formAutogrow]="true"
+						formControlName="description"
+						placeholder="Ex. Describe your agent"
+						(focus)="focused_description.set(true)"
+						(blur)="focused_description.set(false)"
+					>
+					</textarea>
+					<mat-error>
+						<orc-form-error [errors]="form.get('description')?.errors">Invalid description</orc-form-error>
+					</mat-error>
+				</mat-form-field>
+			</orc-form-field-dynamic>
+			<div class="orc-animation-expand-collapse" [class.animation-expanded]="help_description()">
+				<div class="orc-animation-expand-collapse-inner">
+					<div class="flex">
+						<orc-form-help-text class="orc-surface-container-high-bg">
+							@if (data.mode === 'groundskeeper') {
+								A short summary of what your agent does. Shown in settings only, not sent to the model.
+							} @else {
+								A short summary of what this job does. Shown in settings only, not sent to the model.
 							}
-							<orc-button-copy [text]="form.get('system_message')?.value ?? ''" size="icon" />
+						</orc-form-help-text>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="flex flex-column p-t-1">
+			<orc-form-markdown-editor
+				[class.fullscreen-system-message]="fullscreen_system_message()"
+				formControlName="system_message"
+				[hot]="focused_system_message() || form.get('system_message')?.dirty || false"
+				[invalid]="
+					(form.get('system_message')?.invalid && form.get('system_message')?.dirty) ||
+					(form.get('system_message')?.invalid && submitted()) ||
+					false
+				"
+				placeholder="Enter system prompt..."
+				[height]="fullscreen_system_message() ? '100%' : '20rem'"
+				(focusChange)="focused_system_message.set($event)"
+			>
+				<div class="flex flex-justify-between flex-items-center orc-surface-container-high-bg p-0-25">
+					<div class="title-form-section p-l-1">
+						<span
+							[class.orc-error-color]="
+								(form.get('system_message')?.invalid && form.get('system_message')?.dirty) ||
+								(form.get('system_message')?.invalid && submitted())
+							"
+							>System Prompt</span
+						>
+					</div>
+					<div class="flex flex-items-center flex-gap-0-5">
+						@if (data.agent?.agent_key !== null) {
+							<button matButton [disabled]="is_default_system_message()" (click)="onResetSystemMessage()">
+								<span class="font-size-xs">Default Prompt</span>
+							</button>
+						}
+						<orc-button-copy [text]="form.get('system_message')?.value ?? ''" size="icon" />
+						@if (!sheet) {
 							<button
 								mat-icon-button
 								type="button"
@@ -210,131 +229,131 @@
 							>
 								<mat-icon>open_with</mat-icon>
 							</button>
-						</div>
-					</div>
-				</orc-form-markdown-editor>
-				<mat-error>
-					@if (
-						(form.get('system_message')?.invalid && form.get('system_message')?.dirty) ||
-						(form.get('system_message')?.invalid && submitted())
-					) {
-						<orc-form-error [errors]="form.get('system_message')?.errors">Invalid system prompt</orc-form-error>
-					}
-				</mat-error>
-			</div>
-
-			@if (data.mode !== 'groundskeeper') {
-				<div class="flex flex-column flex-gap-1 p-b-1">
-					<div class="flex flex-items-center flex-justify-between flex-gap-0-5">
-						<div class="title-l p-b-0-5 p-l-1">
-							<span [class.orc-error-color]="form.get('schedules')?.invalid && submitted()">Scheduling</span>
-						</div>
-					</div>
-
-					<div class="flex flex-column flex-gap-0-5">
-						@for (schedule of form.get('schedules')?.value ?? []; track schedule) {
-							<div class="cron-card">
-								<span class="font-size-s p-l-1">{{ schedule | localCron | titlecase }}</span>
-								<div class="flex flex-items-center flex-gap-0-5">
-									<button mat-icon-button type="button" class="orc-icon-button" (click)="onEditSchedule($index)">
-										<mat-icon>edit</mat-icon>
-									</button>
-									<button mat-icon-button type="button" class="orc-icon-button" (click)="onDeleteSchedule($index)">
-										<mat-icon>delete_forever</mat-icon>
-									</button>
-								</div>
-							</div>
 						}
-						<div class="cron-card new-cron-card" (click)="onAddSchedule()">
-							<span class="font-size-s p-l-1">Add Schedule</span>
-							<button mat-icon-button type="button" class="orc-icon-button">
-								<mat-icon>add</mat-icon>
-							</button>
-						</div>
 					</div>
 				</div>
-			}
+			</orc-form-markdown-editor>
+			<mat-error>
+				@if (
+					(form.get('system_message')?.invalid && form.get('system_message')?.dirty) ||
+					(form.get('system_message')?.invalid && submitted())
+				) {
+					<orc-form-error [errors]="form.get('system_message')?.errors">Invalid system prompt</orc-form-error>
+				}
+			</mat-error>
+		</div>
 
-			<div class="flex flex-column flex-gap-1">
+		@if (data.mode !== 'groundskeeper') {
+			<div class="flex flex-column flex-gap-1 p-b-1">
 				<div class="flex flex-items-center flex-justify-between flex-gap-0-5">
 					<div class="title-l p-b-0-5 p-l-1">
-						<span [class.orc-error-color]="form.get('tools')?.invalid && submitted()">Tools</span>
+						<span [class.orc-error-color]="form.get('schedules')?.invalid && submitted()">Scheduling</span>
 					</div>
-					<div class="flex flex-items-center flex-gap-0-5">
-						@if (data.agent?.agent_key !== null) {
-							<button matButton [disabled]="is_default_tools()" (click)="onResetTools()">
-								<span class="font-size-xs">Default Tools</span>
-							</button>
-						}
-						<button matButton (click)="onToggleToolsAvailable()">
-							<mat-icon>{{ tools_available() ? 'visibility_off' : 'visibility' }}</mat-icon>
-							<span class="font-size-s">{{
-								tools_available() ? 'Hide unused tools' : 'Show unused tools (' + available_tool_count() + ')'
-							}}</span>
+				</div>
+
+				<div class="flex flex-column flex-gap-0-5">
+					@for (schedule of form.get('schedules')?.value ?? []; track schedule) {
+						<div class="cron-card">
+							<span class="font-size-s p-l-1">{{ schedule | localCron | titlecase }}</span>
+							<div class="flex flex-items-center flex-gap-0-5">
+								<button mat-icon-button type="button" class="orc-icon-button" (click)="onEditSchedule($index)">
+									<mat-icon>edit</mat-icon>
+								</button>
+								<button mat-icon-button type="button" class="orc-icon-button" (click)="onDeleteSchedule($index)">
+									<mat-icon>delete_forever</mat-icon>
+								</button>
+							</div>
+						</div>
+					}
+					<div class="cron-card new-cron-card" (click)="onAddSchedule()">
+						<span class="font-size-s p-l-1">Add Schedule</span>
+						<button mat-icon-button type="button" class="orc-icon-button">
+							<mat-icon>add</mat-icon>
 						</button>
 					</div>
 				</div>
-
-				@for (entry of tool_gui(); track entry.summary.category) {
-					@if (entry.summary.count > 0 || (tools_available() && entry.tools.length > 0)) {
-						<div class="flex flex-column flex-gap-0-5">
-							<div class="flex flex-items-center flex-justify-between flex-gap-0-5">
-								<div
-									class="tool-category-chip"
-									[class.tool-unavailable]="!entry.summary.available"
-									[matTooltip]="entry.summary.reason ?? ''"
-								>
-									<div class="category-circle">
-										@switch (entry.summary.category) {
-											@case ('bitcoin') {
-												<mat-icon [svgIcon]="entry.summary.icon"></mat-icon>
-											}
-											@default {
-												<mat-icon>{{ entry.summary.icon }}</mat-icon>
-											}
-										}
-									</div>
-									<span class="font-size-xs">{{ entry.summary.category | titlecase }}</span>
-								</div>
-
-								@if (entry.summary.reason) {
-									<div class="font-size-xs orc-status-inactive-color">{{ entry.summary.reason }}</div>
-								}
-							</div>
-
-							<div class="tool-grid">
-								@for (tool of entry.tools; track tool.name) {
-									@if (tool.selected) {
-										<div class="tool-card">
-											<div class="flex flex-column flex-gap-0-25 flex-1">
-												<div class="font-size-s font-weight-500">{{ tool_map().get(tool.name)?.title }}</div>
-												<div class="font-size-xs orc-outline-color">
-													{{ tool_map().get(tool.name)?.description }}
-												</div>
-											</div>
-											<button mat-icon-button type="button" class="orc-icon-button" (click)="onRemoveTool(tool.name)">
-												<mat-icon>delete_forever</mat-icon>
-											</button>
-										</div>
-									} @else if (tools_available()) {
-										<div class="tool-card tool-available" (click)="onAddTool(tool.name)">
-											<div class="flex flex-column flex-gap-0-25 flex-1">
-												<div class="font-size-s font-weight-500">{{ tool_map().get(tool.name)?.title }}</div>
-												<div class="font-size-xs orc-outline-color">
-													{{ tool_map().get(tool.name)?.description }}
-												</div>
-											</div>
-											<button mat-icon-button type="button" class="orc-icon-button">
-												<mat-icon>add</mat-icon>
-											</button>
-										</div>
-									}
-								}
-							</div>
-						</div>
-					}
-				}
 			</div>
-		</form>
-	</div>
-</div>
+		}
+
+		<div class="flex flex-column flex-gap-1">
+			<div class="flex flex-items-center flex-justify-between flex-gap-0-5">
+				<div class="title-l p-b-0-5 p-l-1">
+					<span [class.orc-error-color]="form.get('tools')?.invalid && submitted()">Tools</span>
+				</div>
+				<div class="flex flex-items-center flex-gap-0-5">
+					@if (data.agent?.agent_key !== null) {
+						<button matButton [disabled]="is_default_tools()" (click)="onResetTools()">
+							<span class="font-size-xs">Default Tools</span>
+						</button>
+					}
+					<button matButton (click)="onToggleToolsAvailable()">
+						<mat-icon>{{ tools_available() ? 'visibility_off' : 'visibility' }}</mat-icon>
+						<span class="font-size-s">{{
+							tools_available() ? 'Hide unused tools' : 'Show unused tools (' + available_tool_count() + ')'
+						}}</span>
+					</button>
+				</div>
+			</div>
+
+			@for (entry of tool_gui(); track entry.summary.category) {
+				@if (entry.summary.count > 0 || (tools_available() && entry.tools.length > 0)) {
+					<div class="flex flex-column flex-gap-0-5">
+						<div class="flex flex-items-center flex-justify-between flex-gap-0-5">
+							<div
+								class="tool-category-chip"
+								[class.tool-unavailable]="!entry.summary.available"
+								[matTooltip]="entry.summary.reason ?? ''"
+							>
+								<div class="category-circle">
+									@switch (entry.summary.category) {
+										@case ('bitcoin') {
+											<mat-icon [svgIcon]="entry.summary.icon"></mat-icon>
+										}
+										@default {
+											<mat-icon>{{ entry.summary.icon }}</mat-icon>
+										}
+									}
+								</div>
+								<span class="font-size-xs">{{ entry.summary.category | titlecase }}</span>
+							</div>
+
+							@if (entry.summary.reason) {
+								<div class="font-size-xs orc-status-inactive-color">{{ entry.summary.reason }}</div>
+							}
+						</div>
+
+						<div class="tool-grid">
+							@for (tool of entry.tools; track tool.name) {
+								@if (tool.selected) {
+									<div class="tool-card">
+										<div class="flex flex-column flex-gap-0-25 flex-1">
+											<div class="font-size-s font-weight-500">{{ tool_map().get(tool.name)?.title }}</div>
+											<div class="font-size-xs orc-outline-color">
+												{{ tool_map().get(tool.name)?.description }}
+											</div>
+										</div>
+										<button mat-icon-button type="button" class="orc-icon-button" (click)="onRemoveTool(tool.name)">
+											<mat-icon>delete_forever</mat-icon>
+										</button>
+									</div>
+								} @else if (tools_available()) {
+									<div class="tool-card tool-available" (click)="onAddTool(tool.name)">
+										<div class="flex flex-column flex-gap-0-25 flex-1">
+											<div class="font-size-s font-weight-500">{{ tool_map().get(tool.name)?.title }}</div>
+											<div class="font-size-xs orc-outline-color">
+												{{ tool_map().get(tool.name)?.description }}
+											</div>
+										</div>
+										<button mat-icon-button type="button" class="orc-icon-button">
+											<mat-icon>add</mat-icon>
+										</button>
+									</div>
+								}
+							}
+						</div>
+					</div>
+				}
+			}
+		</div>
+	</form>
+</ng-template>

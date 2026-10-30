@@ -3,6 +3,7 @@ import {ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnDestroy
 import {FormGroup, FormControl, Validators} from '@angular/forms';
 /* Vendor Dependencies */
 import {MatDialog} from '@angular/material/dialog';
+import {MatBottomSheetRef} from '@angular/material/bottom-sheet';
 import {firstValueFrom, Subscription, filter} from 'rxjs';
 /* Application Dependencies */
 import {AiService} from '@client/modules/ai/services/ai/ai.service';
@@ -51,6 +52,10 @@ export class SettingsSubsectionAppAiAgentFormComponent implements OnInit, OnDest
 		config: Config | null;
 	} = inject(FORM_PANEL_DATA);
 
+	/* ── Public properties ── */
+	/** The host opened this panel as a bottom sheet */
+	public readonly sheet: boolean = inject(MatBottomSheetRef, {optional: true}) !== null;
+
 	/* ── Public signals ── */
 	public ai_favorites = signal<AiFavorites>({ollama: [], openrouter: []});
 	public focused_name = signal<boolean>(false);
@@ -88,7 +93,8 @@ export class SettingsSubsectionAppAiAgentFormComponent implements OnInit, OnDest
 
 	constructor() {
 		this.ai_favorites.set(this.data.favorites);
-		this.fullscreen_system_message.set(this.data.fullscreen_system_message);
+		// The fullscreen editor overlays the side panel; a sheet keeps the inline editor
+		this.fullscreen_system_message.set(this.data.fullscreen_system_message && !this.sheet);
 		this.is_keyed_agent.set(this.data.agent !== null && this.data.agent?.agent_key !== null);
 		switch (this.data.mode) {
 			case 'groundskeeper':

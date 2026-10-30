@@ -16,10 +16,19 @@ describe('SettingsSubsectionUserUserPasswordComponent', () => {
 
 		fixture = TestBed.createComponent(SettingsSubsectionUserUserPasswordComponent);
 		component = fixture.componentInstance;
+		fixture.componentRef.setInput('device_type', 'desktop');
 		fixture.detectChanges();
 	});
 
 	it('should create', () => {
 		expect(component).toBeTruthy();
+	});
+
+	it('stretches the button to full width on a phone', () => {
+		const button = (): HTMLButtonElement => fixture.nativeElement.querySelector('button');
+		expect(button().classList).not.toContain('w-full');
+		fixture.componentRef.setInput('device_type', 'mobile');
+		fixture.detectChanges();
+		expect(button().classList).toContain('w-full');
 	});
 });

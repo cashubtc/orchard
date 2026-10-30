@@ -1,9 +1,9 @@
 <mat-card appearance="outlined" class="relative overflow-hidden">
 	<mat-card-content class="orc-surface-container-low-bg">
-		<div class="p-1 flex flex-row flex-gap-2 flex-wrap">
+		<div class="flex flex-row flex-gap-2 flex-wrap" [class.p-1]="device_type() !== 'mobile'">
 			<div class="flex-1 flex-grow flex flex-gap-2 flex-wrap">
 				<orc-crew-facehash [name]="form_group().get('name')?.value || ''" [enableBlink]="true" size="3.5rem"></orc-crew-facehash>
-				<div class="flex flex-column flex-gap-1">
+				<div class="flex flex-column flex-gap-1" [class.w-full]="device_type() === 'mobile'">
 					<orc-settings-subsection-user-user-name
 						[form_group]="form_group()"
 						[control_name]="'name'"

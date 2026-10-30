@@ -1,70 +1,86 @@
-<div class="orc-form-panel">
-	<div class="orc-form-panel-header">
-		<div class="p-l-0-5">{{ data.name }}</div>
-		<button mat-icon-button type="button" class="orc-icon-button" (click)="onClose()">
-			<mat-icon>close</mat-icon>
-		</button>
-	</div>
-	<div class="category-rule"></div>
-	<div class="orc-form-panel-content">
-		<div class="flex flex-column flex-items-center flex-justify-center flex-gap-1">
-			<orc-graphic-groundskeeper
-				height="15rem"
-				[active]="groundskeeper_active()"
-				[running]="groundskeeper_running()"
-				[state]="groundskeeper_state()"
-			></orc-graphic-groundskeeper>
-			@if (loading()) {
-				<div class="elapsed-timer">{{ formatTime(elapsed_seconds()) }}</div>
-			}
+@if (!sheet) {
+	<div class="orc-form-panel">
+		<div class="orc-form-panel-header">
+			<div class="p-l-0-5">{{ data.name }}</div>
+			<button mat-icon-button type="button" class="orc-icon-button" aria-label="Close" (click)="onClose()">
+				<mat-icon>close</mat-icon>
+			</button>
 		</div>
-		@if (!loading()) {
-			@if (error()) {
-				<div class="flex flex-column flex-gap-1">
-					@if (run_result(); as run) {
-						<div class="flex flex-row flex-gap-1 flex-wrap">
-							<div class="orc-high-card p-1 flex-1">
-								<div class="font-size-l font-weight-semi-bold text-nowrap">{{ formatDuration(run) }}</div>
-								<div class="font-size-xs orc-outline-color text-nowrap">Run time</div>
-							</div>
-							@if (run.tokens_used) {
-								<div class="orc-high-card p-1 flex-1">
-									<div class="font-size-l font-weight-semi-bold text-nowrap">{{ run.tokens_used | number }}</div>
-									<div class="font-size-xs orc-outline-color text-nowrap">Tokens</div>
-								</div>
-							}
-						</div>
-					}
-					<div class="flex flex-column flex-gap-1 flex-items-center p-2">
-						<mat-icon class="orc-status-error-color icon-lg">error</mat-icon>
-						<div class="text-center">{{ error() }}</div>
-					</div>
-				</div>
-			} @else {
-				<div class="flex flex-column flex-gap-1">
-					@if (run_result(); as run) {
-						<div class="flex flex-row flex-gap-1 flex-wrap">
-							<div class="orc-high-card p-1 flex-1">
-								<div class="font-size-l font-weight-semi-bold text-nowrap">{{ formatDuration(run) }}</div>
-								<div class="font-size-xs orc-outline-color text-nowrap">Run time</div>
-							</div>
-							@if (run.tokens_used) {
-								<div class="orc-high-card p-1 flex-1">
-									<div class="font-size-l font-weight-semi-bold text-nowrap">{{ run.tokens_used | number }}</div>
-									<div class="font-size-xs orc-outline-color text-nowrap">Tokens</div>
-								</div>
-							}
-							<div class="orc-high-card p-1 flex-1">
-								<div class="font-size-l font-weight-semi-bold text-nowrap">{{ run.notified ? 'Yes' : 'No' }}</div>
-								<div class="font-size-xs orc-outline-color text-nowrap">Message sent</div>
-							</div>
-						</div>
-					}
-					@if (marked_result()) {
-						<div class="orc-ai-marked p-t-1" [innerHTML]="marked_result()"></div>
-					}
-				</div>
-			}
+		<div class="category-rule"></div>
+		<div class="orc-form-panel-content">
+			<ng-container *ngTemplateOutlet="body"></ng-container>
+		</div>
+	</div>
+} @else {
+	<div class="orc-form-panel-sheet">
+		<div class="flex flex-items-center flex-justify-between">
+			<div class="title-l">{{ data.name }}</div>
+			<button mat-icon-button type="button" class="orc-icon-button" aria-label="Close" (click)="onClose()">
+				<mat-icon>close</mat-icon>
+			</button>
+		</div>
+		<ng-container *ngTemplateOutlet="body"></ng-container>
+	</div>
+}
+
+<ng-template #body>
+	<div class="flex flex-column flex-items-center flex-justify-center flex-gap-1">
+		<orc-graphic-groundskeeper
+			height="15rem"
+			[active]="groundskeeper_active()"
+			[running]="groundskeeper_running()"
+			[state]="groundskeeper_state()"
+		></orc-graphic-groundskeeper>
+		@if (loading()) {
+			<div class="elapsed-timer">{{ formatTime(elapsed_seconds()) }}</div>
 		}
 	</div>
-</div>
+	@if (!loading()) {
+		@if (error()) {
+			<div class="flex flex-column flex-gap-1">
+				@if (run_result(); as run) {
+					<div class="flex flex-row flex-gap-1 flex-wrap">
+						<div class="orc-high-card p-1 flex-1">
+							<div class="font-size-l font-weight-semi-bold text-nowrap">{{ formatDuration(run) }}</div>
+							<div class="font-size-xs orc-outline-color text-nowrap">Run time</div>
+						</div>
+						@if (run.tokens_used) {
+							<div class="orc-high-card p-1 flex-1">
+								<div class="font-size-l font-weight-semi-bold text-nowrap">{{ run.tokens_used | number }}</div>
+								<div class="font-size-xs orc-outline-color text-nowrap">Tokens</div>
+							</div>
+						}
+					</div>
+				}
+				<div class="flex flex-column flex-gap-1 flex-items-center p-2">
+					<mat-icon class="orc-status-error-color icon-lg">error</mat-icon>
+					<div class="text-center">{{ error() }}</div>
+				</div>
+			</div>
+		} @else {
+			<div class="flex flex-column flex-gap-1">
+				@if (run_result(); as run) {
+					<div class="flex flex-row flex-gap-1 flex-wrap">
+						<div class="orc-high-card p-1 flex-1">
+							<div class="font-size-l font-weight-semi-bold text-nowrap">{{ formatDuration(run) }}</div>
+							<div class="font-size-xs orc-outline-color text-nowrap">Run time</div>
+						</div>
+						@if (run.tokens_used) {
+							<div class="orc-high-card p-1 flex-1">
+								<div class="font-size-l font-weight-semi-bold text-nowrap">{{ run.tokens_used | number }}</div>
+								<div class="font-size-xs orc-outline-color text-nowrap">Tokens</div>
+							</div>
+						}
+						<div class="orc-high-card p-1 flex-1">
+							<div class="font-size-l font-weight-semi-bold text-nowrap">{{ run.notified ? 'Yes' : 'No' }}</div>
+							<div class="font-size-xs orc-outline-color text-nowrap">Message sent</div>
+						</div>
+					</div>
+				}
+				@if (marked_result()) {
+					<div class="orc-ai-marked p-t-1" [innerHTML]="marked_result()"></div>
+				}
+			</div>
+		}
+	}
+</ng-template>

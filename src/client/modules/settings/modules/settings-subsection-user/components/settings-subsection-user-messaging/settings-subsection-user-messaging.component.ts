@@ -1,6 +1,8 @@
 /* Core Dependencies */
 import {ChangeDetectionStrategy, Component, ElementRef, computed, input, output, signal, viewChild} from '@angular/core';
 import {FormGroup} from '@angular/forms';
+/* Application Dependencies */
+import {DeviceType} from '@client/modules/layout/types/device.types';
 
 @Component({
 	selector: 'orc-settings-subsection-user-messaging',
@@ -18,6 +20,7 @@ export class SettingsSubsectionUserMessagingComponent {
 	public dirty = input<boolean>(false);
 	public ai_enabled = input<boolean>(false);
 	public messages_enabled = input<boolean>(false);
+	public device_type = input<DeviceType>('desktop');
 
 	public cancel = output<string>();
 	public submit = output<void>();

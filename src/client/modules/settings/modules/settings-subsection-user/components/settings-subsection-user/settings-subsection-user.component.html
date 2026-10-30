@@ -29,6 +29,7 @@
 					[ai_enabled]="settings()?.ai_enabled?.value ?? false"
 					[messages_enabled]="settings()?.messages_enabled?.value ?? false"
 					[control_name]="'telegram_chat_id'"
+					[device_type]="device_type()"
 					[invalid]="form_user.get('telegram_chat_id')?.invalid || false"
 					[dirty]="form_user.get('telegram_chat_id')?.dirty || false"
 					(cancel)="onCancelTelegram($event)"

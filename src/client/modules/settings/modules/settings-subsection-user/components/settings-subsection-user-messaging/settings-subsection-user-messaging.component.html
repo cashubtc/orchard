@@ -1,6 +1,6 @@
 <mat-card appearance="outlined" class="relative overflow-hidden">
 	<mat-card-content class="orc-surface-container-low-bg">
-		<mat-tab-group [selectedIndex]="0" class="z-index-0 p-h-1">
+		<mat-tab-group [selectedIndex]="0" class="z-index-0" [class.p-h-1]="device_type() !== 'mobile'">
 			<mat-tab [disabled]="control()?.disabled || false">
 				<ng-template mat-tab-label>
 					<div class="ai-messaging-label">
