@@ -8,7 +8,16 @@
 	<span class="font-weight-semi-bold" [class.font-size-l]="large()" [class.text-nowrap]="!large()" [class.text-ellipsis]="!large()">{{
 		name()
 	}}</span>
-	<span class="font-size-xs orc-outline-color text-nowrap text-ellipsis">{{ detail() }}</span>
+	<span class="font-size-xs orc-outline-color text-nowrap text-ellipsis">
+		@if (subtitle()) {
+			{{ subtitle() }}
+		} @else {
+			<span class="orc-status-warning-color">No public URL</span>
+		}
+		@if (is_orchard()) {
+			· Your Orchard mint
+		}
+	</span>
 	<ng-content select="[mint-header-detail]"></ng-content>
 </div>
 <ng-content></ng-content>

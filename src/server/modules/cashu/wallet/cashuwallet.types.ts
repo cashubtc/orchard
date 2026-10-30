@@ -87,6 +87,7 @@ export type CashuWalletMintRecord = CashuWalletMint & {
 
 export type OrchardMintIdentity = {
 	pubkey: string | null;
+	/** The public URLs from its /v1/info; MINT_API is never one */
 	urls: string[];
 	api_url: string;
 };

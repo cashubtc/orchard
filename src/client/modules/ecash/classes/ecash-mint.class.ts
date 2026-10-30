@@ -13,9 +13,10 @@ export class EcashMint implements OrchardEcashMint {
 	created_at: number;
 	info: MintInfo | null;
 
-	/** The host of the mint's first url, port included */
-	public get host(): string {
-		const url = this.urls[0] ?? '';
+	/** The host of the mint's first url, port included; null without a public URL */
+	public get host(): string | null {
+		const url = this.urls[0];
+		if (!url) return null;
 		try {
 			return new URL(url).host;
 		} catch {
@@ -25,7 +26,7 @@ export class EcashMint implements OrchardEcashMint {
 
 	/** The mint's own name, falling back to its host */
 	public get display_name(): string {
-		return this.info?.name ?? this.host;
+		return this.info?.name ?? this.host ?? '';
 	}
 
 	/** The mint's icon, from its info */

@@ -27,8 +27,16 @@ describe('EcashGeneralMintHeaderComponent', () => {
 	});
 
 	it('marks the mint Orchard runs in its subtitle', () => {
-		expect(component.detail()).toBe('mint.cedar.example');
+		const text = (): string => fixture.nativeElement.textContent.replace(/\s+/g, ' ');
+		expect(text()).not.toContain('Your Orchard mint');
 		fixture.componentRef.setInput('is_orchard', true);
-		expect(component.detail()).toBe('mint.cedar.example · Your Orchard mint');
+		fixture.detectChanges();
+		expect(text()).toContain('mint.cedar.example · Your Orchard mint');
+	});
+
+	it('flags a mint without a public URL in amber', () => {
+		fixture.componentRef.setInput('subtitle', null);
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('.orc-status-warning-color')?.textContent).toBe('No public URL');
 	});
 });

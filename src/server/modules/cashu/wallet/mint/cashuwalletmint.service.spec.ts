@@ -112,10 +112,27 @@ describe('CashuWalletMintService', () => {
 			expect(first[0]).toMatchObject({pubkey: '02orchard', urls: ['https://mint.orchard.example'], is_orchard: true});
 		});
 
-		it('falls back to MINT_API when the mint lists no public URLs', async () => {
-			route(ORCHARD_API, async () => response({...orchard_info, urls: []}));
+		it('knows an Orchard mint without a pubkey by MINT_API, listing only the URLs it publishes', async () => {
+			route(ORCHARD_API, async () => response({...orchard_info, pubkey: undefined, urls: []}));
 			const [mint] = await service.listMints('user-1');
-			expect(mint.urls).toEqual([ORCHARD_API]);
+			await service.listMints('user-1');
+			expect(mint).toMatchObject({urls: [], is_orchard: true});
+			expect(rows).toHaveLength(1);
+			expect(rows[0].urls).toEqual([ORCHARD_API]);
+
+			route(ORCHARD_API, async () => response({...orchard_info, pubkey: undefined, urls: ['https://new.orchard.example']}));
+			await service.checkMints('user-1');
+			expect(await service.listMints('user-1')).toMatchObject([{urls: ['https://new.orchard.example'], is_orchard: true}]);
+			expect(rows).toHaveLength(1);
+		});
+
+		it('lists the URLs the Orchard mint publishes as of its last status check', async () => {
+			await service.listMints('user-1');
+			route(ORCHARD_API, async () => response({...orchard_info, urls: ['https://new.orchard.example']}));
+			await service.checkMints('user-1');
+			const [mint] = await service.listMints('user-1');
+			expect(mint).toMatchObject({urls: ['https://new.orchard.example'], is_orchard: true});
+			expect(rows).toHaveLength(1);
 		});
 
 		it('lists without the Orchard mint while it is unreachable, and retries after 30s', async () => {

@@ -74,17 +74,23 @@ export class CashuWalletMintService {
 		Registry
 	******************************************************** */
 
-	/** List a user's wallet mints with their cached info, adding the Orchard mint if it's missing once its live identity is known */
+	/** List a user's wallet mints with their cached info */
 	public async listMints(user_id: string): Promise<CashuWalletMintRecord[]> {
+		const [identity, mints] = await this.loadMints(user_id);
+		return this.toRecords(mints, identity);
+	}
+
+	/** A user's wallet mints with the Orchard identity, adding the Orchard mint if it's missing once its live identity is known */
+	private async loadMints(user_id: string): Promise<[OrchardMintIdentity | null, CashuWalletMint[]]> {
 		const [identity, mints] = await Promise.all([
 			this.getOrchardIdentity(),
 			this.walletMintRepository.find({where: {user_id}, order: {created_at: 'ASC'}}),
 		]);
 		const live = this.orchard_live;
-		if (live && !mints.some((mint) => this.matchesIdentity(mint, live.pubkey, live.urls))) {
+		if (live && !mints.some((mint) => this.isOrchardMint(mint, live))) {
 			mints.push(await this.ensureOrchardMint(user_id, live));
 		}
-		return this.toRecords(mints, identity);
+		return [identity, mints];
 	}
 
 	/** Look a mint up before adding it: a URL already in the wallet matches without contacting the mint, else its info, timing and any wallet mint with its pubkey; local addresses need allow_local */
@@ -162,12 +168,14 @@ export class CashuWalletMintService {
 			: this.findByIdentity(user_id, null, [mint_url]);
 	}
 
-	/** Wallet mints with the Orchard flag and the cached info of the URL each is reached at */
+	/** Wallet mints with the Orchard flag and the cached info of the URL each is reached at; the Orchard mint lists only the URLs it publishes now */
 	private async toRecords(mints: CashuWalletMint[], identity: OrchardMintIdentity | null): Promise<CashuWalletMintRecord[]> {
 		const infos = await this.cashuWalletMintCacheService.getInfos(mints.map((mint) => this.sourceUrl(mint, identity)));
 		return mints.map((mint) => {
 			const info = infos.get(this.sourceUrl(mint, identity));
-			return {...mint, is_orchard: this.isOrchardMint(mint, identity), name: info?.name ?? null, info: info?.info ?? null};
+			const is_orchard = this.isOrchardMint(mint, identity);
+			const urls = is_orchard && identity ? identity.urls : mint.urls;
+			return {...mint, urls, is_orchard, name: info?.name ?? null, info: info?.info ?? null};
 		});
 	}
 
@@ -261,7 +269,8 @@ export class CashuWalletMintService {
 
 	/** Check the mints in a user's wallet in parallel, or just one; a mint is online when its /v1/info answers */
 	public async checkMints(user_id: string, mint_id: string | null = null): Promise<CashuWalletMintStatus[]> {
-		const mints = (await this.listMints(user_id)).filter((mint) => mint_id === null || mint.id === mint_id);
+		const [, wallet_mints] = await this.loadMints(user_id);
+		const mints = wallet_mints.filter((mint) => mint_id === null || mint.id === mint_id);
 		return Promise.all(mints.map(async (mint) => ({mint_id: mint.id, ...(await this.checkMint(mint))})));
 	}
 
@@ -271,7 +280,7 @@ export class CashuWalletMintService {
 		return this.memoize(this.statuses, client.mintUrl, STATUS_TTL_MS, () => this.probeMint(client));
 	}
 
-	/** Time a mint's /v1/info, saving the fresh info and refreshing its keysets when they are due */
+	/** Time a mint's /v1/info, saving the fresh info and refreshing its keysets when they are due; for the Orchard mint it also renews the live identity */
 	private async probeMint(mint: Mint): Promise<CashuWalletMintProbe> {
 		const started_at = Date.now();
 		let info: MintInfo;
@@ -281,6 +290,7 @@ export class CashuWalletMintService {
 			return {online: false, latency_ms: null, error: describeMintError(error), checked_at: DateTime.now().toUnixInteger()};
 		}
 		const latency_ms = Date.now() - started_at;
+		if (mint.mintUrl === this.orchard_live?.api_url) this.orchard_live = this.toOrchardIdentity(mint.mintUrl, info.cache);
 		await this.cashuWalletMintCacheService
 			.saveInfo(mint.mintUrl, info)
 			.then(() => (this.orchard_cached = undefined))
@@ -334,21 +344,21 @@ export class CashuWalletMintService {
 		return this.ensureOrchardMint(user_id, identity);
 	}
 
-	/** Return the Orchard mint from a user's wallet, adding it if it's not there yet */
+	/** Return the Orchard mint from a user's wallet, adding it under MINT_API if it's not there yet, a key that holds while its public URLs change */
 	private async ensureOrchardMint(user_id: string, identity: OrchardMintIdentity): Promise<CashuWalletMint> {
-		const existing = await this.findByIdentity(user_id, identity.pubkey, identity.urls);
+		const existing = await this.findOrchardMint(user_id, identity);
 		if (existing) return existing;
 		try {
 			return await this.walletMintRepository.save(
 				this.walletMintRepository.create({
 					user_id,
 					pubkey: identity.pubkey,
-					urls: identity.urls,
+					urls: [identity.api_url],
 					created_at: DateTime.now().toUnixInteger(),
 				}),
 			);
 		} catch (error) {
-			const raced = await this.findByIdentity(user_id, identity.pubkey, identity.urls);
+			const raced = await this.findOrchardMint(user_id, identity);
 			if (raced) return raced;
 			throw error;
 		}
@@ -379,10 +389,15 @@ export class CashuWalletMintService {
 		return api_url ? normalizeMintUrl(api_url) : null;
 	}
 
-	/** The Orchard mint's identity from its /v1/info: its pubkey and public URLs, or MINT_API when it lists none */
+	/** The Orchard mint's identity from its /v1/info: its pubkey and public URLs */
 	private toOrchardIdentity(api_mint_url: string, info: Pick<GetInfoResponse, 'pubkey' | 'urls'>): OrchardMintIdentity {
-		const urls = this.normalizeUrls(info.urls ?? []);
-		return {pubkey: info.pubkey || null, urls: urls.length > 0 ? urls : [api_mint_url], api_url: api_mint_url};
+		return {pubkey: info.pubkey || null, urls: this.normalizeUrls(info.urls ?? []), api_url: api_mint_url};
+	}
+
+	/** The Orchard mint in a user's wallet, by the same rule that flags it */
+	private async findOrchardMint(user_id: string, identity: OrchardMintIdentity): Promise<CashuWalletMint | null> {
+		const mints = await this.walletMintRepository.find({where: {user_id}});
+		return mints.find((mint) => this.isOrchardMint(mint, identity)) ?? null;
 	}
 
 	/** Whether a wallet mint is the Orchard mint: by pubkey, or by URL only when the mint publishes no pubkey */
