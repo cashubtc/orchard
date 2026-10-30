@@ -43,6 +43,7 @@
 					[dirty]="form_group().get('password')?.dirty || false"
 					[error]="errors().password"
 					[focused_control]="focused_control() === 'password'"
+					[autocomplete]="'current-password'"
 					(cancel)="onControlCancel('password')"
 					(enter)="submit.emit()"
 					(blur)="blur.emit()"

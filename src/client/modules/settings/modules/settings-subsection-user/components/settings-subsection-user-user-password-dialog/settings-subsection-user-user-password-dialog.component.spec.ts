@@ -32,4 +32,9 @@ describe('SettingsSubsectionUserUserPasswordDialogComponent', () => {
 	it('should create', () => {
 		expect(component).toBeTruthy();
 	});
+
+	it('offers the saved password for the current password only', () => {
+		const inputs: HTMLInputElement[] = Array.from(fixture.nativeElement.querySelectorAll('input'));
+		expect(inputs.map((input) => input.getAttribute('autocomplete'))).toEqual(['current-password', 'new-password', 'new-password']);
+	});
 });

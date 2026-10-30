@@ -17,6 +17,8 @@ export class AuthGeneralFormcontrolPasswordComponent {
 	public dirty = input<boolean>(false);
 	public error = input<string | null>(null);
 	public focused_control = input.required<boolean>();
+	/** What a password manager offers: a new password, or the saved one for re-entry */
+	public autocomplete = input<'new-password' | 'current-password'>('new-password');
 
 	public cancel = output<string>();
 	public blur = output<void>();

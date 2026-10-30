@@ -35,4 +35,8 @@ describe('AuthSubsectionAuthenticationFormComponent', () => {
 	it('should create', () => {
 		expect(component).toBeTruthy();
 	});
+
+	it('lets a password manager fill the saved password', () => {
+		expect(fixture.nativeElement.querySelector('input[type="password"]').getAttribute('autocomplete')).toBe('current-password');
+	});
 });
