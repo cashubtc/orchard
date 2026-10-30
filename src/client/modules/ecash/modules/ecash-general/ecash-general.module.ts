@@ -10,6 +10,7 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
+import {MatCheckboxModule} from '@angular/material/checkbox';
 /* Application Dependencies */
 import {OrcLocalModule} from '@client/modules/local/local.module';
 import {OrcGraphicModule} from '@client/modules/graphic/graphic.module';
@@ -17,6 +18,7 @@ import {OrcFormModule} from '@client/modules/form/form.module';
 import {OrcNetworkModule} from '@client/modules/network/network.module';
 import {OrcButtonModule} from '@client/modules/button/button.module';
 import {OrcCashuModule} from '@client/modules/cashu/cashu.module';
+import {OrcAuthGeneralModule} from '@client/modules/auth/modules/auth-general/auth-general.module';
 /* Local Dependencies */
 import {EcashGeneralNoteComponent} from './components/ecash-general-note/ecash-general-note.component';
 import {EcashGeneralBalanceComponent} from './components/ecash-general-balance/ecash-general-balance.component';
@@ -35,6 +37,8 @@ import {EcashGeneralMintInfoComponent} from './components/ecash-general-mint-inf
 import {EcashGeneralMintAddComponent} from './components/ecash-general-mint-add/ecash-general-mint-add.component';
 import {EcashGeneralMintHeaderComponent} from './components/ecash-general-mint-header/ecash-general-mint-header.component';
 import {EcashGeneralMintDetailsComponent} from './components/ecash-general-mint-details/ecash-general-mint-details.component';
+import {EcashGeneralBackupComponent} from './components/ecash-general-backup/ecash-general-backup.component';
+import {EcashGeneralRestoreUrlsComponent} from './components/ecash-general-restore-urls/ecash-general-restore-urls.component';
 
 @NgModule({
 	declarations: [
@@ -55,6 +59,8 @@ import {EcashGeneralMintDetailsComponent} from './components/ecash-general-mint-
 		EcashGeneralMintAddComponent,
 		EcashGeneralMintHeaderComponent,
 		EcashGeneralMintDetailsComponent,
+		EcashGeneralBackupComponent,
+		EcashGeneralRestoreUrlsComponent,
 	],
 	imports: [
 		CommonModule,
@@ -66,12 +72,14 @@ import {EcashGeneralMintDetailsComponent} from './components/ecash-general-mint-
 		MatFormFieldModule,
 		MatInputModule,
 		MatProgressSpinnerModule,
+		MatCheckboxModule,
 		OrcLocalModule,
 		OrcGraphicModule,
 		OrcFormModule,
 		OrcNetworkModule,
 		OrcButtonModule,
 		OrcCashuModule,
+		OrcAuthGeneralModule,
 	],
 	exports: [
 		EcashGeneralNoteComponent,
@@ -79,6 +87,7 @@ import {EcashGeneralMintDetailsComponent} from './components/ecash-general-mint-
 		EcashGeneralMintsComponent,
 		EcashGeneralActionsComponent,
 		EcashGeneralActivityComponent,
+		EcashGeneralRestoreUrlsComponent,
 	],
 })
 export class OrcEcashGeneralModule {}

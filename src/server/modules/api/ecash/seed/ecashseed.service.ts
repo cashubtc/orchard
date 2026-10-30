@@ -38,7 +38,9 @@ export class EcashSeedService {
 			const user = await this.userService.getUserById(user_id);
 			if (!user) throw OrchardErrorCode.UserError;
 			if (!(await this.userService.validatePassword(user, password))) throw OrchardErrorCode.InvalidPasswordError;
-			return await this.cashuWalletSeedService.getMnemonic(user_id);
+			const mnemonic = await this.cashuWalletSeedService.getMnemonic(user_id);
+			this.logger.log(`Ecash recovery words revealed to user ${user.name} (${user_id})`);
+			return mnemonic;
 		} catch (error) {
 			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
 				errord: OrchardErrorCode.EcashWalletError,

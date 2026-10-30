@@ -2,10 +2,15 @@
 	<button type="button" class="button-copy-icon orc-icon-button" (click)="onCopy()">
 		<mat-icon #iconRef [class.copied]="copied()">{{ copied() ? 'check' : 'content_copy' }}</mat-icon>
 	</button>
+} @else if (size() === 'pill') {
+	<button type="button" class="button-copy-pill orc-pill font-size-xs font-weight-semi-bold" matRipple (click)="onCopy()">
+		<mat-icon #iconRef class="icon-sm mat-symbol-outline" [class.copied]="copied()">{{ copied() ? 'check' : 'content_copy' }}</mat-icon>
+		<ng-container *ngTemplateOutlet="label"></ng-container>
+	</button>
 } @else {
 	<div class="button-copy-container orc-text-button orc-icon-button" (click)="onCopy()">
 		<div class="button-copy-label">
-			<ng-content></ng-content>
+			<ng-container *ngTemplateOutlet="label"></ng-container>
 		</div>
 		<div class="button-copy-action-wrapper" [class.small-copy]="size() === 'sm'">
 			<div class="button-copy-action" [class.copied]="copied()">
@@ -16,3 +21,5 @@
 		</div>
 	</div>
 }
+
+<ng-template #label><ng-content></ng-content></ng-template>

@@ -20,10 +20,16 @@ import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
 import {EcashMintStatus} from '@client/modules/ecash/classes/ecash-mint-status.class';
 import {EcashOperation} from '@client/modules/ecash/classes/ecash-operation.class';
+import {EcashSeed} from '@client/modules/ecash/classes/ecash-seed.class';
 import {EcashGeneralIssueComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-issue/ecash-general-issue.component';
 import {getMintStatusPill} from '@client/modules/ecash/modules/ecash-general/helpers/ecash-general.helpers';
 import {EcashGeneralMintAddComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-mint-add/ecash-general-mint-add.component';
-import {EcashIssuePanelData, EcashMintAddPanelData} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
+import {EcashGeneralBackupComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-backup/ecash-general-backup.component';
+import {
+	EcashBackupPanelData,
+	EcashIssuePanelData,
+	EcashMintAddPanelData,
+} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
 
 const ACTIVITY_RECENT_COUNT = 8;
 
@@ -51,6 +57,7 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 	public readonly mint_statuses = signal<EcashMintStatus[]>([]);
 	public readonly mint_reserves = signal<MintReserves | null>(null);
 	public readonly operations = signal<EcashOperation[]>([]);
+	public readonly seed = signal<EcashSeed | null>(null);
 	public readonly selected_unit = signal<string | null>(null);
 	public readonly bitcoin_oracle_price = signal<BitcoinOraclePrice | null>(null);
 	public readonly is_admin = signal<boolean>(false);
@@ -59,12 +66,18 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 	public readonly loading_mints = signal<boolean>(true);
 	public readonly loading_mint_statuses = signal<boolean>(true);
 	public readonly loading_operations = signal<boolean>(true);
+	public readonly loading_seed = signal<boolean>(true);
 
 	/** Ecash is only issued from the Orchard mint, by an admin */
 	public readonly orchard_mint = computed(() => this.mints().find((mint) => mint.is_orchard) ?? null);
 	public readonly can_issue = computed(() => this.is_admin() && this.orchard_mint() !== null);
 
 	public readonly issue_blocked = computed(() => this.orchard_mint()?.issue_blocked ?? null);
+
+	/** The wallet holds ecash and its recovery words were never written down */
+	public readonly backup_due = computed(
+		() => !this.loading_seed() && !this.seed()?.backed_up_at && this.balances().some((balance) => balance.balance > 0),
+	);
 
 	private subscriptions: Subscription = new Subscription();
 
@@ -75,6 +88,7 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 		this.loadMints();
 		this.loadMintStatuses();
 		this.loadOperations();
+		this.loadSeed();
 		if (this.bitcoin_oracle_enabled) this.loadBitcoinOraclePrice();
 	}
 
@@ -170,6 +184,23 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 			});
 	}
 
+	/** Whether the wallet's recovery words were backed up; without it the reminder still shows once the wallet holds ecash */
+	private loadSeed(): void {
+		this.ecashService
+			.loadSeed()
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: (seed) => {
+					this.seed.set(seed);
+					this.loading_seed.set(false);
+				},
+				error: (error) => {
+					console.error(error);
+					this.loading_seed.set(false);
+				},
+			});
+	}
+
 	/** The Orchard mint's balance sheet; its card shows no solvency if this fails */
 	private loadMintReserves(): void {
 		this.mintService
@@ -236,6 +267,18 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 				this.ecashService.clearMintsCache();
 				this.loadMints();
 				this.loadMintStatuses(mint.id);
+			});
+	}
+
+	/** Opens the backup panel; a confirmed backup hides the reminder */
+	public onBackup(): void {
+		const data: EcashBackupPanelData = {seed: this.seed(), mints: this.mints()};
+		this.formPanelService
+			.open<EcashBackupPanelData, EcashSeed>(EcashGeneralBackupComponent, {data})
+			.afterClosed()
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe((seed) => {
+				if (seed) this.seed.set(seed);
 			});
 	}
 

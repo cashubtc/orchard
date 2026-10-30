@@ -1,0 +1,113 @@
+@if (!sheet) {
+	<div class="orc-form-panel">
+		<div class="orc-form-panel-header">
+			<div class="p-l-0-5">Back up wallet</div>
+			<button mat-icon-button type="button" class="orc-icon-button" aria-label="Close" (click)="onClose()">
+				<mat-icon>close</mat-icon>
+			</button>
+		</div>
+		<div class="category-rule"></div>
+		<div class="orc-form-panel-content">
+			<div class="orc-form-panel-body flex-gap-1-5">
+				<ng-container *ngTemplateOutlet="body"></ng-container>
+			</div>
+		</div>
+		<div class="orc-form-panel-footer">
+			<div class="orc-form-panel-body">
+				<ng-container *ngTemplateOutlet="submit_button"></ng-container>
+			</div>
+		</div>
+	</div>
+} @else {
+	<div class="orc-form-panel-sheet">
+		<div class="flex flex-items-center flex-justify-between">
+			<div class="title-l">Back up wallet</div>
+			<button mat-icon-button type="button" class="orc-icon-button" aria-label="Close" (click)="onClose()">
+				<mat-icon>close</mat-icon>
+			</button>
+		</div>
+		<ng-container *ngTemplateOutlet="body"></ng-container>
+	</div>
+	<div class="orc-form-panel-sheet-actions">
+		<ng-container *ngTemplateOutlet="submit_button"></ng-container>
+	</div>
+}
+
+<ng-template #body>
+	@switch (step()) {
+		@case ('password') {
+			<div class="ecash-backup-intro" animate.enter="orc-animation-fadein">
+				<span class="ecash-backup-badge"><mat-icon>key</mat-icon></span>
+				<div class="font-size-l font-weight-semi-bold">Confirm it’s you</div>
+				<p class="m-0 font-size-s orc-outline-color">Enter your password to see your recovery words.</p>
+			</div>
+			<form class="w-full" [formGroup]="form">
+				<orc-auth-general-formcontrol-password
+					[form_group]="form"
+					[control_name]="'password'"
+					[label]="'Password'"
+					[invalid]="form.controls.password.touched && form.controls.password.invalid"
+					[dirty]="form.controls.password.dirty"
+					[error]="error()"
+					[focused_control]="true"
+					[autocomplete]="'current-password'"
+					(enter)="onSubmit()"
+					(cancel)="form.reset()"
+				></orc-auth-general-formcontrol-password>
+			</form>
+		}
+		@case ('words') {
+			<p #words_intro class="m-0 w-full font-size-s orc-outline-color outline-none" tabindex="-1">
+				Write these 12 words on paper, in order.
+			</p>
+			<section class="flex flex-column flex-gap-0-5 w-full">
+				<div class="font-size-xs font-weight-semi-bold">Recovery words</div>
+				<ol class="ecash-backup-words" aria-label="Recovery words" data-testid="ecash-general-backup-words">
+					@for (word of words(); track $index) {
+						<li class="ecash-backup-word">
+							<span class="w-1 flex-shrink-0 text-right font-size-xs orc-outline-color">{{ $index + 1 }}</span>
+							<span class="w-min-0 text-ellipsis font-weight-semi-bold">{{ word }}</span>
+						</li>
+					}
+				</ol>
+			</section>
+			<div class="ecash-backup-note ecash-backup-warning font-size-s" role="note">
+				<mat-icon class="icon-sm orc-status-warning-color flex-shrink-0">warning</mat-icon>
+				<span>Anyone with these words can spend this ecash. Keep them offline.</span>
+			</div>
+			@if (restore_urls.length > 0) {
+				<orc-ecash-general-restore-urls
+					class="ecash-backup-note ecash-backup-mints"
+					[urls]="restore_urls"
+				></orc-ecash-general-restore-urls>
+			}
+		}
+		@case ('done') {
+			<div class="ecash-backup-intro" animate.enter="orc-animation-fadein">
+				<span class="ecash-backup-badge ecash-backup-badge-done"><mat-icon>check_circle</mat-icon></span>
+				<div class="font-size-l font-weight-semi-bold">Wallet backed up</div>
+				<p class="m-0 font-size-s orc-outline-color">You can view these words again in Settings.</p>
+			</div>
+		}
+	}
+</ng-template>
+
+<ng-template #submit_button>
+	<div class="flex flex-column flex-gap-0-5 w-full">
+		@if (step() === 'words' && !reshow) {
+			<mat-checkbox [checked]="written()" (change)="written.set($event.checked)" data-testid="ecash-general-backup-written">
+				I’ve written these words down
+			</mat-checkbox>
+		}
+		<button
+			matButton="filled"
+			type="button"
+			class="ecash-backup-submit"
+			data-testid="ecash-general-backup-submit"
+			[disabled]="!can_submit()"
+			(click)="onSubmit()"
+		>
+			{{ submit_label() }}
+		</button>
+	</div>
+</ng-template>

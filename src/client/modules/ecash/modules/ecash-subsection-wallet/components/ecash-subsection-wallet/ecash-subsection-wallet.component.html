@@ -25,7 +25,9 @@
 		[bitcoin_oracle_price]="bitcoin_oracle_price()"
 		[device_type]="device_type()"
 		[selected]="selected_unit()"
+		[backup_due]="backup_due()"
 		(select)="onSelectUnit($event)"
+		(backup)="onBackup()"
 	></orc-ecash-general-balance>
 </ng-template>
 

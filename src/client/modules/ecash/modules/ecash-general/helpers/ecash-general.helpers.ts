@@ -12,6 +12,7 @@ import {getCashuMethodDisplay} from '@client/modules/cashu/helpers/cashu.helpers
 import {CashuMethodDisplay} from '@client/modules/cashu/types/cashu.types';
 /* Native Dependencies */
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
+import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
 import {EcashMintStatus} from '@client/modules/ecash/classes/ecash-mint-status.class';
 import {EcashOperation} from '@client/modules/ecash/classes/ecash-operation.class';
 import {
@@ -67,6 +68,15 @@ export function getMintStatusPill(statuses: EcashMintStatus[], mint_id: string, 
  */
 export function getMintOnlineText(latency_ms: number | null): string {
 	return latency_ms === null ? 'Online' : `Online · ${latency_ms} ms`;
+}
+
+/**
+ * The URL a restoring wallet adds for each wallet mint: its first public one
+ * @param {EcashMint[]} mints - The wallet's mints
+ * @returns {string[]} One URL per mint, leaving out a mint without a public URL
+ */
+export function getMintRestoreUrls(mints: EcashMint[]): string[] {
+	return mints.map((mint) => mint.urls[0]).filter((url): url is string => !!url);
 }
 
 /**

@@ -32,4 +32,12 @@ describe('AuthGeneralFormcontrolPasswordComponent', () => {
 	it('should create', () => {
 		expect(component).toBeTruthy();
 	});
+
+	it('marks the input as the first focus only while asked to focus it', () => {
+		const input: HTMLInputElement = fixture.nativeElement.querySelector('input');
+		expect(input.hasAttribute('cdkFocusInitial')).toBeFalse();
+		fixture.componentRef.setInput('focused_control', true);
+		fixture.detectChanges();
+		expect(input.hasAttribute('cdkFocusInitial')).toBeTrue();
+	});
 });

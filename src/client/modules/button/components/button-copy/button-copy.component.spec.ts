@@ -23,4 +23,15 @@ describe('ButtonCopyComponent', () => {
 	it('should create', () => {
 		expect(component).toBeTruthy();
 	});
+
+	it('copies from a real button in the pill variant, then shows the check', () => {
+		const write = spyOn(navigator.clipboard, 'writeText').and.resolveTo();
+		fixture.componentRef.setInput('size', 'pill');
+		fixture.detectChanges();
+		const pill: HTMLButtonElement = fixture.nativeElement.querySelector('button.button-copy-pill');
+		pill.click();
+		fixture.detectChanges();
+		expect(write).toHaveBeenCalledWith('test');
+		expect(pill.querySelector('mat-icon')?.textContent).toContain('check');
+	});
 });

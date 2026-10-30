@@ -1,0 +1,83 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+.ecash-backup-intro {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+	@extend %w-full;
+	@extend %text-center;
+	@extend %p-t-1;
+}
+
+.ecash-backup-badge {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+	@extend %h-3;
+	@extend %w-3;
+	@extend %orc-corner-full;
+	@extend %orc-surface-container-high-bg;
+	@extend %orc-primary-color;
+}
+
+.ecash-backup-badge-done {
+	@extend %h-4;
+	@extend %w-4;
+	@extend %orc-inverse-tertiary-bg;
+	@extend %orc-status-active-color;
+}
+
+.ecash-backup-words {
+	@extend %grid;
+	@extend %flex-gap-0-5;
+	@extend %w-full;
+	@extend %m-0;
+	@extend %p-0;
+	// Three columns, two once a cell would drop under 8rem
+	grid-template-columns: repeat(auto-fill, minmax(max(8rem, 30%), 1fr));
+	list-style: none;
+}
+
+.ecash-backup-word {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+	@extend %h-2-5;
+	@extend %p-h-0-75;
+	@extend %orc-corner-small;
+	@extend %border;
+	@extend %border-solid;
+	@extend %orc-outline-variant-border;
+	@extend %orc-surface-container-bg;
+}
+
+.ecash-backup-note {
+	@extend %flex;
+	@extend %flex-items-center;
+	@extend %flex-gap-0-5;
+	@extend %orc-corner-medium;
+	align-self: stretch;
+	@extend %line-height-1-4;
+}
+
+.ecash-backup-warning {
+	@extend %p-v-0-5;
+	@extend %p-h-0-75;
+	background-color: color-mix(in srgb, var(--orc-status-warning) 15%, transparent);
+}
+
+.ecash-backup-mints {
+	@extend %p-v-0-5;
+	@extend %p-l-0-75;
+	@extend %p-r-0-5;
+	@extend %border;
+	@extend %border-solid;
+	@extend %orc-outline-variant-border;
+}
+
+.ecash-backup-submit {
+	@extend %w-full;
+	@extend %h-3;
+}

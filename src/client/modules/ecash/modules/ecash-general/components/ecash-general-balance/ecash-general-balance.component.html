@@ -1,5 +1,21 @@
 <div>
-	<div class="title-l p-b-1">Balance</div>
+	<div class="flex flex-justify-between flex-items-center p-b-1">
+		<div class="title-l">Balance</div>
+		@if (backup_due()) {
+			<div class="ecash-balance-backup" animate.enter="orc-animation-fadein">
+				<button
+					type="button"
+					class="ecash-balance-backup-chip orc-pill font-size-s font-weight-semi-bold"
+					data-testid="ecash-general-balance-backup"
+					matRipple
+					(click)="backup.emit()"
+				>
+					<mat-icon class="icon-sm">key</mat-icon>
+					Back up wallet
+				</button>
+			</div>
+		}
+	</div>
 
 	<mat-card appearance="outlined" class="relative overflow-hidden">
 		<mat-card-content class="orc-surface-container-low-bg">

@@ -4,6 +4,21 @@
 	@extend %block;
 }
 
+.ecash-balance-backup {
+	@extend %z-index-0;
+	@extend %h-0;
+	@extend %p-b-1-5;
+}
+
+.ecash-balance-backup-chip {
+	@extend %h-1-75;
+	@extend %p-l-0-5;
+	@extend %p-r-0-75;
+	@extend %border-none;
+	@extend %orc-status-warning-color;
+	background-color: color-mix(in srgb, var(--orc-status-warning) 15%, transparent);
+}
+
 .ecash-balance-amount {
 	font-size: 4rem;
 	line-height: 1;

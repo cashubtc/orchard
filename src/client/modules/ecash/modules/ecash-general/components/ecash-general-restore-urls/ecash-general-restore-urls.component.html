@@ -1,0 +1,8 @@
+<mat-icon class="orc-on-surface-variant-color flex-shrink-0">link</mat-icon>
+<span class="flex flex-column flex-grow w-min-0">
+	<span class="font-size-s font-weight-semi-bold" data-testid="ecash-general-restore-urls-count">
+		{{ urls().length }} mint URL{{ urls().length === 1 ? '' : 's' }}
+	</span>
+	<span class="font-size-xs orc-outline-color">Needed to restore</span>
+</span>
+<orc-button-copy size="pill" [text]="text()">Copy</orc-button-copy>

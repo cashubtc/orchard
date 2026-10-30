@@ -16,6 +16,14 @@ const error_messages: Readonly<Partial<Record<number, ErrorInfo>>> = {
 		title: 'ORCHARD CONNECTION ERROR',
 		description: 'Orchard could not get a usable response from its server. Check that it is running, then retry.',
 	},
+	10005: {
+		title: 'TOO MANY ATTEMPTS',
+		description: 'Too many attempts, please try again later.',
+	},
+	10008: {
+		title: 'INVALID PASSWORD',
+		description: 'That password doesn’t match your account.',
+	},
 	20001: {
 		title: 'BITCOIN RPC ERROR',
 		description: 'Orchard was unable to connect to the bitcoin RPC',

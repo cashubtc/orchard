@@ -25,8 +25,11 @@ export class EcashGeneralBalanceComponent {
 	public readonly bitcoin_oracle_price = input<BitcoinOraclePrice | null>(null);
 	public readonly device_type = input<DeviceType>('desktop');
 	public readonly selected = input<string | null>(null);
+	/** The wallet holds ecash its recovery words were never written down for */
+	public readonly backup_due = input<boolean>(false);
 
 	public readonly select = output<string>();
+	public readonly backup = output<void>();
 
 	public readonly mobile = computed(() => this.device_type() === 'mobile');
 

@@ -70,12 +70,14 @@ describe('CashuWalletSeedService', () => {
 		it('throws an actionable error when the crypto key changed', async () => {
 			const encrypted = encryptValue(test_mnemonic, deriveEncryptionKeyFromHex('cd'.repeat(32)));
 			mock_seed_repository.findOne.mockResolvedValue({user_id: 'user-1', mnemonic: encrypted, created_at: 0});
-			await expect(service.getSeed('user-1')).rejects.toThrow('crypto.key or CRYPTO_KEY changed');
+			await expect(service.getSeed('user-1')).rejects.toMatchObject({
+				details: expect.stringContaining('crypto.key or CRYPTO_KEY changed'),
+			});
 		});
 
 		it('throws without a crypto key and does not cache the failure', async () => {
 			mock_config_service.get.mockReturnValue(undefined);
-			await expect(service.getSeed('user-1')).rejects.toThrow('No crypto key available');
+			await expect(service.getSeed('user-1')).rejects.toMatchObject({details: expect.stringContaining('No crypto key available')});
 			mock_config_service.get.mockImplementation((key: string) => (key === 'server.crypto_key' ? test_crypto_key : undefined));
 			mock_seed_repository.findOne.mockResolvedValue(null);
 			await expect(service.getSeed('user-1')).resolves.toBeInstanceOf(Uint8Array);

@@ -6,6 +6,7 @@ import {MintInfo} from '@client/modules/mint/classes/mint-info.class';
 import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 import {EcashOperation} from '@client/modules/ecash/classes/ecash-operation.class';
 import {EcashMintStatus} from '@client/modules/ecash/classes/ecash-mint-status.class';
+import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
 /* Shared Dependencies */
 import {OrchardEcashOperation, WalletOperationState, WalletOperationType} from '@shared/generated.types';
 /* Local Dependencies */
@@ -17,9 +18,22 @@ import {
 	buildUnitChips,
 	getBalanceCellsWidth,
 	getMintOnlineText,
+	getMintRestoreUrls,
 	getMintStatusPill,
 	getTimeOffsetLabel,
 } from './ecash-general.helpers';
+
+describe('getMintRestoreUrls', () => {
+	it('takes the first URL of each mint, leaving out a mint without a public URL', () => {
+		const mint = (id: string, urls: string[]) => new EcashMint({id, urls, is_orchard: false, created_at: 0, info: null});
+		const mints = [
+			mint('kelp', ['https://kelp.example', 'http://kelp.onion']),
+			mint('orchard', []),
+			mint('cedar', ['https://cedar.example']),
+		];
+		expect(getMintRestoreUrls(mints)).toEqual(['https://kelp.example', 'https://cedar.example']);
+	});
+});
 
 describe('buildUnitChips', () => {
 	it('offers every unit at 0, sums balances across mints, and sorts bitcoin first', () => {

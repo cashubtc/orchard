@@ -96,6 +96,18 @@ describe('EcashGeneralBalanceComponent', () => {
 		expect(fixture.nativeElement.querySelector('orc-ecash-general-balance-amount').getAttribute('aria-label')).toBe('₿ 2,100');
 	});
 
+	it('shows the backup reminder only while one is due, and asks for the backup', () => {
+		const chip = () => fixture.nativeElement.querySelector('[data-testid="ecash-general-balance-backup"]');
+		expect(chip()).toBeNull();
+		const asked = jasmine.createSpy('backup');
+		component.backup.subscribe(asked);
+		fixture.componentRef.setInput('backup_due', true);
+		fixture.detectChanges();
+		expect(chip().textContent).toContain('Back up wallet');
+		chip().click();
+		expect(asked).toHaveBeenCalledTimes(1);
+	});
+
 	it('converts sat to USD only when the oracle is enabled', () => {
 		fixture.componentRef.setInput('balances', [balance('mint-1', 'sat', 100_000)]);
 		fixture.componentRef.setInput('bitcoin_oracle_price', new BitcoinOraclePrice({date: 0, price: 100_000}));

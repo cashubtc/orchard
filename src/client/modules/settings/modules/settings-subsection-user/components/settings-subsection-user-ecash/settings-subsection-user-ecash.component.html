@@ -1,0 +1,51 @@
+<mat-card appearance="outlined" class="relative overflow-hidden">
+	<div class="orc-surface-container-low-bg" [class.mobile]="mobile()">
+		<div class="settings-ecash-words">
+			<div class="flex flex-items-center flex-gap-1">
+				<span class="settings-ecash-badge" [class.backed-up]="backed_up_at() !== null"><mat-icon>key</mat-icon></span>
+				<div class="flex flex-column flex-gap-0-25 flex-grow w-min-0">
+					<span class="text-nowrap font-size-s font-weight-semi-bold">Recovery words</span>
+					@if (backed_up_at(); as backed_up_at) {
+						<span
+							class="flex flex-items-center flex-gap-0-25 text-nowrap font-size-xs orc-on-surface-variant-color"
+							data-testid="settings-subsection-user-ecash-status"
+						>
+							<mat-icon class="icon-sm flex-shrink-0">check_circle</mat-icon>
+							Backed up {{ backed_up_at | localTime: 'date-only' }}
+						</span>
+					} @else {
+						<span
+							class="flex flex-items-center flex-gap-0-25 text-nowrap font-size-xs orc-status-warning-color"
+							data-testid="settings-subsection-user-ecash-status"
+						>
+							<mat-icon class="icon-sm flex-shrink-0">error</mat-icon>
+							Not backed up
+						</span>
+					}
+				</div>
+				@if (!mobile()) {
+					<ng-container *ngTemplateOutlet="backup_button"></ng-container>
+				}
+			</div>
+			@if (mobile()) {
+				<ng-container *ngTemplateOutlet="backup_button"></ng-container>
+			}
+		</div>
+		@if (restore_urls().length > 0) {
+			<orc-ecash-general-restore-urls class="settings-ecash-mints" [urls]="restore_urls()"></orc-ecash-general-restore-urls>
+		}
+	</div>
+</mat-card>
+
+<ng-template #backup_button>
+	<button
+		matButton="tonal"
+		type="button"
+		class="flex-shrink-0"
+		[class.w-full]="mobile()"
+		data-testid="settings-subsection-user-ecash-backup"
+		(click)="backup.emit()"
+	>
+		{{ backed_up_at() ? 'Show words' : 'Back up' }}
+	</button>
+</ng-template>

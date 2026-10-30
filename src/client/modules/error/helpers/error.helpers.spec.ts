@@ -29,6 +29,11 @@ describe('Orchard error formatting', () => {
 		expect(error.getFullError()).toBe('Orchard was unable to connect to the mint RPC : 40005');
 	});
 
+	it('explains a throttled request instead of naming the throttler', () => {
+		const error = new OrchardErrors([{message: 'ThrottlerError', extensions: {code: 10005}}]).errors[0];
+		expect(formatOrchardError(error).description).toBe('Too many attempts, please try again later.');
+	});
+
 	it('retains the message and code for errors outside the public message catalog', () => {
 		const error = new OrchardErrors([{message: 'FutureError', extensions: {code: 99999}}]).errors[0];
 		expect(formatOrchardError(error).title).toBe('UNKNOWN ERROR');

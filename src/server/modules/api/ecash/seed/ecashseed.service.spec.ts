@@ -1,4 +1,5 @@
 /* Core Dependencies */
+import {Logger} from '@nestjs/common';
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
@@ -43,11 +44,15 @@ describe('EcashSeedService', () => {
 		await expect(ecashSeedService.getEcashSeed('TAG', 'user-1')).resolves.toBeNull();
 	});
 
-	it('revealEcashSeed returns the mnemonic for the right password', async () => {
+	it('revealEcashSeed returns the mnemonic for the right password, logging the reveal without the words', async () => {
+		const log = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
 		userService.getUserById.mockResolvedValue(user);
 		userService.validatePassword.mockResolvedValue(true);
 		cashuWalletSeedService.getMnemonic.mockResolvedValue('abandon about');
 		await expect(ecashSeedService.revealEcashSeed('TAG', 'user-1', 'secret')).resolves.toBe('abandon about');
+		expect(log).toHaveBeenCalledWith(expect.stringContaining('recovery words revealed'));
+		expect(log).not.toHaveBeenCalledWith(expect.stringContaining('abandon'));
+		log.mockRestore();
 	});
 
 	it('revealEcashSeed refuses a wrong password without touching the seed', async () => {

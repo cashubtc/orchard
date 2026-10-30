@@ -18,6 +18,8 @@ import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
 import {EcashMintStatus} from '@client/modules/ecash/classes/ecash-mint-status.class';
 import {EcashOperation} from '@client/modules/ecash/classes/ecash-operation.class';
+import {EcashSeed} from '@client/modules/ecash/classes/ecash-seed.class';
+import {EcashGeneralBackupComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-backup/ecash-general-backup.component';
 import {EcashGeneralIssueComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-issue/ecash-general-issue.component';
 import {EcashGeneralMintAddComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-mint-add/ecash-general-mint-add.component';
 /* Shared Dependencies */
@@ -61,6 +63,7 @@ describe('EcashSubsectionWalletComponent', () => {
 		getOperationsData: jasmine.createSpy('getOperationsData').and.returnValue(of({operations: [operation], count: 1})),
 		clearBalancesCache: jasmine.createSpy('clearBalancesCache'),
 		clearMintsCache: jasmine.createSpy('clearMintsCache'),
+		loadSeed: jasmine.createSpy('loadSeed'),
 	};
 	const reserves = new MintReserves({liabilities: [{unit: 'sat', amount: 2100}], sources: [], reserves: 50_000, partial: false});
 	const mint_service = {
@@ -100,6 +103,7 @@ describe('EcashSubsectionWalletComponent', () => {
 		role = UserRole.Reader;
 		bitcoin_service.loadBitcoinOraclePrice.calls.reset();
 		ecash_service.loadMintStatuses.and.returnValue(of([]));
+		ecash_service.loadSeed.and.returnValue(of(new EcashSeed({created_at: 1, backed_up_at: null})));
 	});
 
 	it('should create', async () => {
@@ -207,6 +211,31 @@ describe('EcashSubsectionWalletComponent', () => {
 		expect(ecash_service.loadMints).toHaveBeenCalled();
 		expect(ecash_service.loadMintStatuses).toHaveBeenCalledOnceWith('mint-1');
 		expect(component.mint_statuses().map((item) => item.mint_id)).toEqual(['mint-0', 'mint-1']);
+	});
+
+	it('reminds to back up only once the wallet holds ecash it never backed up', async () => {
+		await create();
+		expect(component.backup_due()).toBeTrue();
+		component.balances.set([new EcashBalance({mint_id: 'mint-1', unit: 'sat', balance: 0})]);
+		expect(component.backup_due()).toBeFalse();
+		component.balances.set(balances);
+		component.seed.set(new EcashSeed({created_at: 1, backed_up_at: 2}));
+		expect(component.backup_due()).toBeFalse();
+	});
+
+	it('opens the backup panel with the seed and mints, and drops the reminder once backed up', async () => {
+		await create();
+		form_panel_service.open.and.returnValue({afterClosed: () => of(undefined)});
+		component.onBackup();
+		const [panel, {data}] = form_panel_service.open.calls.mostRecent().args;
+		expect(panel).toBe(EcashGeneralBackupComponent);
+		expect(data).toEqual({seed: component.seed(), mints});
+		expect(component.backup_due()).toBeTrue();
+
+		form_panel_service.open.and.returnValue({afterClosed: () => of(new EcashSeed({created_at: 1, backed_up_at: 2}))});
+		component.onBackup();
+		expect(component.seed()?.backed_up_at).toBe(2);
+		expect(component.backup_due()).toBeFalse();
 	});
 
 	it('opens the issue panel in the unit the balance card has selected', async () => {

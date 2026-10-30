@@ -19,6 +19,12 @@
 	@extend %p-2;
 }
 
+.settings-user-sections {
+	@extend %grid;
+	@extend %flex-gap-2;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .tablet-view {
 	.sticky-setting {
 		@extend %p-l-1;
@@ -27,5 +33,8 @@
 	}
 	.settings-box {
 		@extend %p-1;
+	}
+	.settings-user-sections {
+		grid-template-columns: minmax(0, 1fr);
 	}
 }

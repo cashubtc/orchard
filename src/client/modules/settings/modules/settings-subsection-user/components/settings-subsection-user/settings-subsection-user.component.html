@@ -9,8 +9,8 @@
 		<div class="category-rule"></div>
 	</div>
 	<div class="settings-box">
-		<div class="flex flex-gap-2 flex-wrap">
-			<div class="flex-1">
+		<div class="settings-user-sections">
+			<div>
 				<div class="font-size-xs orc-outline-color p-b-0-5">Profile</div>
 				<orc-settings-subsection-user-user
 					[user]="user()"
@@ -22,7 +22,7 @@
 				></orc-settings-subsection-user-user>
 			</div>
 
-			<div class="flex-1">
+			<div>
 				<div class="font-size-xs orc-outline-color p-b-0-5">Messaging</div>
 				<orc-settings-subsection-user-messaging
 					[form_group]="form_user"
@@ -35,6 +35,18 @@
 					(submit)="onSubmitTelegram()"
 				></orc-settings-subsection-user-messaging>
 			</div>
+
+			@if (ecash_visible()) {
+				<div>
+					<div class="font-size-xs orc-outline-color p-b-0-5">Ecash wallet</div>
+					<orc-settings-subsection-user-ecash
+						[seed]="ecash_seed()"
+						[mints]="ecash_mints()"
+						[device_type]="device_type()"
+						(backup)="onEcashBackup()"
+					></orc-settings-subsection-user-ecash>
+				</div>
+			}
 		</div>
 	</div>
 </div>

@@ -8,6 +8,7 @@ import type {CashuMethodDisplay} from '@client/modules/cashu/types/cashu.types';
 import type {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
 import type {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
 import type {EcashOperation} from '@client/modules/ecash/classes/ecash-operation.class';
+import type {EcashSeed} from '@client/modules/ecash/classes/ecash-seed.class';
 
 /** One character of a typed amount; ghosts are the zeros still to be typed */
 export type EcashAmountChar = {
@@ -40,6 +41,12 @@ export type EcashIssuePanelData = {
 /** What the add-mint panel reads from the wallet page, live */
 export type EcashMintAddPanelData = {
 	mints: Signal<EcashMint[]>;
+};
+
+/** What the backup panel reads from its host: the seed's backup status and the mints a restore needs */
+export type EcashBackupPanelData = {
+	seed: EcashSeed | null;
+	mints: EcashMint[];
 };
 
 /** A protocol feature and whether a mint offers it */

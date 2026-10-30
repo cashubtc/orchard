@@ -81,7 +81,7 @@ export class CashuWalletSeedService {
 	/** Derive the seed encryption key from the crypto key */
 	private getEncryptionKey(): Buffer {
 		const crypto_key = this.configService.get<string>('server.crypto_key');
-		if (!crypto_key) throw new Error('No crypto key available; the ecash wallet seed cannot be stored');
+		if (!crypto_key) throw walletError('No crypto key available; the ecash wallet seed cannot be stored');
 		return deriveEncryptionKeyFromHex(crypto_key);
 	}
 
@@ -90,7 +90,7 @@ export class CashuWalletSeedService {
 		try {
 			return decryptValue(stored_value, encryption_key);
 		} catch {
-			throw new Error('Ecash wallet seed could not be decrypted; crypto.key or CRYPTO_KEY changed since the wallet was created');
+			throw walletError('Ecash wallet seed could not be decrypted; crypto.key or CRYPTO_KEY changed since the wallet was created');
 		}
 	}
 }

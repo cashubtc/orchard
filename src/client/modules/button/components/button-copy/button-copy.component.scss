@@ -14,6 +14,20 @@
 	}
 }
 
+.button-copy-pill {
+	@extend %flex-shrink-0;
+	@extend %text-nowrap;
+	@extend %h-2;
+	@extend %p-l-0-5;
+	@extend %p-r-0-75;
+	@extend %border-none;
+	@extend %orc-surface-container-high-bg;
+
+	mat-icon.copied {
+		@extend %orc-status-active-color;
+	}
+}
+
 .button-copy-container {
 	@extend %relative;
 	@extend %flex;

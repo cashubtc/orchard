@@ -1,9 +1,21 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, OnInit, OnDestroy, signal, effect, HostListener} from '@angular/core';
+import {
+	ChangeDetectionStrategy,
+	Component,
+	OnInit,
+	OnDestroy,
+	signal,
+	effect,
+	HostListener,
+	inject,
+	computed,
+	DestroyRef,
+} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {FormGroup, FormControl, Validators} from '@angular/forms';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 /* Vendor Dependencies */
-import {Subscription} from 'rxjs';
+import {Subscription, forkJoin} from 'rxjs';
 /* Application Dependencies */
 import {CrewService} from '@client/modules/crew/services/crew/crew.service';
 import {EventService} from '@client/modules/event/services/event/event.service';
@@ -14,6 +26,13 @@ import {ComponentCanDeactivate} from '@client/modules/routing/interfaces/routing
 import {DeviceType} from '@client/modules/layout/types/device.types';
 import {SettingAppService} from '@client/modules/settings/services/setting-app/setting-app.service';
 import {ParsedAppSettings} from '@client/modules/settings/types/setting-app.types';
+import {FormPanelService} from '@client/modules/form/services/form-panel';
+import {EcashService} from '@client/modules/ecash/services/ecash/ecash.service';
+import {EcashSeed} from '@client/modules/ecash/classes/ecash-seed.class';
+import {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
+import {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
+import {EcashGeneralBackupComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-backup/ecash-general-backup.component';
+import {EcashBackupPanelData} from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
 
 @Component({
 	selector: 'orc-settings-subsection-user',
@@ -23,6 +42,10 @@ import {ParsedAppSettings} from '@client/modules/settings/types/setting-app.type
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsSubsectionUserComponent implements ComponentCanDeactivate, OnInit, OnDestroy {
+	private readonly ecashService = inject(EcashService);
+	private readonly formPanelService = inject(FormPanelService);
+	private readonly destroyRef = inject(DestroyRef);
+
 	@HostListener('window:beforeunload')
 	canDeactivate(): boolean {
 		return this.active_event?.type !== 'PENDING';
@@ -36,6 +59,15 @@ export class SettingsSubsectionUserComponent implements ComponentCanDeactivate, 
 	public user = signal<User | null>(null);
 	public device_type = signal<DeviceType>('desktop');
 	public settings = signal<ParsedAppSettings | null>(null);
+	public readonly ecash_seed = signal<EcashSeed | null>(null);
+	public readonly ecash_mints = signal<EcashMint[]>([]);
+	public readonly ecash_balances = signal<EcashBalance[]>([]);
+
+	/** The wallet card waits until the wallet holds ecash, and stays once backed up */
+	public readonly ecash_visible = computed(
+		() => !!this.ecash_seed()?.backed_up_at || this.ecash_balances().some((balance) => balance.balance > 0),
+	);
+
 	private dirty_count = signal<number>(0);
 
 	private active_event: EventData | null = null;
@@ -59,6 +91,7 @@ export class SettingsSubsectionUserComponent implements ComponentCanDeactivate, 
 		this.subscriptions.add(this.getBreakpointSubscription());
 		this.settings.set(this.settingAppService.getParsedSettings());
 		this.updateMessagingDisabled();
+		this.loadEcash();
 	}
 
 	/* *******************************************************
@@ -99,6 +132,24 @@ export class SettingsSubsectionUserComponent implements ComponentCanDeactivate, 
 				this.device_type.set('desktop');
 			}
 		});
+	}
+
+	/* *******************************************************
+		Data
+	******************************************************** */
+
+	/** The wallet's backup status, balances and mints; the wallet card stays hidden if they fail to load */
+	private loadEcash(): void {
+		forkJoin({seed: this.ecashService.loadSeed(), balances: this.ecashService.loadBalances(), mints: this.ecashService.loadMints()})
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe({
+				next: ({seed, balances, mints}) => {
+					this.ecash_seed.set(seed);
+					this.ecash_balances.set(balances);
+					this.ecash_mints.set(mints);
+				},
+				error: (error) => console.error(error),
+			});
 	}
 
 	/* *******************************************************
@@ -246,6 +297,22 @@ export class SettingsSubsectionUserComponent implements ComponentCanDeactivate, 
 				);
 			},
 		});
+	}
+
+	/* *******************************************************
+		Actions Up — Ecash
+	******************************************************** */
+
+	/** Opens the backup panel; a confirmed backup updates the card */
+	public onEcashBackup(): void {
+		const data: EcashBackupPanelData = {seed: this.ecash_seed(), mints: this.ecash_mints()};
+		this.formPanelService
+			.open<EcashBackupPanelData, EcashSeed>(EcashGeneralBackupComponent, {data})
+			.afterClosed()
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe((seed) => {
+				if (seed) this.ecash_seed.set(seed);
+			});
 	}
 
 	/* *******************************************************
