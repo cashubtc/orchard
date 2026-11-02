@@ -14,7 +14,7 @@
 		} @else {
 			<span class="orc-status-warning-color">No public URL</span>
 		}
-		@if (is_orchard()) {
+		@if (is_orchard() && orchard_label()) {
 			· Your Orchard mint
 		}
 	</span>

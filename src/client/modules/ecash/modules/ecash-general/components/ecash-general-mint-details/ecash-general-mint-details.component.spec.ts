@@ -71,6 +71,13 @@ describe('EcashGeneralMintDetailsComponent', () => {
 		expect(grid.style.getPropertyValue('--rows')).toBe(`${component.feature_rows()}`);
 	});
 
+	it('shows when a wallet mint was added', () => {
+		expect(text()).not.toContain('Added');
+		fixture.componentRef.setInput('added_at', 1_792_000_000);
+		fixture.detectChanges();
+		expect(text()).toContain('Added');
+	});
+
 	it("shows the server time only when the mint's clock is off", () => {
 		fixture.componentRef.setInput('time_offset', 0);
 		fixture.detectChanges();

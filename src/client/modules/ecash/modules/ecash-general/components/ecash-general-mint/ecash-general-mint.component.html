@@ -11,7 +11,14 @@
 					<orc-graphic-status class="flex-shrink-0" [status]="status().state" size="0.5rem"></orc-graphic-status>
 					<span class="text-nowrap">{{ status().text }}</span>
 				</div>
-				<button mat-icon-button type="button" class="orc-icon-button" aria-label="Mint options" disabled>
+				<button
+					mat-icon-button
+					type="button"
+					class="orc-icon-button"
+					aria-label="Mint options"
+					data-testid="ecash-general-mint-options"
+					(click)="view.emit()"
+				>
 					<mat-icon>more_vert</mat-icon>
 				</button>
 			</orc-ecash-general-mint-header>

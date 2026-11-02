@@ -34,6 +34,13 @@ describe('EcashGeneralMintHeaderComponent', () => {
 		expect(text()).toContain('mint.cedar.example · Your Orchard mint');
 	});
 
+	it('leaves the Orchard mark to the icon ring when asked', () => {
+		fixture.componentRef.setInput('is_orchard', true);
+		fixture.componentRef.setInput('orchard_label', false);
+		fixture.detectChanges();
+		expect(fixture.nativeElement.textContent).not.toContain('Your Orchard mint');
+	});
+
 	it('flags a mint without a public URL in amber', () => {
 		fixture.componentRef.setInput('subtitle', null);
 		fixture.detectChanges();

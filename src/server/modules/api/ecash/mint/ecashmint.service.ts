@@ -2,6 +2,7 @@
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
 import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwalletmint.service';
+import {CashuWalletRecoveryService} from '#server/modules/cashu/wallet/saga/cashuwalletrecovery.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {ErrorService} from '#server/modules/error/error.service';
@@ -14,6 +15,7 @@ export class EcashMintService {
 
 	constructor(
 		private cashuWalletMintService: CashuWalletMintService,
+		private cashuWalletRecoveryService: CashuWalletRecoveryService,
 		private errorService: ErrorService,
 	) {}
 
@@ -35,6 +37,20 @@ export class EcashMintService {
 		try {
 			const statuses = await this.cashuWalletMintService.checkMints(user_id, mint_id);
 			return statuses.map((status) => new OrchardEcashMintStatus(status));
+		} catch (error) {
+			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
+				errord: OrchardErrorCode.EcashWalletError,
+			});
+			throw new OrchardApiError(orchard_error);
+		}
+	}
+
+	/** Check a mint in a user's wallet now, then settle the user's open operations with it when it answers */
+	async refreshEcashMint(tag: string, user_id: string, mint_id: string): Promise<OrchardEcashMintStatus> {
+		try {
+			const status = await this.cashuWalletMintService.refreshMint(user_id, mint_id);
+			if (status.online) await this.cashuWalletRecoveryService.reconcileMint(user_id, mint_id);
+			return new OrchardEcashMintStatus(status);
 		} catch (error) {
 			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
 				errord: OrchardErrorCode.EcashWalletError,

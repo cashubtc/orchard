@@ -2,6 +2,7 @@
 import {HttpErrorResponse} from '@angular/common/http';
 /* Native Dependencies */
 import {type OrchardError} from '@client/modules/error/types/error.types';
+import {OrchardErrors} from '@client/modules/error/classes/error.class';
 
 export interface ErrorInfo {
 	readonly title: string;
@@ -110,4 +111,11 @@ export function toConnectionError(error: unknown): OrchardError {
 		message: 'OrchardConnectionError',
 		details: `Orchard's server ${outcome}. Check that it is running, then retry.`,
 	};
+}
+
+/** A failed request as a toast message: Orchard's own error, or why its server couldn't be reached; null while the session redirect handles it */
+export function getRequestErrorMessage(error: unknown): string | null {
+	if (isAuthRedirectError(error)) return null;
+	if (error instanceof OrchardErrors) return error.errors[0].getFullError();
+	return formatOrchardError(toConnectionError(error)).description;
 }

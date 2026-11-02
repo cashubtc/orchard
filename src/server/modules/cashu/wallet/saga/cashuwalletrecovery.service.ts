@@ -2,7 +2,7 @@
 import {Injectable, Logger, type OnApplicationBootstrap} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 /* Vendor Dependencies */
-import {In, Repository} from 'typeorm';
+import {In, Repository, type FindOptionsWhere} from 'typeorm';
 /* Local Dependencies */
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
 import {CashuWalletIssueService} from './issue/cashuwalletissue.service.js';
@@ -12,7 +12,8 @@ import {describeMintError} from '../cashuwallet.helpers.js';
 @Injectable()
 export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 	private readonly logger = new Logger(CashuWalletRecoveryService.name);
-	private reconciling: Promise<void> | null = null;
+	/** Passes running now, by scope, so concurrent callers share one */
+	private readonly reconciling = new Map<string, Promise<void>>();
 
 	constructor(
 		@InjectRepository(CashuWalletOperation)
@@ -32,15 +33,28 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 
 	/** Settle every open operation against its mint; concurrent callers share one pass */
 	public reconcileOperations(): Promise<void> {
-		this.reconciling ??= this.runReconciliation().finally(() => (this.reconciling = null));
-		return this.reconciling;
+		return this.sharePass('all', {});
+	}
+
+	/** Settle a user's open operations at one mint now, for a refresh; concurrent refreshes share one pass */
+	public reconcileMint(user_id: string, mint_id: string): Promise<void> {
+		return this.sharePass(`${user_id}:${mint_id}`, {user_id, mint_id});
+	}
+
+	/** The pass running for a scope, or a new one */
+	private sharePass(key: string, scope: FindOptionsWhere<CashuWalletOperation>): Promise<void> {
+		const running = this.reconciling.get(key);
+		if (running) return running;
+		const pass = this.runReconciliation(scope).finally(() => this.reconciling.delete(key));
+		this.reconciling.set(key, pass);
+		return pass;
 	}
 
 	/** One pass over open operations, oldest first, each resumed by its saga */
-	private async runReconciliation(): Promise<void> {
+	private async runReconciliation(scope: FindOptionsWhere<CashuWalletOperation>): Promise<void> {
 		const open_states = In([WalletOperationState.PENDING, WalletOperationState.EXECUTING]);
 		const operations = await this.walletOperationRepository.find({
-			where: {type: In([WalletOperationType.MINT, WalletOperationType.ISSUE]), state: open_states},
+			where: {...scope, type: In([WalletOperationType.MINT, WalletOperationType.ISSUE]), state: open_states},
 			order: {created_at: 'ASC'},
 		});
 		let finalized = 0;

@@ -58,6 +58,13 @@ describe('EcashGeneralMintComponent', () => {
 		expect(fixture.nativeElement.querySelector('orc-ecash-general-solvency')).not.toBeNull();
 	});
 
+	it('hands the options button up', () => {
+		let viewed = false;
+		component.view.subscribe(() => (viewed = true));
+		fixture.nativeElement.querySelector('button[aria-label="Mint options"]').click();
+		expect(viewed).toBeTrue();
+	});
+
 	it('shows no balance sheet without reserves', () => {
 		fixture.componentRef.setInput('reserves', null);
 		expect(component.solvency()).toBeNull();

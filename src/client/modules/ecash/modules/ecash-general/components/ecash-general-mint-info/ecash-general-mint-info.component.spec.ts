@@ -101,6 +101,17 @@ describe('EcashGeneralMintInfoComponent', () => {
 		expect(text()).toContain('Hide details');
 	});
 
+	it('leaves the header to its host, and flags a mint without a public URL', () => {
+		fixture.componentRef.setInput('url', null);
+		fixture.detectChanges();
+		expect(component.subtitle()).toBeNull();
+		expect(fixture.nativeElement.querySelector('.orc-status-warning-color')?.textContent).toBe('No public URL');
+		fixture.componentRef.setInput('header', false);
+		fixture.detectChanges();
+		expect(fixture.nativeElement.querySelector('orc-ecash-general-mint-header')).toBeNull();
+		expect(text()).toContain('A neighborhood mint');
+	});
+
 	it('shows only the header when compact', () => {
 		fixture.componentRef.setInput('compact', true);
 		fixture.detectChanges();

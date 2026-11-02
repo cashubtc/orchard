@@ -7,6 +7,7 @@ import type {CashuMethodDisplay} from '@client/modules/cashu/types/cashu.types';
 /* Native Dependencies */
 import type {EcashMint} from '@client/modules/ecash/classes/ecash-mint.class';
 import type {EcashBalance} from '@client/modules/ecash/classes/ecash-balance.class';
+import type {EcashMintStatus} from '@client/modules/ecash/classes/ecash-mint-status.class';
 import type {EcashOperation} from '@client/modules/ecash/classes/ecash-operation.class';
 import type {EcashSeed} from '@client/modules/ecash/classes/ecash-seed.class';
 
@@ -41,6 +42,15 @@ export type EcashIssuePanelData = {
 /** What the add-mint panel reads from the wallet page, live */
 export type EcashMintAddPanelData = {
 	mints: Signal<EcashMint[]>;
+};
+
+/** What a wallet mint's panel reads from the wallet page, live, and hands back after a refresh so the page reloads */
+export type EcashMintViewPanelData = {
+	mint: Signal<EcashMint>;
+	status: Signal<EcashMintStatusPill>;
+	checked_at: Signal<number | null>;
+	balances: Signal<EcashBalance[]>;
+	refreshed: (status: EcashMintStatus) => void;
 };
 
 /** What the backup panel reads from its host: the seed's backup status and the mints a restore needs */

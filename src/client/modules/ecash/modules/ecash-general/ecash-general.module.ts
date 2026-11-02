@@ -35,6 +35,7 @@ import {EcashGeneralBalanceAmountComponent} from './components/ecash-general-bal
 import {EcashGeneralActivityComponent} from './components/ecash-general-activity/ecash-general-activity.component';
 import {EcashGeneralMintInfoComponent} from './components/ecash-general-mint-info/ecash-general-mint-info.component';
 import {EcashGeneralMintAddComponent} from './components/ecash-general-mint-add/ecash-general-mint-add.component';
+import {EcashGeneralMintViewComponent} from './components/ecash-general-mint-view/ecash-general-mint-view.component';
 import {EcashGeneralMintHeaderComponent} from './components/ecash-general-mint-header/ecash-general-mint-header.component';
 import {EcashGeneralMintDetailsComponent} from './components/ecash-general-mint-details/ecash-general-mint-details.component';
 import {EcashGeneralBackupComponent} from './components/ecash-general-backup/ecash-general-backup.component';
@@ -57,6 +58,7 @@ import {EcashGeneralRestoreUrlsComponent} from './components/ecash-general-resto
 		EcashGeneralActivityComponent,
 		EcashGeneralMintInfoComponent,
 		EcashGeneralMintAddComponent,
+		EcashGeneralMintViewComponent,
 		EcashGeneralMintHeaderComponent,
 		EcashGeneralMintDetailsComponent,
 		EcashGeneralBackupComponent,

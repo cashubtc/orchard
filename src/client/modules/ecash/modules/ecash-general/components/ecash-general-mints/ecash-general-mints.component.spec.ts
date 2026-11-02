@@ -82,6 +82,20 @@ describe('EcashGeneralMintsComponent', () => {
 		expect(added).toBeTrue();
 	});
 
+	it('hands up the mint whose options were asked for', () => {
+		const viewed = jasmine.createSpy('view');
+		component.view.subscribe(viewed);
+		fixture.nativeElement.querySelectorAll('orc-ecash-general-mint button[aria-label="Mint options"]')[1].click();
+		expect(viewed).toHaveBeenCalledOnceWith(mints[0]);
+	});
+
+	it('moves focus to Add mint when the mint it was on leaves the list', () => {
+		(document.activeElement as HTMLElement | null)?.blur();
+		fixture.componentRef.setInput('mints', [mints[1]]);
+		fixture.detectChanges();
+		expect(document.activeElement?.textContent).toContain('Add mint');
+	});
+
 	it('hands reserves only to the Orchard mint', () => {
 		const reserves = new MintReserves({liabilities: [], sources: [], reserves: 1000, partial: false});
 		fixture.componentRef.setInput('reserves', reserves);

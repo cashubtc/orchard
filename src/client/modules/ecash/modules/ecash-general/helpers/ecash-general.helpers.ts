@@ -5,6 +5,7 @@ import {compareUnits} from '@client/modules/local/helpers/unit.helpers';
 import {getNumberSeparator} from '@client/modules/local/helpers/local.helpers';
 import {oracleConvertToUSDCents} from '@client/modules/bitcoin/helpers/oracle.helpers';
 import {isNutOffered} from '@client/modules/mint/helpers/mint-nut.helpers';
+import {getMintUri} from '@client/modules/mint/helpers/mint-uri.helpers';
 import {MINT_NUT_TITLES} from '@client/modules/mint/constants/mint.constants';
 import {MintNut} from '@client/modules/mint/types/nut.types';
 import {CashuUnitChip} from '@client/modules/cashu/types/cashu.types';
@@ -44,6 +45,7 @@ const ACTIVITY_KINDS: Record<WalletOperationType, EcashActivityKind> = {
 };
 
 const MINT_TIME_SYNC_S = 60;
+const MINT_CHECKED_RECENT_S = 60;
 const BALANCE_DIGIT_EM = 0.665;
 const BALANCE_SEPARATOR_EM = 0.24;
 
@@ -68,6 +70,31 @@ export function getMintStatusPill(statuses: EcashMintStatus[], mint_id: string, 
  */
 export function getMintOnlineText(latency_ms: number | null): string {
 	return latency_ms === null ? 'Online' : `Online · ${latency_ms} ms`;
+}
+
+/**
+ * Where a mint is and what it runs: its host, or "Tor address", then its version
+ * @param {string | null} url - The mint's URL, null when it has no public one
+ * @param {string | null} version - The software it reports, as name/version
+ * @returns {string | null} The subtitle, null without a URL
+ */
+export function getMintSubtitle(url: string | null, version: string | null): string | null {
+	if (!url) return null;
+	const uri = getMintUri(url);
+	const place = uri.type === 'tor' ? 'Tor address' : uri.label;
+	const software = version?.replace('/', ' ');
+	return software ? `${place} · ${software}` : place;
+}
+
+/**
+ * How long ago a mint was last checked
+ * @param {number} checked_at - Unix seconds of the check
+ * @param {number} now - Unix seconds now
+ * @returns {string} "just now" within a minute, else relative, as "5 minutes ago"
+ */
+export function getMintCheckedText(checked_at: number, now: number): string {
+	if (now - checked_at < MINT_CHECKED_RECENT_S) return 'just now';
+	return DateTime.fromSeconds(checked_at).toRelative({base: DateTime.fromSeconds(now)}) ?? 'just now';
 }
 
 /**

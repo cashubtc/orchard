@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, Signal, computed, inject, signal} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {BreakpointObserver, Breakpoints} from '@angular/cdk/layout';
 /* Vendor Dependencies */
@@ -24,11 +24,14 @@ import {EcashSeed} from '@client/modules/ecash/classes/ecash-seed.class';
 import {EcashGeneralIssueComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-issue/ecash-general-issue.component';
 import {getMintStatusPill} from '@client/modules/ecash/modules/ecash-general/helpers/ecash-general.helpers';
 import {EcashGeneralMintAddComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-mint-add/ecash-general-mint-add.component';
+import {EcashGeneralMintViewComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-mint-view/ecash-general-mint-view.component';
 import {EcashGeneralBackupComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-backup/ecash-general-backup.component';
 import {
 	EcashBackupPanelData,
 	EcashIssuePanelData,
 	EcashMintAddPanelData,
+	EcashMintStatusPill,
+	EcashMintViewPanelData,
 } from '@client/modules/ecash/modules/ecash-general/types/ecash-general.types';
 
 const ACTIVITY_RECENT_COUNT = 8;
@@ -155,9 +158,7 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 			.pipe(takeUntilDestroyed(this.destroyRef))
 			.subscribe({
 				next: (statuses) => {
-					this.mint_statuses.update((current) =>
-						mint_id === null ? statuses : [...current.filter((status) => status.mint_id !== mint_id), ...statuses],
-					);
+					this.setMintStatuses(statuses, mint_id);
 					this.loading_mint_statuses.set(false);
 				},
 				error: (error) => {
@@ -165,6 +166,13 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 					this.loading_mint_statuses.set(false);
 				},
 			});
+	}
+
+	/** Takes fresh statuses: every mint's, or one mint's merged in */
+	private setMintStatuses(statuses: EcashMintStatus[], mint_id: string | null): void {
+		this.mint_statuses.update((current) =>
+			mint_id === null ? statuses : [...current.filter((status) => status.mint_id !== mint_id), ...statuses],
+		);
 	}
 
 	/** The latest operations, for the activity summary */
@@ -236,8 +244,8 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 		const data: EcashIssuePanelData = {
 			mint,
 			reserves: this.mint_reserves,
-			status: computed(() => getMintStatusPill(this.mint_statuses(), mint.id, this.loading_mint_statuses())),
-			balances: computed(() => this.balances().filter((balance) => balance.mint_id === mint.id)),
+			status: this.mintStatusPill(mint.id),
+			balances: this.mintBalances(mint.id),
 			unit: this.selected_unit(),
 		};
 		this.formPanelService
@@ -268,6 +276,48 @@ export class EcashSubsectionWalletComponent implements OnInit, OnDestroy {
 				this.loadMints();
 				this.loadMintStatuses(mint.id);
 			});
+	}
+
+	/** Opens a wallet mint's panel, which reads the page live; a removed mint leaves the list */
+	public onViewMint(mint: EcashMint): void {
+		const data: EcashMintViewPanelData = {
+			mint: computed(() => this.mints().find((item) => item.id === mint.id) ?? mint),
+			status: this.mintStatusPill(mint.id),
+			checked_at: computed(() => this.mint_statuses().find((status) => status.mint_id === mint.id)?.checked_at ?? null),
+			balances: this.mintBalances(mint.id),
+			refreshed: (status) => this.onMintRefreshed(status),
+		};
+		this.formPanelService
+			.open<EcashMintViewPanelData, boolean>(EcashGeneralMintViewComponent, {data})
+			.afterClosed()
+			.pipe(takeUntilDestroyed(this.destroyRef))
+			.subscribe((removed) => {
+				if (!removed) return;
+				this.ecashService.clearMintsCache();
+				this.loadMints();
+			});
+	}
+
+	/** Takes a refreshed mint's status, then reloads what settling its operations may have changed; an unreachable mint settled nothing, and the mints bring the Orchard mint's reserves */
+	private onMintRefreshed(status: EcashMintStatus): void {
+		this.setMintStatuses([status], status.mint_id);
+		if (!status.online) return;
+		if (this.orchard_mint()?.id === status.mint_id) this.mintService.clearSolvencyCache();
+		this.ecashService.clearMintsCache();
+		this.ecashService.clearBalancesCache();
+		this.loadMints();
+		this.loadBalances();
+		this.loadOperations();
+	}
+
+	/** A wallet mint's status pill, live */
+	private mintStatusPill(mint_id: string): Signal<EcashMintStatusPill> {
+		return computed(() => getMintStatusPill(this.mint_statuses(), mint_id, this.loading_mint_statuses()));
+	}
+
+	/** A wallet mint's balances, live */
+	private mintBalances(mint_id: string): Signal<EcashBalance[]> {
+		return computed(() => this.balances().filter((balance) => balance.mint_id === mint_id));
 	}
 
 	/** Opens the backup panel; a confirmed backup hides the reminder */

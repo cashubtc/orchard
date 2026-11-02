@@ -70,4 +70,8 @@
 			}
 		</span>
 	}
+	@if (added_at(); as added_at) {
+		<span class="font-size-xs orc-outline-color">Added</span>
+		<span>{{ added_at | localTime: 'date-only' }}</span>
+	}
 </div>

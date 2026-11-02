@@ -1,0 +1,197 @@
+@if (!sheet) {
+	<div class="orc-form-panel">
+		<div class="orc-form-panel-header">
+			<div class="p-l-0-5">Mint</div>
+			<button
+				mat-icon-button
+				type="button"
+				class="orc-icon-button"
+				aria-label="Close"
+				data-testid="ecash-general-mint-view-close"
+				(click)="onClose()"
+			>
+				<mat-icon>close</mat-icon>
+			</button>
+		</div>
+		<div class="category-rule"></div>
+		<div class="orc-form-panel-content">
+			<div class="orc-form-panel-body flex-gap-1-5">
+				<ng-container *ngTemplateOutlet="body"></ng-container>
+			</div>
+		</div>
+	</div>
+} @else {
+	<div class="orc-form-panel-sheet">
+		<div class="flex flex-items-center flex-justify-between">
+			<div class="title-l">Mint</div>
+			<button
+				mat-icon-button
+				type="button"
+				class="orc-icon-button"
+				aria-label="Close"
+				data-testid="ecash-general-mint-view-close"
+				(click)="onClose()"
+			>
+				<mat-icon>close</mat-icon>
+			</button>
+		</div>
+		<ng-container *ngTemplateOutlet="body"></ng-container>
+	</div>
+}
+
+<ng-template #body>
+	<orc-ecash-general-mint-header
+		class="w-full"
+		[name]="mint().display_name"
+		[subtitle]="subtitle()"
+		[icon_url]="mint().icon_url"
+		[is_orchard]="mint().is_orchard"
+		[orchard_label]="!sheet"
+		[icon_height]="sheet ? '3rem' : '3.5rem'"
+		[large]="true"
+	>
+		@if (sheet) {
+			<span mint-header-detail class="flex flex-items-center flex-gap-0-5 font-size-xs p-t-0-25" [title]="status().error ?? ''">
+				<orc-graphic-status class="flex-shrink-0" [status]="status().state" size="0.5rem"></orc-graphic-status>
+				<span>{{ status().text }}</span>
+			</span>
+		} @else {
+			<div class="orc-pill orc-pill-filled font-size-xs" [title]="status().error ?? ''">
+				<orc-graphic-status class="flex-shrink-0" [status]="status().state" size="0.5rem"></orc-graphic-status>
+				<span class="text-nowrap">{{ status().text }}</span>
+			</div>
+		}
+	</orc-ecash-general-mint-header>
+
+	@if (status().error; as error) {
+		<div class="orc-error-card w-full font-size-s" role="note" data-testid="ecash-general-mint-view-error">{{ error }}</div>
+	}
+
+	@if (held().length > 0) {
+		<div class="flex flex-column flex-gap-0-5 w-full" data-testid="ecash-general-mint-view-held">
+			<span class="font-size-xs orc-outline-color">In this wallet</span>
+			<orc-cashu-unit-chips [chips]="held()" [selectable]="false"></orc-cashu-unit-chips>
+		</div>
+	}
+
+	<div class="flex flex-column flex-gap-0-5 w-full">
+		<div class="ecash-mint-view-actions">
+			<button
+				type="button"
+				class="ecash-mint-view-action orc-high-card"
+				matRipple
+				data-testid="ecash-general-mint-view-copy"
+				[disabled]="!url()"
+				(click)="onCopyUrl()"
+			>
+				<mat-icon>{{ copied() ? 'check' : 'content_copy' }}</mat-icon>
+				<span>{{ copied() ? 'Copied' : 'Copy URL' }}</span>
+			</button>
+			<button
+				type="button"
+				class="ecash-mint-view-action orc-high-card"
+				matRipple
+				data-testid="ecash-general-mint-view-qr"
+				[disabled]="!url()"
+				(click)="onQr()"
+			>
+				<mat-icon>qr_code_2</mat-icon>
+				<span>QR code</span>
+			</button>
+			<button
+				type="button"
+				class="ecash-mint-view-action orc-high-card"
+				matRipple
+				data-testid="ecash-general-mint-view-refresh"
+				[attr.aria-busy]="refreshing()"
+				(click)="onRefresh()"
+			>
+				@if (refreshing()) {
+					<mat-spinner diameter="24"></mat-spinner>
+				} @else {
+					<mat-icon>refresh</mat-icon>
+				}
+				<span>Refresh</span>
+			</button>
+		</div>
+		<span class="font-size-xs orc-outline-color text-center" role="status" data-testid="ecash-general-mint-view-checked">
+			@if (checked_text(); as checked_text) {
+				Info checked {{ checked_text }}
+			}
+		</span>
+	</div>
+
+	@if (mint().info; as info) {
+		<orc-ecash-general-mint-info
+			class="w-full"
+			[info]="info"
+			[added_at]="mint().created_at"
+			[header]="false"
+			[device_type]="sheet ? 'mobile' : 'desktop'"
+			[(expanded)]="expanded"
+		></orc-ecash-general-mint-info>
+	} @else {
+		<p class="m-0 w-full font-size-s orc-outline-color">Orchard hasn’t loaded this mint’s info yet. Refresh to try again.</p>
+	}
+
+	<div class="flex flex-column flex-gap-0-5 w-full">
+		@if (confirming()) {
+			<mat-card
+				appearance="outlined"
+				class="overflow-hidden"
+				role="alertdialog"
+				aria-labelledby="ecash-mint-remove-title"
+				aria-describedby="ecash-mint-remove-text"
+				animate.enter="orc-animation-fadein"
+				data-testid="ecash-general-mint-view-confirm"
+				(keydown.escape)="onConfirmEscape($event)"
+			>
+				<div class="flex flex-column flex-gap-0-5 p-1 orc-surface-container-low-bg">
+					<span id="ecash-mint-remove-title" class="font-weight-semi-bold">Remove {{ mint().display_name }}?</span>
+					<span id="ecash-mint-remove-text" class="font-size-s orc-on-surface-variant-color"
+						>It leaves this wallet. You can add it again any time.</span
+					>
+					<div class="flex flex-justify-end flex-gap-0-5">
+						<button
+							#remove_cancel
+							matButton
+							type="button"
+							data-testid="ecash-general-mint-view-confirm-cancel"
+							[disabled]="removing()"
+							(click)="onCancelRemove()"
+						>
+							Cancel
+						</button>
+						<button
+							matButton
+							type="button"
+							data-testid="ecash-general-mint-view-confirm-remove"
+							[disabled]="removing()"
+							(click)="onRemove()"
+						>
+							<span [class.orc-error-color]="!removing()">{{ removing() ? 'Removing…' : 'Remove' }}</span>
+						</button>
+					</div>
+				</div>
+			</mat-card>
+		} @else {
+			<button
+				#remove_button
+				matButton="outlined"
+				type="button"
+				class="w-full"
+				data-testid="ecash-general-mint-view-remove"
+				[disabled]="remove_note() !== null"
+				(click)="onConfirmRemove()"
+			>
+				<mat-icon [class.orc-error-color]="!remove_note()">delete_forever</mat-icon>
+				<span [class.orc-error-color]="!remove_note()">Remove mint</span>
+			</button>
+			@if (remove_note(); as remove_note) {
+				<span class="font-size-xs orc-outline-color text-center" data-testid="ecash-general-mint-view-remove-note">{{
+					remove_note
+				}}</span>
+			}
+		}
+	</div>
+</ng-template>

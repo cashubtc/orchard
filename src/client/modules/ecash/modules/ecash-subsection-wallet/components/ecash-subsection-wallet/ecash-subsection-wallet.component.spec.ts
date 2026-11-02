@@ -22,6 +22,7 @@ import {EcashSeed} from '@client/modules/ecash/classes/ecash-seed.class';
 import {EcashGeneralBackupComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-backup/ecash-general-backup.component';
 import {EcashGeneralIssueComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-issue/ecash-general-issue.component';
 import {EcashGeneralMintAddComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-mint-add/ecash-general-mint-add.component';
+import {EcashGeneralMintViewComponent} from '@client/modules/ecash/modules/ecash-general/components/ecash-general-mint-view/ecash-general-mint-view.component';
 /* Shared Dependencies */
 import {UserRole, WalletOperationState, WalletOperationType} from '@shared/generated.types';
 /* Local Dependencies */
@@ -211,6 +212,56 @@ describe('EcashSubsectionWalletComponent', () => {
 		expect(ecash_service.loadMints).toHaveBeenCalled();
 		expect(ecash_service.loadMintStatuses).toHaveBeenCalledOnceWith('mint-1');
 		expect(component.mint_statuses().map((item) => item.mint_id)).toEqual(['mint-0', 'mint-1']);
+	});
+
+	it("opens a mint's panel on the page's live data, reloading what a refresh there changed", async () => {
+		await create();
+		form_panel_service.open.and.returnValue({afterClosed: () => of(undefined)});
+		component.onViewMint(mints[0]);
+		const [panel, {data}] = form_panel_service.open.calls.mostRecent().args;
+		expect(panel).toBe(EcashGeneralMintViewComponent);
+		expect(data.mint()).toBe(mints[0]);
+		expect(data.balances()).toEqual(balances);
+		expect(data.checked_at()).toBeNull();
+
+		ecash_service.loadMints.calls.reset();
+		ecash_service.loadBalances.calls.reset();
+		ecash_service.getOperationsData.calls.reset();
+		mint_service.loadMintReserves.calls.reset();
+		mint_service.clearSolvencyCache.calls.reset();
+		const status = new EcashMintStatus({mint_id: 'mint-1', online: true, latency_ms: 5, error: null, checked_at: 42});
+		data.refreshed(status);
+		expect(component.mint_statuses()).toEqual([status]);
+		expect(data.status().text).toBe('Online · 5 ms');
+		expect(data.checked_at()).toBe(42);
+		expect(ecash_service.loadMints).toHaveBeenCalled();
+		expect(ecash_service.loadBalances).toHaveBeenCalled();
+		expect(ecash_service.getOperationsData).toHaveBeenCalled();
+		expect(mint_service.clearSolvencyCache).toHaveBeenCalled();
+		expect(mint_service.loadMintReserves).toHaveBeenCalledTimes(1);
+	});
+
+	it('only takes the status of a mint that stayed unreachable, since nothing could settle', async () => {
+		await create();
+		form_panel_service.open.and.returnValue({afterClosed: () => of(undefined)});
+		component.onViewMint(mints[0]);
+		const [, {data}] = form_panel_service.open.calls.mostRecent().args;
+		ecash_service.loadMints.calls.reset();
+		ecash_service.loadBalances.calls.reset();
+		const status = new EcashMintStatus({mint_id: 'mint-1', online: false, latency_ms: null, error: 'socket hang up', checked_at: 42});
+		data.refreshed(status);
+		expect(data.status().text).toBe('Unreachable');
+		expect(ecash_service.loadMints).not.toHaveBeenCalled();
+		expect(ecash_service.loadBalances).not.toHaveBeenCalled();
+	});
+
+	it('reloads the mints once a mint is removed', async () => {
+		await create();
+		ecash_service.loadMints.calls.reset();
+		form_panel_service.open.and.returnValue({afterClosed: () => of(true)});
+		component.onViewMint(mints[0]);
+		expect(ecash_service.clearMintsCache).toHaveBeenCalled();
+		expect(ecash_service.loadMints).toHaveBeenCalled();
 	});
 
 	it('reminds to back up only once the wallet holds ecash it never backed up', async () => {

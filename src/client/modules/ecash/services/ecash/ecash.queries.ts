@@ -26,6 +26,13 @@ const ECASH_SEED_FIELDS = `
     created_at
     backed_up_at`;
 
+const ECASH_MINT_STATUS_FIELDS = `
+    mint_id
+    online
+    latency_ms
+    error
+    checked_at`;
+
 export const ECASH_MINTS_QUERY = `{
     ecash_mints {${ECASH_MINT_FIELDS}
     }
@@ -41,12 +48,7 @@ export const ECASH_BALANCES_QUERY = `{
 
 export const ECASH_MINT_STATUS_QUERY = `
 query EcashMintStatus($mint_id: ID) {
-    ecash_mint_status(mint_id: $mint_id) {
-        mint_id
-        online
-        latency_ms
-        error
-        checked_at
+    ecash_mint_status(mint_id: $mint_id) {${ECASH_MINT_STATUS_FIELDS}
     }
 }`;
 
@@ -120,6 +122,12 @@ mutation ecash_mint_add($mint_url: String!) {
 export const ECASH_MINT_REMOVE_MUTATION = `
 mutation ecash_mint_remove($mint_id: ID!) {
     ecash_mint_remove(mint_id: $mint_id)
+}`;
+
+export const ECASH_MINT_REFRESH_MUTATION = `
+mutation ecash_mint_refresh($mint_id: ID!) {
+    ecash_mint_refresh(mint_id: $mint_id) {${ECASH_MINT_STATUS_FIELDS}
+    }
 }`;
 
 export const ECASH_SEED_REVEAL_MUTATION = `

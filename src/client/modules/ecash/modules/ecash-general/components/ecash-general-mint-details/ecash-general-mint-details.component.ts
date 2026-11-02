@@ -19,6 +19,8 @@ import {buildMintFeatures, getTimeOffsetLabel} from '@client/modules/ecash/modul
 export class EcashGeneralMintDetailsComponent {
 	public readonly info = input.required<MintInfo>();
 	public readonly time_offset = input<number | null>(null);
+	/** When the mint joined the wallet, for one already in it */
+	public readonly added_at = input<number | null>(null);
 	public readonly device_type = input<DeviceType>('desktop');
 
 	public readonly mobile = computed(() => this.device_type() === 'mobile');

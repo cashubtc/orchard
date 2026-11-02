@@ -17,11 +17,35 @@ import {
 	buildMintFeatures,
 	buildUnitChips,
 	getBalanceCellsWidth,
+	getMintCheckedText,
 	getMintOnlineText,
 	getMintRestoreUrls,
 	getMintStatusPill,
+	getMintSubtitle,
 	getTimeOffsetLabel,
 } from './ecash-general.helpers';
+
+describe('getMintSubtitle', () => {
+	it('names the host, or a Tor address, then the software', () => {
+		expect(getMintSubtitle('https://mint.cedar.example', 'cdk-mintd/0.18.1')).toBe('mint.cedar.example · cdk-mintd 0.18.1');
+		expect(getMintSubtitle('http://cedarmintq7v3xabcdefghij.onion', null)).toBe('Tor address');
+	});
+
+	it('is null for a mint without a public URL', () => {
+		expect(getMintSubtitle(null, 'cdk-mintd/0.18.1')).toBeNull();
+	});
+});
+
+describe('getMintCheckedText', () => {
+	it('says just now within a minute, even when the server clock runs ahead', () => {
+		expect(getMintCheckedText(1_000, 1_059)).toBe('just now');
+		expect(getMintCheckedText(1_005, 1_000)).toBe('just now');
+	});
+
+	it('says how long ago an older check was', () => {
+		expect(getMintCheckedText(1_000, 1_300)).toBe('5 minutes ago');
+	});
+});
 
 describe('getMintRestoreUrls', () => {
 	it('takes the first URL of each mint, leaving out a mint without a public URL', () => {

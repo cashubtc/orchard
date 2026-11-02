@@ -42,9 +42,10 @@ import type {
 const ORCHARD_RETRY_MS = 30_000;
 const WALLET_TTL_MS = 5 * 60_000;
 const STATUS_TTL_MS = 60_000;
+const REFRESH_FLOOR_MS = 5_000;
 const MINT_REDIRECTS_MAX = 3;
 
-type Memo<T> = {value: Promise<T>; expires_at: number};
+type Memo<T> = {value: Promise<T>; loaded_at: number; expires_at: number};
 
 @Injectable()
 export class CashuWalletMintService {
@@ -181,8 +182,7 @@ export class CashuWalletMintService {
 
 	/** Remove a mint from a user's wallet; refused for the Orchard mint or while it holds funds */
 	public async removeMint(user_id: string, mint_id: string): Promise<void> {
-		const mint = await this.walletMintRepository.findOne({where: {id: mint_id, user_id}});
-		if (!mint) throw walletError('Mint not found in this wallet');
+		const mint = await this.findWalletMint(user_id, mint_id);
 		if (this.isOrchardMint(mint, await this.getOrchardIdentity())) {
 			throw walletError('The Orchard mint cannot be removed from a wallet');
 		}
@@ -234,17 +234,17 @@ export class CashuWalletMintService {
 		}
 	}
 
-	/** Share one load per key for ttl_ms; a failed load is dropped so the next caller retries, and expired loads are dropped as new ones are stored */
-	private memoize<T>(cache: Map<string, Memo<T>>, key: string, ttl_ms: number, load: () => Promise<T>): Promise<T> {
+	/** Share one load per key for ttl_ms, or for max_age_ms when a caller wants it fresher; a failed load is dropped so the next caller retries, and expired loads are dropped as new ones are stored */
+	private memoize<T>(cache: Map<string, Memo<T>>, key: string, ttl_ms: number, load: () => Promise<T>, max_age_ms = ttl_ms): Promise<T> {
 		const now = Date.now();
 		const cached = cache.get(key);
-		if (cached && cached.expires_at > now) return cached.value;
+		if (cached && cached.expires_at > now && now - cached.loaded_at < max_age_ms) return cached.value;
 		for (const [stale_key, memo] of cache) if (memo.expires_at <= now) cache.delete(stale_key);
 		const value = load().catch((error) => {
 			cache.delete(key);
 			throw error;
 		});
-		cache.set(key, {value, expires_at: now + ttl_ms});
+		cache.set(key, {value, loaded_at: now, expires_at: now + ttl_ms});
 		return value;
 	}
 
@@ -274,10 +274,24 @@ export class CashuWalletMintService {
 		return Promise.all(mints.map(async (mint) => ({mint_id: mint.id, ...(await this.checkMint(mint))})));
 	}
 
-	/** One mint URL's status, shared across users for STATUS_TTL_MS so strict mints aren't probed on every page load */
-	private async checkMint(mint: CashuWalletMint): Promise<CashuWalletMintProbe> {
+	/** Check one of a user's wallet mints now, replacing its shared status */
+	public async refreshMint(user_id: string, mint_id: string): Promise<CashuWalletMintStatus> {
+		const mint = await this.findWalletMint(user_id, mint_id);
+		return {mint_id, ...(await this.checkMint(mint, true))};
+	}
+
+	/** A mint in a user's wallet, refusing one that isn't there */
+	private async findWalletMint(user_id: string, mint_id: string): Promise<CashuWalletMint> {
+		const mint = await this.walletMintRepository.findOne({where: {id: mint_id, user_id}});
+		if (!mint) throw walletError('Mint not found in this wallet');
+		return mint;
+	}
+
+	/** One mint URL's status, shared across users for STATUS_TTL_MS so strict mints aren't probed on every page load; fresh takes one at most REFRESH_FLOOR_MS old */
+	private async checkMint(mint: CashuWalletMint, fresh = false): Promise<CashuWalletMintProbe> {
 		const client = await this.getMint(mint);
-		return this.memoize(this.statuses, client.mintUrl, STATUS_TTL_MS, () => this.probeMint(client));
+		const max_age_ms = fresh ? REFRESH_FLOOR_MS : STATUS_TTL_MS;
+		return this.memoize(this.statuses, client.mintUrl, STATUS_TTL_MS, () => this.probeMint(client), max_age_ms);
 	}
 
 	/** Time a mint's /v1/info, saving the fresh info and refreshing its keysets when they are due; for the Orchard mint it also renews the live identity */

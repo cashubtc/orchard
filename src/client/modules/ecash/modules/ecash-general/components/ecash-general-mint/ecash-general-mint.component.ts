@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, input, output} from '@angular/core';
 /* Application Dependencies */
 import {getUnitMeta} from '@client/modules/local/helpers/unit.helpers';
 import {MintReserves} from '@client/modules/mint/classes/mint-reserves.class';
@@ -21,6 +21,8 @@ export class EcashGeneralMintComponent {
 	public readonly balances = input<EcashBalance[]>([]);
 	public readonly status = input.required<EcashMintStatusPill>();
 	public readonly reserves = input<MintReserves | null>(null);
+
+	public readonly view = output<void>();
 
 	public readonly chips = computed(() => buildUnitChips(this.mint().units, this.balances()));
 

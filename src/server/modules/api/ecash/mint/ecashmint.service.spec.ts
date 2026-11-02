@@ -3,6 +3,7 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
 import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwalletmint.service';
+import {CashuWalletRecoveryService} from '#server/modules/cashu/wallet/saga/cashuwalletrecovery.service';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
@@ -14,6 +15,7 @@ import {OrchardEcashMint, OrchardEcashMintLookup, OrchardEcashMintStatus} from '
 describe('EcashMintService', () => {
 	let ecashMintService: EcashMintService;
 	let cashuWalletMintService: jest.Mocked<CashuWalletMintService>;
+	let cashuWalletRecoveryService: jest.Mocked<CashuWalletRecoveryService>;
 	let errorService: jest.Mocked<ErrorService>;
 
 	const mint = {
@@ -48,14 +50,17 @@ describe('EcashMintService', () => {
 						lookupMint: jest.fn(),
 						addMint: jest.fn(),
 						removeMint: jest.fn(),
+						refreshMint: jest.fn(),
 					},
 				},
+				{provide: CashuWalletRecoveryService, useValue: {reconcileMint: jest.fn()}},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
 			],
 		}).compile();
 
 		ecashMintService = module.get<EcashMintService>(EcashMintService);
 		cashuWalletMintService = module.get(CashuWalletMintService);
+		cashuWalletRecoveryService = module.get(CashuWalletRecoveryService);
 		errorService = module.get(ErrorService);
 	});
 
@@ -88,6 +93,20 @@ describe('EcashMintService', () => {
 		expect(cashuWalletMintService.checkMints).toHaveBeenCalledWith('user-1', null);
 		await ecashMintService.getEcashMintStatus('TAG', 'user-1', 'mint-1');
 		expect(cashuWalletMintService.checkMints).toHaveBeenLastCalledWith('user-1', 'mint-1');
+	});
+
+	it('refreshEcashMint settles open operations only when the mint answers', async () => {
+		const status = {mint_id: 'mint-1', online: true, latency_ms: 84, error: null, checked_at: 5};
+		cashuWalletMintService.refreshMint.mockResolvedValue(status);
+		const result = await ecashMintService.refreshEcashMint('TAG', 'user-1', 'mint-1');
+		expect(result).toBeInstanceOf(OrchardEcashMintStatus);
+		expect(result).toMatchObject(status);
+		expect(cashuWalletRecoveryService.reconcileMint).toHaveBeenCalledWith('user-1', 'mint-1');
+
+		cashuWalletRecoveryService.reconcileMint.mockClear();
+		cashuWalletMintService.refreshMint.mockResolvedValue({...status, online: false, latency_ms: null, error: 'socket hang up'});
+		await ecashMintService.refreshEcashMint('TAG', 'user-1', 'mint-1');
+		expect(cashuWalletRecoveryService.reconcileMint).not.toHaveBeenCalled();
 	});
 
 	it("lookupEcashMint maps the looked-up mint's info, motd and match", async () => {

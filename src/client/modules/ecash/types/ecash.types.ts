@@ -45,6 +45,10 @@ export type EcashMintRemoveResponse = {
 	ecash_mint_remove: boolean;
 };
 
+export type EcashMintRefreshResponse = {
+	ecash_mint_refresh: OrchardEcashMintStatus;
+};
+
 export type EcashSeedRevealResponse = {
 	ecash_seed_reveal: string;
 };

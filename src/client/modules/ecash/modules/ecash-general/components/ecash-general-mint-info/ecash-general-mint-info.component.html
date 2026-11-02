@@ -1,26 +1,28 @@
 <mat-card appearance="outlined" class="overflow-hidden" role="region" aria-label="Mint details">
 	<div class="orc-surface-container-low-bg">
 		<div class="ecash-mint-info-summary">
-			<orc-ecash-general-mint-header
-				[name]="name()"
-				[subtitle]="subtitle()"
-				[icon_url]="info().icon_url"
-				[icon_height]="mobile() ? '3rem' : '3.5rem'"
-				[large]="true"
-			>
-				@if (mobile()) {
-					<span mint-header-detail class="flex flex-items-center flex-gap-0-5 font-size-xs p-t-0-25">
-						<orc-graphic-status class="flex-shrink-0" status="active" size="0.5rem"></orc-graphic-status>
-						<span>{{ status_text() }}</span>
-					</span>
-				}
-				@if (!mobile()) {
-					<div class="orc-pill orc-pill-filled font-size-xs">
-						<orc-graphic-status class="flex-shrink-0" status="active" size="0.5rem"></orc-graphic-status>
-						<span class="text-nowrap">{{ status_text() }}</span>
-					</div>
-				}
-			</orc-ecash-general-mint-header>
+			@if (header()) {
+				<orc-ecash-general-mint-header
+					[name]="name()"
+					[subtitle]="subtitle()"
+					[icon_url]="info().icon_url"
+					[icon_height]="mobile() ? '3rem' : '3.5rem'"
+					[large]="true"
+				>
+					@if (mobile()) {
+						<span mint-header-detail class="flex flex-items-center flex-gap-0-5 font-size-xs p-t-0-25">
+							<orc-graphic-status class="flex-shrink-0" status="active" size="0.5rem"></orc-graphic-status>
+							<span>{{ status_text() }}</span>
+						</span>
+					}
+					@if (!mobile()) {
+						<div class="orc-pill orc-pill-filled font-size-xs">
+							<orc-graphic-status class="flex-shrink-0" status="active" size="0.5rem"></orc-graphic-status>
+							<span class="text-nowrap">{{ status_text() }}</span>
+						</div>
+					}
+				</orc-ecash-general-mint-header>
+			}
 			@if (!compact()) {
 				@if (info().description) {
 					<p class="ecash-mint-info-text">{{ info().description }}</p>
@@ -61,6 +63,7 @@
 					<orc-ecash-general-mint-details
 						[info]="info()"
 						[time_offset]="time_offset()"
+						[added_at]="added_at()"
 						[device_type]="device_type()"
 					></orc-ecash-general-mint-details>
 				</div>

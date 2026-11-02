@@ -60,6 +60,7 @@ const ICONS = [
   'payments',
   'person',
   'person_add',
+  'qr_code_2',
   'qr_code_2_add',
   'restore',
   'save',

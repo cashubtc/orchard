@@ -26,6 +26,7 @@ import {
 	EcashMintLookupResponse,
 	EcashMintAddResponse,
 	EcashMintRemoveResponse,
+	EcashMintRefreshResponse,
 	EcashSeedRevealResponse,
 	EcashSeedBackupResponse,
 } from '@client/modules/ecash/types/ecash.types';
@@ -40,6 +41,7 @@ import {
 	ECASH_MINT_LOOKUP_QUERY,
 	ECASH_MINT_ADD_MUTATION,
 	ECASH_MINT_REMOVE_MUTATION,
+	ECASH_MINT_REFRESH_MUTATION,
 	ECASH_SEED_REVEAL_MUTATION,
 	ECASH_SEED_BACKUP_MUTATION,
 } from './ecash.queries';
@@ -205,6 +207,18 @@ export class EcashService {
 			map((response) => {
 				if (response.errors) throw new OrchardErrors(response.errors);
 				return response.data.ecash_mint_remove;
+			}),
+			catchError((error) => throwError(() => error)),
+		);
+	}
+
+	/** Check a wallet mint now and settle the wallet's unfinished operations with it */
+	public refreshMint(mint_id: string): Observable<EcashMintStatus> {
+		const query = getApiQuery(ECASH_MINT_REFRESH_MUTATION, {mint_id});
+		return this.http.post<OrchardRes<EcashMintRefreshResponse>>(this.apiService.api, query).pipe(
+			map((response) => {
+				if (response.errors) throw new OrchardErrors(response.errors);
+				return new EcashMintStatus(response.data.ecash_mint_refresh);
 			}),
 			catchError((error) => throwError(() => error)),
 		);

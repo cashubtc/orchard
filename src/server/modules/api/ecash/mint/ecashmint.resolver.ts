@@ -63,4 +63,16 @@ export class EcashMintResolver {
 		this.logger.debug(tag);
 		return await this.ecashMintService.removeEcashMint(tag, context.req.user.id, mint_id);
 	}
+
+	@Mutation(() => OrchardEcashMintStatus, {
+		description: "Check a mint in the current user's ecash wallet now and settle the user's unfinished operations with it",
+	})
+	async ecash_mint_refresh(
+		@Context() context: any,
+		@Args('mint_id', {type: () => ID, description: 'Wallet mint identifier'}) mint_id: string,
+	): Promise<OrchardEcashMintStatus> {
+		const tag = 'MUTATION { ecash_mint_refresh }';
+		this.logger.debug(tag);
+		return await this.ecashMintService.refreshEcashMint(tag, context.req.user.id, mint_id);
+	}
 }

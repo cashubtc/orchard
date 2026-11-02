@@ -1,0 +1,29 @@
+@use 'molecule/molecule';
+@use 'nucleus/nucleus';
+
+.ecash-mint-view-actions {
+	@extend %grid;
+	@extend %flex-gap-0-5;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ecash-mint-view-action {
+	@extend %flex;
+	@extend %flex-column;
+	@extend %flex-items-center;
+	@extend %flex-justify-center;
+	@extend %flex-gap-0-25;
+	@extend %h-4;
+	@extend %m-0;
+	@extend %cursor-pointer;
+	@extend %border-none;
+	@extend %font-family-inherit;
+	@extend %font-size-xs;
+	@extend %font-weight-semi-bold;
+	@extend %orc-on-surface-color;
+
+	&:disabled {
+		cursor: default;
+		opacity: 0.38;
+	}
+}

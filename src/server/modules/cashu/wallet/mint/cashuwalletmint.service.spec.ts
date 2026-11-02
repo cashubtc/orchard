@@ -496,6 +496,25 @@ describe('CashuWalletMintService', () => {
 			expect(cedarChecks()).toBe(2);
 			now.mockRestore();
 		});
+
+		it('refreshes a shared status at most every 5s, sharing the fresh one, and only in its own wallet', async () => {
+			const now = jest.spyOn(Date, 'now').mockReturnValue(1_000_000);
+			route('https://203.0.113.10', async () => response(cedar_info));
+			addRow('cedar', 'https://203.0.113.10');
+			const cedarChecks = () => lookedUp().filter((url) => url === 'https://203.0.113.10/v1/info').length;
+
+			await service.checkMints('user-1', 'cedar');
+			await Promise.all([service.refreshMint('user-1', 'cedar'), service.refreshMint('user-1', 'cedar')]);
+			expect(cedarChecks()).toBe(1);
+
+			now.mockReturnValue(1_005_000);
+			expect(await service.refreshMint('user-1', 'cedar')).toMatchObject({mint_id: 'cedar', online: true});
+			expect(cedarChecks()).toBe(2);
+			await service.checkMints('user-1', 'cedar');
+			expect(cedarChecks()).toBe(2);
+			await expect(service.refreshMint('user-2', 'cedar')).rejects.toMatchObject({details: 'Mint not found in this wallet'});
+			now.mockRestore();
+		});
 	});
 
 	describe('getMint', () => {

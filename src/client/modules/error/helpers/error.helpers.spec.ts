@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {HttpErrorResponse} from '@angular/common/http';
 /* Native Dependencies */
-import {CONNECTION_ERROR_CODE, formatOrchardError, isAuthRedirectError, toConnectionError} from './error.helpers';
+import {CONNECTION_ERROR_CODE, formatOrchardError, getRequestErrorMessage, isAuthRedirectError, toConnectionError} from './error.helpers';
 import {OrchardErrors} from '@client/modules/error/classes/error.class';
 
 describe('Orchard error formatting', () => {
@@ -63,6 +63,23 @@ describe('isAuthRedirectError', () => {
 	it('ignores Orchard errors and non-objects', () => {
 		const orchard_error = new OrchardErrors([{message: 'MintRpcActionError', extensions: {code: 40006}}]);
 		for (const error of [orchard_error, null, undefined, 'auth_error', 40006]) expect(isAuthRedirectError(error)).toBeFalse();
+	});
+});
+
+describe('getRequestErrorMessage', () => {
+	it("gives Orchard's own error with its code", () => {
+		const errors = new OrchardErrors([{message: 'EcashWalletError', extensions: {code: 70001, details: 'Mint not found'}}]);
+		expect(getRequestErrorMessage(errors)).toBe('Mint not found : 70001');
+	});
+
+	it("explains a request that never reached Orchard's server", () => {
+		expect(getRequestErrorMessage(new HttpErrorResponse({status: 0}))).toBe(
+			"Orchard's server did not respond. Check that it is running, then retry.",
+		);
+	});
+
+	it('stays quiet while the session redirect handles the failure', () => {
+		expect(getRequestErrorMessage({type: 'auth_error'})).toBeNull();
 	});
 });
 

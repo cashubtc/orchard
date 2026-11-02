@@ -14,6 +14,8 @@ export class EcashGeneralMintHeaderComponent {
 	public readonly subtitle = input.required<string | null>();
 	public readonly icon_url = input<string | null>(null);
 	public readonly is_orchard = input<boolean>(false);
+	/** Whether the subtitle names the Orchard mint; the icon's ring marks it either way */
+	public readonly orchard_label = input<boolean>(true);
 	public readonly icon_height = input<string>('2.5rem');
 	public readonly large = input<boolean>(false);
 }

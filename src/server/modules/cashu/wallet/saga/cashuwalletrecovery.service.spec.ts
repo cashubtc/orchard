@@ -53,6 +53,18 @@ describe('CashuWalletRecoveryService', () => {
 		expect(issue_service.resume).toHaveBeenCalledTimes(2);
 	});
 
+	it("settles only a user's open operations at one mint for a refresh, sharing a pass with refreshes alongside", async () => {
+		issue_service.resume.mockImplementation(async (operation) => operation);
+		const [first, second] = [service.reconcileMint('user-1', 'mint-1'), service.reconcileMint('user-1', 'mint-1')];
+		expect(first).toBe(second);
+		await first;
+		expect(operation_repository.find).toHaveBeenCalledTimes(1);
+		expect(operation_repository.find).toHaveBeenCalledWith(
+			expect.objectContaining({where: expect.objectContaining({user_id: 'user-1', mint_id: 'mint-1'})}),
+		);
+		expect(issue_service.resume).toHaveBeenCalledTimes(2);
+	});
+
 	it('runs one pass at a time', async () => {
 		issue_service.resume.mockImplementation(async (operation) => operation);
 		const [first, second] = [service.reconcileOperations(), service.reconcileOperations()];
