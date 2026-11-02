@@ -28,6 +28,7 @@ x-orchard-build: &orchard-build
   context: ../../../..
   dockerfile: Dockerfile
   target: final
+  pull: true
 
 services:
   postgres:

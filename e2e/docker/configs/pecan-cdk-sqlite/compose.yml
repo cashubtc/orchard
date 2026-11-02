@@ -70,6 +70,7 @@ services:
       context: ../../../..
       dockerfile: Dockerfile
       target: final
+      pull: true
     container_name: pecan-cdk-sqlite-orchard
     restart: on-failure
     networks: [net]

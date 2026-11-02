@@ -1,6 +1,9 @@
 services:
   orchard:
-    build: .
+    build:
+      context: .
+      # Refresh the cached node:22-alpine base, so a rebuild picks up Node security releases
+      pull: true
     ports:
       - "${SERVER_PORT:-3321}:${SERVER_PORT:-3321}"
     env_file:
