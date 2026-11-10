@@ -3,7 +3,19 @@ import {expect} from '@jest/globals';
 /* Vendor Dependencies */
 import {HttpResponseError, MintOperationError, StaleKeysetError} from '@cashu/cashu-ts';
 /* Local Dependencies */
-import {describeMintError} from './cashuwallet.helpers.js';
+import {describeMintError, getCounterKey} from './cashuwallet.helpers.js';
+
+describe('getCounterKey', () => {
+	it('gives version 00 ids that derive alike one cursor', () => {
+		expect(getCounterKey('0000000000000001')).toBe(getCounterKey('0000000080000000'));
+		expect(getCounterKey('0000000000000001')).not.toBe(getCounterKey('0000000000000002'));
+	});
+
+	it('keeps a version 01 id whole, since its secrets derive from all of it', () => {
+		const id = `01${'0'.repeat(63)}1`;
+		expect(getCounterKey(id)).toBe(id);
+	});
+});
 
 describe('describeMintError', () => {
 	it('names the NUT code and detail', () => {

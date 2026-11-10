@@ -9,7 +9,7 @@ export class CashuWalletCounter {
 	@PrimaryColumn({type: 'text'})
 	user_id: string;
 
-	// A keyset id for NUT-13 outputs, or `nut20` for quote locking keys
+	// A keyset's NUT-13 derivation path (getCounterKey), or `nut20` for quote locking keys
 	@PrimaryColumn({type: 'text'})
 	counter_key: string;
 

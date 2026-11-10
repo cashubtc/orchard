@@ -14,8 +14,8 @@ describe('CashuWalletRecoveryService', () => {
 	let service: CashuWalletRecoveryService;
 
 	const open = [
-		{id: 'op-1', state: WalletOperationState.PENDING},
-		{id: 'op-2', state: WalletOperationState.EXECUTING},
+		{id: 'op-1', type: WalletOperationType.MINT, state: WalletOperationState.PENDING},
+		{id: 'op-2', type: WalletOperationType.ISSUE, state: WalletOperationState.EXECUTING},
 	];
 	const operation_repository = {find: jest.fn()};
 	const issue_service = {resume: jest.fn()};
@@ -35,7 +35,7 @@ describe('CashuWalletRecoveryService', () => {
 		service = module.get<CashuWalletRecoveryService>(CashuWalletRecoveryService);
 	});
 
-	it('resumes each open mint operation through the issue saga, oldest first', async () => {
+	it('resumes each open operation through its saga, oldest first', async () => {
 		issue_service.resume.mockImplementation(async (operation) => ({...operation, state: WalletOperationState.FINALIZED}));
 		await service.reconcileOperations();
 		expect(operation_repository.find).toHaveBeenCalledWith(

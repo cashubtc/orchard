@@ -10,6 +10,7 @@ import {WalletOperationType, WalletOperationState} from '../cashuwallet.enums.js
 @Entity('cashu_wallet_operations')
 @Index(['state'])
 @Index(['user_id', 'created_at'])
+@Index(['mint_id', 'quote_id'])
 export class CashuWalletOperation {
 	@PrimaryGeneratedColumn('uuid')
 	id: string;
@@ -55,13 +56,45 @@ export class CashuWalletOperation {
 	@Column({type: 'text', nullable: true})
 	memo: string | null;
 
-	// Serialized output data (secrets, blinding factors, blinded messages) sent to the mint
+	// Payment request the operation receives on or pays: an invoice, offer or address
 	@Column({type: 'text', nullable: true})
-	outputs: string | null;
+	request: string | null;
 
-	// Secrets of the input proofs spent by this operation (JSON array)
+	// When the quote or request expires (unix)
+	@Column({type: 'integer', nullable: true})
+	expiry: number | null;
+
+	// Fee actually paid, in the smallest unit
+	@Column({type: 'integer', nullable: true})
+	fee: number | null;
+
+	// Most a melt's fee could be, in the smallest unit
+	@Column({type: 'integer', nullable: true})
+	fee_reserve: number | null;
+
+	// Onchain melt speed chosen from the quote's fee options
+	@Column({type: 'integer', nullable: true})
+	fee_index: number | null;
+
+	// Request prepared by cashu-ts and persisted before the mint call (serialized outputs, swap preview or melt change)
+	@Column({type: 'text', nullable: true})
+	preview: string | null;
+
+	// NUT-13 counter ranges the prepared outputs used (JSON), for restore
+	@Column({type: 'text', nullable: true})
+	counters: string | null;
+
+	// Input proofs spent by this operation (serialized), for replay
 	@Column({type: 'text', nullable: true})
 	inputs: string | null;
+
+	// Encoded token of an ecash send
+	@Column({type: 'text', nullable: true})
+	token: string | null;
+
+	// Lightning preimage or onchain outpoint (txid:vout) once paid
+	@Column({type: 'text', nullable: true})
+	payment_proof: string | null;
 
 	// Last failure reason, for operator diagnosis
 	@Column({type: 'text', nullable: true})

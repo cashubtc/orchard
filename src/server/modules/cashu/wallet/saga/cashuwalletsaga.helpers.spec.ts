@@ -22,9 +22,21 @@ describe('classifyMintError', () => {
 		[CashuMintErrorCode.TRANSACTION_NOT_BALANCED, WalletErrorAction.FAIL],
 		[CashuMintErrorCode.MINTING_DISABLED, WalletErrorAction.FAIL],
 		[CashuMintErrorCode.BLIND_AUTH_REQUIRED, WalletErrorAction.FAIL],
-		[99999, WalletErrorAction.FAIL],
+		[CashuMintErrorCode.MAX_INPUTS_EXCEEDED, WalletErrorAction.FAIL],
+		[CashuMintErrorCode.INVOICE_ALREADY_PAID, WalletErrorAction.FAIL],
+		[10002, WalletErrorAction.RESTORE],
+		[10003, WalletErrorAction.FAIL],
+		[50000, WalletErrorAction.CHECK_STATE],
+		[99999, WalletErrorAction.CHECK_STATE],
 	])('maps NUT code %i to %s', (code, action) => {
 		expect(classifyMintError(new MintOperationError(code, 'detail'))).toBe(action);
+	});
+
+	it('reads 11002 from a mint on the old numbering, where it meant not balanced', () => {
+		expect(classifyMintError(new MintOperationError(11002, 'Proofs are pending'))).toBe(WalletErrorAction.WAIT);
+		expect(classifyMintError(new MintOperationError(11002, 'Transaction is not balanced (inputs != outputs)'))).toBe(
+			WalletErrorAction.FAIL,
+		);
 	});
 
 	it('rebuilds on a cashu-ts stale keyset', () => {

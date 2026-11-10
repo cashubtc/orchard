@@ -1,5 +1,5 @@
 /* Vendor Dependencies */
-import {HttpResponseError, StaleKeysetError, isMintOperationError} from '@cashu/cashu-ts';
+import {HttpResponseError, StaleKeysetError, getKeysetIdInt, isMintOperationError} from '@cashu/cashu-ts';
 /* Application Dependencies */
 import {OrchardErrorCode, OrchardErrorMessages} from '#server/modules/error/error.types';
 /* Local Dependencies */
@@ -13,6 +13,12 @@ const AUTH_CODES = new Set<number>([
 	CashuMintErrorCode.BAT_MINT_MAX_EXCEEDED,
 	CashuMintErrorCode.BAT_RATE_LIMIT_EXCEEDED,
 ]);
+
+/**
+ * Counter cursor for a keyset's NUT-13 derivation path: version 01 ids derive from the whole id, legacy and version 00 ids
+ * from their integer mod 2^31-1, so different ids that reduce alike share one cursor and never repeat a secret
+ */
+export const getCounterKey = (keyset_id: string): string => (keyset_id.startsWith('01') ? keyset_id : getKeysetIdInt(keyset_id).toString());
 
 /** Operator-facing wallet error, resolved to EcashWalletError with its details */
 export const walletError = (details: string) => ({code: OrchardErrorCode.EcashWalletError, details});

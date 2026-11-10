@@ -62,6 +62,12 @@ export enum CashuMintErrorCode {
 	BAT_RATE_LIMIT_EXCEEDED = 31004,
 }
 
+// Codes from before the 2026-01 NUT renumbering, which mints that haven't upgraded still send
+export enum CashuMintLegacyErrorCode {
+	OUTPUTS_ALREADY_SIGNED = 10002,
+	PROOFS_NOT_VERIFIED = 10003,
+}
+
 // How far a mint quote has progressed for a pending mint operation
 export enum MintQuoteProgress {
 	MINTABLE = 'MINTABLE',

@@ -13,6 +13,7 @@ import {CashuWalletOperation} from './saga/cashuwalletoperation.entity.js';
 import {CashuWalletMint} from './mint/cashuwalletmint.entity.js';
 import {CashuWalletMintInfo} from './mint/cashuwalletmintinfo.entity.js';
 import {CashuWalletMintKeyset} from './mint/cashuwalletmintkeyset.entity.js';
+import {CashuWalletQuote} from './quote/cashuwalletquote.entity.js';
 import {CashuWalletSeedService} from './seed/cashuwalletseed.service.js';
 import {CashuWalletProofService} from './proof/cashuwalletproof.service.js';
 import {CashuWalletMintService} from './mint/cashuwalletmint.service.js';
@@ -33,6 +34,7 @@ import {CashuWalletIssueService} from './saga/issue/cashuwalletissue.service.js'
 			CashuWalletMint,
 			CashuWalletMintInfo,
 			CashuWalletMintKeyset,
+			CashuWalletQuote,
 		]),
 		FetchModule,
 		UserModule,

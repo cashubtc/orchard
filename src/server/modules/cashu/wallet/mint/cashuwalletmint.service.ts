@@ -21,12 +21,15 @@ import {UserService} from '#server/modules/user/user.service';
 import {UserRole} from '#server/modules/user/user.enums';
 /* Native Dependencies */
 import {MintRedirectError} from '#server/modules/cashu/wallet/classes/mint-redirect-error.class';
+import {CashuWalletCounterSource} from '#server/modules/cashu/wallet/classes/cashu-wallet-counter-source.class';
 /* Local Dependencies */
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
 import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
 import {CashuWalletMintTransportService} from './cashuwalletminttransport.service.js';
 import {CashuWalletProof} from '../proof/cashuwalletproof.entity.js';
 import {CashuWalletOperation} from '../saga/cashuwalletoperation.entity.js';
+import {CashuWalletCounter} from '../saga/cashuwalletcounter.entity.js';
+import {CashuWalletSeedService} from '../seed/cashuwalletseed.service.js';
 import {WalletProofState, WalletOperationState, WalletMintMatch} from '../cashuwallet.enums.js';
 import {describeMintError, walletError} from '../cashuwallet.helpers.js';
 import type {
@@ -65,9 +68,12 @@ export class CashuWalletMintService {
 		private walletProofRepository: Repository<CashuWalletProof>,
 		@InjectRepository(CashuWalletOperation)
 		private walletOperationRepository: Repository<CashuWalletOperation>,
+		@InjectRepository(CashuWalletCounter)
+		private walletCounterRepository: Repository<CashuWalletCounter>,
 		private configService: ConfigService,
 		private cashuWalletMintCacheService: CashuWalletMintCacheService,
 		private cashuWalletMintTransportService: CashuWalletMintTransportService,
+		private cashuWalletSeedService: CashuWalletSeedService,
 		private userService: UserService,
 	) {}
 
@@ -200,6 +206,23 @@ export class CashuWalletMintService {
 	/** Loaded cashu-ts wallet for a mint and unit, cached briefly; cashu-ts repairs stale keysets itself */
 	public getWallet(mint_id: string, unit: string): Promise<Wallet> {
 		return this.memoize(this.wallets, `${mint_id}:${unit}`, WALLET_TTL_MS, () => this.loadWallet(mint_id, unit));
+	}
+
+	/** A user's wallet at a mint for building outputs: the shared wallet's client and keys with the user's seed and counters; keys it repairs reach the shared wallet */
+	public async getUserWallet(user_id: string, mint_id: string, unit: string): Promise<Wallet> {
+		const [shared, seed] = await Promise.all([this.getWallet(mint_id, unit), this.cashuWalletSeedService.getSeed(user_id)]);
+		const wallet = new Wallet(shared.mint, {unit, bip39seed: seed, counterSource: this.counterSource(user_id)});
+		wallet.loadMintFromCache(shared.getMintInfo().cache, shared.keyChain.cache);
+		wallet.on.keychainUpdated(({cache}) => {
+			shared.keyChain.loadFromCache(cache);
+			void this.saveKeychain(cache);
+		});
+		return wallet;
+	}
+
+	/** A user's counter cursors, which cashu-ts reserves NUT-13 outputs from */
+	public counterSource(user_id: string): CashuWalletCounterSource {
+		return new CashuWalletCounterSource(this.walletCounterRepository, user_id);
 	}
 
 	/** Save a wallet's keychain to the shared cache; cashu-ts leaves explicit loads to the caller, and a failed save is only logged */

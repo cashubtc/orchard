@@ -14,6 +14,8 @@ import {CashuWalletMintTransportService} from './cashuwalletminttransport.servic
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
 import {CashuWalletProof} from '../proof/cashuwalletproof.entity.js';
 import {CashuWalletOperation} from '../saga/cashuwalletoperation.entity.js';
+import {CashuWalletCounter} from '../saga/cashuwalletcounter.entity.js';
+import {CashuWalletSeedService} from '../seed/cashuwalletseed.service.js';
 
 describe('CashuWalletMintService', () => {
 	let service: CashuWalletMintService;
@@ -94,6 +96,8 @@ describe('CashuWalletMintService', () => {
 				{provide: getRepositoryToken(CashuWalletMint), useValue: mint_repository},
 				{provide: getRepositoryToken(CashuWalletProof), useValue: proof_repository},
 				{provide: getRepositoryToken(CashuWalletOperation), useValue: operation_repository},
+				{provide: getRepositoryToken(CashuWalletCounter), useValue: {}},
+				{provide: CashuWalletSeedService, useValue: {getSeed: jest.fn()}},
 				{provide: ConfigService, useValue: {get: jest.fn((key: string) => config[key])}},
 				{provide: FetchService, useValue: fetch_service},
 				{provide: CashuWalletMintCacheService, useValue: cache_service},

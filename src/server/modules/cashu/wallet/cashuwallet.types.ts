@@ -33,7 +33,7 @@ export type CashuWalletSeedStatus = Pick<CashuWalletSeed, 'created_at' | 'backed
 export type CashuWalletMintRequest = {
 	user_id: string;
 	mint_id: string;
-	type: WalletOperationType;
+	type: WalletOperationType.MINT | WalletOperationType.ISSUE;
 	unit: string;
 	amount: number;
 	method: string;

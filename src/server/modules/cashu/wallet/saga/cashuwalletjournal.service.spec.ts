@@ -4,21 +4,19 @@ import {expect} from '@jest/globals';
 import {getRepositoryToken} from '@nestjs/typeorm';
 /* Vendor Dependencies */
 import {DataSource} from 'typeorm';
-import {Amount, type Proof} from '@cashu/cashu-ts';
+import {Amount, type Proof, type Wallet} from '@cashu/cashu-ts';
 /* Local Dependencies */
 import {CashuWalletJournalService} from './cashuwalletjournal.service.js';
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
-import {CashuWalletCounter} from './cashuwalletcounter.entity.js';
 import {CashuWalletProof} from '../proof/cashuwalletproof.entity.js';
-import {CashuWalletSeedService} from '../seed/cashuwalletseed.service.js';
-import {CashuWalletMintService} from '../mint/cashuwalletmint.service.js';
-import {WalletOperationState, WalletOperationType} from '../cashuwallet.enums.js';
+import {CashuWalletProofService} from '../proof/cashuwalletproof.service.js';
+import {WalletOperationState, WalletOperationType, WalletProofState} from '../cashuwallet.enums.js';
 
 describe('CashuWalletJournalService', () => {
 	let service: CashuWalletJournalService;
 	let data_source: DataSource;
 
-	const entities = [CashuWalletOperation, CashuWalletCounter, CashuWalletProof];
+	const entities = [CashuWalletOperation, CashuWalletProof];
 	const createOperation = () =>
 		data_source.getRepository(CashuWalletOperation).save({
 			user_id: 'user-1',
@@ -39,8 +37,7 @@ describe('CashuWalletJournalService', () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				CashuWalletJournalService,
-				{provide: CashuWalletSeedService, useValue: {getSeed: jest.fn()}},
-				{provide: CashuWalletMintService, useValue: {saveKeychain: jest.fn()}},
+				CashuWalletProofService,
 				...entities.map((entity) => ({provide: getRepositoryToken(entity), useValue: data_source.getRepository(entity)})),
 			],
 		}).compile();
@@ -49,13 +46,6 @@ describe('CashuWalletJournalService', () => {
 
 	afterEach(async () => {
 		await data_source.destroy();
-	});
-
-	it('reserves counter ranges that never overlap, per counter key', async () => {
-		expect(await service.reserveCounters('user-1', 'keyset-a', 3)).toBe(0);
-		expect(await service.reserveCounters('user-1', 'keyset-a', 2)).toBe(3);
-		expect(await service.reserveCounters('user-1', 'keyset-b', 1)).toBe(0);
-		expect(await service.reserveCounters('user-2', 'keyset-a', 1)).toBe(0);
 	});
 
 	it('changes state only from the revision it read, returning the current row otherwise', async () => {
@@ -74,5 +64,50 @@ describe('CashuWalletJournalService', () => {
 		await service.finalize(finalized, proofs);
 		expect(finalized).toMatchObject({state: WalletOperationState.FINALIZED, error: null});
 		expect(await data_source.getRepository(CashuWalletProof).count()).toBe(2);
+	});
+
+	it('spends the inputs an operation holds when it finalizes', async () => {
+		const operation = await createOperation();
+		const proofs = data_source.getRepository(CashuWalletProof);
+		const input = {
+			user_id: 'user-1',
+			mint_id: 'mint-1',
+			keyset_id: '00abc',
+			unit: 'sat',
+			amount: 4,
+			c: '02c',
+			created_at: 0,
+			updated_at: 0,
+		};
+		await proofs.save([
+			{...input, secret: 'input', state: WalletProofState.INFLIGHT, used_by_op_id: operation.id},
+			{...input, secret: 'other', state: WalletProofState.INFLIGHT, used_by_op_id: 'op-other'},
+		]);
+		await service.finalize(operation, [proof('change', 1)]);
+		expect(await proofs.findOneByOrFail({secret: 'input'})).toMatchObject({state: WalletProofState.SPENT});
+		expect(await proofs.findOneByOrFail({secret: 'other'})).toMatchObject({state: WalletProofState.INFLIGHT});
+		expect(await proofs.findOneByOrFail({secret: 'change'})).toMatchObject({
+			state: WalletProofState.READY,
+			created_by_op_id: operation.id,
+		});
+	});
+
+	describe('restore', () => {
+		const counters = JSON.stringify([{keysetId: '00abc', start: 4, count: 2, next: 6}]);
+		const restoring = (proofs: Proof[]) => ({restore: jest.fn(async () => ({proofs}))}) as unknown as Wallet;
+
+		it("restores the operation's counter range", async () => {
+			const operation = {...(await createOperation()), counters};
+			const wallet = restoring([proof('first', 1), proof('second', 2)]);
+			expect((await service.restore(operation, wallet)).map((restored) => restored.secret)).toEqual(['first', 'second']);
+			expect(wallet.restore).toHaveBeenCalledWith(4, 2, {keysetId: '00abc'});
+		});
+
+		it('refuses a partial restore unless the range may be part signed', async () => {
+			const operation = {...(await createOperation()), counters};
+			const wallet = restoring([proof('new', 2)]);
+			await expect(service.restore(operation, wallet)).rejects.toThrow('Mint restored 1 of 2 outputs');
+			expect(await service.restore(operation, wallet, true)).toHaveLength(1);
+		});
 	});
 });

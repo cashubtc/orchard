@@ -14,6 +14,11 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 	private readonly logger = new Logger(CashuWalletRecoveryService.name);
 	/** Passes running now, by scope, so concurrent callers share one */
 	private readonly reconciling = new Map<string, Promise<void>>();
+	/** The saga that resumes each operation type; a Record, so a new type can't be left unreconciled */
+	private readonly resumers: Record<WalletOperationType, (operation: CashuWalletOperation) => Promise<CashuWalletOperation>> = {
+		[WalletOperationType.MINT]: (operation) => this.cashuWalletIssueService.resume(operation),
+		[WalletOperationType.ISSUE]: (operation) => this.cashuWalletIssueService.resume(operation),
+	};
 
 	constructor(
 		@InjectRepository(CashuWalletOperation)
@@ -54,14 +59,14 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 	private async runReconciliation(scope: FindOptionsWhere<CashuWalletOperation>): Promise<void> {
 		const open_states = In([WalletOperationState.PENDING, WalletOperationState.EXECUTING]);
 		const operations = await this.walletOperationRepository.find({
-			where: {...scope, type: In([WalletOperationType.MINT, WalletOperationType.ISSUE]), state: open_states},
+			where: {...scope, type: In(Object.keys(this.resumers)), state: open_states},
 			order: {created_at: 'ASC'},
 		});
 		let finalized = 0;
 		let failed = 0;
 		for (const operation of operations) {
 			try {
-				const {state} = await this.cashuWalletIssueService.resume(operation);
+				const {state} = await this.resumers[operation.type](operation);
 				if (state === WalletOperationState.FINALIZED) finalized++;
 				if (state === WalletOperationState.FAILED) failed++;
 			} catch (error) {
