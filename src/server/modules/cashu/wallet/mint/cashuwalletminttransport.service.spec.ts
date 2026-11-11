@@ -56,6 +56,18 @@ describe('CashuWalletMintTransportService', () => {
 		await expect(service.request({endpoint: 'https://203.0.113.12/v1/info'})).rejects.toBeInstanceOf(type);
 	});
 
+	it('holds off a mint that rate limited Orchard, without touching other mints', async () => {
+		fetch_service.fetchWithProxy.mockResolvedValueOnce(response({detail: 'Rate limit exceeded.'}, 429));
+		await expect(service.request({endpoint: 'https://203.0.113.12/v1/swap'})).rejects.toBeInstanceOf(RateLimitError);
+		await expect(service.request({endpoint: 'https://203.0.113.12/v1/info'})).rejects.toThrow(
+			'https://203.0.113.12/v1/info: too many requests; try again shortly',
+		);
+		expect(fetch_service.fetchWithProxy).toHaveBeenCalledTimes(1);
+
+		fetch_service.fetchWithProxy.mockResolvedValueOnce(response({name: 'Cedar Mint'}));
+		await expect(service.request({endpoint: 'https://203.0.113.13/v1/info'})).resolves.toEqual({name: 'Cedar Mint'});
+	});
+
 	it('refuses an onion mint on the guarded transport without the Tor proxy, sending nothing', async () => {
 		await expect(service.guardedRequest(true)({endpoint: 'http://abcdefghijklmnop.onion/v1/info'})).rejects.toBeInstanceOf(
 			NetworkError,

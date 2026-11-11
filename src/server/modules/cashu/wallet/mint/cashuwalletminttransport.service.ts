@@ -16,14 +16,21 @@ import {FetchService} from '#server/modules/fetch/fetch.service';
 import {assertPublicDestination} from '#server/modules/fetch/network-guard';
 /* Native Dependencies */
 import {MintRedirectError} from '#server/modules/cashu/wallet/classes/mint-redirect-error.class';
+import {CashuWalletRequestPacer} from '#server/modules/cashu/wallet/classes/cashu-wallet-request-pacer.class';
 
 const MINT_TIMEOUT_MS = 10_000;
 const MINT_MAX_BYTES = 256 * 1024;
+const MINT_BURST = 20;
+const MINT_REQUESTS_PER_MINUTE = 20;
+const MINT_PACING_WAIT_MS = 15_000;
+const MINT_RATE_LIMIT_PAUSE_MS = 60_000;
 
 @Injectable()
 export class CashuWalletMintTransportService {
 	/** cashu-ts transport for the Orchard mint over MINT_API */
 	public readonly request: RequestFn = (options) => this.requestMint(options);
+
+	private readonly pacer = new CashuWalletRequestPacer(MINT_BURST, MINT_REQUESTS_PER_MINUTE, MINT_PACING_WAIT_MS);
 
 	constructor(
 		private configService: ConfigService,
@@ -63,8 +70,10 @@ export class CashuWalletMintTransportService {
 		return this.requestMint<T>(options);
 	}
 
-	/** cashu-ts RequestFn over FetchService (Tor proxy, timeout, size cap, no redirects), keeping its error contract */
+	/** cashu-ts RequestFn over FetchService (Tor proxy, timeout, size cap, no redirects), paced per mint host */
 	private async requestMint<T>({endpoint, requestBody, headers, method, requestTimeout, signal}: RequestOptions): Promise<T> {
+		const host = new URL(endpoint).host;
+		if (!(await this.pacer.acquire(host))) throw new NetworkError(`${endpoint}: too many requests; try again shortly`);
 		const timeout_ms = requestTimeout ?? MINT_TIMEOUT_MS;
 		const timeout = AbortSignal.timeout(timeout_ms);
 		const toNetworkError = (error: any): never => {
@@ -86,8 +95,11 @@ export class CashuWalletMintTransportService {
 			throw new MintRedirectError(endpoint, location ? new URL(location, endpoint).href : null);
 		}
 		const text = await response.text().catch(toNetworkError);
-		if (response.status === 429)
-			throw new RateLimitError('429 Too Many Requests', this.parseRetryAfter(response.headers.get('Retry-After')));
+		if (response.status === 429) {
+			const retry_after_ms = this.parseRetryAfter(response.headers.get('Retry-After'));
+			this.pacer.pause(host, retry_after_ms ?? MINT_RATE_LIMIT_PAUSE_MS);
+			throw new RateLimitError('429 Too Many Requests', retry_after_ms);
+		}
 		const body = this.parseBody(text);
 		if (response.ok && body) return body as T;
 		if (response.status === 400 && typeof body?.code === 'number' && typeof body?.detail === 'string') {
