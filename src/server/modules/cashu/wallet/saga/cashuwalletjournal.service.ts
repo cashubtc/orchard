@@ -5,10 +5,12 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {Repository} from 'typeorm';
 import {DateTime} from 'luxon';
 import {OutputData, type OperationCounters, type OutputDataLike, type Proof, type SerializedOutputData, type Wallet} from '@cashu/cashu-ts';
+/* Native Dependencies */
+import {CashuWalletProofService} from '#server/modules/cashu/wallet/proof/cashuwalletproof.service';
+import {WalletOperationState} from '#server/modules/cashu/wallet/cashuwallet.enums';
+import {walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
 /* Local Dependencies */
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
-import {CashuWalletProofService} from '../proof/cashuwalletproof.service.js';
-import {WalletOperationState} from '../cashuwallet.enums.js';
 
 @Injectable()
 export class CashuWalletJournalService {
@@ -21,6 +23,17 @@ export class CashuWalletJournalService {
 	/* *******************************************************
 		State
 	******************************************************** */
+
+	/** Journal a new operation and lock the proofs it spends together, refusing when another operation took one of them first */
+	public open(operation: CashuWalletOperation, inputs: Pick<Proof, 'secret'>[]): Promise<CashuWalletOperation> {
+		return this.walletOperationRepository.manager.transaction(async (manager) => {
+			const saved = await manager.save(operation);
+			if (!(await this.cashuWalletProofService.lockInputs(manager, saved.id, inputs))) {
+				throw walletError('Another payment is using this ecash right now; try again');
+			}
+			return saved;
+		});
+	}
 
 	/** Move an operation to a new state if nobody else changed it first; otherwise return the current row */
 	public async transition(

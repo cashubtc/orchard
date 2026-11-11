@@ -244,7 +244,7 @@ export class CashuWalletIssueService {
 	/** Reload a stale keychain from the mint, unless cashu-ts already repaired it */
 	private async reloadKeysets(wallet: Wallet, error: unknown): Promise<void> {
 		if (error instanceof StaleKeysetError && error.repaired) return;
-		await wallet.loadMint(true).finally(() => this.cashuWalletMintService.saveKeychain(wallet.keyChain.cache));
+		await this.cashuWalletMintService.reloadKeychain(wallet);
 	}
 
 	/** Rebuild an operation's outputs on fresh counters and try once more */

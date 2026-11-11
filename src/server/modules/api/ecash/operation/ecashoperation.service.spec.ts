@@ -39,7 +39,10 @@ describe('EcashOperationService', () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				EcashOperationService,
-				{provide: CashuWalletOperationService, useValue: {listOperations: jest.fn(), countOperations: jest.fn()}},
+				{
+					provide: CashuWalletOperationService,
+					useValue: {listOperations: jest.fn(), countOperations: jest.fn(), getOperation: jest.fn(), getToken: jest.fn()},
+				},
 				{provide: CashuWalletIssueService, useValue: {issueEcash: jest.fn()}},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
 			],
@@ -67,6 +70,20 @@ describe('EcashOperationService', () => {
 	it('getEcashOperationCount wraps the count', async () => {
 		cashuWalletOperationService.countOperations.mockResolvedValue(7);
 		await expect(ecashOperationService.getEcashOperationCount('TAG', 'user-1', {})).resolves.toEqual(new OrchardCommonCount(7));
+	});
+
+	it('getEcashOperation returns one operation without its internals', async () => {
+		cashuWalletOperationService.getOperation.mockResolvedValue({...operation, token: 'cashuBtoken'});
+		const result = await ecashOperationService.getEcashOperation('TAG', 'user-1', 'op-1');
+		expect(cashuWalletOperationService.getOperation).toHaveBeenCalledWith('user-1', 'op-1');
+		expect(result).toBeInstanceOf(OrchardEcashOperation);
+		expect(result).not.toHaveProperty('token');
+	});
+
+	it('getEcashOperationToken returns the token of a send', async () => {
+		cashuWalletOperationService.getToken.mockResolvedValue('cashuBtoken');
+		await expect(ecashOperationService.getEcashOperationToken('TAG', 'user-1', 'op-1')).resolves.toBe('cashuBtoken');
+		expect(cashuWalletOperationService.getToken).toHaveBeenCalledWith('user-1', 'op-1');
 	});
 
 	it('issueEcash returns the operation without its internals', async () => {

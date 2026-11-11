@@ -2,12 +2,15 @@
 export enum WalletProofState {
 	READY = 'READY',
 	INFLIGHT = 'INFLIGHT',
+	HELD = 'HELD',
 	SPENT = 'SPENT',
 }
 
 export enum WalletOperationType {
 	MINT = 'MINT',
 	ISSUE = 'ISSUE',
+	SEND = 'SEND',
+	RECEIVE = 'RECEIVE',
 }
 
 export enum WalletMintMatch {
@@ -20,6 +23,7 @@ export enum WalletOperationState {
 	EXECUTING = 'EXECUTING',
 	FINALIZED = 'FINALIZED',
 	FAILED = 'FAILED',
+	RECLAIMED = 'RECLAIMED',
 }
 
 // NUT error codes (cashubtc/nuts error_codes.md); cashu-ts exports no constants

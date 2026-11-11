@@ -49,6 +49,24 @@ export type CashuWalletIssueRequest = {
 	memo: string | null;
 };
 
+export type CashuWalletSendRequest = {
+	user_id: string;
+	mint_id: string;
+	unit: string;
+	amount: number;
+	memo: string | null;
+};
+
+/** A token before it's received: amount is before the fee; fee and claimed are null until its mint is in the wallet */
+export type CashuWalletTokenPreview = {
+	amount: number;
+	unit: string;
+	memo: string | null;
+	fee: number | null;
+	claimed: boolean | null;
+	mint: CashuWalletMintLookup;
+};
+
 export type CashuWalletMintProbe = {
 	online: boolean;
 	latency_ms: number | null;

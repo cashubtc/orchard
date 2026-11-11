@@ -77,6 +77,26 @@ export class EcashOperationResolver {
 		});
 	}
 
+	@Query(() => OrchardEcashOperation, {description: "Get one of the current user's ecash wallet operations"})
+	async ecash_operation(
+		@Context() context: any,
+		@Args('id', {type: () => ID, description: 'Operation identifier'}) id: string,
+	): Promise<OrchardEcashOperation> {
+		const tag = 'GET { ecash_operation }';
+		this.logger.debug(tag);
+		return await this.ecashOperationService.getEcashOperation(tag, context.req.user.id, id);
+	}
+
+	@Query(() => String, {description: "Get the token one of the current user's sends carries"})
+	async ecash_operation_token(
+		@Context() context: any,
+		@Args('id', {type: () => ID, description: 'Operation identifier'}) id: string,
+	): Promise<string> {
+		const tag = 'GET { ecash_operation_token }';
+		this.logger.debug(tag);
+		return await this.ecashOperationService.getEcashOperationToken(tag, context.req.user.id, id);
+	}
+
 	@Roles(UserRole.ADMIN)
 	@UseInterceptors(EcashOperationInterceptor)
 	@LogEvent({type: EventLogType.CREATE, field: 'issue'})

@@ -192,7 +192,7 @@ export class CashuWalletMintService {
 		if (this.isOrchardMint(mint, await this.getOrchardIdentity())) {
 			throw walletError('The Orchard mint cannot be removed from a wallet');
 		}
-		const held_states = In([WalletProofState.READY, WalletProofState.INFLIGHT]);
+		const held_states = In([WalletProofState.READY, WalletProofState.INFLIGHT, WalletProofState.HELD]);
 		if (await this.walletProofRepository.count({where: {user_id, mint_id, state: held_states}})) {
 			throw walletError('This mint still holds ecash in the wallet; spend or move it first');
 		}
@@ -223,6 +223,19 @@ export class CashuWalletMintService {
 	/** A user's counter cursors, which cashu-ts reserves NUT-13 outputs from */
 	public counterSource(user_id: string): CashuWalletCounterSource {
 		return new CashuWalletCounterSource(this.walletCounterRepository, user_id);
+	}
+
+	/** Reload a wallet's info and keysets from the mint, saving them to the shared cache even when the load fails part way */
+	public async reloadKeychain(wallet: Wallet): Promise<void> {
+		await wallet.loadMint(true).finally(() => this.saveKeychain(wallet.keyChain.cache));
+	}
+
+	/** URL a token from a wallet mint carries: its first, or the first the Orchard mint publishes */
+	public async getTokenUrl(user_id: string, mint_id: string): Promise<string> {
+		const [mint, identity] = await Promise.all([this.findWalletMint(user_id, mint_id), this.getOrchardIdentity()]);
+		if (!identity || !this.isOrchardMint(mint, identity)) return mint.urls[0];
+		if (identity.urls.length === 0) throw walletError('Orchard mint has no public URL; add one to its info');
+		return identity.urls[0];
 	}
 
 	/** Save a wallet's keychain to the shared cache; cashu-ts leaves explicit loads to the caller, and a failed save is only logged */

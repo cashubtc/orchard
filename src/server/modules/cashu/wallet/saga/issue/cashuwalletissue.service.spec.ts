@@ -6,113 +6,47 @@ import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {DataSource} from 'typeorm';
 import {status} from '@grpc/grpc-js';
-import {createBlindSignature, createNewMintKeys, pointFromHex, serializeMintKeys, verifyMintQuoteSignature} from '@cashu/cashu-ts';
 /* Application Dependencies */
+import {createFakeMint, fakeMintFetch, type FakeMint} from '#server/test/cashu-fake-mint';
 import {FetchService} from '#server/modules/fetch/fetch.service';
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
 import {UserService} from '#server/modules/user/user.service';
+/* Native Dependencies */
+import {CashuWalletJournalService} from '#server/modules/cashu/wallet/saga/cashuwalletjournal.service';
+import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
+import {CashuWalletRecoveryService} from '#server/modules/cashu/wallet/saga/cashuwalletrecovery.service';
+import {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.entity';
+import {CashuWalletCounter} from '#server/modules/cashu/wallet/saga/cashuwalletcounter.entity';
+import {CashuWalletProof} from '#server/modules/cashu/wallet/proof/cashuwalletproof.entity';
+import {CashuWalletProofService} from '#server/modules/cashu/wallet/proof/cashuwalletproof.service';
+import {CashuWalletSeedService} from '#server/modules/cashu/wallet/seed/cashuwalletseed.service';
+import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwalletmint.service';
+import {CashuWalletMint} from '#server/modules/cashu/wallet/mint/cashuwalletmint.entity';
+import {CashuWalletMintInfo} from '#server/modules/cashu/wallet/mint/cashuwalletmintinfo.entity';
+import {CashuWalletMintKeyset} from '#server/modules/cashu/wallet/mint/cashuwalletmintkeyset.entity';
+import {CashuWalletMintCacheService} from '#server/modules/cashu/wallet/mint/cashuwalletmintcache.service';
+import {CashuWalletMintTransportService} from '#server/modules/cashu/wallet/mint/cashuwalletminttransport.service';
+import {WalletOperationState, WalletOperationType, WalletProofState} from '#server/modules/cashu/wallet/cashuwallet.enums';
+import {getCounterKey, walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import type {CashuWalletMintRequest} from '#server/modules/cashu/wallet/cashuwallet.types';
 /* Local Dependencies */
 import {CashuWalletIssueService} from './cashuwalletissue.service.js';
-import {CashuWalletJournalService} from '../cashuwalletjournal.service.js';
-import {CashuWalletRecoveryService} from '../cashuwalletrecovery.service.js';
-import {CashuWalletOperation} from '../cashuwalletoperation.entity.js';
-import {CashuWalletCounter} from '../cashuwalletcounter.entity.js';
-import {CashuWalletProof} from '../../proof/cashuwalletproof.entity.js';
-import {CashuWalletProofService} from '../../proof/cashuwalletproof.service.js';
-import {CashuWalletSeedService} from '../../seed/cashuwalletseed.service.js';
-import {CashuWalletMintService} from '../../mint/cashuwalletmint.service.js';
-import {CashuWalletMint} from '../../mint/cashuwalletmint.entity.js';
-import {CashuWalletMintInfo} from '../../mint/cashuwalletmintinfo.entity.js';
-import {CashuWalletMintKeyset} from '../../mint/cashuwalletmintkeyset.entity.js';
-import {CashuWalletMintCacheService} from '../../mint/cashuwalletmintcache.service.js';
-import {CashuWalletMintTransportService} from '../../mint/cashuwalletminttransport.service.js';
-import {WalletOperationState, WalletOperationType, WalletProofState} from '../../cashuwallet.enums.js';
-import {getCounterKey, walletError} from '../../cashuwallet.helpers.js';
-
-/** Minimal mint that signs outputs for real with cashu-ts crypto; `failures` queues NUT errors for /v1/mint, `outages` answers whole paths with an HTTP status */
-const createFakeMint = () => {
-	const keyset = createNewMintKeys(8, undefined, {unit: 'sat'});
-	const signed = new Map<string, {id: string; amount: number; C_: string}>();
-	const quotes = new Map<string, {pubkey?: string; state: string; amount: number; expiry: number | null}>();
-	const failures: {code: number; detail: string}[] = [];
-	const outages = new Map<string, number>();
-	const info = {
-		name: 'Orchard Test Mint',
-		pubkey: '02orchard',
-		version: 'cdk',
-		contact: [],
-		nuts: {
-			4: {methods: [{method: 'bolt11', unit: 'sat'}], disabled: false},
-			5: {methods: [], disabled: false},
-			20: {supported: true},
-		},
-	};
-	const keysets = {keysets: [{id: keyset.keysetId, unit: 'sat', active: true, input_fee_ppk: 0}]};
-	const keys = {keysets: [{id: keyset.keysetId, unit: 'sat', active: true, keys: serializeMintKeys(keyset.pubKeys)}]};
-	const sign = (output: {amount: number; id: string; B_: string}) => {
-		const signature = createBlindSignature(pointFromHex(output.B_), keyset.privKeys[output.amount], output.id);
-		return {id: output.id, amount: Number(output.amount), C_: signature.C_.toHex(true)};
-	};
-	const quoteResponse = (id: string) => {
-		const quote = quotes.get(id)!;
-		return {quote: id, request: `lnbc${quote.amount * 10}n1fake`, unit: 'sat', ...quote};
-	};
-	const handle = (path: string, body: any): [number, any] => {
-		const outage = outages.get(path);
-		if (outage) return [outage, {detail: 'Unavailable'}];
-		if (path === '/v1/info') return [200, info];
-		if (path === '/v1/keysets') return [200, keysets];
-		if (path.startsWith('/v1/keys')) return [200, keys];
-		if (path === '/v1/mint/quote/bolt11') {
-			const quote = `quote-${quotes.size + 1}`;
-			quotes.set(quote, {pubkey: body.pubkey, state: 'UNPAID', amount: body.amount, expiry: null});
-			return [200, quoteResponse(quote)];
-		}
-		if (path.startsWith('/v1/mint/quote/bolt11/')) {
-			const quote = path.split('/').pop()!;
-			return quotes.has(quote) ? [200, quoteResponse(quote)] : [400, {code: 20004, detail: 'Unknown quote'}];
-		}
-		if (path === '/v1/mint/bolt11') {
-			const failure = failures.shift();
-			if (failure) return [400, failure];
-			const quote = quotes.get(body.quote);
-			if (quote?.state === 'UNPAID') return [400, {code: 20001, detail: 'Quote not paid'}];
-			if (quote?.state === 'ISSUED') return [400, {code: 20002, detail: 'Quote already issued'}];
-			if (quote?.pubkey && !verifyMintQuoteSignature(quote.pubkey, body.quote, body.outputs, body.signature ?? '')) {
-				return [400, {code: 20008, detail: 'Invalid signature'}];
-			}
-			if (body.outputs.some((output: any) => signed.has(output.B_))) return [400, {code: 11003, detail: 'Outputs already signed'}];
-			const signatures = body.outputs.map((output: any) => {
-				const signature = sign(output);
-				signed.set(output.B_, signature);
-				return signature;
-			});
-			if (quote) quote.state = 'ISSUED';
-			return [200, {signatures}];
-		}
-		if (path === '/v1/restore') {
-			const outputs = body.outputs.filter((output: any) => signed.has(output.B_));
-			return [200, {outputs, signatures: outputs.map((output: any) => signed.get(output.B_))}];
-		}
-		return [404, {detail: 'not found'}];
-	};
-	return {keyset, quotes, failures, outages, handle};
-};
 
 describe('CashuWalletIssueService', () => {
 	let service: CashuWalletIssueService;
 	let recovery: CashuWalletRecoveryService;
 	let data_source: DataSource;
-	let mint: ReturnType<typeof createFakeMint>;
+	let mint: FakeMint;
 	let offline: boolean;
 	let mint_row: CashuWalletMint;
 
 	const fetch_service = {
-		fetchWithProxy: jest.fn(async (url: string, options: any) => {
-			if (offline) throw new Error('socket hang up');
-			const [status, body] = mint.handle(new URL(url).pathname, options.body ? JSON.parse(options.body) : undefined);
-			return {ok: status < 300, status, text: async () => JSON.stringify(body), headers: {get: () => null}};
-		}),
+		fetchWithProxy: jest.fn(
+			fakeMintFetch(
+				() => mint,
+				() => offline,
+			),
+		),
 	};
 	const mint_rpc = {
 		updateNut04Quote: jest.fn(async ({quote_id, state}: {quote_id: string; state: string}) => {
@@ -122,7 +56,7 @@ describe('CashuWalletIssueService', () => {
 	};
 	const seed = new Uint8Array(64).fill(7);
 
-	const request = (quote_id = 'quote-1') => ({
+	const request = (quote_id = 'quote-1'): CashuWalletMintRequest => ({
 		user_id: 'user-1',
 		mint_id: mint_row.id,
 		type: WalletOperationType.MINT,
@@ -168,6 +102,7 @@ describe('CashuWalletIssueService', () => {
 		Test.createTestingModule({
 			providers: [
 				CashuWalletIssueService,
+				CashuWalletSwapService,
 				CashuWalletJournalService,
 				CashuWalletProofService,
 				CashuWalletRecoveryService,

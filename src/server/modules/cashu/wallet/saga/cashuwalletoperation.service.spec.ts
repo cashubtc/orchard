@@ -4,11 +4,13 @@ import {expect} from '@jest/globals';
 import {getRepositoryToken} from '@nestjs/typeorm';
 /* Vendor Dependencies */
 import {DataSource} from 'typeorm';
+/* Native Dependencies */
+import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
+import {walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import type {CashuWalletOperationFilters} from '#server/modules/cashu/wallet/cashuwallet.types';
 /* Local Dependencies */
 import {CashuWalletOperationService} from './cashuwalletoperation.service.js';
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
-import {WalletOperationState, WalletOperationType} from '../cashuwallet.enums.js';
-import type {CashuWalletOperationFilters} from '../cashuwallet.types.js';
 
 describe('CashuWalletOperationService', () => {
 	let service: CashuWalletOperationService;
@@ -61,6 +63,21 @@ describe('CashuWalletOperationService', () => {
 		expect(await ids(filters)).toEqual([second.id, first.id]);
 		expect(await ids({...filters, page: 1, page_size: 1})).toEqual([first.id]);
 		expect(await service.countOperations('user-1', {...filters, page: 1, page_size: 1})).toBe(2);
+	});
+
+	it("gets one of a user's operations, never another user's", async () => {
+		const [first, , , other] = await seedOperations();
+		expect(await service.getOperation('user-1', first.id)).toMatchObject({id: first.id});
+		await expect(service.getOperation('user-1', other.id)).rejects.toEqual(walletError('Operation not found'));
+	});
+
+	it('returns the token a send carries, refusing operations without one', async () => {
+		const [first, second] = await seedOperations();
+		await data_source
+			.getRepository(CashuWalletOperation)
+			.update({id: first.id}, {type: WalletOperationType.SEND, token: 'cashuBtoken'});
+		expect(await service.getToken('user-1', first.id)).toBe('cashuBtoken');
+		await expect(service.getToken('user-1', second.id)).rejects.toEqual(walletError('This operation has no token'));
 	});
 
 	it('filters by unit, mint, method and type', async () => {

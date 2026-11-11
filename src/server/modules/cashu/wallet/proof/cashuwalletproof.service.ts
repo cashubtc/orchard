@@ -2,7 +2,7 @@
 import {Injectable} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 /* Vendor Dependencies */
-import {In, Repository} from 'typeorm';
+import {In, Repository, type EntityManager} from 'typeorm';
 import {DateTime} from 'luxon';
 import {Amount, JSONInt, type Proof} from '@cashu/cashu-ts';
 /* Local Dependencies */
@@ -10,9 +10,6 @@ import {CashuWalletProof} from './cashuwalletproof.entity.js';
 import {WalletProofState} from '../cashuwallet.enums.js';
 import type {CashuWalletOperation} from '../saga/cashuwalletoperation.entity.js';
 import type {CashuWalletBalance} from '../cashuwallet.types.js';
-
-/** Thrown inside a lock transaction to roll it back when another operation took one of the proofs first */
-class InputsTakenError extends Error {}
 
 @Injectable()
 export class CashuWalletProofService {
@@ -47,8 +44,12 @@ export class CashuWalletProofService {
 		Proofs
 	******************************************************** */
 
-	/** Store proofs an operation produced, ready to spend; a secret already stored is skipped */
-	public async storeProofs(operation: CashuWalletOperation, proofs: Proof[]): Promise<void> {
+	/** Store proofs an operation produced, ready to spend or held by it in a token; a secret already stored is skipped */
+	public async storeProofs(
+		operation: CashuWalletOperation,
+		proofs: Proof[],
+		state: WalletProofState.READY | WalletProofState.HELD = WalletProofState.READY,
+	): Promise<void> {
 		if (proofs.length === 0) return;
 		const now = DateTime.now().toUnixInteger();
 		await this.walletProofRepository
@@ -65,15 +66,46 @@ export class CashuWalletProofService {
 					amount: proof.amount.toNumber(),
 					c: proof.C,
 					dleq: proof.dleq ? JSONInt.stringify(proof.dleq) : null,
-					state: WalletProofState.READY,
+					state,
 					created_by_op_id: operation.id,
-					used_by_op_id: null,
+					used_by_op_id: state === WalletProofState.HELD ? operation.id : null,
 					created_at: now,
 					updated_at: now,
 				})),
 			)
 			.orIgnore()
 			.execute();
+	}
+
+	/** A user's ready proofs at a mint in one unit, as cashu-ts proofs */
+	public async getReadyProofs(user_id: string, mint_id: string, unit: string): Promise<Proof[]> {
+		const rows = await this.walletProofRepository.find({where: {user_id, mint_id, unit, state: WalletProofState.READY}});
+		return rows.map((row) => this.toProof(row));
+	}
+
+	/** The proofs an operation holds out of the wallet, a sent token's, as cashu-ts proofs */
+	public async getHeldProofs(operation_id: string): Promise<Proof[]> {
+		const rows = await this.walletProofRepository.find({where: {used_by_op_id: operation_id, state: WalletProofState.HELD}});
+		return rows.map((row) => this.toProof(row));
+	}
+
+	/** Mark the proofs an operation holds spent, once its token is claimed or reclaimed */
+	public async spendHeldProofs(operation_id: string): Promise<void> {
+		await this.walletProofRepository.update(
+			{used_by_op_id: operation_id, state: WalletProofState.HELD},
+			{state: WalletProofState.SPENT, updated_at: DateTime.now().toUnixInteger()},
+		);
+	}
+
+	/** A stored proof in cashu-ts form */
+	private toProof(row: CashuWalletProof): Proof {
+		return {
+			id: row.keyset_id,
+			amount: Amount.from(row.amount),
+			secret: row.secret,
+			C: row.c,
+			...(row.dleq ? {dleq: JSONInt.parse(row.dleq) as Proof['dleq']} : {}),
+		};
 	}
 
 	/* *******************************************************
@@ -93,35 +125,15 @@ export class CashuWalletProofService {
 		return run;
 	}
 
-	/** A user's ready proofs at a mint in one unit, as cashu-ts proofs */
-	public async getReadyProofs(user_id: string, mint_id: string, unit: string): Promise<Proof[]> {
-		const rows = await this.walletProofRepository.find({where: {user_id, mint_id, unit, state: WalletProofState.READY}});
-		return rows.map((row) => ({
-			id: row.keyset_id,
-			amount: Amount.from(row.amount),
-			secret: row.secret,
-			C: row.c,
-			...(row.dleq ? {dleq: JSONInt.parse(row.dleq) as Proof['dleq']} : {}),
-		}));
-	}
-
-	/** Lock the proofs an operation spends as its inputs; all of them or none, false when another operation took one first */
-	public async lockInputs(operation_id: string, proofs: Pick<Proof, 'secret'>[]): Promise<boolean> {
+	/** Lock an operation's inputs in the caller's transaction; false when another operation took one first */
+	public async lockInputs(manager: EntityManager, operation_id: string, proofs: Pick<Proof, 'secret'>[]): Promise<boolean> {
 		const secrets = proofs.map((proof) => proof.secret);
-		try {
-			await this.walletProofRepository.manager.transaction(async (manager) => {
-				const result = await manager.update(
-					CashuWalletProof,
-					{secret: In(secrets), state: WalletProofState.READY},
-					{state: WalletProofState.INFLIGHT, used_by_op_id: operation_id, updated_at: DateTime.now().toUnixInteger()},
-				);
-				if (result.affected !== secrets.length) throw new InputsTakenError();
-			});
-			return true;
-		} catch (error) {
-			if (error instanceof InputsTakenError) return false;
-			throw error;
-		}
+		const result = await manager.update(
+			CashuWalletProof,
+			{secret: In(secrets), state: WalletProofState.READY},
+			{state: WalletProofState.INFLIGHT, used_by_op_id: operation_id, updated_at: DateTime.now().toUnixInteger()},
+		);
+		return result.affected === secrets.length;
 	}
 
 	/** Mark an operation's inputs spent once the mint has taken them */
@@ -132,11 +144,18 @@ export class CashuWalletProofService {
 		);
 	}
 
-	/** Give an operation's inputs back to the wallet; only once the mint has confirmed they are unspent */
-	public async releaseInputs(operation_id: string): Promise<void> {
+	/** Give an operation's inputs back once the mint confirms them unspent; any it reports spent are marked spent */
+	public async releaseInputs(operation_id: string, spent_secrets: string[] = []): Promise<void> {
+		const now = DateTime.now().toUnixInteger();
+		if (spent_secrets.length > 0) {
+			await this.walletProofRepository.update(
+				{used_by_op_id: operation_id, state: WalletProofState.INFLIGHT, secret: In(spent_secrets)},
+				{state: WalletProofState.SPENT, updated_at: now},
+			);
+		}
 		await this.walletProofRepository.update(
 			{used_by_op_id: operation_id, state: WalletProofState.INFLIGHT},
-			{state: WalletProofState.READY, used_by_op_id: null, updated_at: DateTime.now().toUnixInteger()},
+			{state: WalletProofState.READY, used_by_op_id: null, updated_at: now},
 		);
 	}
 }

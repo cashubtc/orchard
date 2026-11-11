@@ -34,6 +34,30 @@ export class EcashOperationService {
 		}
 	}
 
+	/** One of a user's wallet operations */
+	async getEcashOperation(tag: string, user_id: string, operation_id: string): Promise<OrchardEcashOperation> {
+		try {
+			return new OrchardEcashOperation(await this.cashuWalletOperationService.getOperation(user_id, operation_id));
+		} catch (error) {
+			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
+				errord: OrchardErrorCode.EcashWalletError,
+			});
+			throw new OrchardApiError(orchard_error);
+		}
+	}
+
+	/** The token one of a user's sends carries */
+	async getEcashOperationToken(tag: string, user_id: string, operation_id: string): Promise<string> {
+		try {
+			return await this.cashuWalletOperationService.getToken(user_id, operation_id);
+		} catch (error) {
+			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
+				errord: OrchardErrorCode.EcashWalletError,
+			});
+			throw new OrchardApiError(orchard_error);
+		}
+	}
+
 	/** Number of a user's wallet operations matching the filters */
 	async getEcashOperationCount(tag: string, user_id: string, filters: CashuWalletOperationFilters): Promise<OrchardCommonCount> {
 		try {

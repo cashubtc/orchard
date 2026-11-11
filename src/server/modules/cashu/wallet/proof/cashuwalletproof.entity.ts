@@ -49,7 +49,7 @@ export class CashuWalletProof {
 	@Column({type: 'text', nullable: true})
 	created_by_op_id: string | null;
 
-	// Operation currently holding this proof as an input; null when free
+	// Operation spending this proof as an input, or the send holding it in a token; null when free
 	@Column({type: 'text', nullable: true})
 	used_by_op_id: string | null;
 

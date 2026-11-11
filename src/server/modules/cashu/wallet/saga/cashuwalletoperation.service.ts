@@ -3,9 +3,11 @@ import {Injectable} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 /* Vendor Dependencies */
 import {Between, In, Repository, type FindOptionsWhere} from 'typeorm';
+/* Native Dependencies */
+import {walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import type {CashuWalletOperationFilters} from '#server/modules/cashu/wallet/cashuwallet.types';
 /* Local Dependencies */
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
-import type {CashuWalletOperationFilters} from '../cashuwallet.types.js';
 
 @Injectable()
 export class CashuWalletOperationService {
@@ -26,6 +28,20 @@ export class CashuWalletOperationService {
 			order: {created_at: 'DESC', id: 'DESC'},
 			...(page !== undefined && page_size !== undefined && {skip: page * page_size, take: page_size}),
 		});
+	}
+
+	/** One of a user's operations */
+	public async getOperation(user_id: string, operation_id: string): Promise<CashuWalletOperation> {
+		const operation = await this.walletOperationRepository.findOneBy({id: operation_id, user_id});
+		if (!operation) throw walletError('Operation not found');
+		return operation;
+	}
+
+	/** The token one of a user's sends carries */
+	public async getToken(user_id: string, operation_id: string): Promise<string> {
+		const {token} = await this.getOperation(user_id, operation_id);
+		if (!token) throw walletError('This operation has no token');
+		return token;
 	}
 
 	/** Number of a user's operations matching the filters, ignoring paging */

@@ -4,10 +4,13 @@ import {expect} from '@jest/globals';
 import {getRepositoryToken} from '@nestjs/typeorm';
 /* Vendor Dependencies */
 import {DataSource, type Repository} from 'typeorm';
+import {Amount} from '@cashu/cashu-ts';
+/* Native Dependencies */
+import {WalletProofState} from '#server/modules/cashu/wallet/cashuwallet.enums';
+import type {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.entity';
 /* Local Dependencies */
 import {CashuWalletProofService} from './cashuwalletproof.service.js';
 import {CashuWalletProof} from './cashuwalletproof.entity.js';
-import {WalletProofState} from '../cashuwallet.enums.js';
 
 describe('CashuWalletProofService', () => {
 	let service: CashuWalletProofService;
@@ -64,6 +67,12 @@ describe('CashuWalletProofService', () => {
 			updated_at: 0,
 		});
 		const stateOf = async (secret: string) => (await proofs.findOneByOrFail({secret})).state;
+		const lock = (operation_id: string, secrets: string[]) =>
+			service.lockInputs(
+				proofs.manager,
+				operation_id,
+				secrets.map((secret) => ({secret})),
+			);
 
 		beforeEach(async () => {
 			data_source = new DataSource({type: 'better-sqlite3', database: ':memory:', entities: [CashuWalletProof], synchronize: true});
@@ -88,20 +97,40 @@ describe('CashuWalletProofService', () => {
 			]);
 		});
 
-		it('locks all of the inputs or none of them', async () => {
-			expect(await service.lockInputs('op-1', [{secret: 'a'}])).toBe(true);
-			expect(await service.lockInputs('op-2', [{secret: 'a'}, {secret: 'b'}])).toBe(false);
-			expect(await stateOf('b')).toBe(WalletProofState.READY);
+		it('reports a lock another operation got to first, leaving the proof with it', async () => {
+			expect(await lock('op-1', ['a'])).toBe(true);
+			expect(await lock('op-2', ['a'])).toBe(false);
 			expect(await proofs.findOneByOrFail({secret: 'a'})).toMatchObject({state: WalletProofState.INFLIGHT, used_by_op_id: 'op-1'});
 		});
 
 		it("spends or releases only an operation's own inputs", async () => {
-			await service.lockInputs('op-1', [{secret: 'a'}]);
-			await service.lockInputs('op-2', [{secret: 'b'}]);
+			await lock('op-1', ['a']);
+			await lock('op-2', ['b']);
 			await service.spendInputs('op-1');
 			await service.releaseInputs('op-2');
 			expect(await stateOf('a')).toBe(WalletProofState.SPENT);
 			expect(await proofs.findOneByOrFail({secret: 'b'})).toMatchObject({state: WalletProofState.READY, used_by_op_id: null});
+		});
+
+		it('marks inputs the mint reports spent as spent while releasing the rest', async () => {
+			await lock('op-1', ['a', 'b']);
+			await service.releaseInputs('op-1', ['a']);
+			expect(await stateOf('a')).toBe(WalletProofState.SPENT);
+			expect(await stateOf('b')).toBe(WalletProofState.READY);
+		});
+
+		it("holds a sent token's proofs out of the balance until they're spent, apart from its change", async () => {
+			const operation = {id: 'op-1', user_id: 'user-1', mint_id: 'mint-1', unit: 'sat'} as CashuWalletOperation;
+			const proof = (secret: string) => ({id: '00abc', amount: Amount.from(8), secret, C: '02c'});
+			await service.storeProofs(operation, [proof('change')]);
+			await service.storeProofs(operation, [proof('held')], WalletProofState.HELD);
+			await lock('op-2', ['change']);
+			expect((await service.getHeldProofs('op-1')).map((held) => held.secret)).toEqual(['held']);
+			expect((await service.getReadyProofs('user-1', 'mint-1', 'sat')).map((ready) => ready.secret)).toEqual(['a', 'b']);
+
+			await service.spendHeldProofs('op-1');
+			expect(await stateOf('held')).toBe(WalletProofState.SPENT);
+			expect(await stateOf('change')).toBe(WalletProofState.INFLIGHT);
 		});
 
 		it('runs one selection at a time per wallet, mint and unit, so a second sees what the first locked', async () => {
@@ -109,7 +138,7 @@ describe('CashuWalletProofService', () => {
 			const select = (operation_id: string) =>
 				service.withReadyProofs('user-1', 'mint-1', 'sat', async (ready) => {
 					seen.push(ready.map((proof) => proof.secret));
-					await service.lockInputs(operation_id, ready.slice(0, 1));
+					await lock(operation_id, [ready[0].secret]);
 				});
 			await Promise.all([select('op-1'), select('op-2')]);
 			expect(seen).toEqual([['a', 'b'], ['b']]);

@@ -23,6 +23,9 @@ export const getCounterKey = (keyset_id: string): string => (keyset_id.startsWit
 /** Operator-facing wallet error, resolved to EcashWalletError with its details */
 export const walletError = (details: string) => ({code: OrchardErrorCode.EcashWalletError, details});
 
+/** Any failure as an operator-readable wallet error, so NUT codes never pass as Orchard codes; wallet errors pass through */
+export const toWalletError = (error: unknown) => walletError(describeMintError(error));
+
 /** Operator-readable description of a failed mint or mint RPC call, naming the NUT error code when the mint sent one */
 export const describeMintError = (error: unknown): string => {
 	const mint_error = error instanceof StaleKeysetError && isMintOperationError(error.cause) ? error.cause : error;

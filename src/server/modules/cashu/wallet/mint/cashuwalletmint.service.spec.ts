@@ -7,15 +7,17 @@ import {ConfigService} from '@nestjs/config';
 import {FetchService} from '#server/modules/fetch/fetch.service';
 import {UserService} from '#server/modules/user/user.service';
 import {UserRole} from '#server/modules/user/user.enums';
+/* Native Dependencies */
+import {CashuWalletProof} from '#server/modules/cashu/wallet/proof/cashuwalletproof.entity';
+import {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.entity';
+import {CashuWalletCounter} from '#server/modules/cashu/wallet/saga/cashuwalletcounter.entity';
+import {CashuWalletSeedService} from '#server/modules/cashu/wallet/seed/cashuwalletseed.service';
+import {walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
 /* Local Dependencies */
 import {CashuWalletMintService} from './cashuwalletmint.service.js';
 import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
 import {CashuWalletMintTransportService} from './cashuwalletminttransport.service.js';
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
-import {CashuWalletProof} from '../proof/cashuwalletproof.entity.js';
-import {CashuWalletOperation} from '../saga/cashuwalletoperation.entity.js';
-import {CashuWalletCounter} from '../saga/cashuwalletcounter.entity.js';
-import {CashuWalletSeedService} from '../seed/cashuwalletseed.service.js';
 
 describe('CashuWalletMintService', () => {
 	let service: CashuWalletMintService;
@@ -223,6 +225,28 @@ describe('CashuWalletMintService', () => {
 			config['cashu.api'] = undefined;
 			expect(await service.listMints('user-1')).toEqual([]);
 			expect(fetch_service.fetchWithProxy).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('getTokenUrl', () => {
+		it("puts the Orchard mint's public URL in tokens, not MINT_API", async () => {
+			const {id} = await service.getOrchardMint('user-1');
+			expect(await service.getTokenUrl('user-1', id)).toBe('https://mint.orchard.example');
+		});
+
+		it('refuses the Orchard mint while it publishes no URL', async () => {
+			route(ORCHARD_API, async () => response({...orchard_info, urls: []}));
+			const {id} = await service.getOrchardMint('user-1');
+			await expect(service.getTokenUrl('user-1', id)).rejects.toEqual(
+				walletError('Orchard mint has no public URL; add one to its info'),
+			);
+		});
+
+		it("uses another mint's first URL, only in its own wallet", async () => {
+			route('https://203.0.113.10', async () => response(cedar_info));
+			const {id} = await service.addMint('user-1', 'https://203.0.113.10');
+			expect(await service.getTokenUrl('user-1', id)).toBe('https://203.0.113.10');
+			await expect(service.getTokenUrl('user-2', id)).rejects.toEqual(walletError('Mint not found in this wallet'));
 		});
 	});
 

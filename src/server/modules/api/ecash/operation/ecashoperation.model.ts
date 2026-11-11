@@ -28,6 +28,9 @@ export class OrchardEcashOperation {
 	@Field(() => Float, {description: 'Amount in the smallest unit'})
 	amount: number;
 
+	@Field(() => Float, {nullable: true, description: 'Fee paid in the smallest unit, when one applies'})
+	fee: number | null;
+
 	@Field(() => String, {nullable: true, description: 'Operator note'})
 	memo: string | null;
 
@@ -48,6 +51,7 @@ export class OrchardEcashOperation {
 		this.method = operation.method;
 		this.unit = operation.unit;
 		this.amount = operation.amount;
+		this.fee = operation.fee;
 		this.memo = operation.memo;
 		this.error = operation.error;
 		this.created_at = operation.created_at;

@@ -4,11 +4,13 @@ import {expect} from '@jest/globals';
 import {getRepositoryToken} from '@nestjs/typeorm';
 /* Vendor Dependencies */
 import {In} from 'typeorm';
+/* Native Dependencies */
+import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
+import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
+import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 /* Local Dependencies */
 import {CashuWalletRecoveryService} from './cashuwalletrecovery.service.js';
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
-import {CashuWalletIssueService} from './issue/cashuwalletissue.service.js';
-import {WalletOperationState, WalletOperationType} from '../cashuwallet.enums.js';
 
 describe('CashuWalletRecoveryService', () => {
 	let service: CashuWalletRecoveryService;
@@ -19,6 +21,7 @@ describe('CashuWalletRecoveryService', () => {
 	];
 	const operation_repository = {find: jest.fn()};
 	const issue_service = {resume: jest.fn()};
+	const swap_service = {resume: jest.fn(async (operation) => operation), checkClaims: jest.fn(async (operations) => operations)};
 
 	beforeEach(async () => {
 		jest.clearAllMocks();
@@ -29,6 +32,7 @@ describe('CashuWalletRecoveryService', () => {
 				CashuWalletRecoveryService,
 				{provide: getRepositoryToken(CashuWalletOperation), useValue: operation_repository},
 				{provide: CashuWalletIssueService, useValue: issue_service},
+				{provide: CashuWalletSwapService, useValue: swap_service},
 			],
 		}).compile();
 
@@ -40,11 +44,26 @@ describe('CashuWalletRecoveryService', () => {
 		await service.reconcileOperations();
 		expect(operation_repository.find).toHaveBeenCalledWith(
 			expect.objectContaining({
-				where: expect.objectContaining({type: In([WalletOperationType.MINT, WalletOperationType.ISSUE])}),
+				where: expect.objectContaining({type: In(Object.values(WalletOperationType))}),
 				order: {created_at: 'ASC'},
 			}),
 		);
 		expect(issue_service.resume.mock.calls.map(([operation]) => operation.id)).toEqual(['op-1', 'op-2']);
+	});
+
+	it('resumes executing swaps one by one, then checks unclaimed tokens together', async () => {
+		const swaps = [
+			{id: 'op-3', type: WalletOperationType.SEND, state: WalletOperationState.PENDING},
+			{id: 'op-4', type: WalletOperationType.RECEIVE, state: WalletOperationState.EXECUTING},
+			{id: 'op-5', type: WalletOperationType.SEND, state: WalletOperationState.EXECUTING},
+			{id: 'op-6', type: WalletOperationType.SEND, state: WalletOperationState.PENDING},
+		];
+		operation_repository.find.mockResolvedValue(swaps);
+		await service.reconcileOperations();
+		expect(swap_service.resume.mock.calls.map(([operation]) => operation.id)).toEqual(['op-4', 'op-5']);
+		expect(swap_service.checkClaims).toHaveBeenCalledTimes(1);
+		expect(swap_service.checkClaims.mock.calls[0][0].map((operation: {id: string}) => operation.id)).toEqual(['op-3', 'op-6']);
+		expect(issue_service.resume).not.toHaveBeenCalled();
 	});
 
 	it('keeps going when one operation cannot be resumed', async () => {

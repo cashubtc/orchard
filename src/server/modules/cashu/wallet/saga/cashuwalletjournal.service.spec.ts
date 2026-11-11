@@ -57,6 +57,35 @@ describe('CashuWalletJournalService', () => {
 		expect(stale).toMatchObject({state: WalletOperationState.EXECUTING, revision: 1, error: null});
 	});
 
+	it('journals an operation together with locking its inputs, or neither when one is taken', async () => {
+		const proofs = data_source.getRepository(CashuWalletProof);
+		const ready = {user_id: 'user-1', mint_id: 'mint-1', keyset_id: '00abc', unit: 'sat', c: '02c', created_at: 0, updated_at: 0};
+		await proofs.save([
+			{...ready, secret: 'a', amount: 1, state: WalletProofState.READY},
+			{...ready, secret: 'b', amount: 2, state: WalletProofState.READY},
+		]);
+		const draft = () =>
+			data_source.getRepository(CashuWalletOperation).create({
+				user_id: 'user-1',
+				mint_id: 'mint-1',
+				type: WalletOperationType.SEND,
+				state: WalletOperationState.EXECUTING,
+				unit: 'sat',
+				amount: 1,
+				created_at: 0,
+				updated_at: 0,
+			});
+
+		const opened = await service.open(draft(), [{secret: 'a'}]);
+		expect(await proofs.findOneByOrFail({secret: 'a'})).toMatchObject({state: WalletProofState.INFLIGHT, used_by_op_id: opened.id});
+
+		await expect(service.open(draft(), [{secret: 'a'}, {secret: 'b'}])).rejects.toMatchObject({
+			details: 'Another payment is using this ecash right now; try again',
+		});
+		expect(await data_source.getRepository(CashuWalletOperation).count()).toBe(1);
+		expect(await proofs.findOneByOrFail({secret: 'b'})).toMatchObject({state: WalletProofState.READY});
+	});
+
 	it('stores proofs once by secret and finalizes the operation', async () => {
 		const operation = await createOperation();
 		const proofs = [proof('secret-1', 1), proof('secret-2', 2)];

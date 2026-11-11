@@ -3,11 +3,17 @@ import {Injectable, Logger, type OnApplicationBootstrap} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 /* Vendor Dependencies */
 import {In, Repository, type FindOptionsWhere} from 'typeorm';
+/* Native Dependencies */
+import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
+import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
+import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
+import {describeMintError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
 /* Local Dependencies */
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
-import {CashuWalletIssueService} from './issue/cashuwalletissue.service.js';
-import {WalletOperationState, WalletOperationType} from '../cashuwallet.enums.js';
-import {describeMintError} from '../cashuwallet.helpers.js';
+
+/** A sent token waiting to be claimed, checked in batches rather than resumed one by one */
+const isUnclaimed = (operation: CashuWalletOperation): boolean =>
+	operation.type === WalletOperationType.SEND && operation.state === WalletOperationState.PENDING;
 
 @Injectable()
 export class CashuWalletRecoveryService implements OnApplicationBootstrap {
@@ -18,12 +24,15 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 	private readonly resumers: Record<WalletOperationType, (operation: CashuWalletOperation) => Promise<CashuWalletOperation>> = {
 		[WalletOperationType.MINT]: (operation) => this.cashuWalletIssueService.resume(operation),
 		[WalletOperationType.ISSUE]: (operation) => this.cashuWalletIssueService.resume(operation),
+		[WalletOperationType.SEND]: (operation) => this.cashuWalletSwapService.resume(operation),
+		[WalletOperationType.RECEIVE]: (operation) => this.cashuWalletSwapService.resume(operation),
 	};
 
 	constructor(
 		@InjectRepository(CashuWalletOperation)
 		private walletOperationRepository: Repository<CashuWalletOperation>,
 		private cashuWalletIssueService: CashuWalletIssueService,
+		private cashuWalletSwapService: CashuWalletSwapService,
 	) {}
 
 	/** Catch up on operations interrupted by a restart, without blocking startup */
@@ -55,24 +64,24 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 		return pass;
 	}
 
-	/** One pass over open operations, oldest first, each resumed by its saga */
+	/** One pass over open operations: each resumed by its saga oldest first, then unclaimed tokens in one check per mint */
 	private async runReconciliation(scope: FindOptionsWhere<CashuWalletOperation>): Promise<void> {
 		const open_states = In([WalletOperationState.PENDING, WalletOperationState.EXECUTING]);
 		const operations = await this.walletOperationRepository.find({
 			where: {...scope, type: In(Object.keys(this.resumers)), state: open_states},
 			order: {created_at: 'ASC'},
 		});
-		let finalized = 0;
-		let failed = 0;
-		for (const operation of operations) {
+		const settled: CashuWalletOperation[] = [];
+		for (const operation of operations.filter((open) => !isUnclaimed(open))) {
 			try {
-				const {state} = await this.resumers[operation.type](operation);
-				if (state === WalletOperationState.FINALIZED) finalized++;
-				if (state === WalletOperationState.FAILED) failed++;
+				settled.push(await this.resumers[operation.type](operation));
 			} catch (error) {
 				this.logger.warn(`Wallet operation ${operation.id} could not be reconciled: ${describeMintError(error)}`);
 			}
 		}
+		settled.push(...(await this.cashuWalletSwapService.checkClaims(operations.filter(isUnclaimed))));
+		const finalized = settled.filter(({state}) => state === WalletOperationState.FINALIZED).length;
+		const failed = settled.filter(({state}) => state === WalletOperationState.FAILED).length;
 		if (finalized + failed === 0) return;
 		this.logger.log(
 			`Wallet reconciliation: ${finalized} finalized, ${failed} failed, ${operations.length - finalized - failed} still open`,
