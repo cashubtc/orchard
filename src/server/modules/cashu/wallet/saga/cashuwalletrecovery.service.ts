@@ -8,6 +8,7 @@ import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/c
 import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {describeMintError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {CASHU_WALLET_OPEN_STATES} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 /* Local Dependencies */
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
 
@@ -55,6 +56,11 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 		return this.sharePass(`${user_id}:${mint_id}`, {user_id, mint_id});
 	}
 
+	/** Settle the given operations now, for someone watching them */
+	public settleOperations(operation_ids: string[]): Promise<void> {
+		return operation_ids.length > 0 ? this.runReconciliation({id: In(operation_ids)}) : Promise.resolve();
+	}
+
 	/** The pass running for a scope, or a new one */
 	private sharePass(key: string, scope: FindOptionsWhere<CashuWalletOperation>): Promise<void> {
 		const running = this.reconciling.get(key);
@@ -66,9 +72,8 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 
 	/** One pass over open operations: each resumed by its saga oldest first, then unclaimed tokens in one check per mint */
 	private async runReconciliation(scope: FindOptionsWhere<CashuWalletOperation>): Promise<void> {
-		const open_states = In([WalletOperationState.PENDING, WalletOperationState.EXECUTING]);
 		const operations = await this.walletOperationRepository.find({
-			where: {...scope, type: In(Object.keys(this.resumers)), state: open_states},
+			where: {...scope, type: In(Object.keys(this.resumers)), state: In(CASHU_WALLET_OPEN_STATES)},
 			order: {created_at: 'ASC'},
 		});
 		const settled: CashuWalletOperation[] = [];

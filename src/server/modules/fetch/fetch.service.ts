@@ -28,8 +28,13 @@ export class FetchService implements OnModuleDestroy {
 	 * @returns {Promise<Response>} Fetch Response object
 	 */
 	async fetchWithProxy(url: string, options?: any): Promise<Response> {
-		const should_use_proxy = this.agent && !isLocalAddress(url);
-		return should_use_proxy ? fetch(url, {agent: this.agent, ...options}) : fetch(url, options);
+		const agent = this.agentFor(url);
+		return agent ? fetch(url, {agent, ...options}) : fetch(url, options);
+	}
+
+	/** The Tor proxy agent a connection to this URL goes through; none for local addresses or without a proxy */
+	agentFor(url: string): SocksProxyAgent | undefined {
+		return this.agent && !isLocalAddress(url) ? this.agent : undefined;
 	}
 
 	onModuleDestroy() {

@@ -24,14 +24,17 @@ describe('FetchService', () => {
 
 	it('should initialize without proxy when config is not set', async () => {
 		expect(fetchService['agent']).toBeNull();
+		expect(fetchService.agentFor('wss://mint.example/v1/ws')).toBeUndefined();
 	});
 
-	it('should initialize with Tor proxy when configured', async () => {
+	it('should initialize with Tor proxy when configured, skipping it for local addresses', async () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [FetchService, {provide: ConfigService, useValue: {get: jest.fn().mockReturnValue('socks5h://127.0.0.1:9050')}}],
 		}).compile();
 		const service_with_proxy = module.get<FetchService>(FetchService);
 		expect(service_with_proxy['agent']).toBeDefined();
 		expect(service_with_proxy['agent']).toBeInstanceOf(SocksProxyAgent);
+		expect(service_with_proxy.agentFor('wss://mint.example/v1/ws')).toBeInstanceOf(SocksProxyAgent);
+		expect(service_with_proxy.agentFor('ws://nutshell:3338/v1/ws')).toBeUndefined();
 	});
 });

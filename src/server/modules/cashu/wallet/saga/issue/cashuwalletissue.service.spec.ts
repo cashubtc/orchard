@@ -3,6 +3,7 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {getRepositoryToken} from '@nestjs/typeorm';
 import {ConfigService} from '@nestjs/config';
+import {EventEmitter2} from '@nestjs/event-emitter';
 /* Vendor Dependencies */
 import {DataSource} from 'typeorm';
 import {status} from '@grpc/grpc-js';
@@ -116,6 +117,7 @@ describe('CashuWalletIssueService', () => {
 				},
 				{provide: FetchService, useValue: fetch_service},
 				{provide: CashuMintRpcService, useValue: mint_rpc},
+				{provide: EventEmitter2, useValue: new EventEmitter2()},
 				{provide: UserService, useValue: {getUserById: jest.fn()}},
 				...entities.map((entity) => ({provide: getRepositoryToken(entity), useValue: data_source.getRepository(entity)})),
 			],

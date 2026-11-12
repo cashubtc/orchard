@@ -95,9 +95,7 @@ export class CashuWalletIssueService {
 		if (progress === MintQuoteProgress.EXPIRED) {
 			return this.cashuWalletJournalService.transition(operation, WalletOperationState.FAILED, {error: 'Mint quote expired unpaid'});
 		}
-		return operation.error
-			? this.cashuWalletJournalService.transition(operation, WalletOperationState.PENDING, {error: null})
-			: operation;
+		return this.cashuWalletJournalService.transition(operation, WalletOperationState.PENDING, {error: null});
 	}
 
 	/* *******************************************************

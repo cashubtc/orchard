@@ -1,7 +1,12 @@
 /* Core Dependencies */
 import {Logger, UseInterceptors} from '@nestjs/common';
-import {Resolver, Query, Mutation, Args, Context, Float, Int, ID} from '@nestjs/graphql';
+import {Resolver, Query, Mutation, Subscription, Args, Context, Float, Int, ID} from '@nestjs/graphql';
+import {OnEvent} from '@nestjs/event-emitter';
+/* Vendor Dependencies */
+import {PubSub} from 'graphql-subscriptions';
 /* Application Dependencies */
+import {CASHU_WALLET_OPERATION_UPDATED} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
+import type {CashuWalletOperationUpdate} from '#server/modules/cashu/wallet/cashuwallet.types';
 import {Roles} from '#server/modules/auth/decorators/auth.decorator';
 import {UserRole} from '#server/modules/user/user.enums';
 import {normalizeMintUnit, normalizeMintUnits} from '#server/modules/cashu/cashu.helpers';
@@ -14,12 +19,36 @@ import {EventLogType} from '#server/modules/event/event.enums';
 import {EcashOperationService} from './ecashoperation.service.js';
 import {OrchardEcashOperation} from './ecashoperation.model.js';
 import {EcashOperationInterceptor} from './ecashoperation.interceptor.js';
+import type {EcashOperationWatchPayload} from './ecashoperation.types.js';
+
+const pubSub = new PubSub();
+const WATCH_TRIGGER = 'ecash_operation_watch';
 
 @Resolver()
 export class EcashOperationResolver {
 	private readonly logger = new Logger(EcashOperationResolver.name);
 
 	constructor(private ecashOperationService: EcashOperationService) {}
+
+	/** Pass each wallet operation change on to the clients watching that operation */
+	@OnEvent(CASHU_WALLET_OPERATION_UPDATED)
+	onOperationUpdated(operation: CashuWalletOperationUpdate): void {
+		const payload: EcashOperationWatchPayload = {ecash_operation_watch: new OrchardEcashOperation(operation)};
+		void pubSub.publish(`${WATCH_TRIGGER}:${operation.id}`, payload);
+	}
+
+	@Subscription(() => OrchardEcashOperation, {
+		description: "Watch one of the current user's ecash wallet operations: its state now, then each change until it's final",
+	})
+	async ecash_operation_watch(
+		@Context() context: any,
+		@Args('id', {type: () => ID, description: 'Operation identifier'}) id: string,
+	): Promise<AsyncIterableIterator<EcashOperationWatchPayload>> {
+		const tag = 'SUBSCRIPTION { ecash_operation_watch }';
+		this.logger.debug(tag);
+		const updates = pubSub.asyncIterableIterator<EcashOperationWatchPayload>(`${WATCH_TRIGGER}:${id}`);
+		return await this.ecashOperationService.watchEcashOperation(tag, context.req.user.id, id, updates);
+	}
 
 	@Query(() => [OrchardEcashOperation], {description: "List the current user's ecash wallet operations with optional filters"})
 	async ecash_operations(

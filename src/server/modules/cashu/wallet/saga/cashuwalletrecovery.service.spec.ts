@@ -84,6 +84,17 @@ describe('CashuWalletRecoveryService', () => {
 		expect(issue_service.resume).toHaveBeenCalledTimes(2);
 	});
 
+	it('settles only the operations asked for, and nothing when none are', async () => {
+		issue_service.resume.mockImplementation(async (operation) => operation);
+		await service.settleOperations([]);
+		expect(operation_repository.find).not.toHaveBeenCalled();
+
+		await service.settleOperations(['op-1']);
+		expect(operation_repository.find).toHaveBeenCalledWith(
+			expect.objectContaining({where: expect.objectContaining({id: In(['op-1'])})}),
+		);
+	});
+
 	it('runs one pass at a time', async () => {
 		issue_service.resume.mockImplementation(async (operation) => operation);
 		const [first, second] = [service.reconcileOperations(), service.reconcileOperations()];

@@ -3,6 +3,7 @@ import type {MintInfo, MintQuoteBaseResponse, MintQuoteState} from '@cashu/cashu
 /* Local Dependencies */
 import type {CashuWalletMint} from './mint/cashuwalletmint.entity.js';
 import type {CashuWalletSeed} from './seed/cashuwalletseed.entity.js';
+import type {CashuWalletOperation} from './saga/cashuwalletoperation.entity.js';
 import type {WalletMintMatch, WalletOperationState, WalletOperationType} from './cashuwallet.enums.js';
 
 export type CashuWalletBalance = {
@@ -48,6 +49,14 @@ export type CashuWalletIssueRequest = {
 	amount: number;
 	memo: string | null;
 };
+
+export type CashuWalletWatch = {
+	operation: CashuWalletOperation;
+	release: () => void;
+};
+
+/** A wallet operation as announced on change, without the ecash it carries */
+export type CashuWalletOperationUpdate = Omit<CashuWalletOperation, 'token' | 'preview' | 'inputs'>;
 
 export type CashuWalletSendRequest = {
 	user_id: string;

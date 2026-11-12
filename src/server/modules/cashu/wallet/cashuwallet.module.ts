@@ -24,6 +24,7 @@ import {CashuWalletRecoveryService} from './saga/cashuwalletrecovery.service.js'
 import {CashuWalletOperationService} from './saga/cashuwalletoperation.service.js';
 import {CashuWalletIssueService} from './saga/issue/cashuwalletissue.service.js';
 import {CashuWalletSwapService} from './saga/swap/cashuwalletswap.service.js';
+import {CashuWalletWatchService} from './watch/cashuwalletwatch.service.js';
 
 @Module({
 	imports: [
@@ -52,6 +53,7 @@ import {CashuWalletSwapService} from './saga/swap/cashuwalletswap.service.js';
 		CashuWalletOperationService,
 		CashuWalletIssueService,
 		CashuWalletSwapService,
+		CashuWalletWatchService,
 	],
 	exports: [
 		CashuWalletSeedService,
@@ -61,6 +63,7 @@ import {CashuWalletSwapService} from './saga/swap/cashuwalletswap.service.js';
 		CashuWalletOperationService,
 		CashuWalletIssueService,
 		CashuWalletSwapService,
+		CashuWalletWatchService,
 	],
 })
 export class CashuWalletModule {}

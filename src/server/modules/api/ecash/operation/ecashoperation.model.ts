@@ -3,7 +3,7 @@ import {Field, Float, ID, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 import {WalletOperationType, WalletOperationState} from '#server/modules/cashu/wallet/cashuwallet.enums';
-import type {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.entity';
+import type {CashuWalletOperationUpdate} from '#server/modules/cashu/wallet/cashuwallet.types';
 
 @ObjectType({description: "An operation in the current user's ecash wallet"})
 export class OrchardEcashOperation {
@@ -43,7 +43,7 @@ export class OrchardEcashOperation {
 	@Field(() => UnixTimestamp, {description: 'When the operation last changed state'})
 	updated_at: number;
 
-	constructor(operation: CashuWalletOperation) {
+	constructor(operation: CashuWalletOperationUpdate) {
 		this.id = operation.id;
 		this.mint_id = operation.mint_id;
 		this.type = operation.type;

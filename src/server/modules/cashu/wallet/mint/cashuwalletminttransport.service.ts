@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Injectable} from '@nestjs/common';
+import {Injectable, type OnModuleInit} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
 import {
@@ -8,6 +8,7 @@ import {
 	MintOperationError,
 	NetworkError,
 	RateLimitError,
+	injectWebSocketImpl,
 	type RequestFn,
 	type RequestOptions,
 } from '@cashu/cashu-ts';
@@ -17,16 +18,17 @@ import {assertPublicDestination} from '#server/modules/fetch/network-guard';
 /* Native Dependencies */
 import {MintRedirectError} from '#server/modules/cashu/wallet/classes/mint-redirect-error.class';
 import {CashuWalletRequestPacer} from '#server/modules/cashu/wallet/classes/cashu-wallet-request-pacer.class';
+import {createCashuWalletSocket} from '#server/modules/cashu/wallet/classes/cashu-wallet-socket.class';
+import {CASHU_WALLET_MINT_MAX_BYTES} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 
 const MINT_TIMEOUT_MS = 10_000;
-const MINT_MAX_BYTES = 256 * 1024;
 const MINT_BURST = 20;
 const MINT_REQUESTS_PER_MINUTE = 20;
 const MINT_PACING_WAIT_MS = 15_000;
 const MINT_RATE_LIMIT_PAUSE_MS = 60_000;
 
 @Injectable()
-export class CashuWalletMintTransportService {
+export class CashuWalletMintTransportService implements OnModuleInit {
 	/** cashu-ts transport for the Orchard mint over MINT_API */
 	public readonly request: RequestFn = (options) => this.requestMint(options);
 
@@ -37,12 +39,18 @@ export class CashuWalletMintTransportService {
 		private fetchService: FetchService,
 	) {}
 
+	/** cashu-ts opens mint websockets itself; give it one that takes the same route as requests */
+	onModuleInit(): void {
+		if (process.env.SCHEMA_ONLY) return;
+		injectWebSocketImpl(createCashuWalletSocket(this.fetchService));
+	}
+
 	/* *******************************************************
 		Address
 	******************************************************** */
 
 	/** Why a mint URL can't be reached: an onion mint without the Tor proxy, or a local address unless local addresses are allowed; null when it can */
-	private async refuseMintUrl(mint_url: string, allow_local: boolean): Promise<string | null> {
+	public async refuseMintUrl(mint_url: string, allow_local: boolean): Promise<string | null> {
 		const host = new URL(mint_url).hostname.replace(/^\[|\]$/g, '');
 		const via_tor = !!this.configService.get<string>('server.proxy');
 		if (host.endsWith('.onion')) return via_tor ? null : 'Onion mints need a Tor proxy; set TOR_PROXY_SERVER';
@@ -87,7 +95,7 @@ export class CashuWalletMintTransportService {
 				body: requestBody ? JSONInt.stringify(requestBody) : undefined,
 				redirect: 'manual',
 				signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-				size: MINT_MAX_BYTES,
+				size: CASHU_WALLET_MINT_MAX_BYTES,
 			})
 			.catch(toNetworkError);
 		if (response.status >= 300 && response.status < 400) {

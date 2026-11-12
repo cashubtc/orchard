@@ -1,6 +1,7 @@
 /* Core Dependencies */
 import {Injectable} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
+import {EventEmitter2} from '@nestjs/event-emitter';
 /* Vendor Dependencies */
 import {Repository} from 'typeorm';
 import {DateTime} from 'luxon';
@@ -9,6 +10,7 @@ import {OutputData, type OperationCounters, type OutputDataLike, type Proof, typ
 import {CashuWalletProofService} from '#server/modules/cashu/wallet/proof/cashuwalletproof.service';
 import {WalletOperationState} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {CASHU_WALLET_OPERATION_UPDATED} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 /* Local Dependencies */
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
 
@@ -18,6 +20,7 @@ export class CashuWalletJournalService {
 		@InjectRepository(CashuWalletOperation)
 		private walletOperationRepository: Repository<CashuWalletOperation>,
 		private cashuWalletProofService: CashuWalletProofService,
+		private eventEmitter: EventEmitter2,
 	) {}
 
 	/* *******************************************************
@@ -35,16 +38,23 @@ export class CashuWalletJournalService {
 		});
 	}
 
-	/** Move an operation to a new state if nobody else changed it first; otherwise return the current row */
+	/** Move an operation to a new state if nobody else changed it first, announcing the change without its ecash; a stale operation gets the current row, a no-op itself */
 	public async transition(
 		operation: CashuWalletOperation,
 		state: WalletOperationState,
 		changes: Partial<CashuWalletOperation> = {},
 	): Promise<CashuWalletOperation> {
+		const unchanged =
+			operation.state === state &&
+			Object.entries(changes).every(([field, value]) => operation[field as keyof CashuWalletOperation] === value);
+		if (unchanged) return operation;
 		const next = {...changes, state, revision: operation.revision + 1, updated_at: DateTime.now().toUnixInteger()};
 		const result = await this.walletOperationRepository.update({id: operation.id, revision: operation.revision}, next);
-		if (result.affected) return {...operation, ...next};
-		return this.walletOperationRepository.findOneByOrFail({id: operation.id});
+		if (!result.affected) return this.walletOperationRepository.findOneByOrFail({id: operation.id});
+		const transitioned = {...operation, ...next};
+		const {token, preview, inputs, ...update} = transitioned;
+		this.eventEmitter.emit(CASHU_WALLET_OPERATION_UPDATED, update);
+		return transitioned;
 	}
 
 	/** Store the operation's new proofs (idempotent by secret), spend its inputs and mark it finalized */

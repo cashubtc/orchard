@@ -1,9 +1,12 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
+/* Vendor Dependencies */
+import {PubSub} from 'graphql-subscriptions';
 /* Application Dependencies */
 import {CashuWalletOperationService} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.service';
 import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
+import {CashuWalletWatchService} from '#server/modules/cashu/wallet/watch/cashuwalletwatch.service';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
@@ -12,6 +15,7 @@ import {WalletOperationState} from '#server/modules/cashu/wallet/cashuwallet.enu
 /* Local Dependencies */
 import {EcashOperationService} from './ecashoperation.service.js';
 import {OrchardEcashOperation} from './ecashoperation.model.js';
+import type {EcashOperationWatchPayload} from './ecashoperation.types.js';
 
 describe('EcashOperationService', () => {
 	let ecashOperationService: EcashOperationService;
@@ -35,7 +39,12 @@ describe('EcashOperationService', () => {
 		updated_at: 2,
 	};
 
+	const release = jest.fn();
+	const watch_service = {watch: jest.fn(async () => ({operation: {...operation, state: 'PENDING'}, release}))};
+	const watchPayload = (state: string) => ({ecash_operation_watch: new OrchardEcashOperation({...operation, state})});
+
 	beforeEach(async () => {
+		jest.clearAllMocks();
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				EcashOperationService,
@@ -44,6 +53,7 @@ describe('EcashOperationService', () => {
 					useValue: {listOperations: jest.fn(), countOperations: jest.fn(), getOperation: jest.fn(), getToken: jest.fn()},
 				},
 				{provide: CashuWalletIssueService, useValue: {issueEcash: jest.fn()}},
+				{provide: CashuWalletWatchService, useValue: watch_service},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
 			],
 		}).compile();
@@ -97,6 +107,50 @@ describe('EcashOperationService', () => {
 		});
 		expect(result).toBeInstanceOf(OrchardEcashOperation);
 		expect(result).not.toHaveProperty('quote_counter');
+	});
+
+	describe('watchEcashOperation', () => {
+		let pub_sub: PubSub;
+		let updates: AsyncIterableIterator<EcashOperationWatchPayload>;
+
+		beforeEach(() => {
+			pub_sub = new PubSub();
+			updates = pub_sub.asyncIterableIterator<EcashOperationWatchPayload>('watch');
+		});
+
+		it("sends the operation's state now, then each update, ending with its final state", async () => {
+			const stream = await ecashOperationService.watchEcashOperation('TAG', 'user-1', 'op-1', updates);
+			expect((await stream.next()).value).toMatchObject({ecash_operation_watch: {id: 'op-1', state: 'PENDING'}});
+
+			await pub_sub.publish('watch', watchPayload('EXECUTING'));
+			expect((await stream.next()).value).toMatchObject({ecash_operation_watch: {state: 'EXECUTING'}});
+			expect(release).not.toHaveBeenCalled();
+
+			await pub_sub.publish('watch', watchPayload('FINALIZED'));
+			expect((await stream.next()).value).toMatchObject({ecash_operation_watch: {state: 'FINALIZED'}});
+			expect(release).toHaveBeenCalledTimes(1);
+			expect(await stream.next()).toMatchObject({done: true});
+		});
+
+		it('releases the watch at once when returned while waiting for an update', async () => {
+			const stream = await ecashOperationService.watchEcashOperation('TAG', 'user-1', 'op-1', updates);
+			await stream.next();
+			const waiting = stream.next();
+			await stream.return!();
+			expect(release).toHaveBeenCalled();
+			expect(await waiting).toMatchObject({done: true});
+		});
+
+		it('stops listening and wraps the error when the operation cannot be watched', async () => {
+			const not_found = {code: OrchardErrorCode.EcashWalletError, details: 'Operation not found'};
+			watch_service.watch.mockRejectedValueOnce(not_found);
+			errorService.resolveError.mockReturnValue(not_found);
+			const stop = jest.spyOn(updates, 'return');
+			await expect(ecashOperationService.watchEcashOperation('TAG', 'user-1', 'op-9', updates)).rejects.toBeInstanceOf(
+				OrchardApiError,
+			);
+			expect(stop).toHaveBeenCalled();
+		});
 	});
 
 	it('wraps issue errors as OrchardApiError', async () => {

@@ -2,15 +2,18 @@
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {getRepositoryToken} from '@nestjs/typeorm';
+import {EventEmitter2} from '@nestjs/event-emitter';
 /* Vendor Dependencies */
 import {DataSource} from 'typeorm';
 import {Amount, type Proof, type Wallet} from '@cashu/cashu-ts';
+/* Native Dependencies */
+import {CashuWalletProof} from '#server/modules/cashu/wallet/proof/cashuwalletproof.entity';
+import {CashuWalletProofService} from '#server/modules/cashu/wallet/proof/cashuwalletproof.service';
+import {WalletOperationState, WalletOperationType, WalletProofState} from '#server/modules/cashu/wallet/cashuwallet.enums';
+import {CASHU_WALLET_OPERATION_UPDATED} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 /* Local Dependencies */
 import {CashuWalletJournalService} from './cashuwalletjournal.service.js';
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
-import {CashuWalletProof} from '../proof/cashuwalletproof.entity.js';
-import {CashuWalletProofService} from '../proof/cashuwalletproof.service.js';
-import {WalletOperationState, WalletOperationType, WalletProofState} from '../cashuwallet.enums.js';
 
 describe('CashuWalletJournalService', () => {
 	let service: CashuWalletJournalService;
@@ -30,14 +33,17 @@ describe('CashuWalletJournalService', () => {
 			updated_at: 0,
 		});
 	const proof = (secret: string, amount: number) => ({id: '00abc', amount: Amount.from(amount), secret, C: '02c'}) as Proof;
+	const event_emitter = {emit: jest.fn()};
 
 	beforeEach(async () => {
+		event_emitter.emit.mockClear();
 		data_source = new DataSource({type: 'better-sqlite3', database: ':memory:', entities, synchronize: true});
 		await data_source.initialize();
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				CashuWalletJournalService,
 				CashuWalletProofService,
+				{provide: EventEmitter2, useValue: event_emitter},
 				...entities.map((entity) => ({provide: getRepositoryToken(entity), useValue: data_source.getRepository(entity)})),
 			],
 		}).compile();
@@ -55,6 +61,28 @@ describe('CashuWalletJournalService', () => {
 
 		const stale = await service.transition(operation, WalletOperationState.FAILED, {error: 'late'});
 		expect(stale).toMatchObject({state: WalletOperationState.EXECUTING, revision: 1, error: null});
+	});
+
+	it('announces each change it makes without the ecash it carries, and not the ones it loses to another writer', async () => {
+		const operation = await createOperation();
+		await service.transition(
+			{...operation, token: 'cashuBtoken', preview: 'preview', inputs: 'inputs'},
+			WalletOperationState.EXECUTING,
+		);
+		await service.transition(operation, WalletOperationState.FAILED);
+		expect(event_emitter.emit).toHaveBeenCalledTimes(1);
+		const [[event, update]] = event_emitter.emit.mock.calls;
+		expect(event).toBe(CASHU_WALLET_OPERATION_UPDATED);
+		expect(update).toMatchObject({id: operation.id, state: WalletOperationState.EXECUTING, revision: 1});
+		for (const field of ['token', 'preview', 'inputs']) expect(update).not.toHaveProperty(field);
+	});
+
+	it('writes and announces nothing when a change would leave the operation as it is', async () => {
+		const operation = await createOperation();
+		const waiting = await service.transition(operation, WalletOperationState.EXECUTING, {error: 'mint offline'});
+		expect(await service.transition(waiting, WalletOperationState.EXECUTING, {error: 'mint offline'})).toBe(waiting);
+		expect(await data_source.getRepository(CashuWalletOperation).findOneByOrFail({id: operation.id})).toMatchObject({revision: 1});
+		expect(event_emitter.emit).toHaveBeenCalledTimes(1);
 	});
 
 	it('journals an operation together with locking its inputs, or neither when one is taken', async () => {

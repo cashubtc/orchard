@@ -290,8 +290,21 @@ export class CashuWalletMintService {
 		const url = this.sourceUrl(mint, identity);
 		const transport = this.cashuWalletMintTransportService;
 		if (identity && this.isOrchardMint(mint, identity)) return new Mint(url, {customRequest: transport.request});
+		return new Mint(url, {customRequest: transport.guardedRequest(await this.isAdminMint(mint))});
+	}
+
+	/** Whether Orchard may open a wallet mint's websocket, which cashu-ts connects to without the transport's address checks */
+	public async allowsSocket(user_id: string, mint_id: string): Promise<boolean> {
+		const [mint, identity] = await Promise.all([this.findWalletMint(user_id, mint_id), this.getOrchardIdentity()]);
+		if (identity && this.isOrchardMint(mint, identity)) return true;
+		const refusal = await this.cashuWalletMintTransportService.refuseMintUrl(mint.urls[0], await this.isAdminMint(mint));
+		return refusal === null;
+	}
+
+	/** Whether a wallet mint belongs to an admin, the only users whose mints may sit on local addresses */
+	private async isAdminMint(mint: CashuWalletMint): Promise<boolean> {
 		const owner = await this.userService.getUserById(mint.user_id);
-		return new Mint(url, {customRequest: transport.guardedRequest(owner?.role === UserRole.ADMIN)});
+		return owner?.role === UserRole.ADMIN;
 	}
 
 	/** URL a wallet mint is reached at, which also keys its shared cache: MINT_API for the Orchard mint, else its first URL */

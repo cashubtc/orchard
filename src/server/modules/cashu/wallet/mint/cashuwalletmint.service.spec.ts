@@ -250,6 +250,26 @@ describe('CashuWalletMintService', () => {
 		});
 	});
 
+	describe('allowsSocket', () => {
+		it("allows the Orchard mint's socket, and another mint's only where its requests may go", async () => {
+			const {id: orchard_id} = await service.getOrchardMint('user-1');
+			route('https://203.0.113.10', async () => response(cedar_info));
+			const {id: cedar_id} = await service.addMint('user-1', 'https://203.0.113.10');
+			rows.push({
+				id: 'mint-lan',
+				user_id: 'user-1',
+				pubkey: null,
+				urls: ['http://192.168.1.20:3338'],
+				created_at: 0,
+			} as CashuWalletMint);
+
+			expect(await service.allowsSocket('user-1', orchard_id)).toBe(true);
+			expect(await service.allowsSocket('user-1', cedar_id)).toBe(true);
+			expect(await service.allowsSocket('user-1', 'mint-lan')).toBe(false);
+			await expect(service.allowsSocket('user-2', cedar_id)).rejects.toEqual(walletError('Mint not found in this wallet'));
+		});
+	});
+
 	describe('addMint', () => {
 		it.each([
 			['its public URL', 'https://mint.orchard.example/'],
