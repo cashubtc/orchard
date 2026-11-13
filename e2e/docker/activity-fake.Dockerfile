@@ -9,7 +9,7 @@
 #
 # Slim Debian base so secp256k1 prebuilt binaries resolve cleanly (alpine's
 # musl libc would force a source compile).
-FROM node:22-slim
+FROM node:24-slim
 ARG DOCKER_CLI_VERSION=27.5.1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

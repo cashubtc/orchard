@@ -1,7 +1,7 @@
 # ---------------
 # Install Dependencies
 # ---------------
-FROM node:22-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -18,7 +18,7 @@ RUN npm run build
 # ---------------
 # Release App
 # ---------------
-FROM node:22-alpine AS final
+FROM node:24-alpine AS final
 WORKDIR /app
 RUN apk add --update --no-cache postgresql-client
 COPY --from=build /app/package*.json ./
