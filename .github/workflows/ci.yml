@@ -16,6 +16,10 @@ concurrency:
 
 jobs:
   quality-check:
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['22.23.4', '24.22.1', '26.12.1']
     runs-on: ubuntu-latest
     env:
       CI: true
@@ -29,7 +33,7 @@ jobs:
       - name: Use Node
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: 'package-lock.json'
 
@@ -66,5 +70,5 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: dist-node-${{ matrix.node-version }}
           path: dist/

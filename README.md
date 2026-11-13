@@ -28,6 +28,14 @@ For help, questions, and feature ideas, open an issue:
 
 ## Contributing
 
+Use Node.js 24 for development (`nvm install && nvm use`). Supported versions are
+`^22.23.4 || ^24.22.1 || ^26.12.1`, as specified in `package.json`. These minimums
+preserve the [October 21, 2026 Node.js security release](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases)
+baseline for each supported major. The range excludes older releases and other
+majors rather than assuming they include the same fixes. CI tests these exact
+minimum versions; Node 24 remains the development and Docker default. Operators
+should use the latest patch release of their chosen supported major.
+
 If you're interested in contributing to Orchard, please read the
 [development guide](https://docs.orchard.space/development/) before submitting a pull request.
 

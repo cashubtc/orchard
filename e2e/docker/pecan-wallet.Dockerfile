@@ -9,6 +9,6 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/build/target \
     cargo build --release --locked && cp target/release/orchard-pecan-wallet /usr/local/bin/pecan-wallet
 
-FROM node:22-trixie-slim
+FROM node:24-trixie-slim
 COPY --from=builder /usr/local/bin/pecan-wallet /usr/local/bin/pecan-wallet
 ENTRYPOINT ["sleep", "infinity"]
