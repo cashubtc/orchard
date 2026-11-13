@@ -1,11 +1,15 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
 /* Vendor Dependencies */
-import {getRepositoryToken} from '@nestjs/typeorm';
+import {getRepositoryToken, TypeOrmModule} from '@nestjs/typeorm';
 import {expect} from '@jest/globals';
+import {DataSource} from 'typeorm';
+/* Application Dependencies */
+import {migratedDatabase} from '#server/test/database';
 /* Local Dependencies */
 import type {UserService as UserServiceType} from './user.service.js';
 import {User} from './user.entity.js';
+import {UserSession} from './user-session.entity.js';
 import {UserRole} from './user.enums.js';
 
 // unstable_mockModule has no automock equivalent, so the surface the service uses is
@@ -17,6 +21,7 @@ jest.unstable_mockModule('bcrypt', () => {
 
 const bcrypt = (await import('bcrypt')) as any;
 const {UserService} = await import('./user.service.js');
+const {UserSessionService} = await import('./user-session.service.js');
 
 describe('UserService', () => {
 	let userService: UserServiceType;
@@ -204,6 +209,53 @@ describe('UserService', () => {
 			mockRepository.findOne.mockResolvedValue(null);
 
 			await expect(userService.updateUser('999', {name: 'NewName'})).rejects.toThrow('User not found');
+		});
+	});
+});
+
+describe('UserService against the migrated database', () => {
+	let module: TestingModule;
+	let userService: UserServiceType;
+	let data_source: DataSource;
+	let user: User;
+	let sessions: () => Promise<UserSession[]>;
+
+	beforeEach(async () => {
+		(bcrypt.hash as jest.Mock).mockResolvedValue('hashed_password');
+		module = await Test.createTestingModule({
+			imports: [migratedDatabase([User, UserSession]), TypeOrmModule.forFeature([User, UserSession])],
+			providers: [UserService, UserSessionService],
+		}).compile();
+		userService = module.get(UserService);
+		data_source = module.get(DataSource);
+		user = await userService.createUser('Reader', 'password', UserRole.READER);
+		sessions = () => data_source.getRepository(UserSession).find({where: {user_id: user.id}});
+	});
+
+	afterEach(async () => {
+		await module.close();
+	});
+
+	describe('deleteUser', () => {
+		it('deletes the user with its live and ended sessions', async () => {
+			await module.get(UserSessionService).startSession(user);
+			await module.get(UserSessionService).startSession(user);
+
+			await userService.deleteUser(user.id);
+
+			expect(await userService.getUserById(user.id)).toBeNull();
+			expect(await sessions()).toEqual([]);
+		});
+
+		it('keeps the sessions when the user cannot be deleted', async () => {
+			const session = await module.get(UserSessionService).startSession(user);
+			await data_source.query(`INSERT INTO "invites" ("id", "token", "created_at", "created_by_id") VALUES ('i1', 'token', 100, ?)`, [
+				user.id,
+			]);
+
+			await expect(userService.deleteUser(user.id)).rejects.toThrow(/FOREIGN KEY constraint failed/);
+
+			expect(await sessions()).toEqual([expect.objectContaining({id: session.id, ended_at: null})]);
 		});
 	});
 });

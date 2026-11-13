@@ -2,6 +2,7 @@
 import {DataSource} from 'typeorm';
 /* Application Dependencies */
 import {User} from '../modules/user/user.entity.js';
+import {UserSession} from '../modules/user/user-session.entity.js';
 import {Invite} from '../modules/invite/invite.entity.js';
 import {TokenBlacklist} from '../modules/auth/token-blacklist.entity.js';
 import {Setting} from '../modules/setting/setting.entity.js';
@@ -25,6 +26,7 @@ export const AppDataSource = new DataSource({
 	database: process.env.DATABASE_DIR ? `${process.env.DATABASE_DIR}/orchard.db` : 'data/orchard.db',
 	entities: [
 		User,
+		UserSession,
 		Invite,
 		TokenBlacklist,
 		Setting,
