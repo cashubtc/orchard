@@ -4,7 +4,9 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# node:22-alpine resolves to whatever copy the build host already has, which can predate a
+# Node security release. --engine-strict fails the build below the engines floor in package.json.
+RUN npm ci --engine-strict
 
 # ---------------
 # Build App
