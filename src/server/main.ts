@@ -8,7 +8,7 @@ import compression from 'compression';
 import * as express from 'express';
 /* Application */
 import {AppModule} from './app.module.js';
-import {securityHeaders, indexHtml} from './modules/middleware/index.js';
+import {securityHeaders, indexHtml, runtimeConfig} from './modules/middleware/index.js';
 import {BitcoinType} from './modules/bitcoin/bitcoin.enums.js';
 import {LightningType} from './modules/lightning/lightning.enums.js';
 import {TaprootAssetType} from './modules/tapass/tapass.enums.js';
@@ -37,7 +37,10 @@ async function bootstrap() {
 	validation(app, configService, logger);
 	const is_production = configService.get<boolean>('mode.production') ?? false;
 	app.use(securityHeaders(is_production));
-	if (is_production) app.use(indexHtml());
+	if (is_production) {
+		app.getHttpAdapter().get('/config.json', runtimeConfig());
+		app.use(indexHtml());
+	}
 	app.getHttpAdapter().getInstance().disable('x-powered-by');
 	const compression_enabled = configService.get<boolean>('server.compression');
 	if (compression_enabled) app.use(compression());

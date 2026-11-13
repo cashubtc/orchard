@@ -1,7 +1,10 @@
 /* Core Dependencies */
 import fs from 'node:fs/promises';
-import {config} from 'dotenv';
-config({ path: '.env', override: false, quiet: true });
+try {
+	process.loadEnvFile('.env');
+} catch (error) {
+	if (error.code !== 'ENOENT') throw error;
+}
 
 const mode = {
 	production: process.env['NODE_ENV'] === 'production',
@@ -52,7 +55,9 @@ const runtime_config = {
 };
 
 if (process.env.NODE_ENV === 'production') {
-	const output_path = `${process.cwd()}/dist/client/browser/config.json`;
+	const data_dir = process.env.DATABASE_DIR || 'data';
+	await fs.mkdir(`${data_dir}/tmp`, {recursive: true});
+	const output_path = `${data_dir}/config.json`;
 	await fs.writeFile(output_path, JSON.stringify(runtime_config, null, 2));
 } else {
 	const output_path = `${process.cwd()}/public/config.json`;

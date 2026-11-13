@@ -87,13 +87,13 @@ export class LndService {
 	}
 
 	public initializeLightningClient(): grpc.Client {
-		const lightning_proto_path = path.join(process.cwd(), 'proto/lnd/lightning.proto');
+		const lightning_proto_path = path.join(process.env.ASSETS_DIR || process.cwd(), 'proto/lnd/lightning.proto');
 		return this.initializeGrpcClient([lightning_proto_path], 'lnrpc', 'Lightning');
 	}
 
 	public initializeWalletKitClient(): grpc.Client {
-		const lightning_proto_path = path.join(process.cwd(), 'proto/lnd/lightning.proto');
-		const walletkit_proto_path = path.join(process.cwd(), 'proto/lnd/walletkit.proto');
+		const lightning_proto_path = path.join(process.env.ASSETS_DIR || process.cwd(), 'proto/lnd/lightning.proto');
+		const walletkit_proto_path = path.join(process.env.ASSETS_DIR || process.cwd(), 'proto/lnd/walletkit.proto');
 		return this.initializeGrpcClient([lightning_proto_path, walletkit_proto_path], 'walletrpc', 'WalletKit');
 	}
 

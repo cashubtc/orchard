@@ -26,6 +26,17 @@ describe('indexHtml', () => {
 		mockedReadFileSync.mockReset();
 	});
 
+	it('should read assets configured after the module was imported', () => {
+		const env = jest.replaceProperty(process, 'env', {...process.env, ASSETS_DIR: '/installed/orchard'});
+		try {
+			mockedReadFileSync.mockReturnValue('<html></html>');
+			indexHtml();
+			expect(mockedReadFileSync).toHaveBeenCalledWith('/installed/orchard/dist/client/browser/index.html', 'utf8');
+		} finally {
+			env.restore();
+		}
+	});
+
 	it('should replace every CSP_NONCE placeholder with the per-request nonce', () => {
 		mockedReadFileSync.mockReturnValue(
 			'<script nonce="{{CSP_NONCE}}"></script><style nonce="{{CSP_NONCE}}"></style><orc-root ngCspNonce="{{CSP_NONCE}}"></orc-root>',

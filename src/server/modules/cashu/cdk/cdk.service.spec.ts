@@ -46,6 +46,23 @@ describe('CdkService', () => {
 		expect(cdkService).toBeDefined();
 	});
 
+	it('loads protocol definitions from ASSETS_DIR', () => {
+		const env = jest.replaceProperty(process, 'env', {...process.env, ASSETS_DIR: '/installed/orchard'});
+		try {
+			configService.get.mockImplementation((key: string) => {
+				if (key === 'cashu.rpc_host') return 'localhost';
+				if (key === 'cashu.rpc_port') return 3333;
+				return undefined;
+			});
+			proto_loader.loadSync.mockReturnValue({});
+			grpc.loadPackageDefinition.mockReturnValue({cdk_mint_management_v1: {CdkMint: jest.fn()}});
+			cdkService.initializeGrpcClient();
+			expect(proto_loader.loadSync).toHaveBeenCalledWith('/installed/orchard/proto/cdk/cdk-mint-rpc.proto', expect.any(Object));
+		} finally {
+			env.restore();
+		}
+	});
+
 	it('returns undefined client when credentials missing', () => {
 		const warn_spy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined as any);
 		const client = cdkService.initializeGrpcClient();
