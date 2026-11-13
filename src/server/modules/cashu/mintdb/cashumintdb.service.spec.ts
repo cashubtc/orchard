@@ -10,6 +10,7 @@ import {CdkService} from '#server/modules/cashu/cdk/cdk.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {MintDatabaseType} from './cashumintdb.enums.js';
 import {promises as fs_promises} from 'fs';
+import {resolve} from 'path';
 
 // Core modules bypass the ESM mock registry, and better-sqlite3 is consumed as a default
 // export, so each module is replaced explicitly. fs.promises is deliberately left real —
@@ -178,8 +179,15 @@ describe('CashuMintDatabaseService', () => {
 		}
 	});
 
-	describe('backups and restores', () => {
+	describe.each([undefined, '/custom data'])('backups and restores (DATABASE_DIR=%s)', (database_dir) => {
 		beforeEach(() => {
+			jest.restoreAllMocks();
+			jest.replaceProperty(process, 'env', {...process.env});
+			if (database_dir) process.env.DATABASE_DIR = database_dir;
+			else delete process.env.DATABASE_DIR;
+		});
+
+		afterEach(() => {
 			jest.restoreAllMocks();
 		});
 
@@ -204,7 +212,8 @@ describe('CashuMintDatabaseService', () => {
 			const read_file = jest.spyOn(fs_promises, 'readFile').mockResolvedValue(Buffer.from('ok'));
 			const unlink = jest.spyOn(fs_promises, 'unlink').mockResolvedValue(undefined as any);
 			const buf = await (cashuMintDatabaseService as any).createBackupSqlite({database: db_instance});
-			expect(read_file).toHaveBeenCalled();
+			expect(db_instance.backup).toHaveBeenCalledWith(resolve(database_dir || 'data', 'tmp/sqlite-backup.db'));
+			expect(read_file).toHaveBeenCalledWith(resolve(database_dir || 'data', 'tmp/sqlite-backup.db'));
 			expect(unlink).toHaveBeenCalled();
 			expect(buf.equals(Buffer.from('ok'))).toBe(true);
 		});
@@ -236,7 +245,13 @@ describe('CashuMintDatabaseService', () => {
 			const buf = await (cashuMintDatabaseService as any).createBackupPostgres();
 			expect(spawn_mock).toHaveBeenCalledWith(
 				'pg_dump',
-				expect.arrayContaining(['--host=localhost', '--port=5432', '--username=user', '--dbname=db']),
+				expect.arrayContaining([
+					'--host=localhost',
+					'--port=5432',
+					'--username=user',
+					'--dbname=db',
+					`--file=${resolve(database_dir || 'data', 'tmp/postgres-backup.sql')}`,
+				]),
 				expect.objectContaining({env: expect.objectContaining({PGPASSWORD: 'pass'})}),
 			);
 			expect(unlink).toHaveBeenCalled();
@@ -270,7 +285,7 @@ describe('CashuMintDatabaseService', () => {
 			jest.spyOn(fs_promises, 'unlink').mockResolvedValue(undefined as any);
 			const copy_file = jest.spyOn(fs_promises, 'copyFile').mockResolvedValue(undefined as any);
 			await (cashuMintDatabaseService as any).restoreBackupSqlite(Buffer.from('data').toString('base64'));
-			expect(copy_file).toHaveBeenCalled();
+			expect(copy_file).toHaveBeenCalledWith(resolve(database_dir || 'data', 'tmp/sqlite-restore.db'), '/tmp/sqlite.db');
 		});
 
 		it('restoreBackup sqlite: invalid file rejects with MintDatabaseRestoreInvalidError', async () => {
@@ -330,7 +345,13 @@ describe('CashuMintDatabaseService', () => {
 			await (cashuMintDatabaseService as any).restoreBackupPostgres(Buffer.from('sql').toString('base64'));
 			expect(spawn_mock).toHaveBeenCalledWith(
 				'psql',
-				expect.arrayContaining(['--host=h', '--port=5432', '--username=u', '--dbname=d']),
+				expect.arrayContaining([
+					'--host=h',
+					'--port=5432',
+					'--username=u',
+					'--dbname=d',
+					`--file=${resolve(database_dir || 'data', 'tmp/postgres-restore.sql')}`,
+				]),
 				expect.objectContaining({env: expect.objectContaining({PGPASSWORD: 'p'})}),
 			);
 			expect(unlink).toHaveBeenCalled();

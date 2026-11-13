@@ -247,7 +247,7 @@ export class CashuMintDatabaseService implements OnModuleInit {
 	}
 
 	private async createBackupSqlite(client: CashuMintDatabase): Promise<Buffer> {
-		const backup_path = path.resolve('data/tmp/sqlite-backup.db');
+		const backup_path = path.resolve(process.env.DATABASE_DIR || 'data', 'tmp/sqlite-backup.db');
 		try {
 			await client.database.backup(backup_path);
 			const file_buffer = await fs.readFile(backup_path);
@@ -265,7 +265,7 @@ export class CashuMintDatabaseService implements OnModuleInit {
 	private async restoreBackupSqlite(filebase64: string): Promise<void> {
 		return new Promise(async (resolve, reject) => {
 			const database_buffer: Buffer = Buffer.from(filebase64, 'base64');
-			const restore_path = path.resolve('data/tmp/sqlite-restore.db');
+			const restore_path = path.resolve(process.env.DATABASE_DIR || 'data', 'tmp/sqlite-restore.db');
 
 			try {
 				await fs.writeFile(restore_path, database_buffer);
@@ -302,7 +302,7 @@ export class CashuMintDatabaseService implements OnModuleInit {
 	}
 
 	private async createBackupPostgres(): Promise<Buffer> {
-		const backup_path = path.resolve('data/tmp/postgres-backup.sql');
+		const backup_path = path.resolve(process.env.DATABASE_DIR || 'data', 'tmp/postgres-backup.sql');
 		try {
 			const connection_string = this.configService.get('cashu.database');
 			const {host, port, username, password, db_name} = this.parsePostgresConnection(connection_string);
@@ -344,7 +344,7 @@ export class CashuMintDatabaseService implements OnModuleInit {
 	}
 
 	private async restoreBackupPostgres(filebase64: string): Promise<void> {
-		const restore_path = path.resolve('data/tmp/postgres-restore.sql');
+		const restore_path = path.resolve(process.env.DATABASE_DIR || 'data', 'tmp/postgres-restore.sql');
 		try {
 			const database_buffer: Buffer = Buffer.from(filebase64, 'base64');
 			await fs.writeFile(restore_path, database_buffer);

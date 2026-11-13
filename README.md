@@ -34,3 +34,24 @@ If you're interested in contributing to Orchard, please read the
 ## License
 
 Orchard is open source software [licensed as MIT](./LICENSE).
+
+## Application assets and writable state
+
+`ASSETS_DIR` selects the application installation containing `dist/client/browser`
+and `proto`. It defaults to the working directory and may be read-only, for example
+in a Nix store installation. `DATABASE_DIR` defaults to `data` relative to the
+working directory and must be writable. It holds the existing database and encryption
+key, generated production `config.json`, and backup/restore temporary files under
+`tmp`. Startup creates the temporary directory recursively. Use absolute paths when
+running from a different working directory; keep the data directory outside the
+frontend asset directory.
+
+Production startup (`npm start`) serves the generated public configuration at
+`/config.json` with caching disabled; it does not expose the data directory as static
+files. Development continues generating `public/config.json`.
+
+The runtime configuration script uses Node's built-in `process.loadEnvFile` instead
+of the development-only `dotenv` dependency, so it also runs after pruning development
+dependencies. A missing `.env` is allowed; other read errors stop startup. Existing
+environment variables take precedence. Use the supported Node 22 version specified
+by `package.json` (currently `>=22.23.4 <23`); this change adds no newer requirement.

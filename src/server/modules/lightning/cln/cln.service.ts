@@ -94,8 +94,8 @@ export class ClnService {
 
 	public initializeLightningClient(): grpc.Client {
 		if (this.lightning_client) return this.lightning_client;
-		const node_proto_path = path.join(process.cwd(), 'proto/cln/node.proto');
-		const primitives_proto_path = path.join(process.cwd(), 'proto/cln/primitives.proto');
+		const node_proto_path = path.join(process.env.ASSETS_DIR || process.cwd(), 'proto/cln/node.proto');
+		const primitives_proto_path = path.join(process.env.ASSETS_DIR || process.cwd(), 'proto/cln/primitives.proto');
 		return (this.lightning_client = this.initializeGrpcClient([node_proto_path, primitives_proto_path], 'cln', 'Node'));
 	}
 

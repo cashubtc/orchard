@@ -5,8 +5,6 @@ import type {Request, Response, NextFunction} from 'express';
 /* Local Dependencies */
 import {CSP_NONCE_KEY, CSP_NONCE_PLACEHOLDER} from './middleware.constants.js';
 
-const CLIENT_INDEX_PATH = join(process.cwd(), 'dist', 'client', 'browser', 'index.html');
-
 /**
  * Caches the client index.html template once at startup and serves a per-request copy
  * with the CSP nonce placeholder replaced. Only invoked in production — dev uses the
@@ -15,9 +13,10 @@ const CLIENT_INDEX_PATH = join(process.cwd(), 'dist', 'client', 'browser', 'inde
  * Returns a no-op middleware if the client bundle isn't present (e.g. server-only runs).
  */
 export function indexHtml() {
+	const client_index_path = join(process.env.ASSETS_DIR || process.cwd(), 'dist', 'client', 'browser', 'index.html');
 	let template: string;
 	try {
-		template = readFileSync(CLIENT_INDEX_PATH, 'utf8');
+		template = readFileSync(client_index_path, 'utf8');
 	} catch {
 		// Client bundle not built — fall through to serve-static / 404
 		return (_req: Request, _res: Response, next: NextFunction) => next();
