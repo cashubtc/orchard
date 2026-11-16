@@ -292,16 +292,21 @@ export class CashuWalletMintService {
 		return value;
 	}
 
-	/** cashu-ts Mint client for a wallet mint: MINT_API for the Orchard mint, the guarded transport for the rest, which reaches local addresses only for an admin's mints */
+	/** cashu-ts Mint client for a wallet mint: MINT_API for the Orchard mint, the guarded transport for the rest; its requests and websockets reach local addresses only for the Orchard mint and an admin's mints */
 	public async getMint(mint: CashuWalletMint): Promise<Mint> {
 		const identity = await this.getOrchardIdentity();
 		const url = this.sourceUrl(mint, identity);
 		const transport = this.cashuWalletMintTransportService;
-		if (identity && this.isOrchardMint(mint, identity)) return new Mint(url, {customRequest: transport.request});
-		return new Mint(url, {customRequest: transport.guardedRequest(await this.isAdminMint(mint))});
+		if (identity && this.isOrchardMint(mint, identity)) {
+			transport.allowLocalSocket(url);
+			return new Mint(url, {customRequest: transport.request});
+		}
+		const admin = await this.isAdminMint(mint);
+		if (admin) transport.allowLocalSocket(url);
+		return new Mint(url, {customRequest: transport.guardedRequest(admin)});
 	}
 
-	/** Whether Orchard may open a wallet mint's websocket, which cashu-ts connects to without the transport's address checks */
+	/** Whether Orchard may open a wallet mint's websocket: its address passes the same checks as its requests */
 	public async allowsSocket(user_id: string, mint_id: string): Promise<boolean> {
 		const [mint, identity] = await Promise.all([this.findWalletMint(user_id, mint_id), this.getOrchardIdentity()]);
 		if (identity && this.isOrchardMint(mint, identity)) return true;

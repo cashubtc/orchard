@@ -22,6 +22,7 @@ import {CashuWalletMint} from './cashuwalletmint.entity.js';
 
 describe('CashuWalletMintService', () => {
 	let service: CashuWalletMintService;
+	let transport: CashuWalletMintTransportService;
 	let rows: CashuWalletMint[];
 	let config: Record<string, string | undefined>;
 	let routes: Record<string, (options?: any) => Promise<any>>;
@@ -112,6 +113,7 @@ describe('CashuWalletMintService', () => {
 		}).compile();
 
 		service = module.get<CashuWalletMintService>(CashuWalletMintService);
+		transport = module.get(CashuWalletMintTransportService);
 	});
 
 	describe('listMints', () => {
@@ -589,6 +591,14 @@ describe('CashuWalletMintService', () => {
 			expect(lookedUp()).toEqual([]);
 			const admin = await service.getMint({...lan, user_id: 'admin-1'} as CashuWalletMint);
 			await expect(admin.getInfo()).resolves.toMatchObject({name: 'Cedar Mint'});
+		});
+
+		it("lets websockets reach local addresses for the Orchard mint and an admin's mint, and no other", async () => {
+			const [orchard] = await service.listMints('user-1');
+			await service.getMint(orchard);
+			await service.getMint({urls: ['http://10.0.0.9'], pubkey: '02lan', user_id: 'user-1'} as CashuWalletMint);
+			await service.getMint({urls: ['http://192.168.1.21:3338'], pubkey: '02admin', user_id: 'admin-1'} as CashuWalletMint);
+			expect([...transport['local_socket_hosts']]).toEqual(['localhost:3338', '192.168.1.21:3338']);
 		});
 	});
 

@@ -33,6 +33,8 @@ export class CashuWalletMintTransportService implements OnModuleInit {
 	public readonly request: RequestFn = (options) => this.requestMint(options);
 
 	private readonly pacer = new CashuWalletRequestPacer(MINT_BURST, MINT_REQUESTS_PER_MINUTE, MINT_PACING_WAIT_MS);
+	/** Mint hosts whose websockets may reach local addresses: the Orchard mint's and admins' mints' */
+	private readonly local_socket_hosts = new Set<string>();
 
 	constructor(
 		private configService: ConfigService,
@@ -42,12 +44,17 @@ export class CashuWalletMintTransportService implements OnModuleInit {
 	/** cashu-ts opens mint websockets itself; give it one that takes the same route as requests */
 	onModuleInit(): void {
 		if (process.env.SCHEMA_ONLY) return;
-		injectWebSocketImpl(createCashuWalletSocket(this.fetchService));
+		injectWebSocketImpl(createCashuWalletSocket(this.fetchService, (url) => this.local_socket_hosts.has(new URL(url).host)));
 	}
 
 	/* *******************************************************
 		Address
 	******************************************************** */
+
+	/** Let websockets to a mint's host reach local addresses, as its requests may */
+	public allowLocalSocket(mint_url: string): void {
+		this.local_socket_hosts.add(new URL(mint_url).host);
+	}
 
 	/** Why a mint URL can't be reached: an onion mint without the Tor proxy, or a local address unless local addresses are allowed; null when it can */
 	public async refuseMintUrl(mint_url: string, allow_local: boolean): Promise<string | null> {
