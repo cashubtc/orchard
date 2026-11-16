@@ -260,6 +260,16 @@ describe('CashuWalletQuoteService', () => {
 		expect(await minted(older.quote_id)).toEqual(expected);
 	});
 
+	it('stops checking a latest offer once its window has passed, but keeps checking a latest one that never expires', async () => {
+		mint.quote_defaults.expiry = now() - 2 * 60 * 60;
+		const expired = await service.newQuote(request('bolt12'));
+		mint.quote_defaults.expiry = null;
+		const lasting = await service.newQuote(request('onchain'));
+		await data_source.getRepository(CashuWalletQuote).update({id: lasting.id}, {check_until: now() - 60});
+		await service.checkQuotes();
+		expect([checksOf(expired.quote_id), checksOf(lasting.quote_id)]).toEqual([0, 1]);
+	});
+
 	it('still mints a payment it saw before a quote stopped being checked', async () => {
 		mint.quote_defaults.expiry = now() - 2 * 24 * 60 * 60;
 		const older = await service.newQuote(request('bolt12'));

@@ -147,12 +147,12 @@ export class CashuWalletQuoteService {
 		Checking
 	******************************************************** */
 
-	/** Check the quotes still worth checking and mint what's been paid: each latest offer or address, any inside its window, and any paid but not yet minted */
+	/** Check the quotes still worth checking and mint what's been paid: each latest offer or address that never expires, any inside its window, and any paid but not yet minted */
 	public async checkQuotes(scope: CashuWalletScope = {}): Promise<void> {
 		const now = DateTime.now().toUnixInteger();
 		const quotes = await this.walletQuoteRepository.find({
 			where: [
-				{...scope, latest: true},
+				{...scope, latest: true, expiry: IsNull()},
 				{...scope, check_until: MoreThan(now)},
 				{...scope, amount_paid: Raw((paid) => `${paid} > amount_issued`)},
 			],

@@ -63,7 +63,7 @@ export class CashuWalletQuote {
 	@Column({type: 'boolean', default: false})
 	latest: boolean;
 
-	// Until when it's checked for payments (unix), besides while it's the latest or paid but not yet minted
+	// Until when it's checked for payments (unix)
 	@Column({type: 'integer'})
 	check_until: number;
 
