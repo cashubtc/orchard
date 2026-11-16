@@ -2,11 +2,12 @@
 import {Entity, Column, PrimaryGeneratedColumn, Index} from 'typeorm';
 
 /**
- * Reusable mint quotes a wallet receives on: BOLT 12 offers and onchain addresses.
- * Each payment to one becomes its own mint operation for what was paid since the last.
+ * Mint quotes a wallet receives on: BOLT 11 invoices, BOLT 12 offers and onchain addresses.
+ * Nothing reaches the wallet's operations until one is paid; each payment then becomes its own mint operation.
  */
 @Entity('cashu_wallet_quotes')
-@Index(['user_id', 'mint_id', 'method'])
+@Index(['user_id', 'mint_id', 'method', 'unit'])
+@Index(['user_id', 'mint_id', 'method', 'unit'], {unique: true, where: '"latest" = 1'})
 @Index(['mint_id', 'quote_id'], {unique: true})
 export class CashuWalletQuote {
 	@PrimaryGeneratedColumn('uuid')
@@ -20,7 +21,7 @@ export class CashuWalletQuote {
 	@Column({type: 'text'})
 	mint_id: string;
 
-	// Payment method: bolt12 or onchain
+	// Payment method: bolt11, bolt12 or onchain
 	@Column({type: 'text'})
 	method: string;
 
@@ -31,11 +32,11 @@ export class CashuWalletQuote {
 	@Column({type: 'text'})
 	quote_id: string;
 
-	// NUT-20 seed counter of the key locking the quote
-	@Column({type: 'integer'})
-	quote_counter: number;
+	// NUT-20 seed counter of the key locking the quote; null for a bolt11 quote from a mint without NUT-20
+	@Column({type: 'integer', nullable: true})
+	quote_counter: number | null;
 
-	// What payers pay to: the offer or address
+	// What payers pay to: the invoice, offer or address
 	@Column({type: 'text'})
 	request: string;
 
@@ -58,13 +59,13 @@ export class CashuWalletQuote {
 	@Column({type: 'integer', default: 0})
 	amount_issued: number;
 
-	// When a new payment was last seen (unix)
-	@Column({type: 'integer', nullable: true})
-	last_paid_at: number | null;
-
-	// Whether this is the quote shown for its mint and method
-	@Column({type: 'boolean', default: true})
+	// Whether this is the offer or address shown for its mint, method and unit
+	@Column({type: 'boolean', default: false})
 	latest: boolean;
+
+	// Until when it's checked for payments (unix), besides while it's the latest or paid but not yet minted
+	@Column({type: 'integer'})
+	check_until: number;
 
 	// Last block scanned for deposits to an onchain address
 	@Column({type: 'integer', nullable: true})

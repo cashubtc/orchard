@@ -3,6 +3,7 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 /* Application Dependencies */
 import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
+import {CashuWalletQuoteService} from '#server/modules/cashu/wallet/quote/cashuwalletquote.service';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
@@ -10,11 +11,12 @@ import {OrchardEcashOperation} from '#server/modules/api/ecash/operation/ecashop
 import {WalletMintMatch} from '#server/modules/cashu/wallet/cashuwallet.enums';
 /* Local Dependencies */
 import {EcashReceiveService} from './ecashreceive.service.js';
-import {OrchardEcashTokenPreview} from './ecashreceive.model.js';
+import {OrchardEcashQuote, OrchardEcashTokenPreview} from './ecashreceive.model.js';
 
 describe('EcashReceiveService', () => {
 	let ecashReceiveService: EcashReceiveService;
 	let cashuWalletSwapService: jest.Mocked<CashuWalletSwapService>;
+	let cashuWalletQuoteService: jest.Mocked<CashuWalletQuoteService>;
 	let errorService: jest.Mocked<ErrorService>;
 
 	const preview = {
@@ -31,12 +33,14 @@ describe('EcashReceiveService', () => {
 			providers: [
 				EcashReceiveService,
 				{provide: CashuWalletSwapService, useValue: {previewToken: jest.fn(), receiveToken: jest.fn()}},
+				{provide: CashuWalletQuoteService, useValue: {newQuote: jest.fn(), openQuote: jest.fn()}},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
 			],
 		}).compile();
 
 		ecashReceiveService = module.get<EcashReceiveService>(EcashReceiveService);
 		cashuWalletSwapService = module.get(CashuWalletSwapService);
+		cashuWalletQuoteService = module.get(CashuWalletQuoteService);
 		errorService = module.get(ErrorService);
 	});
 
@@ -53,6 +57,19 @@ describe('EcashReceiveService', () => {
 		const result = await ecashReceiveService.receiveToken('TAG', 'user-1', 'cashuBtoken', true, false);
 		expect(cashuWalletSwapService.receiveToken).toHaveBeenCalledWith('user-1', 'cashuBtoken', true, false);
 		expect(result).toBeInstanceOf(OrchardEcashOperation);
+	});
+
+	it('newQuote and openQuote map the quote with what its payments brought in', async () => {
+		const quote = {id: 'quote-1', method: 'bolt12', request: 'lno1offer', amount: null, received: 50, payments: 2} as any;
+		cashuWalletQuoteService.newQuote.mockResolvedValue(quote);
+		cashuWalletQuoteService.openQuote.mockResolvedValue(quote);
+		const request = {user_id: 'user-1', mint_id: 'mint-1', method: 'bolt12', unit: 'sat', amount: null, description: null};
+		const created = await ecashReceiveService.newQuote('TAG', request);
+		const opened = await ecashReceiveService.openQuote('TAG', 'user-1', 'mint-1', 'bolt12', 'sat');
+		expect(cashuWalletQuoteService.newQuote).toHaveBeenCalledWith(request);
+		expect(cashuWalletQuoteService.openQuote).toHaveBeenCalledWith('user-1', 'mint-1', 'bolt12', 'sat');
+		expect(created).toBeInstanceOf(OrchardEcashQuote);
+		expect(opened).toMatchObject({id: 'quote-1', request: 'lno1offer', received: 50, payments: 2});
 	});
 
 	it('wraps failures as a wallet error', async () => {

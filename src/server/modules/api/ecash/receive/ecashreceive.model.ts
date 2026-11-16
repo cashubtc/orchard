@@ -1,8 +1,9 @@
 /* Core Dependencies */
-import {Field, Float, ObjectType} from '@nestjs/graphql';
+import {Field, Float, ID, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {OrchardEcashMintLookup} from '#server/modules/api/ecash/mint/ecashmint.model';
-import type {CashuWalletTokenPreview} from '#server/modules/cashu/wallet/cashuwallet.types';
+import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
+import type {CashuWalletQuoteRecord, CashuWalletTokenPreview} from '#server/modules/cashu/wallet/cashuwallet.types';
 
 @ObjectType({description: "An ecash token read before receiving it into the current user's wallet"})
 export class OrchardEcashTokenPreview {
@@ -31,5 +32,67 @@ export class OrchardEcashTokenPreview {
 		this.fee = preview.fee;
 		this.claimed = preview.claimed;
 		this.mint = new OrchardEcashMintLookup(preview.mint);
+	}
+}
+
+@ObjectType({description: "A payment request the current user's wallet receives on: a bolt11 invoice, bolt12 offer or onchain address"})
+export class OrchardEcashQuote {
+	@Field(() => ID, {description: 'Quote identifier'})
+	id: string;
+
+	@Field({description: 'Wallet mint identifier'})
+	mint_id: string;
+
+	@Field({description: 'Payment method: bolt11, bolt12 or onchain'})
+	method: string;
+
+	@Field({description: 'Unit of the amounts'})
+	unit: string;
+
+	@Field({description: 'What payers pay to: the invoice, offer or address'})
+	request: string;
+
+	@Field(() => Float, {nullable: true, description: 'Fixed amount every payment must be, in the smallest unit; null when payers choose'})
+	amount: number | null;
+
+	@Field(() => String, {nullable: true, description: 'Description payers see'})
+	description: string | null;
+
+	@Field(() => UnixTimestamp, {nullable: true, description: 'When payers should stop paying it; null when it never expires'})
+	expiry: number | null;
+
+	@Field(() => Float, {description: 'Total the mint has seen paid to it, in the smallest unit'})
+	amount_paid: number;
+
+	@Field(() => Float, {description: 'Total minted into the wallet from it, in the smallest unit'})
+	received: number;
+
+	@Field(() => Int, {description: 'How many mints into the wallet its payments became'})
+	payments: number;
+
+	@Field({description: 'Whether it is the offer or address shown for its mint, method and unit'})
+	latest: boolean;
+
+	@Field(() => UnixTimestamp, {description: 'When the quote was created'})
+	created_at: number;
+
+	@Field(() => UnixTimestamp, {description: 'When the quote last changed'})
+	updated_at: number;
+
+	constructor(quote: CashuWalletQuoteRecord) {
+		this.id = quote.id;
+		this.mint_id = quote.mint_id;
+		this.method = quote.method;
+		this.unit = quote.unit;
+		this.request = quote.request;
+		this.amount = quote.amount;
+		this.description = quote.description;
+		this.expiry = quote.expiry;
+		this.amount_paid = quote.amount_paid;
+		this.received = quote.received;
+		this.payments = quote.payments;
+		this.latest = quote.latest;
+		this.created_at = quote.created_at;
+		this.updated_at = quote.updated_at;
 	}
 }

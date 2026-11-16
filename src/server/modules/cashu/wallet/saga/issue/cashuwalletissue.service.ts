@@ -20,6 +20,7 @@ import {
 	WalletOperationType,
 } from '../../cashuwallet.enums.js';
 import {describeMintError, walletError} from '../../cashuwallet.helpers.js';
+import {CASHU_WALLET_QUOTE_METHODS} from '../../constants/cashuwallet.constants.js';
 import {classifyMintError, classifyMintRpcError} from '../cashuwalletsaga.helpers.js';
 import {assessMintQuote, deriveQuoteKey} from './cashuwalletissue.helpers.js';
 import type {CashuWalletIssueRequest, CashuWalletMintQuote, CashuWalletMintRequest} from '../../cashuwallet.types.js';
@@ -129,21 +130,16 @@ export class CashuWalletIssueService {
 	/** Journal an issue on a fresh bolt11 quote, locked to a seed-derived key (NUT-20) when the mint supports it */
 	private async createIssueOperation(mint_id: string, request: CashuWalletIssueRequest): Promise<CashuWalletOperation> {
 		const wallet = await this.cashuWalletMintService.getWallet(mint_id, request.unit);
-		const locked = wallet.getMintInfo().isSupported(20).supported;
-		const quote_counter = locked
-			? (await this.cashuWalletMintService.counterSource(request.user_id).reserveCursor(QUOTE_KEY_COUNTER, 1)).start
-			: null;
-		const quote =
-			quote_counter === null
-				? await wallet.createMintQuoteBolt11(request.amount)
-				: await wallet.createLockedMintQuote(request.amount, (await this.getQuoteKey(request.user_id, quote_counter)).pubkey);
+		const bolt11 = CASHU_WALLET_QUOTE_METHODS.bolt11;
+		const key = bolt11.locks(wallet.getMintInfo()) ? await this.reserveQuoteKey(request.user_id) : null;
+		const quote = await bolt11.create(wallet, key?.pubkey ?? null, request.amount);
 		return this.createMintOperation({
 			...request,
 			mint_id,
 			type: WalletOperationType.ISSUE,
 			method: 'bolt11',
 			quote_id: quote.quote,
-			quote_counter,
+			quote_counter: key?.counter ?? null,
 		});
 	}
 
@@ -255,6 +251,12 @@ export class CashuWalletIssueService {
 	/** Keep the operation executing with the failure recorded; reconciliation retries it */
 	private wait(operation: CashuWalletOperation, error: unknown): Promise<CashuWalletOperation> {
 		return this.cashuWalletJournalService.transition(operation, WalletOperationState.EXECUTING, {error: describeMintError(error)});
+	}
+
+	/** A fresh NUT-20 key from a user's seed for their next mint quote, with the counter it's derived at */
+	public async reserveQuoteKey(user_id: string): Promise<{counter: number; pubkey: string}> {
+		const {start} = await this.cashuWalletMintService.counterSource(user_id).reserveCursor(QUOTE_KEY_COUNTER, 1);
+		return {counter: start, pubkey: (await this.getQuoteKey(user_id, start)).pubkey};
 	}
 
 	/** Keypair (hex) that locks and signs for a NUT-20 locked quote */

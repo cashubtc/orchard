@@ -2,13 +2,15 @@
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
 import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
+import {CashuWalletQuoteService} from '#server/modules/cashu/wallet/quote/cashuwalletquote.service';
 import {toWalletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardEcashOperation} from '#server/modules/api/ecash/operation/ecashoperation.model';
+import type {CashuWalletQuoteRequest} from '#server/modules/cashu/wallet/cashuwallet.types';
 /* Local Dependencies */
-import {OrchardEcashTokenPreview} from './ecashreceive.model.js';
+import {OrchardEcashQuote, OrchardEcashTokenPreview} from './ecashreceive.model.js';
 
 @Injectable()
 export class EcashReceiveService {
@@ -16,6 +18,7 @@ export class EcashReceiveService {
 
 	constructor(
 		private cashuWalletSwapService: CashuWalletSwapService,
+		private cashuWalletQuoteService: CashuWalletQuoteService,
 		private errorService: ErrorService,
 	) {}
 
@@ -38,6 +41,24 @@ export class EcashReceiveService {
 	): Promise<OrchardEcashOperation> {
 		try {
 			return new OrchardEcashOperation(await this.cashuWalletSwapService.receiveToken(user_id, token, add_mint, allow_local));
+		} catch (error) {
+			throw this.handleError(tag, error);
+		}
+	}
+
+	/** A payment request at one of a user's wallet mints */
+	async newQuote(tag: string, request: CashuWalletQuoteRequest): Promise<OrchardEcashQuote> {
+		try {
+			return new OrchardEcashQuote(await this.cashuWalletQuoteService.newQuote(request));
+		} catch (error) {
+			throw this.handleError(tag, error);
+		}
+	}
+
+	/** The bolt12 offer or onchain address a user's wallet receives on at a mint */
+	async openQuote(tag: string, user_id: string, mint_id: string, method: string, unit: string): Promise<OrchardEcashQuote> {
+		try {
+			return new OrchardEcashQuote(await this.cashuWalletQuoteService.openQuote(user_id, mint_id, method, unit));
 		} catch (error) {
 			throw this.handleError(tag, error);
 		}

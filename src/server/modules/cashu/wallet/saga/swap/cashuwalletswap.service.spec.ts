@@ -25,6 +25,8 @@ import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwal
 import {CashuWalletMint} from '#server/modules/cashu/wallet/mint/cashuwalletmint.entity';
 import {CashuWalletMintInfo} from '#server/modules/cashu/wallet/mint/cashuwalletmintinfo.entity';
 import {CashuWalletMintKeyset} from '#server/modules/cashu/wallet/mint/cashuwalletmintkeyset.entity';
+import {CashuWalletQuote} from '#server/modules/cashu/wallet/quote/cashuwalletquote.entity';
+import {CashuWalletQuoteService} from '#server/modules/cashu/wallet/quote/cashuwalletquote.service';
 import {CashuWalletMintCacheService} from '#server/modules/cashu/wallet/mint/cashuwalletmintcache.service';
 import {CashuWalletMintTransportService} from '#server/modules/cashu/wallet/mint/cashuwalletminttransport.service';
 import {WalletMintMatch, WalletOperationState, WalletOperationType, WalletProofState} from '#server/modules/cashu/wallet/cashuwallet.enums';
@@ -99,6 +101,7 @@ describe('CashuWalletSwapService', () => {
 		CashuWalletMint,
 		CashuWalletMintInfo,
 		CashuWalletMintKeyset,
+		CashuWalletQuote,
 	];
 
 	beforeEach(async () => {
@@ -117,6 +120,7 @@ describe('CashuWalletSwapService', () => {
 				CashuWalletJournalService,
 				CashuWalletProofService,
 				CashuWalletRecoveryService,
+				CashuWalletQuoteService,
 				CashuWalletMintService,
 				CashuWalletMintCacheService,
 				CashuWalletMintTransportService,

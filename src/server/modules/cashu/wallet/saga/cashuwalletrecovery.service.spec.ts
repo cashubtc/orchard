@@ -7,6 +7,7 @@ import {In} from 'typeorm';
 /* Native Dependencies */
 import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
 import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
+import {CashuWalletQuoteService} from '#server/modules/cashu/wallet/quote/cashuwalletquote.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 /* Local Dependencies */
 import {CashuWalletRecoveryService} from './cashuwalletrecovery.service.js';
@@ -22,6 +23,7 @@ describe('CashuWalletRecoveryService', () => {
 	const operation_repository = {find: jest.fn()};
 	const issue_service = {resume: jest.fn()};
 	const swap_service = {resume: jest.fn(async (operation) => operation), checkClaims: jest.fn(async (operations) => operations)};
+	const quote_service = {checkQuotes: jest.fn(async (_scope: object) => undefined)};
 
 	beforeEach(async () => {
 		jest.clearAllMocks();
@@ -33,6 +35,7 @@ describe('CashuWalletRecoveryService', () => {
 				{provide: getRepositoryToken(CashuWalletOperation), useValue: operation_repository},
 				{provide: CashuWalletIssueService, useValue: issue_service},
 				{provide: CashuWalletSwapService, useValue: swap_service},
+				{provide: CashuWalletQuoteService, useValue: quote_service},
 			],
 		}).compile();
 
@@ -93,6 +96,14 @@ describe('CashuWalletRecoveryService', () => {
 		expect(operation_repository.find).toHaveBeenCalledWith(
 			expect.objectContaining({where: expect.objectContaining({id: In(['op-1'])})}),
 		);
+	});
+
+	it('checks quotes after the operations in a shared pass, but not when settling chosen operations', async () => {
+		issue_service.resume.mockImplementation(async (operation) => operation);
+		await service.reconcileOperations();
+		await service.reconcileMint('user-1', 'mint-1');
+		await service.settleOperations(['op-1']);
+		expect(quote_service.checkQuotes.mock.calls).toEqual([[{}], [{user_id: 'user-1', mint_id: 'mint-1'}]]);
 	});
 
 	it('runs one pass at a time', async () => {

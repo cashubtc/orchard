@@ -4,6 +4,7 @@ import type {MintInfo, MintQuoteBaseResponse, MintQuoteState} from '@cashu/cashu
 import type {CashuWalletMint} from './mint/cashuwalletmint.entity.js';
 import type {CashuWalletSeed} from './seed/cashuwalletseed.entity.js';
 import type {CashuWalletOperation} from './saga/cashuwalletoperation.entity.js';
+import type {CashuWalletQuote} from './quote/cashuwalletquote.entity.js';
 import type {WalletMintMatch, WalletOperationState, WalletOperationType} from './cashuwallet.enums.js';
 
 export type CashuWalletBalance = {
@@ -48,6 +49,25 @@ export type CashuWalletIssueRequest = {
 	unit: string;
 	amount: number;
 	memo: string | null;
+};
+
+/** The wallets a pass covers: one user's, or one user's mint, or everyone's when empty */
+export type CashuWalletScope = Partial<Pick<CashuWalletOperation, 'user_id' | 'mint_id'>>;
+
+/** A request to receive at a wallet mint: amount null for any amount, description null for none */
+export type CashuWalletQuoteRequest = {
+	user_id: string;
+	mint_id: string;
+	method: string;
+	unit: string;
+	amount: number | null;
+	description: string | null;
+};
+
+/** A quote with what its payments brought in: the total minted from it and how many mints that took */
+export type CashuWalletQuoteRecord = CashuWalletQuote & {
+	received: number;
+	payments: number;
 };
 
 export type CashuWalletWatch = {

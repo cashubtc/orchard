@@ -330,7 +330,7 @@ export class CashuWalletMintService {
 	}
 
 	/** A mint in a user's wallet, refusing one that isn't there */
-	private async findWalletMint(user_id: string, mint_id: string): Promise<CashuWalletMint> {
+	public async findWalletMint(user_id: string, mint_id: string): Promise<CashuWalletMint> {
 		const mint = await this.walletMintRepository.findOne({where: {id: mint_id, user_id}});
 		if (!mint) throw walletError('Mint not found in this wallet');
 		return mint;

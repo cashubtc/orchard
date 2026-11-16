@@ -25,6 +25,8 @@ import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwal
 import {CashuWalletMint} from '#server/modules/cashu/wallet/mint/cashuwalletmint.entity';
 import {CashuWalletMintInfo} from '#server/modules/cashu/wallet/mint/cashuwalletmintinfo.entity';
 import {CashuWalletMintKeyset} from '#server/modules/cashu/wallet/mint/cashuwalletmintkeyset.entity';
+import {CashuWalletQuote} from '#server/modules/cashu/wallet/quote/cashuwalletquote.entity';
+import {CashuWalletQuoteService} from '#server/modules/cashu/wallet/quote/cashuwalletquote.service';
 import {CashuWalletMintCacheService} from '#server/modules/cashu/wallet/mint/cashuwalletmintcache.service';
 import {CashuWalletMintTransportService} from '#server/modules/cashu/wallet/mint/cashuwalletminttransport.service';
 import {WalletOperationState, WalletOperationType, WalletProofState} from '#server/modules/cashu/wallet/cashuwallet.enums';
@@ -96,6 +98,7 @@ describe('CashuWalletIssueService', () => {
 		CashuWalletMint,
 		CashuWalletMintInfo,
 		CashuWalletMintKeyset,
+		CashuWalletQuote,
 	];
 
 	/** A fresh service graph over the shared database, like Orchard after a restart */
@@ -107,6 +110,7 @@ describe('CashuWalletIssueService', () => {
 				CashuWalletJournalService,
 				CashuWalletProofService,
 				CashuWalletRecoveryService,
+				CashuWalletQuoteService,
 				CashuWalletMintService,
 				CashuWalletMintCacheService,
 				CashuWalletMintTransportService,

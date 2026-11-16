@@ -1,7 +1,7 @@
 import type {MigrationInterface, QueryRunner} from 'typeorm';
 
-export class AddCashuWalletTables1794348628826 implements MigrationInterface {
-	name = 'AddCashuWalletTables1794348628826';
+export class AddCashuWalletTables1794863473558 implements MigrationInterface {
+	name = 'AddCashuWalletTables1794863473558';
 
 	public async up(queryRunner: QueryRunner): Promise<void> {
 		await queryRunner.query(
@@ -37,14 +37,20 @@ export class AddCashuWalletTables1794348628826 implements MigrationInterface {
 			`CREATE TABLE "cashu_wallet_mint_keysets" ("mint_url" text NOT NULL, "id" text NOT NULL, "unit" text NOT NULL, "active" boolean NOT NULL, "input_fee_ppk" integer NOT NULL DEFAULT (0), "final_expiry" integer, "keys" text, "updated_at" integer NOT NULL, PRIMARY KEY ("mint_url", "id"))`,
 		);
 		await queryRunner.query(
-			`CREATE TABLE "cashu_wallet_quotes" ("id" varchar PRIMARY KEY NOT NULL, "user_id" text NOT NULL, "mint_id" text NOT NULL, "method" text NOT NULL, "unit" text NOT NULL, "quote_id" text NOT NULL, "quote_counter" integer NOT NULL, "request" text NOT NULL, "amount" integer, "description" text, "expiry" integer, "amount_paid" integer NOT NULL DEFAULT (0), "amount_issued" integer NOT NULL DEFAULT (0), "last_paid_at" integer, "latest" boolean NOT NULL DEFAULT (1), "chain_height" integer, "deposits" text, "created_at" integer NOT NULL, "updated_at" integer NOT NULL)`,
+			`CREATE TABLE "cashu_wallet_quotes" ("id" varchar PRIMARY KEY NOT NULL, "user_id" text NOT NULL, "mint_id" text NOT NULL, "method" text NOT NULL, "unit" text NOT NULL, "quote_id" text NOT NULL, "quote_counter" integer, "request" text NOT NULL, "amount" integer, "description" text, "expiry" integer, "amount_paid" integer NOT NULL DEFAULT (0), "amount_issued" integer NOT NULL DEFAULT (0), "latest" boolean NOT NULL DEFAULT (0), "check_until" integer NOT NULL, "chain_height" integer, "deposits" text, "created_at" integer NOT NULL, "updated_at" integer NOT NULL)`,
 		);
 		await queryRunner.query(`CREATE UNIQUE INDEX "IDX_2abdc10500931bf495ba15547d" ON "cashu_wallet_quotes" ("mint_id", "quote_id") `);
-		await queryRunner.query(`CREATE INDEX "IDX_06d55a0f98c1168265b9adc2ef" ON "cashu_wallet_quotes" ("user_id", "mint_id", "method") `);
+		await queryRunner.query(
+			`CREATE UNIQUE INDEX "IDX_931141fdd821cff830b9a2282c" ON "cashu_wallet_quotes" ("user_id", "mint_id", "method", "unit") WHERE "latest" = 1`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_e9f971991d6a500dc291a71154" ON "cashu_wallet_quotes" ("user_id", "mint_id", "method", "unit") `,
+		);
 	}
 
 	public async down(queryRunner: QueryRunner): Promise<void> {
-		await queryRunner.query(`DROP INDEX "IDX_06d55a0f98c1168265b9adc2ef"`);
+		await queryRunner.query(`DROP INDEX "IDX_e9f971991d6a500dc291a71154"`);
+		await queryRunner.query(`DROP INDEX "IDX_931141fdd821cff830b9a2282c"`);
 		await queryRunner.query(`DROP INDEX "IDX_2abdc10500931bf495ba15547d"`);
 		await queryRunner.query(`DROP TABLE "cashu_wallet_quotes"`);
 		await queryRunner.query(`DROP TABLE "cashu_wallet_mint_keysets"`);

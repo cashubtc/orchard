@@ -6,9 +6,11 @@ import {In, Repository, type FindOptionsWhere} from 'typeorm';
 /* Native Dependencies */
 import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
 import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
+import {CashuWalletQuoteService} from '#server/modules/cashu/wallet/quote/cashuwalletquote.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {describeMintError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
 import {CASHU_WALLET_OPEN_STATES} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
+import type {CashuWalletScope} from '#server/modules/cashu/wallet/cashuwallet.types';
 /* Local Dependencies */
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
 
@@ -34,6 +36,7 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 		private walletOperationRepository: Repository<CashuWalletOperation>,
 		private cashuWalletIssueService: CashuWalletIssueService,
 		private cashuWalletSwapService: CashuWalletSwapService,
+		private cashuWalletQuoteService: CashuWalletQuoteService,
 	) {}
 
 	/** Catch up on operations interrupted by a restart, without blocking startup */
@@ -46,12 +49,12 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 		Reconciliation
 	******************************************************** */
 
-	/** Settle every open operation against its mint; concurrent callers share one pass */
+	/** Settle every open operation against its mint, then check the quotes still worth checking; concurrent callers share one pass */
 	public reconcileOperations(): Promise<void> {
 		return this.sharePass('all', {});
 	}
 
-	/** Settle a user's open operations at one mint now, for a refresh; concurrent refreshes share one pass */
+	/** Settle a user's open operations and check their quotes at one mint now, for a refresh; concurrent refreshes share one pass */
 	public reconcileMint(user_id: string, mint_id: string): Promise<void> {
 		return this.sharePass(`${user_id}:${mint_id}`, {user_id, mint_id});
 	}
@@ -62,10 +65,12 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 	}
 
 	/** The pass running for a scope, or a new one */
-	private sharePass(key: string, scope: FindOptionsWhere<CashuWalletOperation>): Promise<void> {
+	private sharePass(key: string, scope: CashuWalletScope): Promise<void> {
 		const running = this.reconciling.get(key);
 		if (running) return running;
-		const pass = this.runReconciliation(scope).finally(() => this.reconciling.delete(key));
+		const pass = this.runReconciliation(scope)
+			.then(() => this.cashuWalletQuoteService.checkQuotes(scope))
+			.finally(() => this.reconciling.delete(key));
 		this.reconciling.set(key, pass);
 		return pass;
 	}

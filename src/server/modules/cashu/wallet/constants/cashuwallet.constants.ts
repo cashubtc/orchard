@@ -1,5 +1,11 @@
 /* Native Dependencies */
 import {WalletOperationState} from '#server/modules/cashu/wallet/cashuwallet.enums';
+import {
+	CashuWalletBolt11QuoteMethod,
+	CashuWalletBolt12QuoteMethod,
+	CashuWalletOnchainQuoteMethod,
+	type CashuWalletQuoteMethod,
+} from '#server/modules/cashu/wallet/classes/cashu-wallet-quote-method.class';
 
 /** Emitted whenever a wallet operation changes state, with the operation minus the ecash it carries */
 export const CASHU_WALLET_OPERATION_UPDATED = 'cashu.wallet.operation.updated';
@@ -24,3 +30,10 @@ export const CASHU_WALLET_FINAL_STATES: ReadonlySet<WalletOperationState> = new 
 
 /** Most a mint response or websocket message may carry */
 export const CASHU_WALLET_MINT_MAX_BYTES = 256 * 1024;
+
+/** The payment methods a wallet receives on */
+export const CASHU_WALLET_QUOTE_METHODS: Readonly<Record<'bolt11' | 'bolt12' | 'onchain', CashuWalletQuoteMethod>> = {
+	bolt11: new CashuWalletBolt11QuoteMethod(),
+	bolt12: new CashuWalletBolt12QuoteMethod(),
+	onchain: new CashuWalletOnchainQuoteMethod(),
+};
