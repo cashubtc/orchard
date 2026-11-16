@@ -26,13 +26,15 @@
  * Plus `retries` to absorb the residual nondeterminism of a slow/empty reply.
  */
 
-import dotenv from 'dotenv';
-
 import {defineConfig, devices, type Project} from '@playwright/test';
 import {CONFIGS, portOf, tagsFor} from './helpers/config';
 import type {ConfigInfo} from './types/config';
 
-dotenv.config({path: './e2e/.env', quiet: true});
+try {
+	process.loadEnvFile('./e2e/.env');
+} catch (error) {
+	if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+}
 
 function grepFor(config: ConfigInfo): RegExp {
 	return new RegExp(

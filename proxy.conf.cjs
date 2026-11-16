@@ -1,4 +1,8 @@
-require('dotenv').config({ path: '.env', quiet: true });
+try {
+	process.loadEnvFile('.env');
+} catch (error) {
+	if (error.code !== 'ENOENT') throw error;
+}
 
 module.exports = {
 	"/proxy": {
