@@ -11,6 +11,7 @@ import {UserRole} from '#server/modules/user/user.enums';
 import {CashuWalletProof} from '#server/modules/cashu/wallet/proof/cashuwalletproof.entity';
 import {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.entity';
 import {CashuWalletCounter} from '#server/modules/cashu/wallet/saga/cashuwalletcounter.entity';
+import {CashuWalletQuote} from '#server/modules/cashu/wallet/quote/cashuwalletquote.entity';
 import {CashuWalletSeedService} from '#server/modules/cashu/wallet/seed/cashuwalletseed.service';
 import {walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
 /* Local Dependencies */
@@ -72,6 +73,7 @@ describe('CashuWalletMintService', () => {
 	};
 	const proof_repository = {count: jest.fn()};
 	const operation_repository = {count: jest.fn()};
+	const quote_repository = {count: jest.fn(), update: jest.fn()};
 	const fetch_service = {
 		fetchWithProxy: jest.fn((url: string, options?: any) =>
 			routes[url] ? routes[url](options) : Promise.reject(new Error(`no route for ${url}`)),
@@ -90,6 +92,7 @@ describe('CashuWalletMintService', () => {
 		config = {'cashu.api': ORCHARD_API, 'server.proxy': undefined};
 		proof_repository.count.mockResolvedValue(0);
 		operation_repository.count.mockResolvedValue(0);
+		quote_repository.count.mockResolvedValue(0);
 
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
@@ -99,6 +102,7 @@ describe('CashuWalletMintService', () => {
 				{provide: getRepositoryToken(CashuWalletProof), useValue: proof_repository},
 				{provide: getRepositoryToken(CashuWalletOperation), useValue: operation_repository},
 				{provide: getRepositoryToken(CashuWalletCounter), useValue: {}},
+				{provide: getRepositoryToken(CashuWalletQuote), useValue: quote_repository},
 				{provide: CashuWalletSeedService, useValue: {getSeed: jest.fn()}},
 				{provide: ConfigService, useValue: {get: jest.fn((key: string) => config[key])}},
 				{provide: FetchService, useValue: fetch_service},
@@ -601,19 +605,31 @@ describe('CashuWalletMintService', () => {
 			});
 		});
 
-		it('refuses a mint that still holds ecash or has operations in progress', async () => {
+		it('refuses a mint that still holds ecash, has operations in progress, or has a payment not yet minted', async () => {
 			proof_repository.count.mockResolvedValueOnce(2);
 			await expect(service.removeMint('user-1', 'mint-2')).rejects.toMatchObject({
 				details: expect.stringContaining('still holds ecash'),
 			});
 			operation_repository.count.mockResolvedValueOnce(1);
 			await expect(service.removeMint('user-1', 'mint-2')).rejects.toMatchObject({details: expect.stringContaining('in progress')});
+			quote_repository.count.mockResolvedValueOnce(1);
+			await expect(service.removeMint('user-1', 'mint-2')).rejects.toMatchObject({
+				details: 'This mint has a payment not yet in the wallet; refresh it first',
+			});
+			expect(rows.map((row) => row.id)).toEqual(['mint-1', 'mint-2']);
+			expect(quote_repository.update).not.toHaveBeenCalled();
 		});
 
-		it("removes an empty mint and never another user's", async () => {
+		it("removes an empty mint and retires its quotes, never another user's", async () => {
 			await expect(service.removeMint('user-2', 'mint-2')).rejects.toMatchObject({details: 'Mint not found in this wallet'});
 			await service.removeMint('user-1', 'mint-2');
 			expect(rows.map((row) => row.id)).toEqual(['mint-1']);
+			expect(quote_repository.update.mock.calls).toEqual([
+				[
+					{user_id: 'user-1', mint_id: 'mint-2'},
+					{latest: false, check_until: expect.any(Number)},
+				],
+			]);
 		});
 	});
 });
