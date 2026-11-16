@@ -132,15 +132,6 @@ describe('EcashOperationService', () => {
 			expect(await stream.next()).toMatchObject({done: true});
 		});
 
-		it('releases the watch at once when returned while waiting for an update', async () => {
-			const stream = await ecashOperationService.watchEcashOperation('TAG', 'user-1', 'op-1', updates);
-			await stream.next();
-			const waiting = stream.next();
-			await stream.return!();
-			expect(release).toHaveBeenCalled();
-			expect(await waiting).toMatchObject({done: true});
-		});
-
 		it('stops listening and wraps the error when the operation cannot be watched', async () => {
 			const not_found = {code: OrchardErrorCode.EcashWalletError, details: 'Operation not found'};
 			watch_service.watch.mockRejectedValueOnce(not_found);

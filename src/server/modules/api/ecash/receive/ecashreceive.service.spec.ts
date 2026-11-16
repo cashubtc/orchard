@@ -1,9 +1,12 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
+/* Vendor Dependencies */
+import {PubSub} from 'graphql-subscriptions';
 /* Application Dependencies */
 import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
 import {CashuWalletQuoteService} from '#server/modules/cashu/wallet/quote/cashuwalletquote.service';
+import {CashuWalletWatchService} from '#server/modules/cashu/wallet/watch/cashuwalletwatch.service';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
@@ -12,11 +15,13 @@ import {WalletMintMatch} from '#server/modules/cashu/wallet/cashuwallet.enums';
 /* Local Dependencies */
 import {EcashReceiveService} from './ecashreceive.service.js';
 import {OrchardEcashQuote, OrchardEcashTokenPreview} from './ecashreceive.model.js';
+import type {EcashQuoteWatchPayload} from './ecashreceive.types.js';
 
 describe('EcashReceiveService', () => {
 	let ecashReceiveService: EcashReceiveService;
 	let cashuWalletSwapService: jest.Mocked<CashuWalletSwapService>;
 	let cashuWalletQuoteService: jest.Mocked<CashuWalletQuoteService>;
+	let cashuWalletWatchService: jest.Mocked<CashuWalletWatchService>;
 	let errorService: jest.Mocked<ErrorService>;
 
 	const preview = {
@@ -34,6 +39,7 @@ describe('EcashReceiveService', () => {
 				EcashReceiveService,
 				{provide: CashuWalletSwapService, useValue: {previewToken: jest.fn(), receiveToken: jest.fn()}},
 				{provide: CashuWalletQuoteService, useValue: {newQuote: jest.fn(), openQuote: jest.fn()}},
+				{provide: CashuWalletWatchService, useValue: {watchQuote: jest.fn()}},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
 			],
 		}).compile();
@@ -41,6 +47,7 @@ describe('EcashReceiveService', () => {
 		ecashReceiveService = module.get<EcashReceiveService>(EcashReceiveService);
 		cashuWalletSwapService = module.get(CashuWalletSwapService);
 		cashuWalletQuoteService = module.get(CashuWalletQuoteService);
+		cashuWalletWatchService = module.get(CashuWalletWatchService);
 		errorService = module.get(ErrorService);
 	});
 
@@ -70,6 +77,48 @@ describe('EcashReceiveService', () => {
 		expect(cashuWalletQuoteService.openQuote).toHaveBeenCalledWith('user-1', 'mint-1', 'bolt12', 'sat');
 		expect(created).toBeInstanceOf(OrchardEcashQuote);
 		expect(opened).toMatchObject({id: 'quote-1', request: 'lno1offer', received: 50, payments: 2});
+	});
+
+	describe('watchEcashQuote', () => {
+		const release = jest.fn();
+		const quote = {
+			id: 'quote-1',
+			method: 'bolt11',
+			request: 'lnbc1000n1fake',
+			amount: 100,
+			received: 0,
+			payments: 0,
+			final: false,
+		} as any;
+		let pub_sub: PubSub;
+		let updates: AsyncIterableIterator<EcashQuoteWatchPayload>;
+
+		beforeEach(() => {
+			release.mockClear();
+			pub_sub = new PubSub();
+			updates = pub_sub.asyncIterableIterator<EcashQuoteWatchPayload>('watch');
+		});
+
+		it('sends the quote now, then each update, ending once it takes no more payments', async () => {
+			cashuWalletWatchService.watchQuote.mockResolvedValue({quote, release});
+			const stream = await ecashReceiveService.watchEcashQuote('TAG', 'user-1', 'quote-1', updates);
+			expect(cashuWalletWatchService.watchQuote).toHaveBeenCalledWith('user-1', 'quote-1');
+			expect((await stream.next()).value).toMatchObject({ecash_quote_watch: {id: 'quote-1', final: false}});
+
+			const paid = new OrchardEcashQuote({...quote, received: 100, payments: 1, final: true});
+			await pub_sub.publish('watch', {ecash_quote_watch: paid});
+			expect((await stream.next()).value).toMatchObject({ecash_quote_watch: {received: 100, final: true}});
+			expect(release).toHaveBeenCalledTimes(1);
+			expect(await stream.next()).toMatchObject({done: true});
+		});
+
+		it('stops listening and wraps the error when the quote cannot be watched', async () => {
+			cashuWalletWatchService.watchQuote.mockRejectedValue(new Error('Quote not found'));
+			errorService.resolveError.mockImplementation((_logger, error) => error);
+			const stop = jest.spyOn(updates, 'return');
+			await expect(ecashReceiveService.watchEcashQuote('TAG', 'user-1', 'quote-9', updates)).rejects.toBeInstanceOf(OrchardApiError);
+			expect(stop).toHaveBeenCalled();
+		});
 	});
 
 	it('wraps failures as a wallet error', async () => {

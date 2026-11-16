@@ -2,25 +2,28 @@
 import {Injectable, Logger, type OnModuleDestroy} from '@nestjs/common';
 import {OnEvent} from '@nestjs/event-emitter';
 /* Vendor Dependencies */
-import {
-	CheckStateEnum,
-	MintQuoteState,
-	type Mint,
-	type MintInfo,
-	type RpcSubKinds,
-	type SubscriptionCanceller,
-	type Wallet,
-} from '@cashu/cashu-ts';
+import {CheckStateEnum, type Mint, type MintInfo, type RpcSubKinds, type SubscriptionCanceller, type Wallet} from '@cashu/cashu-ts';
 /* Native Dependencies */
 import type {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.entity';
 import {CashuWalletOperationService} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.service';
 import {CashuWalletRecoveryService} from '#server/modules/cashu/wallet/saga/cashuwalletrecovery.service';
+import {CashuWalletQuoteService} from '#server/modules/cashu/wallet/quote/cashuwalletquote.service';
 import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwalletmint.service';
 import {CashuWalletProofService} from '#server/modules/cashu/wallet/proof/cashuwalletproof.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
-import {describeMintError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
-import {CASHU_WALLET_FINAL_STATES, CASHU_WALLET_OPERATION_UPDATED} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
-import type {CashuWalletOperationUpdate, CashuWalletWatch} from '#server/modules/cashu/wallet/cashuwallet.types';
+import {describeMintError, findQuoteMethod} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {
+	CASHU_WALLET_FINAL_STATES,
+	CASHU_WALLET_OPERATION_UPDATED,
+	CASHU_WALLET_QUOTE_UPDATED,
+} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
+import type {
+	CashuWalletMintQuote,
+	CashuWalletOperationUpdate,
+	CashuWalletQuoteRecord,
+	CashuWalletQuoteWatch,
+	CashuWalletWatch,
+} from '#server/modules/cashu/wallet/cashuwallet.types';
 
 const WATCH_POLL_MS = 5_000;
 const WATCH_FAST_CHECKS = 5;
@@ -29,20 +32,24 @@ const WATCH_MAX_MS = 30 * 60_000;
 
 type WatchSocketKind = Exclude<RpcSubKinds, 'bolt11_melt_quote'>;
 
-type WatchTarget = {
-	operation_id: string;
+type WatchSubject = {kind: 'operation'; subject: CashuWalletOperation} | {kind: 'quote'; subject: CashuWalletQuoteRecord};
+
+type WatchTarget = WatchSubject & {
+	key: string;
 	viewers: number;
 	started_at: number;
 	settled_at: number;
 	checks: number;
 	notified: boolean;
+	reopen: boolean;
 	socket: {cancel: SubscriptionCanceller; mint: Mint} | null;
+	wallet: Wallet | null;
 };
 
 @Injectable()
 export class CashuWalletWatchService implements OnModuleDestroy {
 	private readonly logger = new Logger(CashuWalletWatchService.name);
-	/** Operations someone is viewing, by id */
+	/** Operations and quotes someone is viewing, by kind and id */
 	private readonly targets = new Map<string, WatchTarget>();
 	/** Subscriptions open on each mint's websocket, so the socket closes with its last */
 	private readonly sockets = new Map<Mint, number>();
@@ -52,6 +59,7 @@ export class CashuWalletWatchService implements OnModuleDestroy {
 	constructor(
 		private cashuWalletOperationService: CashuWalletOperationService,
 		private cashuWalletRecoveryService: CashuWalletRecoveryService,
+		private cashuWalletQuoteService: CashuWalletQuoteService,
 		private cashuWalletMintService: CashuWalletMintService,
 		private cashuWalletProofService: CashuWalletProofService,
 	) {}
@@ -64,61 +72,85 @@ export class CashuWalletWatchService implements OnModuleDestroy {
 	public async watch(user_id: string, operation_id: string): Promise<CashuWalletWatch> {
 		const operation = await this.cashuWalletOperationService.getOperation(user_id, operation_id);
 		if (CASHU_WALLET_FINAL_STATES.has(operation.state)) return {operation, release: () => undefined};
-		const target = this.targets.get(operation.id) ?? this.addTarget(operation);
-		target.viewers++;
-		let released = false;
-		const release = () => {
-			if (released) return;
-			released = true;
-			target.viewers--;
-			if (target.viewers === 0) this.drop(target);
-		};
-		return {operation, release};
+		return {operation, release: this.follow({kind: 'operation', subject: operation})};
+	}
+
+	/** Watch one of a user's quotes while someone views it: the quote now, and the release for when the viewer leaves */
+	public async watchQuote(user_id: string, quote_id: string): Promise<CashuWalletQuoteWatch> {
+		const quote = await this.cashuWalletQuoteService.getQuote(user_id, quote_id);
+		if (quote.final) return {quote, release: () => undefined};
+		return {quote, release: this.follow({kind: 'quote', subject: quote})};
 	}
 
 	/** Stop watching an operation once it's final, whatever settled it */
 	@OnEvent(CASHU_WALLET_OPERATION_UPDATED)
 	public onOperationUpdated(operation: CashuWalletOperationUpdate): void {
-		const target = this.targets.get(operation.id);
+		const target = this.targets.get(this.keyOf('operation', operation.id));
 		if (target && CASHU_WALLET_FINAL_STATES.has(operation.state)) this.drop(target);
 	}
 
-	/** Start watching an operation: settle it now, then each tick it's due and on each websocket notification */
-	private addTarget(operation: CashuWalletOperation): WatchTarget {
+	/** Stop watching a quote once it's done receiving */
+	@OnEvent(CASHU_WALLET_QUOTE_UPDATED)
+	public onQuoteUpdated(quote: CashuWalletQuoteRecord): void {
+		const target = this.targets.get(this.keyOf('quote', quote.id));
+		if (target && quote.final) this.drop(target);
+	}
+
+	/** Count a viewer of an operation or quote, starting its watch with the first; the release counts them out once */
+	private follow(watched: WatchSubject): () => void {
+		const target = this.targets.get(this.keyOf(watched.kind, watched.subject.id)) ?? this.addTarget(watched);
+		target.viewers++;
+		let released = false;
+		return () => {
+			if (released) return;
+			released = true;
+			target.viewers--;
+			if (target.viewers === 0) this.drop(target);
+		};
+	}
+
+	/** Start watching: settle it now, then each tick it's due and on each websocket notification */
+	private addTarget(watched: WatchSubject): WatchTarget {
 		const now = Date.now();
 		const target: WatchTarget = {
-			operation_id: operation.id,
+			...watched,
+			key: this.keyOf(watched.kind, watched.subject.id),
 			viewers: 0,
 			started_at: now,
 			settled_at: now,
 			checks: 0,
 			notified: true,
+			reopen: false,
 			socket: null,
+			wallet: null,
 		};
-		this.targets.set(operation.id, target);
+		this.targets.set(target.key, target);
 		this.timer ??= setInterval(() => void this.tick(), WATCH_POLL_MS).unref();
-		void this.openSocket(target, operation).catch((error) =>
-			this.logger.debug(`Watch socket for ${operation.id} could not open: ${describeMintError(error)}`),
-		);
+		this.listen(target);
 		void this.tick();
 		return target;
 	}
 
-	/** Stop watching an operation, closing its socket, and the tick once nothing is left */
+	/** Stop watching, closing its socket, and the tick once nothing is left */
 	private drop(target: WatchTarget): void {
-		if (this.targets.get(target.operation_id) !== target) return;
-		this.targets.delete(target.operation_id);
+		if (this.targets.get(target.key) !== target) return;
+		this.targets.delete(target.key);
 		this.closeSocket(target);
 		if (this.targets.size > 0 || !this.timer) return;
 		clearInterval(this.timer);
 		this.timer = null;
 	}
 
+	/** Key a watched operation or quote is kept by */
+	private keyOf(kind: WatchTarget['kind'], id: string): string {
+		return `${kind}:${id}`;
+	}
+
 	/* *******************************************************
 		Settling
 	******************************************************** */
 
-	/** Settle the watched operations that are due through their sagas, one tick at a time; past 30 minutes a watch ends */
+	/** Settle the watched operations and quotes that are due, one tick at a time, reopening sockets that dropped; past 30 minutes a watch ends */
 	private async tick(): Promise<void> {
 		if (this.ticking) return;
 		this.ticking = true;
@@ -131,10 +163,14 @@ export class CashuWalletWatchService implements OnModuleDestroy {
 				target.notified = false;
 				target.settled_at = now;
 				target.checks++;
+				if (target.reopen && !target.socket) this.listen(target);
 			}
-			await this.cashuWalletRecoveryService.settleOperations(due.map((target) => target.operation_id));
-		} catch (error) {
-			this.logger.warn(`Watched wallet operations could not be settled: ${describeMintError(error)}`);
+			const ids = (kind: WatchTarget['kind']) => due.filter((target) => target.kind === kind).map((target) => target.subject.id);
+			const warn = (error: unknown) => this.logger.warn(`Watched wallet items could not be settled: ${describeMintError(error)}`);
+			await Promise.all([
+				this.cashuWalletRecoveryService.settleOperations(ids('operation')).catch(warn),
+				this.cashuWalletQuoteService.settleQuotes(ids('quote')).catch(warn),
+			]);
 		} finally {
 			this.ticking = false;
 		}
@@ -151,47 +187,65 @@ export class CashuWalletWatchService implements OnModuleDestroy {
 		return Math.min(WATCH_POLL_MS * 2 ** Math.max(0, target.checks - WATCH_FAST_CHECKS + 1), WATCH_SLOW_POLL_MS);
 	}
 
-	/** Settle a watched operation now, on a websocket notification */
+	/** Settle a watched target now, on a websocket notification */
 	private notify(target: WatchTarget): void {
 		target.notified = true;
 		void this.tick();
+	}
+
+	/** Settle a watched quote from the update its mint pushed, so nothing is asked of the mint again; the safety poll counts from here */
+	private settlePush(target: WatchTarget, update: CashuWalletMintQuote): void {
+		const quote_id = target.subject.id;
+		target.settled_at = Date.now();
+		this.cashuWalletQuoteService
+			.settleUpdate(quote_id, update)
+			.catch((error) => this.logger.warn(`Watched wallet quote ${quote_id} could not be settled: ${describeMintError(error)}`));
 	}
 
 	/* *******************************************************
 		Sockets
 	******************************************************** */
 
-	/** Listen for the operation on its mint's websocket (NUT-17) when the mint offers it and Orchard may reach it */
-	private async openSocket(target: WatchTarget, operation: CashuWalletOperation): Promise<void> {
-		const kind = this.socketKind(operation);
-		if (!kind || !(await this.cashuWalletMintService.allowsSocket(operation.user_id, operation.mint_id))) return;
-		const wallet = await this.cashuWalletMintService.getWallet(operation.mint_id, operation.unit);
-		if (!this.offersSocket(wallet.getMintInfo(), kind, operation)) return;
-		const cancel = await this.subscribe(wallet, kind, operation, target);
+	/** Try the target's mint websocket in the background; a socket that can't open leaves it polling */
+	private listen(target: WatchTarget): void {
+		target.reopen = false;
+		this.openSocket(target).catch((error) =>
+			this.logger.debug(`Watch socket for ${target.key} could not open: ${describeMintError(error)}`),
+		);
+	}
+
+	/** Listen on the target's mint websocket (NUT-17) when the mint offers it and Orchard may reach it; a reopen reuses the wallet it first opened with */
+	private async openSocket(target: WatchTarget): Promise<void> {
+		const kind = this.socketKind(target);
+		if (!kind) return;
+		const wallet = target.wallet ?? (await this.socketWallet(target, kind));
+		if (!wallet) return;
+		target.wallet = wallet;
+		const cancel = await this.subscribe(wallet, kind, target);
 		if (!cancel) return;
 		target.socket = {cancel, mint: wallet.mint};
 		this.sockets.set(wallet.mint, (this.sockets.get(wallet.mint) ?? 0) + 1);
-		if (this.targets.get(target.operation_id) !== target) this.closeSocket(target);
+		if (this.targets.get(target.key) !== target) this.closeSocket(target);
 	}
 
-	/** Subscribe to the operation's quote, or its token's proofs; a paid quote or a spent proof settles it and a lost socket falls back to polling */
-	private async subscribe(
-		wallet: Wallet,
-		kind: WatchSocketKind,
-		operation: CashuWalletOperation,
-		target: WatchTarget,
-	): Promise<SubscriptionCanceller | null> {
-		const lost = () => this.closeSocket(target);
+	/** The wallet to open a target's socket with, when Orchard may reach its mint that way and the mint offers the subscription */
+	private async socketWallet(target: WatchTarget, kind: WatchSocketKind): Promise<Wallet | null> {
+		const {user_id, mint_id, unit} = target.subject;
+		if (!(await this.cashuWalletMintService.allowsSocket(user_id, mint_id))) return null;
+		const wallet = await this.cashuWalletMintService.getWallet(mint_id, unit);
+		return this.offersSocket(wallet.getMintInfo(), kind, target) ? wallet : null;
+	}
+
+	/** Subscribe to a mint quote, settled from each update the mint pushes, or a sent token's proofs, settled once one is spent; a lost socket polls until it reopens when next due */
+	private async subscribe(wallet: Wallet, kind: WatchSocketKind, target: WatchTarget): Promise<SubscriptionCanceller | null> {
+		const lost = () => {
+			this.closeSocket(target);
+			target.reopen = true;
+		};
 		if (kind === 'bolt11_mint_quote') {
-			return wallet.on.mintQuoteUpdates(
-				[operation.quote_id!],
-				(quote) => {
-					if (quote.state !== MintQuoteState.UNPAID) this.notify(target);
-				},
-				lost,
-			);
+			return wallet.on.mintQuoteUpdates([target.subject.quote_id!], (update) => this.settlePush(target, update), lost);
 		}
-		const held = await this.cashuWalletProofService.getHeldProofs(operation.id);
+		const held = await this.cashuWalletProofService.getHeldProofs(target.subject.id);
 		if (held.length === 0) return null;
 		return wallet.on.proofStateUpdates(
 			held,
@@ -202,7 +256,7 @@ export class CashuWalletWatchService implements OnModuleDestroy {
 		);
 	}
 
-	/** Cancel a watched operation's socket subscription, closing the mint's socket with its last */
+	/** Cancel a target's socket subscription, closing the mint's socket with its last */
 	private closeSocket(target: WatchTarget): void {
 		const socket = target.socket;
 		if (!socket) return;
@@ -217,21 +271,18 @@ export class CashuWalletWatchService implements OnModuleDestroy {
 		socket.mint.disconnectWebSocket();
 	}
 
-	/** The NUT-17 subscription an operation can be watched with: its bolt11 mint quote, or a sent token's proofs */
-	private socketKind(operation: CashuWalletOperation): WatchSocketKind | null {
-		if (operation.state !== WalletOperationState.PENDING) return null;
-		if (operation.type === WalletOperationType.SEND) return 'proof_state';
-		const minting = operation.type === WalletOperationType.MINT || operation.type === WalletOperationType.ISSUE;
-		return minting && operation.method === 'bolt11' && operation.quote_id ? 'bolt11_mint_quote' : null;
+	/** The NUT-17 subscription a target can be watched with: its quote's method's, or a sent token's proofs */
+	private socketKind(target: WatchTarget): WatchSocketKind | null {
+		if (target.kind === 'quote') return findQuoteMethod(target.subject.method)?.socket_kind ?? null;
+		const operation = target.subject;
+		return operation.type === WalletOperationType.SEND && operation.state === WalletOperationState.PENDING ? 'proof_state' : null;
 	}
 
-	/** Whether a mint offers the subscription for the operation's unit and method (NUT-17) */
-	private offersSocket(info: MintInfo, kind: WatchSocketKind, operation: CashuWalletOperation): boolean {
+	/** Whether a mint offers the subscription for the target's unit and method (NUT-17) */
+	private offersSocket(info: MintInfo, kind: WatchSocketKind, target: WatchTarget): boolean {
+		const {unit, method} = target.subject;
 		return (info.isSupported(17).params ?? []).some(
-			(entry) =>
-				entry.unit === operation.unit &&
-				entry.commands.includes(kind) &&
-				(kind === 'proof_state' || entry.method === operation.method),
+			(entry) => entry.unit === unit && entry.commands.includes(kind) && (kind === 'proof_state' || entry.method === method),
 		);
 	}
 

@@ -28,7 +28,12 @@ import {CashuWalletMintCacheService} from '#server/modules/cashu/wallet/mint/cas
 import {CashuWalletMintTransportService} from '#server/modules/cashu/wallet/mint/cashuwalletminttransport.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
-import type {CashuWalletQuoteRequest} from '#server/modules/cashu/wallet/cashuwallet.types';
+import {CASHU_WALLET_QUOTE_UPDATED} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
+import type {
+	CashuWalletOperationUpdate,
+	CashuWalletQuoteRecord,
+	CashuWalletQuoteRequest,
+} from '#server/modules/cashu/wallet/cashuwallet.types';
 /* Local Dependencies */
 import {CashuWalletQuoteService} from './cashuwalletquote.service.js';
 import {CashuWalletQuote} from './cashuwalletquote.entity.js';
@@ -36,6 +41,7 @@ import {CashuWalletQuote} from './cashuwalletquote.entity.js';
 describe('CashuWalletQuoteService', () => {
 	let service: CashuWalletQuoteService;
 	let issue: CashuWalletIssueService;
+	let emitter: EventEmitter2;
 	let data_source: DataSource;
 	let mint: FakeMint;
 	let mint_row: CashuWalletMint;
@@ -115,6 +121,7 @@ describe('CashuWalletQuoteService', () => {
 		}).compile();
 		service = module.get(CashuWalletQuoteService);
 		issue = module.get(CashuWalletIssueService);
+		emitter = module.get(EventEmitter2);
 	});
 
 	afterEach(async () => {
@@ -270,6 +277,30 @@ describe('CashuWalletQuoteService', () => {
 		expect([checksOf(expired.quote_id), checksOf(lasting.quote_id)]).toEqual([0, 1]);
 	});
 
+	it("checks exactly the quotes that aren't final, so the pass and the final flag never disagree", async () => {
+		const quotes = data_source.getRepository(CashuWalletQuote);
+		const past = now() - 60;
+		const lasting = await service.newQuote(request('onchain'));
+		await quotes.update({id: lasting.id}, {check_until: past});
+		const inside = await service.newQuote(request('bolt12', {description: 'Inside'}));
+		const owed = await service.newQuote(request('bolt12', {description: 'Owed'}));
+		mint.pay(owed.quote_id, 10);
+		await quotes.update({id: owed.id}, {amount_paid: 10, check_until: past});
+		const lapsed = await service.newQuote(request('bolt12', {description: 'Lapsed'}));
+		await quotes.update({id: lapsed.id}, {check_until: past});
+		const expiring = await service.newQuote(request('bolt12', {description: 'Expiring'}));
+		await quotes.update({id: expiring.id}, {expiry: past - 60 * 60, check_until: past});
+		const invoice = await service.newQuote(request('bolt11'));
+		await quotes.update({id: invoice.id}, {amount_paid: 100, amount_issued: 100, check_until: past});
+
+		const all = [lasting, inside, owed, lapsed, expiring, invoice];
+		const open: string[] = [];
+		for (const quote of all) if (!(await service.getQuote('user-1', quote.id)).final) open.push(quote.id);
+		await service.checkQuotes();
+		expect(all.filter((quote) => checksOf(quote.quote_id) > 0).map((quote) => quote.id)).toEqual(open);
+		expect(open).toEqual([lasting.id, inside.id, owed.id]);
+	});
+
 	it('still mints a payment it saw before a quote stopped being checked', async () => {
 		mint.quote_defaults.expiry = now() - 2 * 24 * 60 * 60;
 		const older = await service.newQuote(request('bolt12'));
@@ -291,6 +322,76 @@ describe('CashuWalletQuoteService', () => {
 		const [first, second] = await Promise.all([service.newQuote(request('onchain')), service.newQuote(request('onchain'))]);
 		expect(second.id).toBe(first.id);
 		expect(await data_source.getRepository(CashuWalletQuote).count()).toBe(1);
+	});
+
+	describe('watching', () => {
+		let events: CashuWalletQuoteRecord[];
+		/** Let fire-and-forget announcements land */
+		const settled = () => new Promise((resolve) => setTimeout(resolve, 20));
+
+		beforeEach(() => {
+			events = [];
+			emitter.on(CASHU_WALLET_QUOTE_UPDATED, (record: CashuWalletQuoteRecord) => void events.push(record));
+		});
+
+		it("gives a user's own quote with what it brought in, and refuses another's", async () => {
+			const offer = await service.newQuote(request('bolt12'));
+			expect(await service.getQuote('user-1', offer.id)).toMatchObject({id: offer.id, received: 0, payments: 0, final: false});
+			await expect(service.getQuote('user-2', offer.id)).rejects.toEqual(walletError('Quote not found'));
+		});
+
+		it('announces each change to a quote, saying it takes no more once its invoice is minted', async () => {
+			const invoice = await service.newQuote(request('bolt11'));
+			mint.pay(invoice.quote_id);
+			await service.checkQuotes();
+			await settled();
+			expect(events.length).toBeGreaterThan(0);
+			expect(events.every(({id}) => id === invoice.id)).toBe(true);
+			expect(events).toContainEqual(expect.objectContaining({amount_paid: 100, received: 100, payments: 1, final: true}));
+		});
+
+		it('announces a quote again when one of its mints finishes, whichever path minted it', async () => {
+			const offer = await service.newQuote(request('bolt12'));
+			await settled();
+			events = [];
+			const finished = {type: WalletOperationType.MINT, state: WalletOperationState.FINALIZED, mint_id: mint_row.id};
+			service.onOperationUpdated({...finished, quote_id: offer.quote_id} as CashuWalletOperationUpdate);
+			service.onOperationUpdated({
+				...finished,
+				type: WalletOperationType.SEND,
+				quote_id: offer.quote_id,
+			} as CashuWalletOperationUpdate);
+			await settled();
+			expect(events).toEqual([expect.objectContaining({id: offer.id, final: false})]);
+		});
+
+		it('settles a quote from an update its mint pushed, asking the mint nothing', async () => {
+			const invoice = await service.newQuote(request('bolt11'));
+			mint.pay(invoice.quote_id);
+			const [, update] = mint.handle(`/v1/mint/quote/bolt11/${invoice.quote_id}`, undefined);
+			await service.settleUpdate(invoice.id, update);
+			expect(await minted(invoice.quote_id)).toEqual([100]);
+			expect(checksOf(invoice.quote_id)).toBe(0);
+		});
+
+		it('announces a quote that is done receiving instead of checking it, so its watchers stop', async () => {
+			mint.quote_defaults.expiry = now() - 2 * 60 * 60;
+			const lapsed = await service.newQuote(request('bolt11'));
+			await settled();
+			events = [];
+			await service.settleQuotes([lapsed.id]);
+			await settled();
+			expect(events).toEqual([expect.objectContaining({id: lapsed.id, final: true})]);
+			expect(checksOf(lapsed.quote_id)).toBe(0);
+		});
+
+		it('settles only the quotes asked for', async () => {
+			const offer = await service.newQuote(request('bolt12'));
+			const coffee = await service.newQuote(request('bolt12', {description: 'Coffee'}));
+			await service.settleQuotes([]);
+			await service.settleQuotes([offer.id]);
+			expect([checksOf(offer.quote_id), checksOf(coffee.quote_id)]).toEqual([1, 0]);
+		});
 	});
 
 	describe('checking', () => {

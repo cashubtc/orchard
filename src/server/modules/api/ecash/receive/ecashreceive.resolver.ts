@@ -1,19 +1,49 @@
 /* Core Dependencies */
 import {Logger} from '@nestjs/common';
-import {Resolver, Query, Mutation, Args, Context, Float, ID} from '@nestjs/graphql';
+import {Resolver, Query, Mutation, Subscription, Args, Context, Float, ID} from '@nestjs/graphql';
+import {OnEvent} from '@nestjs/event-emitter';
+/* Vendor Dependencies */
+import {PubSub} from 'graphql-subscriptions';
 /* Application Dependencies */
 import {UserRole} from '#server/modules/user/user.enums';
 import {normalizeMintUnit} from '#server/modules/cashu/cashu.helpers';
 import {OrchardEcashOperation} from '#server/modules/api/ecash/operation/ecashoperation.model';
+import {CASHU_WALLET_QUOTE_UPDATED} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
+import type {CashuWalletQuoteRecord} from '#server/modules/cashu/wallet/cashuwallet.types';
 /* Local Dependencies */
 import {EcashReceiveService} from './ecashreceive.service.js';
 import {OrchardEcashQuote, OrchardEcashTokenPreview} from './ecashreceive.model.js';
+import type {EcashQuoteWatchPayload} from './ecashreceive.types.js';
+
+const pubSub = new PubSub();
+const WATCH_TRIGGER = 'ecash_quote_watch';
 
 @Resolver()
 export class EcashReceiveResolver {
 	private readonly logger = new Logger(EcashReceiveResolver.name);
 
 	constructor(private ecashReceiveService: EcashReceiveService) {}
+
+	/** Pass each wallet quote change on to the clients watching that quote */
+	@OnEvent(CASHU_WALLET_QUOTE_UPDATED)
+	onQuoteUpdated(quote: CashuWalletQuoteRecord): void {
+		const payload: EcashQuoteWatchPayload = {ecash_quote_watch: new OrchardEcashQuote(quote)};
+		void pubSub.publish(`${WATCH_TRIGGER}:${quote.id}`, payload);
+	}
+
+	@Subscription(() => OrchardEcashQuote, {
+		description:
+			"Watch one of the current user's ecash wallet quotes: the quote now, then each payment and change until it takes no more",
+	})
+	async ecash_quote_watch(
+		@Context() context: any,
+		@Args('id', {type: () => ID, description: 'Quote identifier'}) id: string,
+	): Promise<AsyncIterableIterator<EcashQuoteWatchPayload>> {
+		const tag = 'SUBSCRIPTION { ecash_quote_watch }';
+		this.logger.debug(tag);
+		const updates = pubSub.asyncIterableIterator<EcashQuoteWatchPayload>(`${WATCH_TRIGGER}:${id}`);
+		return await this.ecashReceiveService.watchEcashQuote(tag, context.req.user.id, id, updates);
+	}
 
 	@Query(() => OrchardEcashTokenPreview, {description: "Read an ecash token before receiving it into the current user's wallet"})
 	async ecash_receive_token_preview(

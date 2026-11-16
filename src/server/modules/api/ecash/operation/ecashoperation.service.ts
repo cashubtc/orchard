@@ -7,6 +7,7 @@ import {CashuWalletWatchService} from '#server/modules/cashu/wallet/watch/cashuw
 import {CASHU_WALLET_FINAL_STATES} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
+import {watchStream} from '#server/modules/graphql/graphql.helpers';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardCommonCount} from '#server/modules/api/common/entity-count.model';
 import type {CashuWalletOperationFilters} from '#server/modules/cashu/wallet/cashuwallet.types';
@@ -69,47 +70,19 @@ export class EcashOperationService {
 		operation_id: string,
 		updates: AsyncIterableIterator<EcashOperationWatchPayload>,
 	): Promise<AsyncIterableIterator<EcashOperationWatchPayload>> {
-		const pending = updates.next();
-		try {
+		const start = async () => {
 			const {operation, release} = await this.cashuWalletWatchService.watch(user_id, operation_id);
-			return this.watchStream(updates, pending, {ecash_operation_watch: new OrchardEcashOperation(operation)}, release);
+			return {current: {ecash_operation_watch: new OrchardEcashOperation(operation)}, release};
+		};
+		const isFinal = (payload: EcashOperationWatchPayload) => CASHU_WALLET_FINAL_STATES.has(payload.ecash_operation_watch.state);
+		try {
+			return await watchStream(updates, start, isFinal);
 		} catch (error) {
-			await updates.return?.();
 			const orchard_error = this.errorService.resolveError(this.logger, error, tag, {
 				errord: OrchardErrorCode.EcashWalletError,
 			});
 			throw new OrchardApiError(orchard_error);
 		}
-	}
-
-	/** The current state first, then each update; a final state or returning the stream releases the watch at once, even mid-wait */
-	private watchStream(
-		updates: AsyncIterableIterator<EcashOperationWatchPayload>,
-		pending: Promise<IteratorResult<EcashOperationWatchPayload>>,
-		current: EcashOperationWatchPayload,
-		release: () => void,
-	): AsyncIterableIterator<EcashOperationWatchPayload> {
-		const queue: Promise<IteratorResult<EcashOperationWatchPayload>>[] = [Promise.resolve({done: false, value: current}), pending];
-		let finished = false;
-		const finish = async (): Promise<IteratorResult<EcashOperationWatchPayload>> => {
-			if (!finished) {
-				finished = true;
-				release();
-				await updates.return?.();
-			}
-			return {done: true, value: undefined};
-		};
-		const stream: AsyncIterableIterator<EcashOperationWatchPayload> = {
-			next: async () => {
-				if (finished) return {done: true, value: undefined};
-				const result = await (queue.shift() ?? updates.next());
-				if (result.done || CASHU_WALLET_FINAL_STATES.has(result.value.ecash_operation_watch.state)) await finish();
-				return result;
-			},
-			return: finish,
-			[Symbol.asyncIterator]: () => stream,
-		};
-		return stream;
 	}
 
 	/** Number of a user's wallet operations matching the filters */

@@ -53,6 +53,10 @@ describe('CashuWalletQuoteMethod', () => {
 		expect(onchain.canHandOut({expiry: null, amount_paid: 10}, 1_000)).toBe(false);
 	});
 
+	it('watches bolt11 invoices on their mint quote subscription, and polls bolt12 offers and onchain addresses', () => {
+		expect([bolt11, bolt12, onchain].map((method) => method.socket_kind)).toEqual(['bolt11_mint_quote', null, null]);
+	});
+
 	it('describes bolt11 and bolt12 quotes only where the mint advertises it, and onchain addresses never', () => {
 		const info = {supportsNut04Description: jest.fn((method: string) => method === 'bolt12')} as unknown as MintInfo;
 		expect([bolt11, bolt12, onchain].map((method) => method.describes(info, 'sat'))).toEqual([false, true, false]);

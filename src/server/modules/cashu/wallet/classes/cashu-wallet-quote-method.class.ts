@@ -8,11 +8,12 @@ const HOUR = 60 * 60;
 const DAY = 24 * HOUR;
 const NO_EXPIRY_WINDOW = 30 * DAY;
 
-/** How a payment method receives: its quote call and the rules its quotes follow; each method overrides only where it differs */
+/** How a payment method receives: its quote call, the rules its quotes follow and the NUT-17 subscription that watches them (none: polled); each method overrides only where it differs */
 export abstract class CashuWalletQuoteMethod {
 	abstract readonly method: 'bolt11' | 'bolt12' | 'onchain';
 	abstract readonly amount: 'required' | 'optional' | 'none';
 	readonly reusable: boolean = true;
+	readonly socket_kind: 'bolt11_mint_quote' | null = null;
 	protected readonly grace_seconds: number = HOUR;
 
 	/** Ask the mint for a quote, locked to the pubkey when one is given */
@@ -60,6 +61,7 @@ export class CashuWalletBolt11QuoteMethod extends CashuWalletQuoteMethod {
 	readonly method = 'bolt11';
 	readonly amount = 'required';
 	readonly reusable = false;
+	readonly socket_kind = 'bolt11_mint_quote';
 
 	create(wallet: Wallet, pubkey: string | null, amount: number | null, description?: string): Promise<CashuWalletMintQuote> {
 		return pubkey ? wallet.createLockedMintQuote(amount!, pubkey, description) : wallet.createMintQuoteBolt11(amount!, description);

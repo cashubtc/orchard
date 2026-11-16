@@ -64,14 +64,20 @@ export type CashuWalletQuoteRequest = {
 	description: string | null;
 };
 
-/** A quote with what its payments brought in: the total minted from it and how many mints that took */
+/** A quote with what its payments brought in (the total minted from it and how many mints that took), and whether it's done receiving */
 export type CashuWalletQuoteRecord = CashuWalletQuote & {
 	received: number;
 	payments: number;
+	final: boolean;
 };
 
 export type CashuWalletWatch = {
 	operation: CashuWalletOperation;
+	release: () => void;
+};
+
+export type CashuWalletQuoteWatch = {
+	quote: CashuWalletQuoteRecord;
 	release: () => void;
 };
 

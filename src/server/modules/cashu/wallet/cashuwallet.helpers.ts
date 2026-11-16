@@ -2,6 +2,9 @@
 import {HttpResponseError, StaleKeysetError, getKeysetIdInt, isMintOperationError} from '@cashu/cashu-ts';
 /* Application Dependencies */
 import {OrchardErrorCode, OrchardErrorMessages} from '#server/modules/error/error.types';
+/* Native Dependencies */
+import {CASHU_WALLET_QUOTE_METHODS} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
+import type {CashuWalletQuoteMethod} from '#server/modules/cashu/wallet/classes/cashu-wallet-quote-method.class';
 /* Local Dependencies */
 import {CashuMintErrorCode} from './cashuwallet.enums.js';
 
@@ -19,6 +22,12 @@ const AUTH_CODES = new Set<number>([
  * from their integer mod 2^31-1, so different ids that reduce alike share one cursor and never repeat a secret
  */
 export const getCounterKey = (keyset_id: string): string => (keyset_id.startsWith('01') ? keyset_id : getKeysetIdInt(keyset_id).toString());
+
+/** The receive rules for a payment method, or null when the wallet can't receive by it */
+export const findQuoteMethod = (method: string): CashuWalletQuoteMethod | null =>
+	Object.hasOwn(CASHU_WALLET_QUOTE_METHODS, method)
+		? CASHU_WALLET_QUOTE_METHODS[method as keyof typeof CASHU_WALLET_QUOTE_METHODS]
+		: null;
 
 /** Operator-facing wallet error, resolved to EcashWalletError with its details */
 export const walletError = (details: string) => ({code: OrchardErrorCode.EcashWalletError, details});

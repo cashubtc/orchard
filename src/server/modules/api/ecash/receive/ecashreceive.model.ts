@@ -73,6 +73,9 @@ export class OrchardEcashQuote {
 	@Field({description: 'Whether it is the offer or address shown for its mint, method and unit'})
 	latest: boolean;
 
+	@Field({description: 'Whether it takes no more payments: minted in full, or past its window with nothing owed'})
+	final: boolean;
+
 	@Field(() => UnixTimestamp, {description: 'When the quote was created'})
 	created_at: number;
 
@@ -92,6 +95,7 @@ export class OrchardEcashQuote {
 		this.received = quote.received;
 		this.payments = quote.payments;
 		this.latest = quote.latest;
+		this.final = quote.final;
 		this.created_at = quote.created_at;
 		this.updated_at = quote.updated_at;
 	}

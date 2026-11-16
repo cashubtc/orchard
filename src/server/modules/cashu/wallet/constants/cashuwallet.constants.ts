@@ -10,6 +10,9 @@ import {
 /** Emitted whenever a wallet operation changes state, with the operation minus the ecash it carries */
 export const CASHU_WALLET_OPERATION_UPDATED = 'cashu.wallet.operation.updated';
 
+/** Emitted whenever a wallet quote changes or one of its mints finishes, with the quote and what it brought in */
+export const CASHU_WALLET_QUOTE_UPDATED = 'cashu.wallet.quote.updated';
+
 const STATE_IS_FINAL: Record<WalletOperationState, boolean> = {
 	[WalletOperationState.PENDING]: false,
 	[WalletOperationState.EXECUTING]: false,

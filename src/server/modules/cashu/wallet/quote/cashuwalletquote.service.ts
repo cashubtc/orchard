@@ -1,6 +1,7 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
+import {EventEmitter2, OnEvent} from '@nestjs/event-emitter';
 /* Vendor Dependencies */
 import {In, IsNull, MoreThan, Raw, Repository, type FindOptionsWhere} from 'typeorm';
 import {DateTime} from 'luxon';
@@ -10,12 +11,18 @@ import {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalle
 import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
 import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwalletmint.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
-import {describeMintError, walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {describeMintError, findQuoteMethod, walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
 import {mintQuoteExpiry, mintQuoteTotals} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.helpers';
-import {CASHU_WALLET_OPEN_STATES, CASHU_WALLET_QUOTE_METHODS} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
+import {
+	CASHU_WALLET_FINAL_STATES,
+	CASHU_WALLET_OPEN_STATES,
+	CASHU_WALLET_OPERATION_UPDATED,
+	CASHU_WALLET_QUOTE_UPDATED,
+} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 import type {CashuWalletQuoteMethod} from '#server/modules/cashu/wallet/classes/cashu-wallet-quote-method.class';
 import type {
 	CashuWalletMintQuote,
+	CashuWalletOperationUpdate,
 	CashuWalletQuoteRecord,
 	CashuWalletQuoteRequest,
 	CashuWalletScope,
@@ -38,11 +45,19 @@ export class CashuWalletQuoteService {
 		private walletOperationRepository: Repository<CashuWalletOperation>,
 		private cashuWalletMintService: CashuWalletMintService,
 		private cashuWalletIssueService: CashuWalletIssueService,
+		private eventEmitter: EventEmitter2,
 	) {}
 
 	/* *******************************************************
 		Quotes
 	******************************************************** */
+
+	/** One of a user's quotes, with what it brought in */
+	public async getQuote(user_id: string, quote_id: string): Promise<CashuWalletQuoteRecord> {
+		const quote = await this.walletQuoteRepository.findOneBy({id: quote_id, user_id});
+		if (!quote) throw walletError('Quote not found');
+		return this.toRecord(quote);
+	}
 
 	/** A payment request at one of a user's wallet mints: a new bolt11 invoice, or an unpaid bolt12 offer or onchain address with the same terms before a new one */
 	public async newQuote(request: CashuWalletQuoteRequest): Promise<CashuWalletQuoteRecord> {
@@ -134,13 +149,37 @@ export class CashuWalletQuoteService {
 		return this.writeQuote(quote, {latest: true});
 	}
 
-	/** Write changes to a quote unless they change nothing, stamping when it changed */
+	/** Write changes to a quote unless they change nothing, stamping and announcing it when it changed */
 	private async writeQuote(quote: CashuWalletQuote, changes: Partial<CashuWalletQuote>): Promise<CashuWalletQuote> {
 		const changed = Object.entries(changes).some(([field, value]) => quote[field as keyof CashuWalletQuote] !== value);
 		if (!changed) return quote;
 		const update = {...changes, updated_at: DateTime.now().toUnixInteger()};
 		await this.walletQuoteRepository.update({id: quote.id}, update);
-		return {...quote, ...update};
+		const written = {...quote, ...update};
+		this.announce(written);
+		return written;
+	}
+
+	/* *******************************************************
+		Updates
+	******************************************************** */
+
+	/** Announce a quote again when one of its mints finishes, so what it brought in reaches its watchers whichever path minted it */
+	@OnEvent(CASHU_WALLET_OPERATION_UPDATED)
+	public onOperationUpdated(operation: CashuWalletOperationUpdate): void {
+		if (operation.type !== WalletOperationType.MINT || !operation.quote_id || !CASHU_WALLET_FINAL_STATES.has(operation.state)) return;
+		this.walletQuoteRepository.findOneBy({mint_id: operation.mint_id, quote_id: operation.quote_id}).then(
+			(quote) => quote && this.announce(quote),
+			(error) => this.logger.warn(`Wallet quote for ${operation.quote_id} could not be announced: ${describeMintError(error)}`),
+		);
+	}
+
+	/** Emit a quote's current record for its watchers; a failure is only logged */
+	private announce(quote: CashuWalletQuote): void {
+		this.toRecord(quote).then(
+			(record) => void this.eventEmitter.emit(CASHU_WALLET_QUOTE_UPDATED, record),
+			(error) => this.logger.warn(`Wallet quote ${quote.id} could not be announced: ${describeMintError(error)}`),
+		);
 	}
 
 	/* *******************************************************
@@ -157,6 +196,25 @@ export class CashuWalletQuoteService {
 				{...scope, amount_paid: Raw((paid) => `${paid} > amount_issued`)},
 			],
 		});
+		await this.checkAll(quotes);
+	}
+
+	/** Check the given quotes now and mint what's been paid, for someone watching them; one already done receiving is announced instead, so its watchers stop */
+	public async settleQuotes(quote_ids: string[]): Promise<void> {
+		if (quote_ids.length === 0) return;
+		const quotes = await this.walletQuoteRepository.findBy({id: In(quote_ids)});
+		for (const quote of quotes.filter((quote) => this.isFinal(quote))) this.announce(quote);
+		await this.checkAll(quotes.filter((quote) => !this.isFinal(quote)));
+	}
+
+	/** Settle a quote from an update its mint pushed, without asking the mint again */
+	public async settleUpdate(quote_id: string, update: CashuWalletMintQuote): Promise<void> {
+		const quote = await this.walletQuoteRepository.findOneBy({id: quote_id});
+		if (quote) await this.settle(quote, update, this.findMethod(quote.method));
+	}
+
+	/** Check quotes in one go per mint, method and unit */
+	private async checkAll(quotes: CashuWalletQuote[]): Promise<void> {
 		const groups = await this.groupByMint(quotes);
 		await Promise.all([...groups.values()].map(({wallet, members}) => this.checkGroup(wallet, members)));
 	}
@@ -328,13 +386,19 @@ export class CashuWalletQuoteService {
 		});
 	}
 
-	/** A quote with the total minted from it and how many mints that took */
+	/** A quote with the total minted from it, how many mints that took, and whether it's done receiving */
 	private async toRecord(quote: CashuWalletQuote): Promise<CashuWalletQuoteRecord> {
 		const [received, payments] = await Promise.all([
 			this.mintedTotal(quote),
 			this.walletOperationRepository.countBy(this.mintedFrom(quote)),
 		]);
-		return {...quote, received, payments};
+		return {...quote, received, payments, final: this.isFinal(quote)};
+	}
+
+	/** Whether a quote is done receiving: none of checkQuotes' reasons to check it still hold */
+	private isFinal(quote: CashuWalletQuote): boolean {
+		const shown = quote.latest && quote.expiry === null;
+		return !shown && quote.check_until <= DateTime.now().toUnixInteger() && quote.amount_paid <= quote.amount_issued;
 	}
 
 	/** Total the wallet has minted from a quote */
@@ -353,8 +417,9 @@ export class CashuWalletQuoteService {
 
 	/** The receive rules for a method, refusing one the wallet can't receive by */
 	private findMethod(method: string): CashuWalletQuoteMethod {
-		if (!Object.hasOwn(CASHU_WALLET_QUOTE_METHODS, method)) throw walletError(`Can't receive by ${method}`);
-		return CASHU_WALLET_QUOTE_METHODS[method as keyof typeof CASHU_WALLET_QUOTE_METHODS];
+		const found = findQuoteMethod(method);
+		if (!found) throw walletError(`Can't receive by ${method}`);
+		return found;
 	}
 
 	/** Key that serializes creating quotes at one wallet mint, method and unit */
