@@ -32,6 +32,7 @@ describe('Crypto Key Integration', () => {
 	beforeEach(() => {
 		process.env = {...original_env};
 		delete process.env.CRYPTO_KEY;
+		delete process.env.DATA_DIR;
 		delete process.env.DATABASE_DIR;
 		test_dir = mkdtempSync(join(tmpdir(), 'orchard-crypto-int-'));
 		process.env.DATABASE_DIR = test_dir;

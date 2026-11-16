@@ -61,13 +61,15 @@ export class TapdService {
 		return {rpc_url, combined_creds, channel_options};
 	}
 
-	private initializeGrpcClient(proto_paths: string[], package_namespace: string, client_class: string): grpc.Client {
+	private initializeGrpcClient(proto_files: string[], package_namespace: string, client_class: string): grpc.Client {
 		const credentials = this.createGrpcCredentials();
 		if (!credentials) {
 			return;
 		}
 
 		try {
+			const assets_dir = this.configService.get('server.assets_dir');
+			const proto_paths = proto_files.map((proto_file) => path.join(assets_dir, proto_file));
 			const package_definition = protoLoader.loadSync(proto_paths, {
 				keepCase: true,
 				longs: String,
@@ -85,7 +87,6 @@ export class TapdService {
 	}
 
 	public initializeTaprootAssetsClient(): grpc.Client {
-		const taproot_assets_proto_path = path.join(process.cwd(), 'proto/tapd/taprootassets.proto');
-		return this.initializeGrpcClient([taproot_assets_proto_path], 'taprpc', 'TaprootAssets');
+		return this.initializeGrpcClient(['proto/tapd/taprootassets.proto'], 'taprpc', 'TaprootAssets');
 	}
 }

@@ -179,8 +179,12 @@ describe('CashuMintDatabaseService', () => {
 	});
 
 	describe('backups and restores', () => {
+		const data_dir = '/orchard-data';
+
 		beforeEach(() => {
 			jest.restoreAllMocks();
+			jest.spyOn(fs_promises, 'mkdir').mockResolvedValue(undefined);
+			configService.get.mockImplementation((k: string) => (k === 'server.data_dir' ? data_dir : (undefined as any)));
 		});
 
 		it('createBackup dispatches by client.type', async () => {
@@ -204,6 +208,8 @@ describe('CashuMintDatabaseService', () => {
 			const read_file = jest.spyOn(fs_promises, 'readFile').mockResolvedValue(Buffer.from('ok'));
 			const unlink = jest.spyOn(fs_promises, 'unlink').mockResolvedValue(undefined as any);
 			const buf = await (cashuMintDatabaseService as any).createBackupSqlite({database: db_instance});
+			expect(fs_promises.mkdir).toHaveBeenCalledWith('/orchard-data/tmp', {recursive: true});
+			expect(db_instance.backup).toHaveBeenCalledWith('/orchard-data/tmp/sqlite-backup.db');
 			expect(read_file).toHaveBeenCalled();
 			expect(unlink).toHaveBeenCalled();
 			expect(buf.equals(Buffer.from('ok'))).toBe(true);
@@ -220,6 +226,7 @@ describe('CashuMintDatabaseService', () => {
 		it('createBackup postgres: success spawns pg_dump and cleans up', async () => {
 			configService.get.mockImplementation((k: string) => {
 				if (k === 'cashu.database') return 'postgres://user:pass@localhost:5432/db';
+				if (k === 'server.data_dir') return data_dir;
 				return undefined as any;
 			});
 			const _read_file = jest.spyOn(fs_promises, 'readFile').mockResolvedValue(Buffer.from('pg'));
@@ -236,7 +243,13 @@ describe('CashuMintDatabaseService', () => {
 			const buf = await (cashuMintDatabaseService as any).createBackupPostgres();
 			expect(spawn_mock).toHaveBeenCalledWith(
 				'pg_dump',
-				expect.arrayContaining(['--host=localhost', '--port=5432', '--username=user', '--dbname=db']),
+				expect.arrayContaining([
+					'--host=localhost',
+					'--port=5432',
+					'--username=user',
+					'--dbname=db',
+					'--file=/orchard-data/tmp/postgres-backup.sql',
+				]),
 				expect.objectContaining({env: expect.objectContaining({PGPASSWORD: 'pass'})}),
 			);
 			expect(unlink).toHaveBeenCalled();
@@ -244,7 +257,11 @@ describe('CashuMintDatabaseService', () => {
 		});
 
 		it('createBackup postgres: non-zero exit throws MintDatabaseBackupError', async () => {
-			configService.get.mockImplementation((k: string) => (k === 'cashu.database' ? 'postgres://u:p@h:5432/d' : (undefined as any)));
+			configService.get.mockImplementation((k: string) => {
+				if (k === 'cashu.database') return 'postgres://u:p@h:5432/d';
+				if (k === 'server.data_dir') return data_dir;
+				return undefined as any;
+			});
 			jest.spyOn(fs_promises, 'readFile').mockResolvedValue(Buffer.from('pg'));
 			const unlink = jest.spyOn(fs_promises, 'unlink').mockResolvedValue(undefined as any);
 			(child_process.spawn as unknown as jest.Mock).mockImplementation((): any => {
@@ -262,6 +279,7 @@ describe('CashuMintDatabaseService', () => {
 		it('restoreBackup sqlite: success path validates, copies, and cleans up', async () => {
 			configService.get.mockImplementation((k: string) => {
 				if (k === 'cashu.database') return '/tmp/sqlite.db';
+				if (k === 'server.data_dir') return data_dir;
 				return undefined as any;
 			});
 			await cashuMintDatabaseService.onModuleInit();
@@ -270,7 +288,7 @@ describe('CashuMintDatabaseService', () => {
 			jest.spyOn(fs_promises, 'unlink').mockResolvedValue(undefined as any);
 			const copy_file = jest.spyOn(fs_promises, 'copyFile').mockResolvedValue(undefined as any);
 			await (cashuMintDatabaseService as any).restoreBackupSqlite(Buffer.from('data').toString('base64'));
-			expect(copy_file).toHaveBeenCalled();
+			expect(copy_file).toHaveBeenCalledWith('/orchard-data/tmp/sqlite-restore.db', '/tmp/sqlite.db');
 		});
 
 		it('restoreBackup sqlite: invalid file rejects with MintDatabaseRestoreInvalidError', async () => {
@@ -315,7 +333,11 @@ describe('CashuMintDatabaseService', () => {
 		});
 
 		it('restoreBackup postgres: success runs psql and unlinks', async () => {
-			configService.get.mockImplementation((k: string) => (k === 'cashu.database' ? 'postgres://u:p@h:5432/d' : (undefined as any)));
+			configService.get.mockImplementation((k: string) => {
+				if (k === 'cashu.database') return 'postgres://u:p@h:5432/d';
+				if (k === 'server.data_dir') return data_dir;
+				return undefined as any;
+			});
 			jest.spyOn(fs_promises, 'writeFile').mockResolvedValue(undefined as any);
 			const unlink = jest.spyOn(fs_promises, 'unlink').mockResolvedValue(undefined as any);
 			const spawn_mock = child_process.spawn as unknown as jest.Mock;
@@ -337,7 +359,11 @@ describe('CashuMintDatabaseService', () => {
 		});
 
 		it('restoreBackup postgres: failure throws MintDatabaseRestoreError', async () => {
-			configService.get.mockImplementation((k: string) => (k === 'cashu.database' ? 'postgres://u:p@h:5432/d' : (undefined as any)));
+			configService.get.mockImplementation((k: string) => {
+				if (k === 'cashu.database') return 'postgres://u:p@h:5432/d';
+				if (k === 'server.data_dir') return data_dir;
+				return undefined as any;
+			});
 			jest.spyOn(fs_promises, 'writeFile').mockResolvedValue(undefined as any);
 			jest.spyOn(fs_promises, 'unlink').mockResolvedValue(undefined as any);
 			(child_process.spawn as unknown as jest.Mock).mockImplementation((): any => {

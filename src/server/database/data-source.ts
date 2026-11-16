@@ -1,6 +1,7 @@
 /* Vendor Dependencies */
 import {DataSource} from 'typeorm';
 /* Application Dependencies */
+import {getDataDir} from '../config/configuration.helpers.js';
 import {User} from '../modules/user/user.entity.js';
 import {Invite} from '../modules/invite/invite.entity.js';
 import {TokenBlacklist} from '../modules/auth/token-blacklist.entity.js';
@@ -22,7 +23,7 @@ import * as migrations from './migrations/index.js';
 
 export const AppDataSource = new DataSource({
 	type: 'better-sqlite3',
-	database: process.env.DATABASE_DIR ? `${process.env.DATABASE_DIR}/orchard.db` : 'data/orchard.db',
+	database: `${getDataDir()}/orchard.db`,
 	entities: [
 		User,
 		Invite,

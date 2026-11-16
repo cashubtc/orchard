@@ -65,11 +65,13 @@ export class LndService {
 		return {rpc_url, combined_creds, channel_options};
 	}
 
-	private initializeGrpcClient(proto_paths: string[], package_namespace: string, client_class: string): grpc.Client {
+	private initializeGrpcClient(proto_files: string[], package_namespace: string, client_class: string): grpc.Client {
 		const credentials = this.createGrpcCredentials();
 		if (!credentials) return;
 
 		try {
+			const assets_dir = this.configService.get('server.assets_dir');
+			const proto_paths = proto_files.map((proto_file) => path.join(assets_dir, proto_file));
 			const package_definition = protoLoader.loadSync(proto_paths, {
 				keepCase: true,
 				longs: String,
@@ -87,14 +89,11 @@ export class LndService {
 	}
 
 	public initializeLightningClient(): grpc.Client {
-		const lightning_proto_path = path.join(process.cwd(), 'proto/lnd/lightning.proto');
-		return this.initializeGrpcClient([lightning_proto_path], 'lnrpc', 'Lightning');
+		return this.initializeGrpcClient(['proto/lnd/lightning.proto'], 'lnrpc', 'Lightning');
 	}
 
 	public initializeWalletKitClient(): grpc.Client {
-		const lightning_proto_path = path.join(process.cwd(), 'proto/lnd/lightning.proto');
-		const walletkit_proto_path = path.join(process.cwd(), 'proto/lnd/walletkit.proto');
-		return this.initializeGrpcClient([lightning_proto_path, walletkit_proto_path], 'walletrpc', 'WalletKit');
+		return this.initializeGrpcClient(['proto/lnd/lightning.proto', 'proto/lnd/walletkit.proto'], 'walletrpc', 'WalletKit');
 	}
 
 	public mapLndRequest(request: any): LightningRequest {

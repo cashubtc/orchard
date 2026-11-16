@@ -12,6 +12,7 @@ services:
       - NODE_ENV=production
       - SERVER_HOST=0.0.0.0
       - DOCKER_ENV=true
+      - DATA_DIR=/app/data
       # Lightning Network (container paths)
       - LIGHTNING_MACAROON=/app/certs/lightning/orchard.macaroon
       - LIGHTNING_CERT=/app/certs/lightning/tls.cert
@@ -32,7 +33,7 @@ services:
       - /app/data/tmp
     volumes:
       - type: bind
-        source: ${DATABASE_DIR:-./data}
+        source: ${DATA_DIR:-${DATABASE_DIR:-./data}}
         target: /app/data
         read_only: false
         bind:

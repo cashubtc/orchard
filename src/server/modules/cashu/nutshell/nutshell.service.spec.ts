@@ -67,6 +67,8 @@ describe('NutshellService', () => {
 					return 'localhost';
 				case 'cashu.rpc_port':
 					return 3333;
+				case 'server.assets_dir':
+					return '/orchard';
 				default:
 					return undefined as any;
 			}
@@ -96,6 +98,8 @@ describe('NutshellService', () => {
 					return 'host.docker.internal';
 				case 'cashu.rpc_port':
 					return 3333;
+				case 'server.assets_dir':
+					return '/orchard';
 				default:
 					return undefined as any;
 			}
@@ -122,6 +126,8 @@ describe('NutshellService', () => {
 					return 'localhost';
 				case 'cashu.rpc_port':
 					return 3333;
+				case 'server.assets_dir':
+					return '/orchard';
 				default:
 					return undefined as any;
 			}
@@ -151,6 +157,8 @@ describe('NutshellService', () => {
 					return 'localhost';
 				case 'cashu.rpc_port':
 					return 3333;
+				case 'server.assets_dir':
+					return '/orchard';
 				default:
 					return undefined as any;
 			}
@@ -181,6 +189,8 @@ describe('NutshellService', () => {
 					return 'localhost';
 				case 'cashu.rpc_port':
 					return 3333;
+				case 'server.assets_dir':
+					return '/orchard';
 				default:
 					return undefined as any;
 			}
@@ -194,7 +204,7 @@ describe('NutshellService', () => {
 		grpc.loadPackageDefinition.mockReturnValue({cashu: {Mint: jest.fn()}});
 		nutshellService.initializeGrpcClient();
 		const load_arg = proto_loader.loadSync.mock.calls[0][0];
-		expect(String(load_arg)).toContain('proto/nutshell/management.proto');
+		expect(load_arg).toBe('/orchard/proto/nutshell/management.proto');
 		expect(createSsl).toHaveBeenCalledWith(ca_buf, key_buf, cert_buf);
 		const logger_log = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined as any);
 		logger_log.mockClear();

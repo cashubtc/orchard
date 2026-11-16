@@ -18,6 +18,8 @@ export type Config = {
 		ttl: string;
 		limit: string;
 		compression: boolean;
+		data_dir: string;
+		assets_dir: string;
 	};
 	database: {
 		path: string;

@@ -14,6 +14,7 @@ describe('Crypto Key', () => {
 	beforeEach(() => {
 		process.env = {...original_env};
 		delete process.env.CRYPTO_KEY;
+		delete process.env.DATA_DIR;
 		delete process.env.DATABASE_DIR;
 		test_dir = mkdtempSync(join(tmpdir(), 'orchard-crypto-test-'));
 		test_key_path = join(test_dir, 'crypto.key');

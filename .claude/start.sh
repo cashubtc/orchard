@@ -42,7 +42,7 @@ case " $* " in
 esac
 
 # Pre-define the flag vars the runtime-config generator reads, so that
-# generate-runtime-config.mjs's dotenv(override:false) treats them as already
+# generate-runtime-config.mjs's process.loadEnvFile treats them as already
 # set and doesn't leak values from the repo-root .env into the dev-server
 # build. Stack env (sourced next) will overwrite the ones it actually uses.
 export BITCOIN_TYPE="" LIGHTNING_TYPE="" TAPROOT_ASSETS_TYPE="" MINT_TYPE="" MINT_DATABASE=""

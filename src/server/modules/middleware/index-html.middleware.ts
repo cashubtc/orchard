@@ -1,11 +1,10 @@
 /* Core Dependencies */
+import {Logger} from '@nestjs/common';
 import {readFileSync} from 'fs';
 import {join} from 'path';
 import type {Request, Response, NextFunction} from 'express';
 /* Local Dependencies */
 import {CSP_NONCE_KEY, CSP_NONCE_PLACEHOLDER} from './middleware.constants.js';
-
-const CLIENT_INDEX_PATH = join(process.cwd(), 'dist', 'client', 'browser', 'index.html');
 
 /**
  * Caches the client index.html template once at startup and serves a per-request copy
@@ -13,13 +12,15 @@ const CLIENT_INDEX_PATH = join(process.cwd(), 'dist', 'client', 'browser', 'inde
  * Angular dev server to serve index.html directly.
  *
  * Returns a no-op middleware if the client bundle isn't present (e.g. server-only runs).
+ * @param {string} assets_dir - Application directory containing dist/client/browser
  */
-export function indexHtml() {
+export function indexHtml(assets_dir: string) {
 	let template: string;
 	try {
-		template = readFileSync(CLIENT_INDEX_PATH, 'utf8');
+		template = readFileSync(join(assets_dir, 'dist', 'client', 'browser', 'index.html'), 'utf8');
 	} catch {
 		// Client bundle not built — fall through to serve-static / 404
+		Logger.warn(`Client bundle not found in "${assets_dir}" — check ASSETS_DIR`, 'OrchardApplication');
 		return (_req: Request, _res: Response, next: NextFunction) => next();
 	}
 

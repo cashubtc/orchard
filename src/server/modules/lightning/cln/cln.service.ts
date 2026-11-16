@@ -71,11 +71,13 @@ export class ClnService {
 		return {rpc_url, creds: ssl_creds, channel_options};
 	}
 
-	private initializeGrpcClient(proto_paths: string[], package_namespace: string, client_class: string): grpc.Client {
+	private initializeGrpcClient(proto_files: string[], package_namespace: string, client_class: string): grpc.Client {
 		const credentials = this.createGrpcCredentials();
 		if (!credentials) return;
 
 		try {
+			const assets_dir = this.configService.get('server.assets_dir');
+			const proto_paths = proto_files.map((proto_file) => path.join(assets_dir, proto_file));
 			const package_definition = protoLoader.loadSync(proto_paths, {
 				keepCase: true,
 				longs: String,
@@ -94,9 +96,7 @@ export class ClnService {
 
 	public initializeLightningClient(): grpc.Client {
 		if (this.lightning_client) return this.lightning_client;
-		const node_proto_path = path.join(process.cwd(), 'proto/cln/node.proto');
-		const primitives_proto_path = path.join(process.cwd(), 'proto/cln/primitives.proto');
-		return (this.lightning_client = this.initializeGrpcClient([node_proto_path, primitives_proto_path], 'cln', 'Node'));
+		return (this.lightning_client = this.initializeGrpcClient(['proto/cln/node.proto', 'proto/cln/primitives.proto'], 'cln', 'Node'));
 	}
 
 	public initializeWalletKitClient(): grpc.Client {

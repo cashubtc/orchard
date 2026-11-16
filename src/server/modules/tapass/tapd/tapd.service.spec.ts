@@ -55,6 +55,8 @@ describe('TapdService', () => {
 					return 'hex:00';
 				case 'taproot_assets.cert':
 					return '-----BEGIN CERT-----\nX\n-----END CERT-----';
+				case 'server.assets_dir':
+					return '/orchard';
 				default:
 					return undefined as any;
 			}
@@ -78,7 +80,7 @@ describe('TapdService', () => {
 		expect(createFromMetadataGenerator).toHaveBeenCalled();
 		expect(createSsl).toHaveBeenCalled();
 		expect(combine).toHaveBeenCalled();
-		expect(proto_loader.loadSync).toHaveBeenCalled();
+		expect(proto_loader.loadSync).toHaveBeenCalledWith(['/orchard/proto/tapd/taprootassets.proto'], expect.any(Object));
 		expect(grpc.loadPackageDefinition).toHaveBeenCalled();
 		expect(client_ctor).toHaveBeenCalled();
 		metadata_add.mockRestore();

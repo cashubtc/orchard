@@ -50,6 +50,8 @@ describe('LndService', () => {
 					return 'hex:00';
 				case 'lightning.cert':
 					return 'CERT';
+				case 'server.assets_dir':
+					return '/orchard';
 				default:
 					return undefined as any;
 			}
@@ -66,7 +68,7 @@ describe('LndService', () => {
 		expect(createFromMetadataGenerator).toHaveBeenCalled();
 		expect(createSsl).toHaveBeenCalled();
 		expect(combine).toHaveBeenCalled();
-		expect(proto_loader.loadSync).toHaveBeenCalled();
+		expect(proto_loader.loadSync).toHaveBeenCalledWith(['/orchard/proto/lnd/lightning.proto'], expect.any(Object));
 		expect(grpc.loadPackageDefinition).toHaveBeenCalled();
 	});
 

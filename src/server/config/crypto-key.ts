@@ -2,13 +2,15 @@
 import {readFileSync, writeFileSync, chmodSync} from 'fs';
 import {createHash, randomBytes} from 'crypto';
 import {join} from 'path';
+/* Local Dependencies */
+import {getDataDir} from './configuration.helpers.js';
 
 /**
  * Get the file path for the persisted crypto key
  * @returns {string} Path to the crypto.key file
  */
 export const getCryptoKeyPath = (): string => {
-	const data_dir = process.env.DATABASE_DIR || 'data';
+	const data_dir = getDataDir();
 	return join(data_dir, 'crypto.key');
 };
 

@@ -52,6 +52,8 @@ describe('ClnService', () => {
 					return 'KEY';
 				case 'lightning.ca':
 					return 'CA';
+				case 'server.assets_dir':
+					return '/orchard';
 				default:
 					return undefined as any;
 			}
@@ -62,7 +64,10 @@ describe('ClnService', () => {
 		grpc.loadPackageDefinition.mockReturnValue({cln: {Node: jest.fn()}});
 		clnService.initializeLightningClient();
 		expect(createSsl).toHaveBeenCalled();
-		expect(proto_loader.loadSync).toHaveBeenCalled();
+		expect(proto_loader.loadSync).toHaveBeenCalledWith(
+			['/orchard/proto/cln/node.proto', '/orchard/proto/cln/primitives.proto'],
+			expect.any(Object),
+		);
 		expect(grpc.loadPackageDefinition).toHaveBeenCalled();
 	});
 

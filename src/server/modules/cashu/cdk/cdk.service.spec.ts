@@ -68,6 +68,8 @@ describe('CdkService', () => {
 					return 'localhost';
 				case 'cashu.rpc_port':
 					return 3333;
+				case 'server.assets_dir':
+					return '/orchard';
 				default:
 					return undefined as any;
 			}
@@ -78,7 +80,7 @@ describe('CdkService', () => {
 		grpc.loadPackageDefinition.mockReturnValue({cdk_mint_management_v1: {CdkMint: jest.fn()}});
 		cdkService.initializeGrpcClient();
 		expect(createSsl).toHaveBeenCalled();
-		expect(proto_loader.loadSync).toHaveBeenCalled();
+		expect(proto_loader.loadSync).toHaveBeenCalledWith('/orchard/proto/cdk/cdk-mint-rpc.proto', expect.any(Object));
 		expect(grpc.loadPackageDefinition).toHaveBeenCalled();
 	});
 
@@ -98,6 +100,8 @@ describe('CdkService', () => {
 					return 'host.docker.internal';
 				case 'cashu.rpc_port':
 					return 3333;
+				case 'server.assets_dir':
+					return '/orchard';
 				default:
 					return undefined as any;
 			}
@@ -125,6 +129,8 @@ describe('CdkService', () => {
 					return 'localhost';
 				case 'cashu.rpc_port':
 					return 3333;
+				case 'server.assets_dir':
+					return '/orchard';
 				default:
 					return undefined as any;
 			}
@@ -156,6 +162,8 @@ describe('CdkService', () => {
 					return 'localhost';
 				case 'cashu.rpc_port':
 					return 3333;
+				case 'server.assets_dir':
+					return '/orchard';
 				default:
 					return undefined as any;
 			}

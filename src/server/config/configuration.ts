@@ -1,6 +1,7 @@
 /* Local Dependencies */
 import type {Config} from './configuration.type.js';
 import {loadOrCreateCryptoKey, generateEphemeralJwtSecret} from './crypto-key.js';
+import {getDataDir} from './configuration.helpers.js';
 
 const replaceLocalhostInDocker = (host: string | undefined): string | undefined => {
 	if (!host) return host;
@@ -21,6 +22,7 @@ const getMintRpcMtls = (): boolean => {
 };
 
 export const config = (): Config => {
+	const data_dir = getDataDir();
 	const setup_key = process.env.SETUP_KEY || process.env.ADMIN_PASSWORD;
 	const crypto_key = process.env.SCHEMA_ONLY === 'true' ? '' : loadOrCreateCryptoKey();
 	const jwt_mode = process.env.DEV_AUTH_BYPASS === 'true' && process.env.SCHEMA_ONLY !== 'true' ? 'persistent' : 'ephemeral';
@@ -46,10 +48,12 @@ export const config = (): Config => {
 		ttl: process.env.THROTTLE_TTL || '60000',
 		limit: process.env.THROTTLE_LIMIT || '20',
 		compression: process.env.SERVER_COMPRESSION === 'true',
+		data_dir,
+		assets_dir: process.env.ASSETS_DIR || process.cwd(),
 	};
 
 	const database = {
-		path: `${process.env.DATABASE_DIR || 'data'}/orchard.db`,
+		path: `${data_dir}/orchard.db`,
 		synchronize: process.env.NODE_ENV !== 'production',
 	};
 

@@ -37,7 +37,12 @@ async function bootstrap() {
 	validation(app, configService, logger);
 	const is_production = configService.get<boolean>('mode.production') ?? false;
 	app.use(securityHeaders(is_production));
-	if (is_production) app.use(indexHtml());
+	if (is_production) {
+		app.getHttpAdapter().get('/config.json', (_req: express.Request, res: express.Response) =>
+			res.sendFile('config.json', {root: configService.get<string>('server.data_dir')}),
+		);
+		app.use(indexHtml(configService.get<string>('server.assets_dir')));
+	}
 	app.getHttpAdapter().getInstance().disable('x-powered-by');
 	const compression_enabled = configService.get<boolean>('server.compression');
 	if (compression_enabled) app.use(compression());

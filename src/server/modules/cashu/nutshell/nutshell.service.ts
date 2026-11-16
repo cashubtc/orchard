@@ -65,7 +65,7 @@ export class NutshellService {
 		}
 
 		try {
-			const proto_path = path.join(process.cwd(), 'proto/nutshell/management.proto');
+			const proto_path = path.join(this.configService.get('server.assets_dir'), 'proto/nutshell/management.proto');
 			const package_definition = protoLoader.loadSync(proto_path, {
 				keepCase: true,
 				longs: String,
