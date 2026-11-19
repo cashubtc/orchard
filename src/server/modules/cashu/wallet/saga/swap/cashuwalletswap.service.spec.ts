@@ -236,6 +236,50 @@ describe('CashuWalletSwapService', () => {
 		});
 	});
 
+	describe('send preview', () => {
+		const preview = (mint_id: string, amount: number | null, max = false) =>
+			service.previewSend({user_id: 'user-1', mint_id, unit: 'sat', amount, max});
+
+		it.each([
+			[100, {amount: 90, fee: 9, total: 99}],
+			[128, {amount: 120, fee: 7, total: 127}],
+		])('prices the most a token can carry from %i on a fee-charging keyset, as the send then charges it', async (funds, most) => {
+			const mint_id = (await mint_service.addMint('user-1', CEDAR)).id;
+			await fund(mint_id, funds, cedar());
+			const priced = await preview(mint_id, null, true);
+			expect(priced).toEqual({...most, sufficient: true, balance: funds});
+			expect(await data_source.getRepository(CashuWalletOperation).countBy({type: WalletOperationType.SEND})).toBe(0);
+
+			const sent = await send(mint_id, priced.amount);
+			expect(sent).toMatchObject({state: WalletOperationState.PENDING, fee: priced.fee});
+			expect(await balance()).toBe(funds - priced.total);
+		});
+
+		it('reports a balance short of the total instead of refusing', async () => {
+			const mint_id = await funded(20);
+			expect(await preview(mint_id, 30)).toEqual({amount: 30, fee: 0, total: 30, sufficient: false, balance: 20});
+		});
+
+		it.each([
+			['without an amount', async () => preview(await funded(), null), 'An amount is required'],
+			[
+				'max from a wallet too small to cover the fees',
+				async () => preview(await orchardMint(), null, true),
+				'Not enough here to cover the fees',
+			],
+			[
+				'from the Orchard mint while it publishes no URL',
+				async () => {
+					orchard().info.urls = [];
+					return preview(await funded(), 30);
+				},
+				'Orchard mint has no public URL; add one to its info',
+			],
+		])('refuses %s', async (_label, attempt, details) => {
+			await expect(attempt()).rejects.toEqual(walletError(details));
+		});
+	});
+
 	describe('claim and reclaim', () => {
 		it('sees a token claimed on a check and in the background pass', async () => {
 			const mint_id = await funded();

@@ -3,9 +3,12 @@ import {expect} from '@jest/globals';
 /* Vendor Dependencies */
 import {HttpResponseError, MintOperationError, StaleKeysetError} from '@cashu/cashu-ts';
 /* Native Dependencies */
-import {CASHU_WALLET_MINT_QUOTE_METHODS} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
+import {
+	CASHU_WALLET_MELT_QUOTE_METHODS,
+	CASHU_WALLET_MINT_QUOTE_METHODS,
+} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 /* Local Dependencies */
-import {describeMintError, findMintQuoteMethod, getCounterKey} from './cashuwallet.helpers.js';
+import {describeMintError, findMeltQuoteMethod, findMintQuoteMethod, getCounterKey} from './cashuwallet.helpers.js';
 
 describe('findMintQuoteMethod', () => {
 	it.each([
@@ -14,6 +17,16 @@ describe('findMintQuoteMethod', () => {
 		['a name inherited from Object', 'constructor', null],
 	])('gives the rules for %s', (_label, method, rules) => {
 		expect(findMintQuoteMethod(method)).toBe(rules);
+	});
+});
+
+describe('findMeltQuoteMethod', () => {
+	it.each([
+		['a method the wallet pays by', 'onchain', CASHU_WALLET_MELT_QUOTE_METHODS.onchain],
+		['an unknown method', 'custom', null],
+		['a name inherited from Object', 'constructor', null],
+	])('gives the rules for %s', (_label, method, rules) => {
+		expect(findMeltQuoteMethod(method)).toBe(rules);
 	});
 });
 

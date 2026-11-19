@@ -92,6 +92,60 @@ export type CashuWalletSendRequest = {
 	memo: string | null;
 };
 
+/** What spending costs on top of an amount, the total, and whether the balance covers it */
+export type CashuWalletSpendEstimate = {
+	fee: number;
+	total: number;
+	sufficient: boolean;
+};
+
+/** A request to price a token send: amount null only with max, which asks for the most the wallet can send */
+export type CashuWalletSendTokenPreviewRequest = Pick<CashuWalletSendRequest, 'user_id' | 'mint_id' | 'unit'> & {
+	amount: number | null;
+	max: boolean;
+};
+
+/** What sending a token would cost before anything is reserved, the redeemer's fee included */
+export type CashuWalletSendTokenPreview = CashuWalletSpendEstimate & {
+	amount: number;
+	balance: number;
+};
+
+/** A request for a melt quote from a wallet mint: amount in the unit, null when the request sets it; max asks for the most the wallet can pay */
+export type CashuWalletMeltQuoteRequest = {
+	user_id: string;
+	mint_id: string;
+	method: string;
+	unit: string;
+	request: string;
+	amount: number | null;
+	max: boolean;
+};
+
+/** What a mint holds back to pay a melt quote one way: a Lightning quote has one way, an onchain quote one per speed */
+export type CashuWalletMeltQuoteReserve = {
+	fee_index: number | null;
+	estimated_blocks: number | null;
+	fee_reserve: number;
+};
+
+/** A melt quote as the wallet reads it from the mint */
+export type CashuWalletMeltQuote = {
+	quote_id: string;
+	amount: number;
+	expiry: number | null;
+	reserves: CashuWalletMeltQuoteReserve[];
+};
+
+/** What paying a melt quote one way costs from the wallet */
+export type CashuWalletMeltQuoteFee = Pick<CashuWalletMeltQuoteReserve, 'fee_index' | 'estimated_blocks'> & CashuWalletSpendEstimate;
+
+/** A melt quote priced against the wallet's balance at its mint */
+export type CashuWalletMeltQuoteRecord = Omit<CashuWalletMeltQuote, 'reserves'> & {
+	balance: number;
+	fees: CashuWalletMeltQuoteFee[];
+};
+
 /** A token before it's received: amount is before the fee; fee and claimed are null until its mint is in the wallet */
 export type CashuWalletReceiveTokenPreview = {
 	amount: number;

@@ -23,6 +23,12 @@ type FakeMintOptions = {
 /** Y of a proof secret, which mints key spent state by (NUT-07) */
 const toY = (secret: string): string => hashToCurve(new TextEncoder().encode(secret)).toHex(true);
 
+/** Sats a fake invoice is for: its amount is in nano-bitcoin, ten to the sat; null when it sets none */
+const invoiceAmount = (invoice: string): number | null => {
+	const match = /^lnbc(\d+)n1/.exec(invoice);
+	return match ? Number(match[1]) / 10 : null;
+};
+
 /** Mint that signs, verifies and spends with cashu-ts crypto, with scriptable failures, outages and lost responses */
 export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk = 0, version_byte}: FakeMintOptions = {}) => {
 	const newKeyset = () => createNewMintKeys(8, undefined, {unit: 'sat', input_fee_ppk, versionByte: version_byte});
@@ -44,6 +50,13 @@ export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk =
 		}
 	>();
 	const mint_quote_defaults: {expiry: number | null} = {expiry: null};
+	// Each melt quote's fee reserve for its amount (an onchain quote offers three times it for the next block, twice for six); a set amount prices every request at it, as for a fixed-amount offer
+	const melt_quote_defaults: {expiry: number; amount: number | null; fee_reserve: (amount: number) => number} = {
+		expiry: 2_000_000_000,
+		amount: null,
+		fee_reserve: (amount) => Math.max(2, Math.ceil(amount / 50)),
+	};
+	let melt_quote_count = 0;
 	const failures: {code: number; detail: string}[] = [];
 	const outages = new Map<string, number>();
 	const lost = new Set<string>();
@@ -62,7 +75,14 @@ export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk =
 				],
 				disabled: false,
 			},
-			5: {methods: [], disabled: false},
+			5: {
+				methods: [
+					{method: 'bolt11', unit: 'sat', options: {amountless: true}},
+					{method: 'bolt12', unit: 'sat'},
+					{method: 'onchain', unit: 'sat'},
+				],
+				disabled: false,
+			},
 			7: {supported: true},
 			9: {supported: true},
 			20: {supported: true},
@@ -94,6 +114,28 @@ export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk =
 		if (method === 'bolt11') mint_quotes.set(quote, {...terms, state: 'UNPAID', amount: body.amount});
 		else mint_quotes.set(quote, {...terms, method, amount: body.amount ?? null, amount_paid: 0, amount_issued: 0});
 		return mintQuoteResponse(quote);
+	};
+	const createMeltQuote = (method: string, body: any): [number, any] => {
+		const msat = body.options?.amountless?.amount_msat;
+		const requested = method === 'onchain' ? body.amount : msat ? Math.ceil(msat / 1000) : invoiceAmount(body.request);
+		const amount = melt_quote_defaults.amount ?? requested;
+		if (!amount) return [400, {code: 11006, detail: 'Amount required'}];
+		const fee_reserve = melt_quote_defaults.fee_reserve(amount);
+		const terms = {
+			quote: `melt-${++melt_quote_count}`,
+			request: body.request,
+			amount,
+			unit: 'sat',
+			state: 'UNPAID',
+			expiry: melt_quote_defaults.expiry,
+		};
+		if (method !== 'onchain') return [200, {...terms, fee_reserve, payment_preimage: null}];
+		const fee_options = [1, 6, 144].map((estimated_blocks, fee_index) => ({
+			fee_index,
+			fee_reserve: fee_reserve * (3 - fee_index),
+			estimated_blocks,
+		}));
+		return [200, {...terms, fee_options, selected_fee_index: null, outpoint: null}];
 	};
 	const mintOutputs = (body: any): [number, any] => {
 		const quote = mint_quotes.get(body.quote);
@@ -145,6 +187,8 @@ export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk =
 			}
 			return mint_quotes.has(quote) ? [200, mintQuoteResponse(quote)] : [400, {code: 20004, detail: 'Unknown quote'}];
 		}
+		const melt_quote_route = path.match(/^\/v1\/melt\/quote\/(\w+)$/);
+		if (melt_quote_route) return createMeltQuote(melt_quote_route[1], body);
 		if (/^\/v1\/mint\/\w+$/.test(path) || path === '/v1/swap') {
 			const failure = failures.shift();
 			if (failure) return [400, failure];
@@ -178,6 +222,7 @@ export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk =
 		info,
 		mint_quotes,
 		mint_quote_defaults,
+		melt_quote_defaults,
 		failures,
 		outages,
 		lost,

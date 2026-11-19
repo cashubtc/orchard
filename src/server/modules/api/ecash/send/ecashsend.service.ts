@@ -2,12 +2,19 @@
 import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
 import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
+import {CashuWalletMeltService} from '#server/modules/cashu/wallet/saga/melt/cashuwalletmelt.service';
 import {toWalletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardEcashOperation} from '#server/modules/api/ecash/operation/ecashoperation.model';
-import type {CashuWalletSendRequest} from '#server/modules/cashu/wallet/cashuwallet.types';
+import type {
+	CashuWalletMeltQuoteRequest,
+	CashuWalletSendRequest,
+	CashuWalletSendTokenPreviewRequest,
+} from '#server/modules/cashu/wallet/cashuwallet.types';
+/* Local Dependencies */
+import {OrchardEcashMeltQuote, OrchardEcashSendTokenPreview} from './ecashsend.model.js';
 
 @Injectable()
 export class EcashSendService {
@@ -15,8 +22,27 @@ export class EcashSendService {
 
 	constructor(
 		private cashuWalletSwapService: CashuWalletSwapService,
+		private cashuWalletMeltService: CashuWalletMeltService,
 		private errorService: ErrorService,
 	) {}
+
+	/** Price sending a token from a user's wallet */
+	async previewSend(tag: string, request: CashuWalletSendTokenPreviewRequest): Promise<OrchardEcashSendTokenPreview> {
+		try {
+			return new OrchardEcashSendTokenPreview(await this.cashuWalletSwapService.previewSend(request));
+		} catch (error) {
+			throw this.handleError(tag, error);
+		}
+	}
+
+	/** A melt quote for paying a request from a user's wallet, priced against their balance */
+	async newMeltQuote(tag: string, request: CashuWalletMeltQuoteRequest): Promise<OrchardEcashMeltQuote> {
+		try {
+			return new OrchardEcashMeltQuote(await this.cashuWalletMeltService.newQuote(request));
+		} catch (error) {
+			throw this.handleError(tag, error);
+		}
+	}
 
 	/** Send ecash from a user's wallet as a token */
 	async sendToken(tag: string, request: CashuWalletSendRequest): Promise<OrchardEcashOperation> {

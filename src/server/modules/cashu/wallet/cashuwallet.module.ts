@@ -24,6 +24,7 @@ import {CashuWalletRecoveryService} from './saga/cashuwalletrecovery.service.js'
 import {CashuWalletOperationService} from './saga/cashuwalletoperation.service.js';
 import {CashuWalletIssueService} from './saga/issue/cashuwalletissue.service.js';
 import {CashuWalletSwapService} from './saga/swap/cashuwalletswap.service.js';
+import {CashuWalletMeltService} from './saga/melt/cashuwalletmelt.service.js';
 import {CashuWalletMintQuoteService} from './mintquote/cashuwalletmintquote.service.js';
 import {CashuWalletWatchService} from './watch/cashuwalletwatch.service.js';
 
@@ -54,6 +55,7 @@ import {CashuWalletWatchService} from './watch/cashuwalletwatch.service.js';
 		CashuWalletOperationService,
 		CashuWalletIssueService,
 		CashuWalletSwapService,
+		CashuWalletMeltService,
 		CashuWalletMintQuoteService,
 		CashuWalletWatchService,
 	],
@@ -65,6 +67,7 @@ import {CashuWalletWatchService} from './watch/cashuwalletwatch.service.js';
 		CashuWalletOperationService,
 		CashuWalletIssueService,
 		CashuWalletSwapService,
+		CashuWalletMeltService,
 		CashuWalletMintQuoteService,
 		CashuWalletWatchService,
 	],

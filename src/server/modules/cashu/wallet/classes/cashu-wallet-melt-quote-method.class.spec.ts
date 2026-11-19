@@ -1,0 +1,92 @@
+/* Core Dependencies */
+import {expect} from '@jest/globals';
+/* Vendor Dependencies */
+import {Amount, type MintInfo, type Wallet} from '@cashu/cashu-ts';
+/* Local Dependencies */
+import {
+	CashuWalletBolt11MeltQuoteMethod,
+	CashuWalletBolt12MeltQuoteMethod,
+	CashuWalletOnchainMeltQuoteMethod,
+} from './cashu-wallet-melt-quote-method.class.js';
+
+describe('CashuWalletMeltQuoteMethod', () => {
+	const bolt11 = new CashuWalletBolt11MeltQuoteMethod();
+	const bolt12 = new CashuWalletBolt12MeltQuoteMethod();
+	const onchain = new CashuWalletOnchainMeltQuoteMethod();
+	const lightning = {quote: 'melt-1', amount: Amount.from(25), expiry: 0, fee_reserve: Amount.from(2)};
+	const walletIn = (unit: string) =>
+		({
+			unit,
+			createMeltQuoteBolt11: jest.fn(async () => lightning),
+			createMeltQuoteBolt12: jest.fn(async () => lightning),
+			createMeltQuoteOnchain: jest.fn(async () => ({
+				quote: 'melt-2',
+				amount: Amount.from(50),
+				expiry: 1_000,
+				fee_options: [
+					{fee_index: 0, fee_reserve: Amount.from(6), estimated_blocks: 1},
+					{fee_index: 1, fee_reserve: Amount.from(2), estimated_blocks: 144},
+					{fee_index: 2, fee_reserve: Amount.from(1), estimated_blocks: 1.5},
+				],
+			})),
+		}) as unknown as Wallet;
+
+	it('takes Lightning amounts only in sat or msat, and onchain amounts in any unit', () => {
+		expect(['sat', 'msat', 'usd'].map((unit) => bolt11.takesAmountIn(unit))).toEqual([true, true, false]);
+		expect([bolt12.takesAmountIn('usd'), onchain.takesAmountIn('usd')]).toEqual([false, true]);
+	});
+
+	it('quotes a Lightning request with its one reserve, sending an amount in msat only when given one', async () => {
+		const wallet = walletIn('sat');
+		expect(await bolt11.quote(wallet, 'lnbc100n1fake', null)).toEqual({
+			quote_id: 'melt-1',
+			amount: 25,
+			expiry: null,
+			reserves: [{fee_index: null, estimated_blocks: null, fee_reserve: 2}],
+		});
+		await bolt11.quote(wallet, 'lnbc1fake', 25);
+		expect(wallet.createMeltQuoteBolt11).toHaveBeenNthCalledWith(1, 'lnbc100n1fake', undefined);
+		expect(wallet.createMeltQuoteBolt11).toHaveBeenNthCalledWith(2, 'lnbc1fake', 25_000);
+	});
+
+	it('sends a Lightning amount in msat from an msat wallet unchanged', async () => {
+		const wallet = walletIn('msat');
+		await bolt12.quote(wallet, 'lno1fake', 25_000);
+		expect(wallet.createMeltQuoteBolt12).toHaveBeenCalledWith('lno1fake', 25_000);
+	});
+
+	it('refuses a Lightning amount that is not one in the wallet unit before converting it', async () => {
+		const wallet = walletIn('sat');
+		await expect(bolt11.quote(wallet, 'lnbc1fake', 2.5)).rejects.toThrow('Invalid number amount: 2.5');
+		expect(wallet.createMeltQuoteBolt11).not.toHaveBeenCalled();
+	});
+
+	it('quotes an address for an amount with a reserve per speed, showing a malformed block estimate as unknown', async () => {
+		const wallet = walletIn('sat');
+		expect(await onchain.quote(wallet, 'bcrt1qfake', 50)).toEqual({
+			quote_id: 'melt-2',
+			amount: 50,
+			expiry: 1_000,
+			reserves: [
+				{fee_index: 0, estimated_blocks: 1, fee_reserve: 6},
+				{fee_index: 1, estimated_blocks: 144, fee_reserve: 2},
+				{fee_index: 2, estimated_blocks: null, fee_reserve: 1},
+			],
+		});
+		expect(wallet.createMeltQuoteOnchain).toHaveBeenCalledWith('bcrt1qfake', 50);
+	});
+
+	it("caps one payment at the method's NUT-05 max_amount for the unit, or not at all when the mint sets none", () => {
+		const params = [
+			{method: 'onchain', unit: 'sat', max_amount: 600},
+			{method: 'bolt12', unit: 'sat', max_amount: null},
+		];
+		const info = {isSupported: jest.fn(() => ({params}))} as unknown as MintInfo;
+		expect([onchain.maxAmount(info, 'sat'), bolt12.maxAmount(info, 'sat'), onchain.maxAmount(info, 'usd')]).toEqual([
+			600,
+			Infinity,
+			Infinity,
+		]);
+		expect(info.isSupported).toHaveBeenCalledWith(5);
+	});
+});

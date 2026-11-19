@@ -3,8 +3,12 @@ import {HttpResponseError, StaleKeysetError, getKeysetIdInt, isMintOperationErro
 /* Application Dependencies */
 import {OrchardErrorCode, OrchardErrorMessages} from '#server/modules/error/error.types';
 /* Native Dependencies */
-import {CASHU_WALLET_MINT_QUOTE_METHODS} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
+import {
+	CASHU_WALLET_MELT_QUOTE_METHODS,
+	CASHU_WALLET_MINT_QUOTE_METHODS,
+} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 import type {CashuWalletMintQuoteMethod} from '#server/modules/cashu/wallet/classes/cashu-wallet-mint-quote-method.class';
+import type {CashuWalletMeltQuoteMethod} from '#server/modules/cashu/wallet/classes/cashu-wallet-melt-quote-method.class';
 /* Local Dependencies */
 import {CashuMintErrorCode} from './cashuwallet.enums.js';
 
@@ -27,6 +31,12 @@ export const getCounterKey = (keyset_id: string): string => (keyset_id.startsWit
 export const findMintQuoteMethod = (method: string): CashuWalletMintQuoteMethod | null =>
 	Object.hasOwn(CASHU_WALLET_MINT_QUOTE_METHODS, method)
 		? CASHU_WALLET_MINT_QUOTE_METHODS[method as keyof typeof CASHU_WALLET_MINT_QUOTE_METHODS]
+		: null;
+
+/** The payout rules for a payment method, or null when the wallet can't pay by it */
+export const findMeltQuoteMethod = (method: string): CashuWalletMeltQuoteMethod | null =>
+	Object.hasOwn(CASHU_WALLET_MELT_QUOTE_METHODS, method)
+		? CASHU_WALLET_MELT_QUOTE_METHODS[method as keyof typeof CASHU_WALLET_MELT_QUOTE_METHODS]
 		: null;
 
 /** Operator-facing wallet error, resolved to EcashWalletError with its details */

@@ -32,8 +32,13 @@ import {
 	WalletProofState,
 } from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {describeMintError, walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
-import {classifyMintError} from '#server/modules/cashu/wallet/saga/cashuwalletsaga.helpers';
-import type {CashuWalletSendRequest, CashuWalletReceiveTokenPreview} from '#server/modules/cashu/wallet/cashuwallet.types';
+import {classifyMintError, estimateFee} from '#server/modules/cashu/wallet/saga/cashuwalletsaga.helpers';
+import type {
+	CashuWalletReceiveTokenPreview,
+	CashuWalletSendRequest,
+	CashuWalletSendTokenPreview,
+	CashuWalletSendTokenPreviewRequest,
+} from '#server/modules/cashu/wallet/cashuwallet.types';
 
 @Injectable()
 export class CashuWalletSwapService {
@@ -70,6 +75,29 @@ export class CashuWalletSwapService {
 			return this.cashuWalletJournalService.open(journaled, preview.inputs);
 		});
 		return this.attemptSwap(operation, wallet);
+	}
+
+	/** What sending a token would cost, the redeemer's fee included, reserving nothing; max finds the most it can carry */
+	public async previewSend(request: CashuWalletSendTokenPreviewRequest): Promise<CashuWalletSendTokenPreview> {
+		const {user_id, mint_id, unit} = request;
+		if (!request.max && request.amount === null) throw walletError('An amount is required');
+		await this.cashuWalletMintService.getTokenUrl(user_id, mint_id);
+		const [wallet, ready] = await Promise.all([
+			this.cashuWalletMintService.getUserWallet(user_id, mint_id, unit),
+			this.cashuWalletProofService.getReadyProofs(user_id, mint_id, unit),
+		]);
+		const amount = request.max ? this.maxSend(wallet, ready) : request.amount!;
+		const estimate = estimateFee(wallet, ready, amount, wallet.getFeesToInclude(amount).toNumber());
+		return {amount, balance: sumProofs(ready).toNumber(), ...estimate};
+	}
+
+	/** The most a token can carry once its redeemer's fee and the swap's are paid from every ready proof; the fee follows the amount's split, so it's searched down from the top */
+	private maxSend(wallet: Wallet, ready: Proof[]): number {
+		const spendable = wallet.maxSpendableAfterFees(ready).toNumber();
+		for (let amount = spendable; amount > 0; amount--) {
+			if (amount + wallet.getFeesToInclude(amount).toNumber() <= spendable) return amount;
+		}
+		throw walletError('Not enough here to cover the fees');
 	}
 
 	/** Check whether a sent token was claimed, finishing the send once all of it is spent */

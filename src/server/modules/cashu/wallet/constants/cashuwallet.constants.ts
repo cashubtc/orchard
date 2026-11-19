@@ -6,6 +6,12 @@ import {
 	CashuWalletOnchainMintQuoteMethod,
 	type CashuWalletMintQuoteMethod,
 } from '#server/modules/cashu/wallet/classes/cashu-wallet-mint-quote-method.class';
+import {
+	CashuWalletBolt11MeltQuoteMethod,
+	CashuWalletBolt12MeltQuoteMethod,
+	CashuWalletOnchainMeltQuoteMethod,
+	type CashuWalletMeltQuoteMethod,
+} from '#server/modules/cashu/wallet/classes/cashu-wallet-melt-quote-method.class';
 
 /** Emitted whenever a wallet operation changes state, with the operation minus the ecash it carries */
 export const CASHU_WALLET_OPERATION_UPDATED = 'cashu.wallet.operation.updated';
@@ -39,4 +45,11 @@ export const CASHU_WALLET_MINT_QUOTE_METHODS: Readonly<Record<'bolt11' | 'bolt12
 	bolt11: new CashuWalletBolt11MintQuoteMethod(),
 	bolt12: new CashuWalletBolt12MintQuoteMethod(),
 	onchain: new CashuWalletOnchainMintQuoteMethod(),
+};
+
+/** The payment methods a wallet pays out by */
+export const CASHU_WALLET_MELT_QUOTE_METHODS: Readonly<Record<'bolt11' | 'bolt12' | 'onchain', CashuWalletMeltQuoteMethod>> = {
+	bolt11: new CashuWalletBolt11MeltQuoteMethod(),
+	bolt12: new CashuWalletBolt12MeltQuoteMethod(),
+	onchain: new CashuWalletOnchainMeltQuoteMethod(),
 };
