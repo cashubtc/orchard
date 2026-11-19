@@ -144,7 +144,7 @@ export class CashuWalletProofService {
 		);
 	}
 
-	/** Give an operation's inputs back once the mint confirms them unspent; any it reports spent are marked spent */
+	/** Give an operation's inputs back once they're known unspent; any the mint reports spent are marked spent */
 	public async releaseInputs(operation_id: string, spent_secrets: string[] = []): Promise<void> {
 		const now = DateTime.now().toUnixInteger();
 		if (spent_secrets.length > 0) {

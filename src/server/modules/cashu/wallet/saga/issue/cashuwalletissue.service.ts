@@ -4,7 +4,7 @@ import {InjectRepository} from '@nestjs/typeorm';
 /* Vendor Dependencies */
 import {Repository} from 'typeorm';
 import {DateTime} from 'luxon';
-import {MintQuoteState, StaleKeysetError, isMintOperationError, type OperationCounters, type Wallet} from '@cashu/cashu-ts';
+import {MintQuoteState, StaleKeysetError, isMintOperationError, type OperationCounters, type Proof, type Wallet} from '@cashu/cashu-ts';
 /* Application Dependencies */
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
 /* Native Dependencies */
@@ -55,7 +55,7 @@ export class CashuWalletIssueService {
 		const wallet = await this.cashuWalletMintService.getUserWallet(request.user_id, request.mint_id, request.unit);
 		const prepared = await this.prepareOutputs(wallet, request.method, request.amount, request.quote_id);
 		const now = DateTime.now().toUnixInteger();
-		return this.walletOperationRepository.save(
+		return this.cashuWalletJournalService.open(
 			this.walletOperationRepository.create({
 				...request,
 				...prepared,
@@ -76,7 +76,7 @@ export class CashuWalletIssueService {
 				: operation;
 		return this.cashuWalletMintService.getUserWallet(executing.user_id, executing.mint_id, executing.unit).then(
 			(wallet) => this.attemptMint(executing, wallet, true),
-			(error) => this.wait(executing, error),
+			(error) => this.cashuWalletJournalService.wait(executing, error),
 		);
 	}
 
@@ -203,36 +203,27 @@ export class CashuWalletIssueService {
 		allow_rebuild: boolean,
 	): Promise<CashuWalletOperation> {
 		const action = classifyMintError(error);
-		if (action === WalletErrorAction.RESTORE) return this.restoreOr(operation, wallet, () => this.settleUnrestored(operation, error));
+		const finalize = (proofs: Proof[]) => this.cashuWalletJournalService.finalize(operation, proofs);
+		if (action === WalletErrorAction.RESTORE) {
+			return this.cashuWalletJournalService.restoreOr(operation, wallet, finalize, () => this.settleUnrestored(operation, error));
+		}
 		if (action === WalletErrorAction.REBUILD && allow_rebuild) {
-			return this.restoreOr(operation, wallet, async () => {
+			return this.cashuWalletJournalService.restoreOr(operation, wallet, finalize, async () => {
 				await this.reloadKeysets(wallet, error);
 				return this.rebuild(operation, wallet);
 			});
 		}
 		// A refusal can hide outputs the mint already signed (CDK answers 20006), so restore before the mint quote decides
 		if (action === WalletErrorAction.FAIL || action === WalletErrorAction.CHECK_STATE) {
-			return this.restoreOr(operation, wallet, () => this.pending(operation, error));
+			return this.cashuWalletJournalService.restoreOr(operation, wallet, finalize, () => this.pending(operation, error));
 		}
 		if (hasMintCode(error, CashuMintErrorCode.QUOTE_NOT_PAID)) return this.pending(operation, error);
-		return this.wait(operation, error);
-	}
-
-	/** NUT-09 restore of the saved outputs, finalizing what the mint signed; `fallback` runs when it signed none, and a failed restore waits */
-	private restoreOr(
-		operation: CashuWalletOperation,
-		wallet: Wallet,
-		fallback: () => Promise<CashuWalletOperation>,
-	): Promise<CashuWalletOperation> {
-		return this.cashuWalletJournalService.restore(operation, wallet).then(
-			(proofs) => (proofs.length > 0 ? this.cashuWalletJournalService.finalize(operation, proofs) : fallback()),
-			(restore_error) => this.wait(operation, restore_error),
-		);
+		return this.cashuWalletJournalService.wait(operation, error);
 	}
 
 	/** Nothing to restore: a mint quote issued to other outputs is final, anything else is retried */
 	private settleUnrestored(operation: CashuWalletOperation, error: unknown): Promise<CashuWalletOperation> {
-		if (!hasMintCode(error, CashuMintErrorCode.QUOTE_ALREADY_ISSUED)) return this.wait(operation, error);
+		if (!hasMintCode(error, CashuMintErrorCode.QUOTE_ALREADY_ISSUED)) return this.cashuWalletJournalService.wait(operation, error);
 		return this.cashuWalletJournalService.transition(operation, WalletOperationState.FAILED, {
 			error: 'Mint quote was issued to other outputs',
 		});
@@ -254,11 +245,6 @@ export class CashuWalletIssueService {
 		const prepared = await this.prepareOutputs(wallet, operation.method!, operation.amount, operation.quote_id!);
 		const rebuilt = await this.cashuWalletJournalService.transition(operation, WalletOperationState.EXECUTING, prepared);
 		return this.attemptMint(rebuilt, wallet, false);
-	}
-
-	/** Keep the operation executing with the failure recorded; reconciliation retries it */
-	private wait(operation: CashuWalletOperation, error: unknown): Promise<CashuWalletOperation> {
-		return this.cashuWalletJournalService.transition(operation, WalletOperationState.EXECUTING, {error: describeMintError(error)});
 	}
 
 	/** A fresh NUT-20 key from a user's seed for their next mint quote, with the counter it's derived at */

@@ -17,6 +17,7 @@ import {FetchService} from '#server/modules/fetch/fetch.service';
 import {assertPublicDestination} from '#server/modules/fetch/network-guard';
 /* Native Dependencies */
 import {MintRedirectError} from '#server/modules/cashu/wallet/classes/mint-redirect-error.class';
+import {CashuWalletUnsentError} from '#server/modules/cashu/wallet/classes/cashu-wallet-unsent-error.class';
 import {CashuWalletRequestPacer} from '#server/modules/cashu/wallet/classes/cashu-wallet-request-pacer.class';
 import {createCashuWalletSocket} from '#server/modules/cashu/wallet/classes/cashu-wallet-socket.class';
 import {CASHU_WALLET_MINT_MAX_BYTES} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
@@ -81,14 +82,14 @@ export class CashuWalletMintTransportService implements OnModuleInit {
 	/** Refuses an address that can't be reached before anything is sent, keeping the cashu-ts error contract */
 	private async requestAddedMint<T>(options: RequestOptions, allow_local: boolean): Promise<T> {
 		const refusal = await this.refuseMintUrl(options.endpoint, allow_local);
-		if (refusal) throw new NetworkError(`${options.endpoint}: ${refusal}`);
+		if (refusal) throw new CashuWalletUnsentError(`${options.endpoint}: ${refusal}`);
 		return this.requestMint<T>(options);
 	}
 
 	/** cashu-ts RequestFn over FetchService (Tor proxy, timeout, size cap, no redirects), paced per mint host */
 	private async requestMint<T>({endpoint, requestBody, headers, method, requestTimeout, signal}: RequestOptions): Promise<T> {
 		const host = new URL(endpoint).host;
-		if (!(await this.pacer.acquire(host))) throw new NetworkError(`${endpoint}: too many requests; try again shortly`);
+		if (!(await this.pacer.acquire(host))) throw new CashuWalletUnsentError(`${endpoint}: too many requests; try again shortly`);
 		const timeout_ms = requestTimeout ?? MINT_TIMEOUT_MS;
 		const timeout = AbortSignal.timeout(timeout_ms);
 		const toNetworkError = (error: any): never => {

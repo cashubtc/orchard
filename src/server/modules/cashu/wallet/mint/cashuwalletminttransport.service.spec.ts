@@ -4,9 +4,11 @@ import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
 import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
-import {HttpResponseError, MintOperationError, NetworkError, RateLimitError} from '@cashu/cashu-ts';
+import {HttpResponseError, MintOperationError, RateLimitError} from '@cashu/cashu-ts';
 /* Application Dependencies */
 import {FetchService} from '#server/modules/fetch/fetch.service';
+/* Native Dependencies */
+import {CashuWalletUnsentError} from '#server/modules/cashu/wallet/classes/cashu-wallet-unsent-error.class';
 /* Local Dependencies */
 import {CashuWalletMintTransportService} from './cashuwalletminttransport.service.js';
 
@@ -59,9 +61,9 @@ describe('CashuWalletMintTransportService', () => {
 	it('holds off a mint that rate limited Orchard, without touching other mints', async () => {
 		fetch_service.fetchWithProxy.mockResolvedValueOnce(response({detail: 'Rate limit exceeded.'}, 429));
 		await expect(service.request({endpoint: 'https://203.0.113.12/v1/swap'})).rejects.toBeInstanceOf(RateLimitError);
-		await expect(service.request({endpoint: 'https://203.0.113.12/v1/info'})).rejects.toThrow(
-			'https://203.0.113.12/v1/info: too many requests; try again shortly',
-		);
+		const held_back = service.request({endpoint: 'https://203.0.113.12/v1/info'});
+		await expect(held_back).rejects.toBeInstanceOf(CashuWalletUnsentError);
+		await expect(held_back).rejects.toThrow('https://203.0.113.12/v1/info: too many requests; try again shortly');
 		expect(fetch_service.fetchWithProxy).toHaveBeenCalledTimes(1);
 
 		fetch_service.fetchWithProxy.mockResolvedValueOnce(response({name: 'Cedar Mint'}));
@@ -70,7 +72,7 @@ describe('CashuWalletMintTransportService', () => {
 
 	it('refuses an onion mint on the guarded transport without the Tor proxy, sending nothing', async () => {
 		await expect(service.guardedRequest(true)({endpoint: 'http://abcdefghijklmnop.onion/v1/info'})).rejects.toBeInstanceOf(
-			NetworkError,
+			CashuWalletUnsentError,
 		);
 		expect(fetch_service.fetchWithProxy).not.toHaveBeenCalled();
 	});

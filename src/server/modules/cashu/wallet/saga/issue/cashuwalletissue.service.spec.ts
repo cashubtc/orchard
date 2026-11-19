@@ -29,6 +29,7 @@ import {CashuWalletMintQuote} from '#server/modules/cashu/wallet/mintquote/cashu
 import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.service';
 import {CashuWalletMintCacheService} from '#server/modules/cashu/wallet/mint/cashuwalletmintcache.service';
 import {CashuWalletMintTransportService} from '#server/modules/cashu/wallet/mint/cashuwalletminttransport.service';
+import {CashuWalletRequestPacer} from '#server/modules/cashu/wallet/classes/cashu-wallet-request-pacer.class';
 import {WalletOperationState, WalletOperationType, WalletProofState} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 import {getCounterKey} from '#server/modules/cashu/wallet/helpers/cashuwalletkey.helpers';
@@ -246,6 +247,11 @@ describe('CashuWalletIssueService', () => {
 	it.each([
 		['unreachable', () => void (offline = true), 'socket hang up'],
 		['timing out behind a proxy', () => void mint.outages.set('/v1/mint/bolt11', 408), 'HTTP 408'],
+		[
+			"over Orchard's request rate",
+			() => void jest.spyOn(CashuWalletRequestPacer.prototype, 'acquire').mockResolvedValueOnce(false),
+			'too many requests',
+		],
 	])('stays executing when the mint is %s, and finishes on recovery', async (_label, break_mint, error) => {
 		const operation = await service.createMintOperation(request());
 		break_mint();

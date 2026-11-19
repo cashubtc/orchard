@@ -7,6 +7,7 @@ import {status} from '@grpc/grpc-js';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 /* Native Dependencies */
 import {CashuMintErrorCode, WalletErrorAction} from '#server/modules/cashu/wallet/cashuwallet.enums';
+import {CashuWalletUnsentError} from '#server/modules/cashu/wallet/classes/cashu-wallet-unsent-error.class';
 /* Local Dependencies */
 import {classifyMintError, classifyMintRpcError, describeMintError} from './cashuwalleterror.helpers.js';
 
@@ -76,6 +77,13 @@ describe('classifyMintError', () => {
 		['an unexpected error', new Error('unexpected')],
 	])('waits on %s, which never proves the mint refused', (_label, error) => {
 		expect(classifyMintError(error)).toBe(WalletErrorAction.WAIT);
+	});
+
+	it('marks a first attempt Orchard held back as never sent, which a replay can never prove', () => {
+		const held_back = new CashuWalletUnsentError('too many requests');
+		expect(classifyMintError(held_back, true)).toBe(WalletErrorAction.UNSENT);
+		expect(classifyMintError(held_back)).toBe(WalletErrorAction.WAIT);
+		expect(classifyMintError(new NetworkError('socket hang up'), true)).toBe(WalletErrorAction.WAIT);
 	});
 });
 

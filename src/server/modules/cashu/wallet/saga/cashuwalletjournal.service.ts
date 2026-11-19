@@ -9,7 +9,7 @@ import {OutputData, type OperationCounters, type OutputDataLike, type Proof, typ
 /* Native Dependencies */
 import {CashuWalletProofService} from '#server/modules/cashu/wallet/proof/cashuwalletproof.service';
 import {WalletOperationState} from '#server/modules/cashu/wallet/cashuwallet.enums';
-import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
+import {describeMintError, walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 import {CASHU_WALLET_OPERATION_UPDATED} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 /* Local Dependencies */
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
@@ -28,7 +28,8 @@ export class CashuWalletJournalService {
 	******************************************************** */
 
 	/** Journal a new operation and lock the proofs it spends together, refusing when another operation took one of them first */
-	public open(operation: CashuWalletOperation, inputs: Pick<Proof, 'secret'>[]): Promise<CashuWalletOperation> {
+	public open(operation: CashuWalletOperation, inputs: Pick<Proof, 'secret'>[] = []): Promise<CashuWalletOperation> {
+		if (inputs.length === 0) return this.walletOperationRepository.save(operation);
 		return this.walletOperationRepository.manager.transaction(async (manager) => {
 			const saved = await manager.save(operation);
 			if (!(await this.cashuWalletProofService.lockInputs(manager, saved.id, inputs))) {
@@ -64,6 +65,11 @@ export class CashuWalletJournalService {
 		return this.transition(operation, WalletOperationState.FINALIZED, {error: null});
 	}
 
+	/** Keep an operation executing with the failure recorded; reconciliation retries it */
+	public wait(operation: CashuWalletOperation, error: unknown): Promise<CashuWalletOperation> {
+		return this.transition(operation, WalletOperationState.EXECUTING, {error: describeMintError(error)});
+	}
+
 	/* *******************************************************
 		Outputs
 	******************************************************** */
@@ -93,5 +99,24 @@ export class CashuWalletJournalService {
 			throw new Error(`Mint restored ${proofs.length} of ${expected} outputs`);
 		}
 		return proofs;
+	}
+
+	/** Restore an operation's outputs, settling what the mint signed; `fallback` runs when it signed none, and a restore that can't be made waits */
+	public restoreOr(
+		operation: CashuWalletOperation,
+		wallet: Wallet,
+		settle: (proofs: Proof[]) => Promise<CashuWalletOperation>,
+		fallback: () => Promise<CashuWalletOperation>,
+		partial = false,
+	): Promise<CashuWalletOperation> {
+		return this.restore(operation, wallet, partial).then(
+			(proofs) => (proofs.length > 0 ? settle(proofs) : fallback()),
+			(restore_error) => this.wait(operation, restore_error),
+		);
+	}
+
+	/** NUT-07 states of an operation's inputs, or null when the mint can't be asked; each saga decides what they mean */
+	public checkInputs(wallet: Wallet, inputs: Proof[]): Promise<{unspent: Proof[]; pending: Proof[]; spent: Proof[]} | null> {
+		return wallet.groupProofsByState(inputs).catch(() => null);
 	}
 }

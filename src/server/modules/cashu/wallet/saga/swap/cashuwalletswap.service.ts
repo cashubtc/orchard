@@ -74,7 +74,7 @@ export class CashuWalletSwapService {
 			const journaled = this.journal({...request, type: WalletOperationType.SEND, fee: fee.toNumber()}, preview, counters);
 			return this.cashuWalletJournalService.open(journaled, preview.inputs);
 		});
-		return this.attemptSwap(operation, wallet);
+		return this.attemptSwap(operation, wallet, true);
 	}
 
 	/** What sending a token would cost, the redeemer's fee included, reserving nothing; max finds the most it can carry */
@@ -131,7 +131,7 @@ export class CashuWalletSwapService {
 		const changes = this.swapFields(preview, counters);
 		const reclaiming = await this.cashuWalletJournalService.transition(operation, WalletOperationState.EXECUTING, changes);
 		if (reclaiming.preview !== changes.preview) return reclaiming;
-		return this.attemptSwap(reclaiming, wallet);
+		return this.attemptSwap(reclaiming, wallet, true);
 	}
 
 	/** One state check over sends at a mint and unit, finishing each whose token is spent in full */
@@ -187,7 +187,7 @@ export class CashuWalletSwapService {
 		const proofs = await this.decodeProofs(await this.cashuWalletMintService.getWallet(mint_id, unit), encoded);
 		const wallet = await this.cashuWalletMintService.getUserWallet(user_id, mint_id, unit);
 		const {preview, counters} = await this.prepareReceive(wallet, proofs);
-		const operation = await this.walletOperationRepository.save(
+		const operation = await this.cashuWalletJournalService.open(
 			this.journal(
 				{
 					user_id,
@@ -202,7 +202,7 @@ export class CashuWalletSwapService {
 				counters,
 			),
 		);
-		return this.attemptSwap(operation, wallet);
+		return this.attemptSwap(operation, wallet, true);
 	}
 
 	/** A token's metadata, refusing anything that isn't a token */
@@ -240,8 +240,8 @@ export class CashuWalletSwapService {
 	public resume(operation: CashuWalletOperation): Promise<CashuWalletOperation> {
 		if (operation.state === WalletOperationState.PENDING) return this.checkClaims([operation]).then(([checked]) => checked);
 		return this.cashuWalletMintService.getUserWallet(operation.user_id, operation.mint_id, operation.unit).then(
-			(wallet) => this.attemptSwap(operation, wallet),
-			(error) => this.wait(operation, error),
+			(wallet) => this.attemptSwap(operation, wallet, false),
+			(error) => this.cashuWalletJournalService.wait(operation, error),
 		);
 	}
 
@@ -279,29 +279,32 @@ export class CashuWalletSwapService {
 		return deserializeSwapPreview(JSON.parse(operation.preview!) as SerializedSwapPreview);
 	}
 
-	/** Send the saved swap to the mint and settle it, applying the spec-driven action if it fails */
-	private attemptSwap(operation: CashuWalletOperation, wallet: Wallet): Promise<CashuWalletOperation> {
+	/** Send the saved swap to the mint and settle it, applying the spec-driven action if it fails; `fresh` marks its first attempt */
+	private attemptSwap(operation: CashuWalletOperation, wallet: Wallet, fresh: boolean): Promise<CashuWalletOperation> {
 		return wallet.completeSwap(this.readPreview(operation)).then(
 			({keep, send}) => this.settle(operation, keep, send),
-			(error) => this.handleFailure(operation, wallet, error),
+			(error) => this.handleFailure(operation, wallet, error, fresh),
 		);
 	}
 
-	/** Route a failed swap: transport failures wait, refusals check the inputs, anything else restores first */
-	private handleFailure(operation: CashuWalletOperation, wallet: Wallet, error: unknown): Promise<CashuWalletOperation> {
-		const action = classifyMintError(error);
-		if (action === WalletErrorAction.WAIT) return this.wait(operation, error);
+	/** Route a failed swap: a first attempt never sent is refused, transport failures wait, refusals check the inputs, anything else restores first */
+	private handleFailure(operation: CashuWalletOperation, wallet: Wallet, error: unknown, fresh: boolean): Promise<CashuWalletOperation> {
+		const action = classifyMintError(error, fresh);
+		if (action === WalletErrorAction.UNSENT) return this.refuse(operation, [], error);
+		if (action === WalletErrorAction.WAIT) return this.cashuWalletJournalService.wait(operation, error);
 		if (action === WalletErrorAction.FAIL) return this.checkInputs(operation, wallet, error);
-		return this.cashuWalletJournalService.restore(operation, wallet).then(
-			(proofs) => (proofs.length > 0 ? this.settleRestored(operation, proofs) : this.checkInputs(operation, wallet, error)),
-			(restore_error) => this.wait(operation, restore_error),
+		return this.cashuWalletJournalService.restoreOr(
+			operation,
+			wallet,
+			(proofs) => this.settleRestored(operation, proofs),
+			() => this.checkInputs(operation, wallet, error),
 		);
 	}
 
 	/** Nothing was restored, so the inputs' state decides: unspent means the swap never happened */
 	private async checkInputs(operation: CashuWalletOperation, wallet: Wallet, error: unknown): Promise<CashuWalletOperation> {
-		const states = await wallet.groupProofsByState(this.readPreview(operation).inputs).catch(() => null);
-		if (!states || states.pending.length > 0) return this.wait(operation, error);
+		const states = await this.cashuWalletJournalService.checkInputs(wallet, this.readPreview(operation).inputs);
+		if (!states || states.pending.length > 0) return this.cashuWalletJournalService.wait(operation, error);
 		if (states.unspent.length > 0) return this.refuse(operation, states.spent, error);
 		return this.spentElsewhere(operation, error);
 	}
@@ -369,11 +372,6 @@ export class CashuWalletSwapService {
 	private async claimed(operation: CashuWalletOperation): Promise<CashuWalletOperation> {
 		await this.cashuWalletProofService.spendHeldProofs(operation.id);
 		return this.cashuWalletJournalService.transition(operation, WalletOperationState.FINALIZED, {error: null});
-	}
-
-	/** Keep the swap executing with the failure recorded; reconciliation replays it */
-	private wait(operation: CashuWalletOperation, error: unknown): Promise<CashuWalletOperation> {
-		return this.cashuWalletJournalService.transition(operation, WalletOperationState.EXECUTING, {error: describeMintError(error)});
 	}
 
 	/** A send whose token is out, so its swap is the reclaim */

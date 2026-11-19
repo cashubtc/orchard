@@ -32,6 +32,17 @@ describe('CashuWalletJournalService', () => {
 			created_at: 0,
 			updated_at: 0,
 		});
+	const draft = () =>
+		data_source.getRepository(CashuWalletOperation).create({
+			user_id: 'user-1',
+			mint_id: 'mint-1',
+			type: WalletOperationType.SEND,
+			state: WalletOperationState.EXECUTING,
+			unit: 'sat',
+			amount: 1,
+			created_at: 0,
+			updated_at: 0,
+		});
 	const proof = (secret: string, amount: number) => ({id: '00abc', amount: Amount.from(amount), secret, C: '02c'}) as Proof;
 	const event_emitter = {emit: jest.fn()};
 
@@ -92,17 +103,6 @@ describe('CashuWalletJournalService', () => {
 			{...ready, secret: 'a', amount: 1, state: WalletProofState.READY},
 			{...ready, secret: 'b', amount: 2, state: WalletProofState.READY},
 		]);
-		const draft = () =>
-			data_source.getRepository(CashuWalletOperation).create({
-				user_id: 'user-1',
-				mint_id: 'mint-1',
-				type: WalletOperationType.SEND,
-				state: WalletOperationState.EXECUTING,
-				unit: 'sat',
-				amount: 1,
-				created_at: 0,
-				updated_at: 0,
-			});
 
 		const opened = await service.open(draft(), [{secret: 'a'}]);
 		expect(await proofs.findOneByOrFail({secret: 'a'})).toMatchObject({state: WalletProofState.INFLIGHT, used_by_op_id: opened.id});
@@ -112,6 +112,13 @@ describe('CashuWalletJournalService', () => {
 		});
 		expect(await data_source.getRepository(CashuWalletOperation).count()).toBe(1);
 		expect(await proofs.findOneByOrFail({secret: 'b'})).toMatchObject({state: WalletProofState.READY});
+	});
+
+	it('journals an operation that spends none of the wallet', async () => {
+		const opened = await service.open(draft());
+		expect(await data_source.getRepository(CashuWalletOperation).findOneByOrFail({id: opened.id})).toMatchObject({
+			state: WalletOperationState.EXECUTING,
+		});
 	});
 
 	it('stores proofs once by secret and finalizes the operation', async () => {
@@ -166,5 +173,36 @@ describe('CashuWalletJournalService', () => {
 			await expect(service.restore(operation, wallet)).rejects.toThrow('Mint restored 1 of 2 outputs');
 			expect(await service.restore(operation, wallet, true)).toHaveLength(1);
 		});
+
+		it('settles what the mint signed, and falls back when it signed nothing', async () => {
+			const operation = {...(await createOperation()), counters};
+			const settle = jest.fn(async (_proofs: Proof[]) => operation);
+			const fallback = jest.fn(async () => operation);
+			await service.restoreOr(operation, restoring([proof('first', 1), proof('second', 2)]), settle, fallback);
+			expect(settle.mock.calls[0][0].map((restored) => restored.secret)).toEqual(['first', 'second']);
+			await service.restoreOr(operation, restoring([]), settle, fallback);
+			expect([settle.mock.calls.length, fallback.mock.calls.length]).toEqual([1, 1]);
+		});
+
+		it('waits when the restore fails, as for a range part signed unless that is allowed', async () => {
+			const operation = {...(await createOperation()), counters};
+			const settle = jest.fn(async (_proofs: Proof[]) => operation);
+			const fallback = jest.fn(async () => operation);
+			const wallet = restoring([proof('new', 2)]);
+			expect(await service.restoreOr(operation, wallet, settle, fallback)).toMatchObject({
+				state: WalletOperationState.EXECUTING,
+				error: 'Mint restored 1 of 2 outputs',
+			});
+			await service.restoreOr(operation, wallet, settle, fallback, true);
+			expect([settle.mock.calls.length, fallback.mock.calls.length]).toEqual([1, 0]);
+		});
+	});
+
+	it("reads the inputs' states at the mint, or none when it can't be asked", async () => {
+		const states = {unspent: [proof('a', 1)], pending: [], spent: []};
+		const asking = {groupProofsByState: async () => states} as unknown as Wallet;
+		const unreachable = {groupProofsByState: () => Promise.reject(new Error('socket hang up'))} as unknown as Wallet;
+		expect(await service.checkInputs(asking, [proof('a', 1)])).toBe(states);
+		expect(await service.checkInputs(unreachable, [proof('a', 1)])).toBeNull();
 	});
 });

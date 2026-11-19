@@ -5,6 +5,7 @@ import {status} from '@grpc/grpc-js';
 import {OrchardErrorCode, OrchardErrorMessages} from '#server/modules/error/error.types';
 /* Native Dependencies */
 import {CashuMintErrorCode, CashuMintLegacyErrorCode, WalletErrorAction} from '#server/modules/cashu/wallet/cashuwallet.enums';
+import {CashuWalletUnsentError} from '#server/modules/cashu/wallet/classes/cashu-wallet-unsent-error.class';
 
 const AUTH_CODES = new Set<number>([
 	CashuMintErrorCode.CLEAR_AUTH_REQUIRED,
@@ -64,9 +65,11 @@ export const describeMintError = (error: unknown): string => {
 	return orchard_error?.details ?? OrchardErrorMessages[orchard_error?.code ?? ''] ?? String(error);
 };
 
-/** Decide what a journaled operation does after a mint call fails: spec refusals are definitive, unknown codes check state, transport failures wait */
-export const classifyMintError = (error: unknown): WalletErrorAction => {
+/** Decide what a journaled operation does after a mint call fails: spec refusals are definitive, unknown codes check state, transport failures wait unless a `fresh` first attempt was never sent */
+export const classifyMintError = (error: unknown, fresh = false): WalletErrorAction => {
 	if (error instanceof StaleKeysetError) return WalletErrorAction.REBUILD;
+	// Only a first attempt proves the mint never saw it; a replay's earlier attempt may have reached it
+	if (fresh && error instanceof CashuWalletUnsentError) return WalletErrorAction.UNSENT;
 	if (!isMintOperationError(error)) return WalletErrorAction.WAIT;
 	if (error.code === CashuMintErrorCode.PROOFS_PENDING && LEGACY_NOT_BALANCED.test(error.message)) return WalletErrorAction.FAIL;
 	return ACTION_BY_CODE[error.code] ?? (SPEC_CODES.has(error.code) ? WalletErrorAction.FAIL : WalletErrorAction.CHECK_STATE);

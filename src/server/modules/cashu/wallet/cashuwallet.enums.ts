@@ -87,4 +87,5 @@ export enum WalletErrorAction {
 	WAIT = 'WAIT',
 	REBUILD = 'REBUILD',
 	FAIL = 'FAIL',
+	UNSENT = 'UNSENT',
 }

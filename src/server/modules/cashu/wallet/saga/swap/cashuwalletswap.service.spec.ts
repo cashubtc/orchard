@@ -29,6 +29,8 @@ import {CashuWalletMintQuote} from '#server/modules/cashu/wallet/mintquote/cashu
 import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.service';
 import {CashuWalletMintCacheService} from '#server/modules/cashu/wallet/mint/cashuwalletmintcache.service';
 import {CashuWalletMintTransportService} from '#server/modules/cashu/wallet/mint/cashuwalletminttransport.service';
+import {CashuWalletRequestPacer} from '#server/modules/cashu/wallet/classes/cashu-wallet-request-pacer.class';
+import {CashuWalletUnsentError} from '#server/modules/cashu/wallet/classes/cashu-wallet-unsent-error.class';
 import {WalletMintMatch, WalletOperationState, WalletOperationType, WalletProofState} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 /* Local Dependencies */
@@ -93,6 +95,8 @@ describe('CashuWalletSwapService', () => {
 	const send = (mint_id: string, amount: number, memo: string | null = null) =>
 		service.sendToken({user_id: 'user-1', mint_id, unit: 'sat', amount, memo});
 	const receive = (token: string, add_mint = false) => service.receiveToken('user-2', token, add_mint, false);
+	/** Orchard holds back its next mint request, as when the instance is over its request rate */
+	const holdBack = () => jest.spyOn(CashuWalletRequestPacer.prototype, 'acquire').mockResolvedValueOnce(false);
 
 	const entities = [
 		CashuWalletOperation,
@@ -233,6 +237,51 @@ describe('CashuWalletSwapService', () => {
 			expect(received.amount).toBeGreaterThanOrEqual(10);
 			expect(received.amount + received.fee!).toBe(tokenAmount(sent.token));
 			expect(await balance('user-2')).toBe(received.amount);
+		});
+	});
+
+	describe('held back by Orchard', () => {
+		const held_back = 'too many requests; try again shortly';
+
+		it('fails a first send at once with its balance back, since the mint never saw it', async () => {
+			const mint_id = await funded();
+			holdBack();
+			expect(await send(mint_id, 30)).toMatchObject({
+				state: WalletOperationState.FAILED,
+				token: null,
+				error: expect.stringContaining(held_back),
+			});
+			expect(await balance()).toBe(100);
+		});
+
+		it('keeps a replay executing, since an earlier attempt may have reached the mint', async () => {
+			const mint_id = await funded();
+			orchard().lost.add('/v1/swap');
+			const sent = await send(mint_id, 30);
+			holdBack();
+			expect(await service.resume(sent)).toMatchObject({
+				state: WalletOperationState.EXECUTING,
+				error: expect.stringContaining(held_back),
+			});
+
+			await recovery.reconcileOperations();
+			expect(tokenAmount((await reload(sent.id)).token)).toBe(30);
+			expect(await balance()).toBe(70);
+		});
+
+		it.each([
+			['fails a first receive', (sent: CashuWalletOperation) => receive(sent.token!), WalletOperationState.FAILED],
+			[
+				'puts a first reclaim back to waiting',
+				(sent: CashuWalletOperation) => service.reclaimToken('user-1', sent.id),
+				WalletOperationState.PENDING,
+			],
+		])('%s, leaving the token unclaimed', async (_label, attempt, state) => {
+			const sent = await send(await funded(), 30);
+			jest.spyOn(Wallet.prototype, 'completeSwap').mockRejectedValueOnce(new CashuWalletUnsentError(held_back));
+			expect(await attempt(sent)).toMatchObject({state, error: held_back});
+			expect(await service.checkToken('user-1', sent.id)).toMatchObject({state: WalletOperationState.PENDING});
+			expect(await held()).toBe(30);
 		});
 	});
 
