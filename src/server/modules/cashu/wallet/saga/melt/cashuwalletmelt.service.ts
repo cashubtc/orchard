@@ -5,9 +5,9 @@ import {sumProofs, type Proof, type Wallet} from '@cashu/cashu-ts';
 /* Native Dependencies */
 import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwalletmint.service';
 import {CashuWalletProofService} from '#server/modules/cashu/wallet/proof/cashuwalletproof.service';
-import {findMeltQuoteMethod, walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
-import {estimateFee} from '#server/modules/cashu/wallet/saga/cashuwalletsaga.helpers';
-import type {CashuWalletMeltQuoteMethod} from '#server/modules/cashu/wallet/classes/cashu-wallet-melt-quote-method.class';
+import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
+import {estimateFee} from '#server/modules/cashu/wallet/helpers/cashuwalletfee.helpers';
+import {CashuWalletMeltQuoteMethod} from '#server/modules/cashu/wallet/classes/cashu-wallet-melt-quote-method.class';
 import type {
 	CashuWalletMeltQuote,
 	CashuWalletMeltQuoteRecord,
@@ -71,7 +71,7 @@ export class CashuWalletMeltService {
 
 	/** The payout rules for a method, refusing one the wallet can't pay by */
 	private findMethod(method: string): CashuWalletMeltQuoteMethod {
-		const found = findMeltQuoteMethod(method);
+		const found = CashuWalletMeltQuoteMethod.find(method);
 		if (!found) throw walletError(`Can't pay by ${method}`);
 		return found;
 	}

@@ -7,6 +7,16 @@ import {DateTime} from 'luxon';
 import {MintQuoteState, StaleKeysetError, isMintOperationError, type OperationCounters, type Wallet} from '@cashu/cashu-ts';
 /* Application Dependencies */
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
+/* Native Dependencies */
+import {
+	classifyMintError,
+	classifyMintRpcError,
+	describeMintError,
+	walletError,
+} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
+import {assessMintQuote} from '#server/modules/cashu/wallet/helpers/cashuwalletquote.helpers';
+import {deriveMintQuoteKey} from '#server/modules/cashu/wallet/helpers/cashuwalletkey.helpers';
+import {CashuWalletMintQuoteMethod} from '#server/modules/cashu/wallet/classes/cashu-wallet-mint-quote-method.class';
 /* Local Dependencies */
 import {CashuWalletOperation} from '../cashuwalletoperation.entity.js';
 import {CashuWalletJournalService} from '../cashuwalletjournal.service.js';
@@ -19,10 +29,6 @@ import {
 	WalletOperationState,
 	WalletOperationType,
 } from '../../cashuwallet.enums.js';
-import {describeMintError, walletError} from '../../cashuwallet.helpers.js';
-import {CASHU_WALLET_MINT_QUOTE_METHODS} from '../../constants/cashuwallet.constants.js';
-import {classifyMintError, classifyMintRpcError} from '../cashuwalletsaga.helpers.js';
-import {assessMintQuote, deriveMintQuoteKey} from './cashuwalletissue.helpers.js';
 import type {CashuWalletIssueRequest, CashuWalletMintQuoteResponse, CashuWalletMintRequest} from '../../cashuwallet.types.js';
 
 const MINT_QUOTE_KEY_COUNTER = 'nut20';
@@ -130,7 +136,7 @@ export class CashuWalletIssueService {
 	/** Journal an issue on a fresh bolt11 mint quote, locked to a seed-derived key (NUT-20) when the mint supports it */
 	private async createIssueOperation(mint_id: string, request: CashuWalletIssueRequest): Promise<CashuWalletOperation> {
 		const wallet = await this.cashuWalletMintService.getWallet(mint_id, request.unit);
-		const bolt11 = CASHU_WALLET_MINT_QUOTE_METHODS.bolt11;
+		const bolt11 = CashuWalletMintQuoteMethod.find('bolt11')!;
 		const key = bolt11.locks(wallet.getMintInfo()) ? await this.reserveMintQuoteKey(request.user_id) : null;
 		const quote = await bolt11.create(wallet, key?.pubkey ?? null, request.amount);
 		return this.createMintOperation({

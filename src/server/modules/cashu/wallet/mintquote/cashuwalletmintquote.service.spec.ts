@@ -27,7 +27,7 @@ import {CashuWalletMintKeyset} from '#server/modules/cashu/wallet/mint/cashuwall
 import {CashuWalletMintCacheService} from '#server/modules/cashu/wallet/mint/cashuwalletmintcache.service';
 import {CashuWalletMintTransportService} from '#server/modules/cashu/wallet/mint/cashuwalletminttransport.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
-import {walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 import {CASHU_WALLET_MINT_QUOTE_UPDATED} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 import type {
 	CashuWalletOperationUpdate,

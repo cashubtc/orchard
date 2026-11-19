@@ -4,7 +4,7 @@ import {Injectable, Logger} from '@nestjs/common';
 import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
 import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.service';
 import {CashuWalletWatchService} from '#server/modules/cashu/wallet/watch/cashuwalletwatch.service';
-import {toWalletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {toWalletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {watchStream} from '#server/modules/graphql/graphql.helpers';

@@ -1,10 +1,11 @@
 /* Core Dependencies */
 import {expect} from '@jest/globals';
 /* Vendor Dependencies */
-import {Amount, MintQuoteState, getPubKeyFromPrivKey, mnemonicToSeedSync} from '@cashu/cashu-ts';
+import {Amount, MintQuoteState} from '@cashu/cashu-ts';
+/* Native Dependencies */
+import {MintQuoteProgress} from '#server/modules/cashu/wallet/cashuwallet.enums';
 /* Local Dependencies */
-import {assessMintQuote, deriveMintQuoteKey, mintQuoteExpiry, mintQuoteTotals} from './cashuwalletissue.helpers.js';
-import {MintQuoteProgress} from '../../cashuwallet.enums.js';
+import {assessMintQuote, mintQuoteTotals, quoteExpiry} from './cashuwalletquote.helpers.js';
 
 describe('mintQuoteTotals', () => {
 	const base = {quote: 'q', request: 'r', unit: 'sat'};
@@ -20,13 +21,13 @@ describe('mintQuoteTotals', () => {
 	});
 });
 
-describe('mintQuoteExpiry', () => {
+describe('quoteExpiry', () => {
 	it.each([
 		['an expiry as given', 1_000, 1_000],
 		["cdk's 0 as none", 0, null],
 		['a missing one as none', undefined, null],
 	])('reads %s', (_label, expiry, expected) => {
-		expect(mintQuoteExpiry({expiry})).toBe(expected);
+		expect(quoteExpiry({expiry})).toBe(expected);
 	});
 });
 
@@ -52,21 +53,5 @@ describe('assessMintQuote', () => {
 		['bolt11 unpaid with expiry 0, meaning none', {...base, state: MintQuoteState.UNPAID, expiry: 0}, MintQuoteProgress.WAITING],
 	])('%s', (_label, quote, progress) => {
 		expect(assessMintQuote(quote, 100, 100)).toBe(progress);
-	});
-});
-
-describe('deriveMintQuoteKey', () => {
-	const seed = mnemonicToSeedSync('half depart obvious quality work element tank gorilla view sugar picture humble');
-
-	it.each([
-		[0, '03062837166e56114b59a4d1fd3a5a812bf7aadc1dde758428cf943d80acd41539'],
-		[1, '02b47d9d41725f5ce6f08c874835cef25376cb1e95f6cb073fef52ca8fd986cf15'],
-		[2, '029acbd3a46fd75bc05ba0226d0b4d909b2fb6e96c80544a094a1a3567737e44d3'],
-		[3, '0373e4a42fbe0a4e18aadb57cf500b655f2446b4071ee579121d2ed8905bcc49c2'],
-		[4, '02b8709bfce17c10f1864f5218844533ae60930d52089669b317d8b5f474eec071'],
-	])('matches the NUT-20 test vector at counter %i', (counter, pubkey) => {
-		const key = deriveMintQuoteKey(seed, counter);
-		expect(key.pubkey).toBe(pubkey);
-		expect(Buffer.from(getPubKeyFromPrivKey(Buffer.from(key.privkey, 'hex'))).toString('hex')).toBe(pubkey);
 	});
 });

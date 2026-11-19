@@ -6,6 +6,7 @@ import type {MintInfo, Wallet} from '@cashu/cashu-ts';
 import {
 	CashuWalletBolt11MintQuoteMethod,
 	CashuWalletBolt12MintQuoteMethod,
+	CashuWalletMintQuoteMethod,
 	CashuWalletOnchainMintQuoteMethod,
 } from './cashu-wallet-mint-quote-method.class.js';
 
@@ -15,6 +16,11 @@ describe('CashuWalletMintQuoteMethod', () => {
 	const bolt11 = new CashuWalletBolt11MintQuoteMethod();
 	const bolt12 = new CashuWalletBolt12MintQuoteMethod();
 	const onchain = new CashuWalletOnchainMintQuoteMethod();
+
+	it('finds the rules for a method the wallet receives by, and none for an unknown or inherited name', () => {
+		expect(CashuWalletMintQuoteMethod.find('bolt12')).toBeInstanceOf(CashuWalletBolt12MintQuoteMethod);
+		expect([CashuWalletMintQuoteMethod.find('custom'), CashuWalletMintQuoteMethod.find('constructor')]).toEqual([null, null]);
+	});
 
 	it.each([
 		['bolt11 once paid in full', bolt11, {amount: 100, amount_paid: 100}, 0, 100],
@@ -63,17 +69,10 @@ describe('CashuWalletMintQuoteMethod', () => {
 		expect(info.supportsNut04Description).toHaveBeenCalledWith('bolt12', 'sat');
 	});
 
-	it("caps one mint at the method's max_amount for the unit, or not at all when the mint sets none", () => {
-		const params = [
-			{method: 'onchain', unit: 'sat', max_amount: 600},
-			{method: 'bolt12', unit: 'sat', max_amount: null},
-		];
-		const info = {isSupported: () => ({params})} as unknown as MintInfo;
-		expect([onchain.maxAmount(info, 'sat'), bolt12.maxAmount(info, 'sat'), onchain.maxAmount(info, 'usd')]).toEqual([
-			600,
-			Infinity,
-			Infinity,
-		]);
+	it("caps one mint at the method's NUT-04 max_amount", () => {
+		const info = {isSupported: jest.fn(() => ({params: [{method: 'onchain', unit: 'sat', max_amount: 600}]}))} as unknown as MintInfo;
+		expect(onchain.maxAmount(info, 'sat')).toBe(600);
+		expect(info.isSupported).toHaveBeenCalledWith(4);
 	});
 
 	it('locks bolt11 invoices only at mints that support NUT-20, and bolt12 and onchain quotes always', () => {

@@ -4,7 +4,7 @@ import {InjectRepository} from '@nestjs/typeorm';
 /* Vendor Dependencies */
 import {Between, In, Repository, type FindOptionsWhere} from 'typeorm';
 /* Native Dependencies */
-import {walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 import type {CashuWalletOperationFilters} from '#server/modules/cashu/wallet/cashuwallet.types';
 /* Local Dependencies */
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';

@@ -11,7 +11,8 @@ import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquot
 import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwalletmint.service';
 import {CashuWalletProofService} from '#server/modules/cashu/wallet/proof/cashuwalletproof.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
-import {describeMintError, findMintQuoteMethod} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {describeMintError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
+import {CashuWalletMintQuoteMethod} from '#server/modules/cashu/wallet/classes/cashu-wallet-mint-quote-method.class';
 import {
 	CASHU_WALLET_FINAL_STATES,
 	CASHU_WALLET_OPERATION_UPDATED,
@@ -273,7 +274,7 @@ export class CashuWalletWatchService implements OnModuleDestroy {
 
 	/** The NUT-17 subscription a target can be watched with: its mint quote's method's, or a sent token's proofs */
 	private socketKind(target: WatchTarget): WatchSocketKind | null {
-		if (target.kind === 'mint_quote') return findMintQuoteMethod(target.subject.method)?.socket_kind ?? null;
+		if (target.kind === 'mint_quote') return CashuWalletMintQuoteMethod.find(target.subject.method)?.socket_kind ?? null;
 		const operation = target.subject;
 		return operation.type === WalletOperationType.SEND && operation.state === WalletOperationState.PENDING ? 'proof_state' : null;
 	}

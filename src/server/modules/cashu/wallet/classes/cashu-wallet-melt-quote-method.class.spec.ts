@@ -6,6 +6,7 @@ import {Amount, type MintInfo, type Wallet} from '@cashu/cashu-ts';
 import {
 	CashuWalletBolt11MeltQuoteMethod,
 	CashuWalletBolt12MeltQuoteMethod,
+	CashuWalletMeltQuoteMethod,
 	CashuWalletOnchainMeltQuoteMethod,
 } from './cashu-wallet-melt-quote-method.class.js';
 
@@ -30,6 +31,11 @@ describe('CashuWalletMeltQuoteMethod', () => {
 				],
 			})),
 		}) as unknown as Wallet;
+
+	it('finds the rules for a method the wallet pays by, and none for an unknown or inherited name', () => {
+		expect(CashuWalletMeltQuoteMethod.find('onchain')).toBeInstanceOf(CashuWalletOnchainMeltQuoteMethod);
+		expect([CashuWalletMeltQuoteMethod.find('custom'), CashuWalletMeltQuoteMethod.find('constructor')]).toEqual([null, null]);
+	});
 
 	it('takes Lightning amounts only in sat or msat, and onchain amounts in any unit', () => {
 		expect(['sat', 'msat', 'usd'].map((unit) => bolt11.takesAmountIn(unit))).toEqual([true, true, false]);
@@ -76,17 +82,9 @@ describe('CashuWalletMeltQuoteMethod', () => {
 		expect(wallet.createMeltQuoteOnchain).toHaveBeenCalledWith('bcrt1qfake', 50);
 	});
 
-	it("caps one payment at the method's NUT-05 max_amount for the unit, or not at all when the mint sets none", () => {
-		const params = [
-			{method: 'onchain', unit: 'sat', max_amount: 600},
-			{method: 'bolt12', unit: 'sat', max_amount: null},
-		];
-		const info = {isSupported: jest.fn(() => ({params}))} as unknown as MintInfo;
-		expect([onchain.maxAmount(info, 'sat'), bolt12.maxAmount(info, 'sat'), onchain.maxAmount(info, 'usd')]).toEqual([
-			600,
-			Infinity,
-			Infinity,
-		]);
+	it("caps one payment at the method's NUT-05 max_amount", () => {
+		const info = {isSupported: jest.fn(() => ({params: [{method: 'onchain', unit: 'sat', max_amount: 600}]}))} as unknown as MintInfo;
+		expect(onchain.maxAmount(info, 'sat')).toBe(600);
 		expect(info.isSupported).toHaveBeenCalledWith(5);
 	});
 });

@@ -6,7 +6,7 @@ import {getRepositoryToken} from '@nestjs/typeorm';
 import {DataSource} from 'typeorm';
 /* Native Dependencies */
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
-import {walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 import type {CashuWalletOperationFilters} from '#server/modules/cashu/wallet/cashuwallet.types';
 /* Local Dependencies */
 import {CashuWalletOperationService} from './cashuwalletoperation.service.js';

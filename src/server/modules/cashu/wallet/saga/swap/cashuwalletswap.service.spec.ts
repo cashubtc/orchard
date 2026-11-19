@@ -30,7 +30,7 @@ import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquot
 import {CashuWalletMintCacheService} from '#server/modules/cashu/wallet/mint/cashuwalletmintcache.service';
 import {CashuWalletMintTransportService} from '#server/modules/cashu/wallet/mint/cashuwalletminttransport.service';
 import {WalletMintMatch, WalletOperationState, WalletOperationType, WalletProofState} from '#server/modules/cashu/wallet/cashuwallet.enums';
-import {walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 /* Local Dependencies */
 import {CashuWalletSwapService} from './cashuwalletswap.service.js';
 

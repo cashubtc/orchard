@@ -3,7 +3,7 @@ import {Injectable, Logger} from '@nestjs/common';
 /* Application Dependencies */
 import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
 import {CashuWalletMeltService} from '#server/modules/cashu/wallet/saga/melt/cashuwalletmelt.service';
-import {toWalletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {toWalletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {OrchardApiError} from '#server/modules/graphql/classes/orchard-error.class';
 import {ErrorService} from '#server/modules/error/error.service';

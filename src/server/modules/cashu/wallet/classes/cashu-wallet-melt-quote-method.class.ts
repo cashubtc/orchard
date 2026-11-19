@@ -1,6 +1,8 @@
 /* Vendor Dependencies */
 import {Amount, type MeltQuoteBaseResponse, type MeltQuoteBolt11Response, type MintInfo, type Wallet} from '@cashu/cashu-ts';
 /* Native Dependencies */
+import {methodMaxAmount} from '#server/modules/cashu/wallet/helpers/cashuwalletmethod.helpers';
+import {quoteExpiry} from '#server/modules/cashu/wallet/helpers/cashuwalletquote.helpers';
 import type {CashuWalletMeltQuote, CashuWalletMeltQuoteReserve} from '#server/modules/cashu/wallet/cashuwallet.types';
 
 const MSAT_PER_UNIT: Readonly<Record<string, number>> = {sat: 1000, msat: 1};
@@ -9,6 +11,11 @@ const MSAT_PER_UNIT: Readonly<Record<string, number>> = {sat: 1000, msat: 1};
 export abstract class CashuWalletMeltQuoteMethod {
 	abstract readonly method: 'bolt11' | 'bolt12' | 'onchain';
 	abstract readonly amount: 'required' | 'optional';
+
+	/** The payout rules for a payment method, or null when the wallet can't pay by it */
+	static find(method: string): CashuWalletMeltQuoteMethod | null {
+		return Object.hasOwn(MELT_QUOTE_METHODS, method) ? MELT_QUOTE_METHODS[method as keyof typeof MELT_QUOTE_METHODS] : null;
+	}
 
 	/** Ask the mint what paying a request costs, for an amount in the wallet's unit when the request leaves it open */
 	abstract quote(wallet: Wallet, request: string, amount: number | null): Promise<CashuWalletMeltQuote>;
@@ -20,13 +27,12 @@ export abstract class CashuWalletMeltQuoteMethod {
 
 	/** Most one payment by the method may be at this mint for the unit, when the mint sets a limit */
 	public maxAmount(info: MintInfo, unit: string): number {
-		const setting = info.isSupported(5).params.find((entry) => entry.method === this.method && entry.unit === unit);
-		return setting?.max_amount ? Amount.from(setting.max_amount).toNumber() : Infinity;
+		return methodMaxAmount(info, 5, this.method, unit);
 	}
 
-	/** A melt quote as the wallet reads it, with the reserve for each way the mint offers to pay it; cdk sends expiry 0 for none */
+	/** A melt quote as the wallet reads it, with the reserve for each way the mint offers to pay it */
 	protected toQuote(quote: MeltQuoteBaseResponse, reserves: CashuWalletMeltQuoteReserve[]): CashuWalletMeltQuote {
-		return {quote_id: quote.quote, amount: quote.amount.toNumber(), expiry: quote.expiry || null, reserves};
+		return {quote_id: quote.quote, amount: quote.amount.toNumber(), expiry: quoteExpiry(quote), reserves};
 	}
 }
 
@@ -86,3 +92,10 @@ export class CashuWalletOnchainMeltQuoteMethod extends CashuWalletMeltQuoteMetho
 		return this.toQuote(quote, reserves);
 	}
 }
+
+/** The payment methods a wallet pays out by; kept with the classes so nothing else can create them before they're defined */
+const MELT_QUOTE_METHODS: Readonly<Record<'bolt11' | 'bolt12' | 'onchain', CashuWalletMeltQuoteMethod>> = {
+	bolt11: new CashuWalletBolt11MeltQuoteMethod(),
+	bolt12: new CashuWalletBolt12MeltQuoteMethod(),
+	onchain: new CashuWalletOnchainMeltQuoteMethod(),
+};

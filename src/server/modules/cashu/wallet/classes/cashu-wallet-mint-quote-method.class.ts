@@ -1,6 +1,7 @@
 /* Vendor Dependencies */
-import {Amount, type MintInfo, type Wallet} from '@cashu/cashu-ts';
+import type {MintInfo, Wallet} from '@cashu/cashu-ts';
 /* Native Dependencies */
+import {methodMaxAmount} from '#server/modules/cashu/wallet/helpers/cashuwalletmethod.helpers';
 import type {CashuWalletMintQuote} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.entity';
 import type {CashuWalletMintQuoteResponse} from '#server/modules/cashu/wallet/cashuwallet.types';
 
@@ -15,6 +16,11 @@ export abstract class CashuWalletMintQuoteMethod {
 	readonly reusable: boolean = true;
 	readonly socket_kind: 'bolt11_mint_quote' | null = null;
 	protected readonly grace_seconds: number = HOUR;
+
+	/** The receive rules for a payment method, or null when the wallet can't receive by it */
+	static find(method: string): CashuWalletMintQuoteMethod | null {
+		return Object.hasOwn(MINT_QUOTE_METHODS, method) ? MINT_QUOTE_METHODS[method as keyof typeof MINT_QUOTE_METHODS] : null;
+	}
 
 	/** Ask the mint for a quote, locked to the pubkey when one is given */
 	abstract create(
@@ -36,8 +42,7 @@ export abstract class CashuWalletMintQuoteMethod {
 
 	/** Most one mint from its quotes may be at this mint for the unit, when the mint sets a limit */
 	public maxAmount(info: MintInfo, unit: string): number {
-		const setting = info.isSupported(4).params.find((entry) => entry.method === this.method && entry.unit === unit);
-		return setting?.max_amount ? Amount.from(setting.max_amount).toNumber() : Infinity;
+		return methodMaxAmount(info, 4, this.method, unit);
 	}
 
 	/** What's owed: everything paid and not yet minted */
@@ -123,3 +128,10 @@ export class CashuWalletOnchainMintQuoteMethod extends CashuWalletMintQuoteMetho
 		return quote.amount_paid === 0 && super.canHandOut(quote, now);
 	}
 }
+
+/** The payment methods a wallet receives on; kept with the classes so nothing else can create them before they're defined */
+const MINT_QUOTE_METHODS: Readonly<Record<'bolt11' | 'bolt12' | 'onchain', CashuWalletMintQuoteMethod>> = {
+	bolt11: new CashuWalletBolt11MintQuoteMethod(),
+	bolt12: new CashuWalletBolt12MintQuoteMethod(),
+	onchain: new CashuWalletOnchainMintQuoteMethod(),
+};

@@ -13,7 +13,7 @@ import {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalle
 import {CashuWalletCounter} from '#server/modules/cashu/wallet/saga/cashuwalletcounter.entity';
 import {CashuWalletMintQuote} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.entity';
 import {CashuWalletSeedService} from '#server/modules/cashu/wallet/seed/cashuwalletseed.service';
-import {walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 /* Local Dependencies */
 import {CashuWalletMintService} from './cashuwalletmint.service.js';
 import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';

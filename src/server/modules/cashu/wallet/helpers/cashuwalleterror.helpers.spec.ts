@@ -1,14 +1,40 @@
 /* Core Dependencies */
 import {expect} from '@jest/globals';
 /* Vendor Dependencies */
-import {HttpResponseError, Mint, MintOperationError, NetworkError, StaleKeysetError, Wallet, type Proof} from '@cashu/cashu-ts';
+import {HttpResponseError, MintOperationError, NetworkError, StaleKeysetError} from '@cashu/cashu-ts';
 import {status} from '@grpc/grpc-js';
 /* Application Dependencies */
 import {OrchardErrorCode} from '#server/modules/error/error.types';
-import {createFakeMint, fakeMintRequest} from '#server/test/cashu-fake-mint';
+/* Native Dependencies */
+import {CashuMintErrorCode, WalletErrorAction} from '#server/modules/cashu/wallet/cashuwallet.enums';
 /* Local Dependencies */
-import {classifyMintError, classifyMintRpcError, estimateFee} from './cashuwalletsaga.helpers.js';
-import {CashuMintErrorCode, WalletErrorAction} from '../cashuwallet.enums.js';
+import {classifyMintError, classifyMintRpcError, describeMintError} from './cashuwalleterror.helpers.js';
+
+describe('describeMintError', () => {
+	it('names the NUT code and detail', () => {
+		expect(describeMintError(new MintOperationError(11001, 'Token already spent'))).toBe('Mint error 11001: Token already spent');
+	});
+
+	it("keeps the mint's code when cashu-ts wraps a keyset rejection", () => {
+		const error = new StaleKeysetError(true, {cause: new MintOperationError(12002, 'Keyset inactive')});
+		expect(describeMintError(error)).toBe('Mint error 12002: Keyset inactive');
+	});
+
+	it('explains auth-protected mints', () => {
+		expect(describeMintError(new MintOperationError(31001, 'Endpoint requires blind auth'))).toContain('requires authentication');
+	});
+
+	it('includes the HTTP status for non-protocol errors', () => {
+		expect(describeMintError(new HttpResponseError('not found', 404))).toBe('not found (HTTP 404)');
+	});
+
+	it('reads mint RPC errors in their Orchard shapes', () => {
+		expect(describeMintError({code: 40007, details: 'Mint quote state override is disabled'})).toBe(
+			'Mint quote state override is disabled',
+		);
+		expect(describeMintError(40005)).toBe('MintRpcConnectionError');
+	});
+});
 
 describe('classifyMintError', () => {
 	it.each([
@@ -67,27 +93,5 @@ describe('classifyMintRpcError', () => {
 		['an unexpected error', new Error('boom'), WalletErrorAction.WAIT],
 	])('%s: %s', (_label, error, action) => {
 		expect(classifyMintRpcError(error)).toBe(action);
-	});
-});
-
-describe('estimateFee', () => {
-	let wallet: Wallet;
-	let proofs: Proof[];
-
-	beforeAll(async () => {
-		const mint = createFakeMint({input_fee_ppk: 1000});
-		wallet = new Wallet(new Mint('https://mint.example', {customRequest: fakeMintRequest(mint)}), {unit: 'sat'});
-		await wallet.loadMint();
-		const quote = await wallet.createMintQuoteBolt11(100);
-		mint.mint_quotes.get(quote.quote)!.state = 'PAID';
-		proofs = await wallet.mintProofsBolt11(100, quote.quote, undefined, {type: 'random', denominations: [64, 32, 4]});
-	});
-
-	it('adds the input fee of the proofs a send would pick to the surcharge', () => {
-		expect(estimateFee(wallet, proofs, 90, 6)).toEqual({fee: 9, total: 99, sufficient: true});
-	});
-
-	it('prices spending every proof when they fall short', () => {
-		expect(estimateFee(wallet, proofs, 95, 5)).toEqual({fee: 8, total: 103, sufficient: false});
 	});
 });

@@ -31,8 +31,8 @@ import {
 	WalletOperationType,
 	WalletProofState,
 } from '#server/modules/cashu/wallet/cashuwallet.enums';
-import {describeMintError, walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
-import {classifyMintError, estimateFee} from '#server/modules/cashu/wallet/saga/cashuwalletsaga.helpers';
+import {classifyMintError, describeMintError, walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
+import {estimateFee} from '#server/modules/cashu/wallet/helpers/cashuwalletfee.helpers';
 import type {
 	CashuWalletReceiveTokenPreview,
 	CashuWalletSendRequest,

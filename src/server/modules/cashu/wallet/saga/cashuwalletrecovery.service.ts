@@ -8,7 +8,7 @@ import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/c
 import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
 import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
-import {describeMintError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {describeMintError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 import {CASHU_WALLET_OPEN_STATES} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 import type {CashuWalletScope} from '#server/modules/cashu/wallet/cashuwallet.types';
 /* Local Dependencies */

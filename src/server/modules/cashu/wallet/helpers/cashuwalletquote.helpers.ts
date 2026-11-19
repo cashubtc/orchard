@@ -1,9 +1,8 @@
 /* Vendor Dependencies */
 import {Amount, MintQuoteState} from '@cashu/cashu-ts';
-import {HDKey} from '@scure/bip32';
-/* Local Dependencies */
-import {MintQuoteProgress} from '../../cashuwallet.enums.js';
-import type {CashuWalletMintQuoteResponse} from '../../cashuwallet.types.js';
+/* Native Dependencies */
+import {MintQuoteProgress} from '#server/modules/cashu/wallet/cashuwallet.enums';
+import type {CashuWalletMintQuoteResponse} from '#server/modules/cashu/wallet/cashuwallet.types';
 
 /** What a mint quote has been paid and issued: its NUT-04 totals, or on mints that predate them its bolt11 state for an amount */
 export const mintQuoteTotals = (quote: CashuWalletMintQuoteResponse, amount: number): {paid: Amount; issued: Amount} => {
@@ -20,16 +19,9 @@ export const assessMintQuote = (quote: CashuWalletMintQuoteResponse, amount: num
 	if (paid.greaterThanOrEqual(issued.add(amount))) return MintQuoteProgress.MINTABLE;
 	if (!issued.isZero() && paid.lessThanOrEqual(issued)) return MintQuoteProgress.ISSUED;
 	if (paid.greaterThan(issued)) return MintQuoteProgress.WAITING;
-	const expiry = mintQuoteExpiry(quote);
+	const expiry = quoteExpiry(quote);
 	return expiry !== null && expiry <= now ? MintQuoteProgress.EXPIRED : MintQuoteProgress.WAITING;
 };
 
-/** When a mint quote expires, or null when it never does; cdk sends 0 for bolt11 quotes whose backend set none, which means the same */
-export const mintQuoteExpiry = (quote: Pick<CashuWalletMintQuoteResponse, 'expiry'>): number | null => quote.expiry || null;
-
-/** NUT-20 mint quote locking keypair (hex) for a counter, derived from the wallet seed */
-export const deriveMintQuoteKey = (seed: Uint8Array, counter: number): {privkey: string; pubkey: string} => {
-	const node = HDKey.fromMasterSeed(seed).derive(`m/129373'/20'/0'/0'/${counter}`);
-	if (!node.privateKey || !node.publicKey) throw new Error(`No mint quote key at counter ${counter}`);
-	return {privkey: Buffer.from(node.privateKey).toString('hex'), pubkey: Buffer.from(node.publicKey).toString('hex')};
-};
+/** When a mint or melt quote expires, or null when it never does; cdk sends 0 for a quote whose backend set none, which means the same */
+export const quoteExpiry = (quote: {expiry?: number | null}): number | null => quote.expiry || null;

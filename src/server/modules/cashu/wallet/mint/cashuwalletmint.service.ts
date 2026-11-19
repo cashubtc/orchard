@@ -23,6 +23,7 @@ import {UserRole} from '#server/modules/user/user.enums';
 import {MintRedirectError} from '#server/modules/cashu/wallet/classes/mint-redirect-error.class';
 import {CashuWalletCounterSource} from '#server/modules/cashu/wallet/classes/cashu-wallet-counter-source.class';
 import {CashuWalletMintQuote} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.entity';
+import {describeMintError, walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 /* Local Dependencies */
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
 import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
@@ -32,7 +33,6 @@ import {CashuWalletOperation} from '../saga/cashuwalletoperation.entity.js';
 import {CashuWalletCounter} from '../saga/cashuwalletcounter.entity.js';
 import {CashuWalletSeedService} from '../seed/cashuwalletseed.service.js';
 import {WalletProofState, WalletOperationState, WalletMintMatch} from '../cashuwallet.enums.js';
-import {describeMintError, walletError} from '../cashuwallet.helpers.js';
 import type {
 	CashuWalletMintFetch,
 	CashuWalletMintLookup,

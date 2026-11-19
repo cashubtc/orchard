@@ -9,7 +9,7 @@ import {OutputData, type OperationCounters, type OutputDataLike, type Proof, typ
 /* Native Dependencies */
 import {CashuWalletProofService} from '#server/modules/cashu/wallet/proof/cashuwalletproof.service';
 import {WalletOperationState} from '#server/modules/cashu/wallet/cashuwallet.enums';
-import {walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 import {CASHU_WALLET_OPERATION_UPDATED} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 /* Local Dependencies */
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';

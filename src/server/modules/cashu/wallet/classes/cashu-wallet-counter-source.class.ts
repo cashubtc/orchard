@@ -4,7 +4,7 @@ import type {Repository} from 'typeorm';
 import type {CounterRange, CounterSource} from '@cashu/cashu-ts';
 /* Native Dependencies */
 import type {CashuWalletCounter} from '#server/modules/cashu/wallet/saga/cashuwalletcounter.entity';
-import {getCounterKey} from '#server/modules/cashu/wallet/cashuwallet.helpers';
+import {getCounterKey} from '#server/modules/cashu/wallet/helpers/cashuwalletkey.helpers';
 
 /**
  * One user's counter cursors in cashu_wallet_counters: NUT-13 keyset cursors for cashu-ts, and named ones like NUT-20 mint quote keys.

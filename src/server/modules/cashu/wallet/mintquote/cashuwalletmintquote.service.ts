@@ -11,15 +11,15 @@ import {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalle
 import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
 import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwalletmint.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
-import {describeMintError, findMintQuoteMethod, walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
-import {mintQuoteExpiry, mintQuoteTotals} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.helpers';
+import {describeMintError, walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
+import {mintQuoteTotals, quoteExpiry} from '#server/modules/cashu/wallet/helpers/cashuwalletquote.helpers';
 import {
 	CASHU_WALLET_FINAL_STATES,
 	CASHU_WALLET_OPEN_STATES,
 	CASHU_WALLET_OPERATION_UPDATED,
 	CASHU_WALLET_MINT_QUOTE_UPDATED,
 } from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
-import type {CashuWalletMintQuoteMethod} from '#server/modules/cashu/wallet/classes/cashu-wallet-mint-quote-method.class';
+import {CashuWalletMintQuoteMethod} from '#server/modules/cashu/wallet/classes/cashu-wallet-mint-quote-method.class';
 import type {
 	CashuWalletMintQuoteResponse,
 	CashuWalletOperationUpdate,
@@ -122,7 +122,7 @@ export class CashuWalletMintQuoteService {
 		const key = method.locks(wallet.getMintInfo()) ? await this.cashuWalletIssueService.reserveMintQuoteKey(request.user_id) : null;
 		const remote = await method.create(wallet, key?.pubkey ?? null, request.amount, request.description ?? undefined);
 		const now = DateTime.now().toUnixInteger();
-		const expiry = mintQuoteExpiry(remote);
+		const expiry = quoteExpiry(remote);
 		return this.walletMintQuoteRepository.save(
 			this.walletMintQuoteRepository.create({
 				user_id: request.user_id,
@@ -432,7 +432,7 @@ export class CashuWalletMintQuoteService {
 
 	/** The receive rules for a method, refusing one the wallet can't receive by */
 	private findMethod(method: string): CashuWalletMintQuoteMethod {
-		const found = findMintQuoteMethod(method);
+		const found = CashuWalletMintQuoteMethod.find(method);
 		if (!found) throw walletError(`Can't receive by ${method}`);
 		return found;
 	}

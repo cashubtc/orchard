@@ -10,9 +10,10 @@ import {generateMnemonic} from '@scure/bip39';
 import {wordlist} from '@scure/bip39/wordlists/english.js';
 /* Application Dependencies */
 import {deriveEncryptionKeyFromHex, encryptValue, decryptValue} from '#server/modules/setting/setting.helpers';
+/* Native Dependencies */
+import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 /* Local Dependencies */
 import {CashuWalletSeed} from './cashuwalletseed.entity.js';
-import {walletError} from '../cashuwallet.helpers.js';
 import type {CashuWalletSeedStatus} from '../cashuwallet.types.js';
 
 @Injectable()
