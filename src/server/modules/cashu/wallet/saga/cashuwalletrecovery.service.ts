@@ -6,7 +6,7 @@ import {In, Repository, type FindOptionsWhere} from 'typeorm';
 /* Native Dependencies */
 import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
 import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
-import {CashuWalletQuoteService} from '#server/modules/cashu/wallet/quote/cashuwalletquote.service';
+import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {describeMintError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
 import {CASHU_WALLET_OPEN_STATES} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
@@ -36,7 +36,7 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 		private walletOperationRepository: Repository<CashuWalletOperation>,
 		private cashuWalletIssueService: CashuWalletIssueService,
 		private cashuWalletSwapService: CashuWalletSwapService,
-		private cashuWalletQuoteService: CashuWalletQuoteService,
+		private cashuWalletMintQuoteService: CashuWalletMintQuoteService,
 	) {}
 
 	/** Catch up on operations interrupted by a restart, without blocking startup */
@@ -49,12 +49,12 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 		Reconciliation
 	******************************************************** */
 
-	/** Settle every open operation against its mint, then check the quotes still worth checking; concurrent callers share one pass */
+	/** Settle every open operation against its mint, then check the mint quotes still worth checking; concurrent callers share one pass */
 	public reconcileOperations(): Promise<void> {
 		return this.sharePass('all', {});
 	}
 
-	/** Settle a user's open operations and check their quotes at one mint now, for a refresh; concurrent refreshes share one pass */
+	/** Settle a user's open operations and check their mint quotes at one mint now, for a refresh; concurrent refreshes share one pass */
 	public reconcileMint(user_id: string, mint_id: string): Promise<void> {
 		return this.sharePass(`${user_id}:${mint_id}`, {user_id, mint_id});
 	}
@@ -69,7 +69,7 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 		const running = this.reconciling.get(key);
 		if (running) return running;
 		const pass = this.runReconciliation(scope)
-			.then(() => this.cashuWalletQuoteService.checkQuotes(scope))
+			.then(() => this.cashuWalletMintQuoteService.checkQuotes(scope))
 			.finally(() => this.reconciling.delete(key));
 		this.reconciling.set(key, pass);
 		return pass;

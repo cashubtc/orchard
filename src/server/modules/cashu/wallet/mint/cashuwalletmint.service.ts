@@ -22,7 +22,7 @@ import {UserRole} from '#server/modules/user/user.enums';
 /* Native Dependencies */
 import {MintRedirectError} from '#server/modules/cashu/wallet/classes/mint-redirect-error.class';
 import {CashuWalletCounterSource} from '#server/modules/cashu/wallet/classes/cashu-wallet-counter-source.class';
-import {CashuWalletQuote} from '#server/modules/cashu/wallet/quote/cashuwalletquote.entity';
+import {CashuWalletMintQuote} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.entity';
 /* Local Dependencies */
 import {CashuWalletMint} from './cashuwalletmint.entity.js';
 import {CashuWalletMintCacheService} from './cashuwalletmintcache.service.js';
@@ -71,8 +71,8 @@ export class CashuWalletMintService {
 		private walletOperationRepository: Repository<CashuWalletOperation>,
 		@InjectRepository(CashuWalletCounter)
 		private walletCounterRepository: Repository<CashuWalletCounter>,
-		@InjectRepository(CashuWalletQuote)
-		private walletQuoteRepository: Repository<CashuWalletQuote>,
+		@InjectRepository(CashuWalletMintQuote)
+		private walletMintQuoteRepository: Repository<CashuWalletMintQuote>,
 		private configService: ConfigService,
 		private cashuWalletMintCacheService: CashuWalletMintCacheService,
 		private cashuWalletMintTransportService: CashuWalletMintTransportService,
@@ -189,7 +189,7 @@ export class CashuWalletMintService {
 		});
 	}
 
-	/** Remove a mint from a user's wallet, retiring its quotes; refused for the Orchard mint or while it holds or is owed funds */
+	/** Remove a mint from a user's wallet, retiring its mint quotes; refused for the Orchard mint or while it holds or is owed funds */
 	public async removeMint(user_id: string, mint_id: string): Promise<void> {
 		const mint = await this.findWalletMint(user_id, mint_id);
 		if (this.isOrchardMint(mint, await this.getOrchardIdentity())) {
@@ -204,10 +204,10 @@ export class CashuWalletMintService {
 			throw walletError('This mint has wallet operations in progress');
 		}
 		const owed = Raw((paid) => `${paid} > amount_issued`);
-		if (await this.walletQuoteRepository.count({where: {user_id, mint_id, amount_paid: owed}})) {
+		if (await this.walletMintQuoteRepository.count({where: {user_id, mint_id, amount_paid: owed}})) {
 			throw walletError('This mint has a payment not yet in the wallet; refresh it first');
 		}
-		await this.walletQuoteRepository.update({user_id, mint_id}, {latest: false, check_until: DateTime.now().toUnixInteger()});
+		await this.walletMintQuoteRepository.update({user_id, mint_id}, {latest: false, check_until: DateTime.now().toUnixInteger()});
 		await this.walletMintRepository.delete({id: mint.id});
 	}
 

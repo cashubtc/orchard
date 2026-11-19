@@ -13,7 +13,7 @@ import {CashuWalletOperation} from './saga/cashuwalletoperation.entity.js';
 import {CashuWalletMint} from './mint/cashuwalletmint.entity.js';
 import {CashuWalletMintInfo} from './mint/cashuwalletmintinfo.entity.js';
 import {CashuWalletMintKeyset} from './mint/cashuwalletmintkeyset.entity.js';
-import {CashuWalletQuote} from './quote/cashuwalletquote.entity.js';
+import {CashuWalletMintQuote} from './mintquote/cashuwalletmintquote.entity.js';
 import {CashuWalletSeedService} from './seed/cashuwalletseed.service.js';
 import {CashuWalletProofService} from './proof/cashuwalletproof.service.js';
 import {CashuWalletMintService} from './mint/cashuwalletmint.service.js';
@@ -24,7 +24,7 @@ import {CashuWalletRecoveryService} from './saga/cashuwalletrecovery.service.js'
 import {CashuWalletOperationService} from './saga/cashuwalletoperation.service.js';
 import {CashuWalletIssueService} from './saga/issue/cashuwalletissue.service.js';
 import {CashuWalletSwapService} from './saga/swap/cashuwalletswap.service.js';
-import {CashuWalletQuoteService} from './quote/cashuwalletquote.service.js';
+import {CashuWalletMintQuoteService} from './mintquote/cashuwalletmintquote.service.js';
 import {CashuWalletWatchService} from './watch/cashuwalletwatch.service.js';
 
 @Module({
@@ -37,7 +37,7 @@ import {CashuWalletWatchService} from './watch/cashuwalletwatch.service.js';
 			CashuWalletMint,
 			CashuWalletMintInfo,
 			CashuWalletMintKeyset,
-			CashuWalletQuote,
+			CashuWalletMintQuote,
 		]),
 		FetchModule,
 		UserModule,
@@ -54,7 +54,7 @@ import {CashuWalletWatchService} from './watch/cashuwalletwatch.service.js';
 		CashuWalletOperationService,
 		CashuWalletIssueService,
 		CashuWalletSwapService,
-		CashuWalletQuoteService,
+		CashuWalletMintQuoteService,
 		CashuWalletWatchService,
 	],
 	exports: [
@@ -65,7 +65,7 @@ import {CashuWalletWatchService} from './watch/cashuwalletwatch.service.js';
 		CashuWalletOperationService,
 		CashuWalletIssueService,
 		CashuWalletSwapService,
-		CashuWalletQuoteService,
+		CashuWalletMintQuoteService,
 		CashuWalletWatchService,
 	],
 })

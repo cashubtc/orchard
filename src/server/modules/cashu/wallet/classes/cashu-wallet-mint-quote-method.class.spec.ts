@@ -4,17 +4,17 @@ import {expect} from '@jest/globals';
 import type {MintInfo, Wallet} from '@cashu/cashu-ts';
 /* Local Dependencies */
 import {
-	CashuWalletBolt11QuoteMethod,
-	CashuWalletBolt12QuoteMethod,
-	CashuWalletOnchainQuoteMethod,
-} from './cashu-wallet-quote-method.class.js';
+	CashuWalletBolt11MintQuoteMethod,
+	CashuWalletBolt12MintQuoteMethod,
+	CashuWalletOnchainMintQuoteMethod,
+} from './cashu-wallet-mint-quote-method.class.js';
 
-describe('CashuWalletQuoteMethod', () => {
+describe('CashuWalletMintQuoteMethod', () => {
 	const HOUR = 60 * 60;
 	const DAY = 24 * HOUR;
-	const bolt11 = new CashuWalletBolt11QuoteMethod();
-	const bolt12 = new CashuWalletBolt12QuoteMethod();
-	const onchain = new CashuWalletOnchainQuoteMethod();
+	const bolt11 = new CashuWalletBolt11MintQuoteMethod();
+	const bolt12 = new CashuWalletBolt12MintQuoteMethod();
+	const onchain = new CashuWalletOnchainMintQuoteMethod();
 
 	it.each([
 		['bolt11 once paid in full', bolt11, {amount: 100, amount_paid: 100}, 0, 100],

@@ -48,7 +48,7 @@ export class CashuWalletOperation {
 	@Column({type: 'text', nullable: true})
 	quote_id: string | null;
 
-	// NUT-20 seed counter of the key locking the quote; null for unlocked quotes
+	// NUT-20 seed counter of the key locking the mint quote; null for unlocked mint quotes
 	@Column({type: 'integer', nullable: true})
 	quote_counter: number | null;
 
@@ -72,7 +72,7 @@ export class CashuWalletOperation {
 	@Column({type: 'integer', nullable: true})
 	fee_reserve: number | null;
 
-	// Onchain melt speed chosen from the quote's fee options
+	// Onchain melt speed chosen from the melt quote's fee options
 	@Column({type: 'integer', nullable: true})
 	fee_index: number | null;
 

@@ -24,7 +24,7 @@ import {CashuWalletOperation} from '../modules/cashu/wallet/saga/cashuwalletoper
 import {CashuWalletMint} from '../modules/cashu/wallet/mint/cashuwalletmint.entity.js';
 import {CashuWalletMintInfo} from '../modules/cashu/wallet/mint/cashuwalletmintinfo.entity.js';
 import {CashuWalletMintKeyset} from '../modules/cashu/wallet/mint/cashuwalletmintkeyset.entity.js';
-import {CashuWalletQuote} from '../modules/cashu/wallet/quote/cashuwalletquote.entity.js';
+import {CashuWalletMintQuote} from '../modules/cashu/wallet/mintquote/cashuwalletmintquote.entity.js';
 /* Local Dependencies */
 import * as migrations from './migrations/index.js';
 
@@ -55,7 +55,7 @@ export const AppDataSource = new DataSource({
 		CashuWalletMint,
 		CashuWalletMintInfo,
 		CashuWalletMintKeyset,
-		CashuWalletQuote,
+		CashuWalletMintQuote,
 	],
 	migrations: Object.values(migrations),
 	synchronize: false,

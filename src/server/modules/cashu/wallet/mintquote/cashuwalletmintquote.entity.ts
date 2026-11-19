@@ -5,11 +5,11 @@ import {Entity, Column, PrimaryGeneratedColumn, Index} from 'typeorm';
  * Mint quotes a wallet receives on: BOLT 11 invoices, BOLT 12 offers and onchain addresses.
  * Nothing reaches the wallet's operations until one is paid; each payment then becomes its own mint operation.
  */
-@Entity('cashu_wallet_quotes')
+@Entity('cashu_wallet_mint_quotes')
 @Index(['user_id', 'mint_id', 'method', 'unit'])
 @Index(['user_id', 'mint_id', 'method', 'unit'], {unique: true, where: '"latest" = 1'})
 @Index(['mint_id', 'quote_id'], {unique: true})
-export class CashuWalletQuote {
+export class CashuWalletMintQuote {
 	@PrimaryGeneratedColumn('uuid')
 	id: string;
 

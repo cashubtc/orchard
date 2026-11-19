@@ -1,15 +1,15 @@
 /* Vendor Dependencies */
 import {Amount, type MintInfo, type Wallet} from '@cashu/cashu-ts';
 /* Native Dependencies */
-import type {CashuWalletQuote} from '#server/modules/cashu/wallet/quote/cashuwalletquote.entity';
-import type {CashuWalletMintQuote} from '#server/modules/cashu/wallet/cashuwallet.types';
+import type {CashuWalletMintQuote} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.entity';
+import type {CashuWalletMintQuoteResponse} from '#server/modules/cashu/wallet/cashuwallet.types';
 
 const HOUR = 60 * 60;
 const DAY = 24 * HOUR;
 const NO_EXPIRY_WINDOW = 30 * DAY;
 
-/** How a payment method receives: its quote call, the rules its quotes follow and the NUT-17 subscription that watches them (none: polled); each method overrides only where it differs */
-export abstract class CashuWalletQuoteMethod {
+/** How a payment method receives: its mint quote call, the rules its mint quotes follow and the NUT-17 subscription that watches them (none: polled); each method overrides only where it differs */
+export abstract class CashuWalletMintQuoteMethod {
 	abstract readonly method: 'bolt11' | 'bolt12' | 'onchain';
 	abstract readonly amount: 'required' | 'optional' | 'none';
 	readonly reusable: boolean = true;
@@ -17,7 +17,12 @@ export abstract class CashuWalletQuoteMethod {
 	protected readonly grace_seconds: number = HOUR;
 
 	/** Ask the mint for a quote, locked to the pubkey when one is given */
-	abstract create(wallet: Wallet, pubkey: string | null, amount: number | null, description?: string): Promise<CashuWalletMintQuote>;
+	abstract create(
+		wallet: Wallet,
+		pubkey: string | null,
+		amount: number | null,
+		description?: string,
+	): Promise<CashuWalletMintQuoteResponse>;
 
 	/** Whether its quotes are NUT-20 locked at this mint; the method requires it */
 	public locks(_info: MintInfo): boolean {
@@ -36,12 +41,12 @@ export abstract class CashuWalletQuoteMethod {
 	}
 
 	/** What's owed: everything paid and not yet minted */
-	public mintable(quote: Pick<CashuWalletQuote, 'amount' | 'amount_paid'>, issued: number): number {
+	public mintable(quote: Pick<CashuWalletMintQuote, 'amount' | 'amount_paid'>, issued: number): number {
 		return Math.max(0, quote.amount_paid - issued);
 	}
 
 	/** Whether a quote can take no more payments once this much is minted from it; a reusable one never is */
-	public isComplete(_quote: Pick<CashuWalletQuote, 'amount'>, _issued: number): boolean {
+	public isComplete(_quote: Pick<CashuWalletMintQuote, 'amount'>, _issued: number): boolean {
 		return false;
 	}
 
@@ -51,19 +56,19 @@ export abstract class CashuWalletQuoteMethod {
 	}
 
 	/** Whether a quote can be handed out again, reused or shown on the receive screen: it never expires or has more than an hour left */
-	public canHandOut(quote: Pick<CashuWalletQuote, 'expiry' | 'amount_paid'>, now: number): boolean {
+	public canHandOut(quote: Pick<CashuWalletMintQuote, 'expiry' | 'amount_paid'>, now: number): boolean {
 		return quote.expiry === null || quote.expiry - now > HOUR;
 	}
 }
 
 /** One-off invoices for a fixed amount, minted in full once paid; NUT-20 locked when the mint supports it */
-export class CashuWalletBolt11QuoteMethod extends CashuWalletQuoteMethod {
+export class CashuWalletBolt11MintQuoteMethod extends CashuWalletMintQuoteMethod {
 	readonly method = 'bolt11';
 	readonly amount = 'required';
 	readonly reusable = false;
 	readonly socket_kind = 'bolt11_mint_quote';
 
-	create(wallet: Wallet, pubkey: string | null, amount: number | null, description?: string): Promise<CashuWalletMintQuote> {
+	create(wallet: Wallet, pubkey: string | null, amount: number | null, description?: string): Promise<CashuWalletMintQuoteResponse> {
 		return pubkey ? wallet.createLockedMintQuote(amount!, pubkey, description) : wallet.createMintQuoteBolt11(amount!, description);
 	}
 
@@ -78,22 +83,22 @@ export class CashuWalletBolt11QuoteMethod extends CashuWalletQuoteMethod {
 	}
 
 	/** Its amount once paid in full and not yet minted, else nothing */
-	public mintable(quote: Pick<CashuWalletQuote, 'amount' | 'amount_paid'>, issued: number): number {
+	public mintable(quote: Pick<CashuWalletMintQuote, 'amount' | 'amount_paid'>, issued: number): number {
 		return quote.amount !== null && quote.amount_paid >= quote.amount && issued < quote.amount ? quote.amount : 0;
 	}
 
 	/** Once its amount is minted */
-	public isComplete(quote: Pick<CashuWalletQuote, 'amount'>, issued: number): boolean {
+	public isComplete(quote: Pick<CashuWalletMintQuote, 'amount'>, issued: number): boolean {
 		return quote.amount !== null && issued >= quote.amount;
 	}
 }
 
 /** Reusable offers for any amount or a fixed one; every payment is minted */
-export class CashuWalletBolt12QuoteMethod extends CashuWalletQuoteMethod {
+export class CashuWalletBolt12MintQuoteMethod extends CashuWalletMintQuoteMethod {
 	readonly method = 'bolt12';
 	readonly amount = 'optional';
 
-	create(wallet: Wallet, pubkey: string | null, amount: number | null, description?: string): Promise<CashuWalletMintQuote> {
+	create(wallet: Wallet, pubkey: string | null, amount: number | null, description?: string): Promise<CashuWalletMintQuoteResponse> {
 		return wallet.createMintQuoteBolt12(pubkey!, {amount: amount ?? undefined, description});
 	}
 
@@ -104,17 +109,17 @@ export class CashuWalletBolt12QuoteMethod extends CashuWalletQuoteMethod {
 }
 
 /** Reusable addresses; the mint keeps crediting deposits it saw before expiry while they confirm, and a paid address makes way for a fresh one */
-export class CashuWalletOnchainQuoteMethod extends CashuWalletQuoteMethod {
+export class CashuWalletOnchainMintQuoteMethod extends CashuWalletMintQuoteMethod {
 	readonly method = 'onchain';
 	readonly amount = 'none';
 	protected readonly grace_seconds = 7 * DAY;
 
-	create(wallet: Wallet, pubkey: string | null): Promise<CashuWalletMintQuote> {
+	create(wallet: Wallet, pubkey: string | null): Promise<CashuWalletMintQuoteResponse> {
 		return wallet.createMintQuoteOnchain(pubkey!);
 	}
 
 	/** Only while nothing has been paid to it */
-	public canHandOut(quote: Pick<CashuWalletQuote, 'expiry' | 'amount_paid'>, now: number): boolean {
+	public canHandOut(quote: Pick<CashuWalletMintQuote, 'expiry' | 'amount_paid'>, now: number): boolean {
 		return quote.amount_paid === 0 && super.canHandOut(quote, now);
 	}
 }

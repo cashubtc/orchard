@@ -5,7 +5,7 @@ import {expect} from '@jest/globals';
 import {PubSub} from 'graphql-subscriptions';
 /* Application Dependencies */
 import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
-import {CashuWalletQuoteService} from '#server/modules/cashu/wallet/quote/cashuwalletquote.service';
+import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.service';
 import {CashuWalletWatchService} from '#server/modules/cashu/wallet/watch/cashuwalletwatch.service';
 import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
@@ -14,13 +14,13 @@ import {OrchardEcashOperation} from '#server/modules/api/ecash/operation/ecashop
 import {WalletMintMatch} from '#server/modules/cashu/wallet/cashuwallet.enums';
 /* Local Dependencies */
 import {EcashReceiveService} from './ecashreceive.service.js';
-import {OrchardEcashQuote, OrchardEcashTokenPreview} from './ecashreceive.model.js';
-import type {EcashQuoteWatchPayload} from './ecashreceive.types.js';
+import {OrchardEcashMintQuote, OrchardEcashReceiveTokenPreview} from './ecashreceive.model.js';
+import type {EcashMintQuoteWatchPayload} from './ecashreceive.types.js';
 
 describe('EcashReceiveService', () => {
 	let ecashReceiveService: EcashReceiveService;
 	let cashuWalletSwapService: jest.Mocked<CashuWalletSwapService>;
-	let cashuWalletQuoteService: jest.Mocked<CashuWalletQuoteService>;
+	let cashuWalletMintQuoteService: jest.Mocked<CashuWalletMintQuoteService>;
 	let cashuWalletWatchService: jest.Mocked<CashuWalletWatchService>;
 	let errorService: jest.Mocked<ErrorService>;
 
@@ -37,25 +37,25 @@ describe('EcashReceiveService', () => {
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				EcashReceiveService,
-				{provide: CashuWalletSwapService, useValue: {previewToken: jest.fn(), receiveToken: jest.fn()}},
-				{provide: CashuWalletQuoteService, useValue: {newQuote: jest.fn(), openQuote: jest.fn()}},
-				{provide: CashuWalletWatchService, useValue: {watchQuote: jest.fn()}},
+				{provide: CashuWalletSwapService, useValue: {previewReceive: jest.fn(), receiveToken: jest.fn()}},
+				{provide: CashuWalletMintQuoteService, useValue: {newQuote: jest.fn(), openQuote: jest.fn()}},
+				{provide: CashuWalletWatchService, useValue: {watchMintQuote: jest.fn()}},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
 			],
 		}).compile();
 
 		ecashReceiveService = module.get<EcashReceiveService>(EcashReceiveService);
 		cashuWalletSwapService = module.get(CashuWalletSwapService);
-		cashuWalletQuoteService = module.get(CashuWalletQuoteService);
+		cashuWalletMintQuoteService = module.get(CashuWalletMintQuoteService);
 		cashuWalletWatchService = module.get(CashuWalletWatchService);
 		errorService = module.get(ErrorService);
 	});
 
 	it('previewToken maps the preview and the mint it is from', async () => {
-		cashuWalletSwapService.previewToken.mockResolvedValue(preview);
+		cashuWalletSwapService.previewReceive.mockResolvedValue(preview);
 		const result = await ecashReceiveService.previewToken('TAG', 'user-1', 'cashuBtoken', false);
-		expect(cashuWalletSwapService.previewToken).toHaveBeenCalledWith('user-1', 'cashuBtoken', false);
-		expect(result).toBeInstanceOf(OrchardEcashTokenPreview);
+		expect(cashuWalletSwapService.previewReceive).toHaveBeenCalledWith('user-1', 'cashuBtoken', false);
+		expect(result).toBeInstanceOf(OrchardEcashReceiveTokenPreview);
 		expect(result).toMatchObject({amount: 30, fee: 0, claimed: false, mint: {url: 'https://mint.example', match: WalletMintMatch.URL}});
 	});
 
@@ -66,20 +66,20 @@ describe('EcashReceiveService', () => {
 		expect(result).toBeInstanceOf(OrchardEcashOperation);
 	});
 
-	it('newQuote and openQuote map the quote with what its payments brought in', async () => {
+	it('newMintQuote and openMintQuote map the quote with what its payments brought in', async () => {
 		const quote = {id: 'quote-1', method: 'bolt12', request: 'lno1offer', amount: null, received: 50, payments: 2} as any;
-		cashuWalletQuoteService.newQuote.mockResolvedValue(quote);
-		cashuWalletQuoteService.openQuote.mockResolvedValue(quote);
+		cashuWalletMintQuoteService.newQuote.mockResolvedValue(quote);
+		cashuWalletMintQuoteService.openQuote.mockResolvedValue(quote);
 		const request = {user_id: 'user-1', mint_id: 'mint-1', method: 'bolt12', unit: 'sat', amount: null, description: null};
-		const created = await ecashReceiveService.newQuote('TAG', request);
-		const opened = await ecashReceiveService.openQuote('TAG', 'user-1', 'mint-1', 'bolt12', 'sat');
-		expect(cashuWalletQuoteService.newQuote).toHaveBeenCalledWith(request);
-		expect(cashuWalletQuoteService.openQuote).toHaveBeenCalledWith('user-1', 'mint-1', 'bolt12', 'sat');
-		expect(created).toBeInstanceOf(OrchardEcashQuote);
+		const created = await ecashReceiveService.newMintQuote('TAG', request);
+		const opened = await ecashReceiveService.openMintQuote('TAG', 'user-1', 'mint-1', 'bolt12', 'sat');
+		expect(cashuWalletMintQuoteService.newQuote).toHaveBeenCalledWith(request);
+		expect(cashuWalletMintQuoteService.openQuote).toHaveBeenCalledWith('user-1', 'mint-1', 'bolt12', 'sat');
+		expect(created).toBeInstanceOf(OrchardEcashMintQuote);
 		expect(opened).toMatchObject({id: 'quote-1', request: 'lno1offer', received: 50, payments: 2});
 	});
 
-	describe('watchEcashQuote', () => {
+	describe('watchMintQuote', () => {
 		const release = jest.fn();
 		const quote = {
 			id: 'quote-1',
@@ -91,32 +91,32 @@ describe('EcashReceiveService', () => {
 			final: false,
 		} as any;
 		let pub_sub: PubSub;
-		let updates: AsyncIterableIterator<EcashQuoteWatchPayload>;
+		let updates: AsyncIterableIterator<EcashMintQuoteWatchPayload>;
 
 		beforeEach(() => {
 			release.mockClear();
 			pub_sub = new PubSub();
-			updates = pub_sub.asyncIterableIterator<EcashQuoteWatchPayload>('watch');
+			updates = pub_sub.asyncIterableIterator<EcashMintQuoteWatchPayload>('watch');
 		});
 
 		it('sends the quote now, then each update, ending once it takes no more payments', async () => {
-			cashuWalletWatchService.watchQuote.mockResolvedValue({quote, release});
-			const stream = await ecashReceiveService.watchEcashQuote('TAG', 'user-1', 'quote-1', updates);
-			expect(cashuWalletWatchService.watchQuote).toHaveBeenCalledWith('user-1', 'quote-1');
-			expect((await stream.next()).value).toMatchObject({ecash_quote_watch: {id: 'quote-1', final: false}});
+			cashuWalletWatchService.watchMintQuote.mockResolvedValue({quote, release});
+			const stream = await ecashReceiveService.watchMintQuote('TAG', 'user-1', 'quote-1', updates);
+			expect(cashuWalletWatchService.watchMintQuote).toHaveBeenCalledWith('user-1', 'quote-1');
+			expect((await stream.next()).value).toMatchObject({ecash_mint_quote_watch: {id: 'quote-1', final: false}});
 
-			const paid = new OrchardEcashQuote({...quote, received: 100, payments: 1, final: true});
-			await pub_sub.publish('watch', {ecash_quote_watch: paid});
-			expect((await stream.next()).value).toMatchObject({ecash_quote_watch: {received: 100, final: true}});
+			const paid = new OrchardEcashMintQuote({...quote, received: 100, payments: 1, final: true});
+			await pub_sub.publish('watch', {ecash_mint_quote_watch: paid});
+			expect((await stream.next()).value).toMatchObject({ecash_mint_quote_watch: {received: 100, final: true}});
 			expect(release).toHaveBeenCalledTimes(1);
 			expect(await stream.next()).toMatchObject({done: true});
 		});
 
 		it('stops listening and wraps the error when the quote cannot be watched', async () => {
-			cashuWalletWatchService.watchQuote.mockRejectedValue(new Error('Quote not found'));
+			cashuWalletWatchService.watchMintQuote.mockRejectedValue(new Error('Mint quote not found'));
 			errorService.resolveError.mockImplementation((_logger, error) => error);
 			const stop = jest.spyOn(updates, 'return');
-			await expect(ecashReceiveService.watchEcashQuote('TAG', 'user-1', 'quote-9', updates)).rejects.toBeInstanceOf(OrchardApiError);
+			await expect(ecashReceiveService.watchMintQuote('TAG', 'user-1', 'quote-9', updates)).rejects.toBeInstanceOf(OrchardApiError);
 			expect(stop).toHaveBeenCalled();
 		});
 	});

@@ -7,7 +7,7 @@ import type {CashuWalletCounter} from '#server/modules/cashu/wallet/saga/cashuwa
 import {getCounterKey} from '#server/modules/cashu/wallet/cashuwallet.helpers';
 
 /**
- * One user's counter cursors in cashu_wallet_counters: NUT-13 keyset cursors for cashu-ts, and named ones like NUT-20 quote keys.
+ * One user's counter cursors in cashu_wallet_counters: NUT-13 keyset cursors for cashu-ts, and named ones like NUT-20 mint quote keys.
  * Each change is a single atomic statement, so a crash can waste counters but never reuse them.
  */
 export class CashuWalletCounterSource implements CounterSource {

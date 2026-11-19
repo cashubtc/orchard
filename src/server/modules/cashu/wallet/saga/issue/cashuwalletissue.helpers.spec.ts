@@ -3,7 +3,7 @@ import {expect} from '@jest/globals';
 /* Vendor Dependencies */
 import {Amount, MintQuoteState, getPubKeyFromPrivKey, mnemonicToSeedSync} from '@cashu/cashu-ts';
 /* Local Dependencies */
-import {assessMintQuote, deriveQuoteKey, mintQuoteExpiry, mintQuoteTotals} from './cashuwalletissue.helpers.js';
+import {assessMintQuote, deriveMintQuoteKey, mintQuoteExpiry, mintQuoteTotals} from './cashuwalletissue.helpers.js';
 import {MintQuoteProgress} from '../../cashuwallet.enums.js';
 
 describe('mintQuoteTotals', () => {
@@ -55,7 +55,7 @@ describe('assessMintQuote', () => {
 	});
 });
 
-describe('deriveQuoteKey', () => {
+describe('deriveMintQuoteKey', () => {
 	const seed = mnemonicToSeedSync('half depart obvious quality work element tank gorilla view sugar picture humble');
 
 	it.each([
@@ -65,7 +65,7 @@ describe('deriveQuoteKey', () => {
 		[3, '0373e4a42fbe0a4e18aadb57cf500b655f2446b4071ee579121d2ed8905bcc49c2'],
 		[4, '02b8709bfce17c10f1864f5218844533ae60930d52089669b317d8b5f474eec071'],
 	])('matches the NUT-20 test vector at counter %i', (counter, pubkey) => {
-		const key = deriveQuoteKey(seed, counter);
+		const key = deriveMintQuoteKey(seed, counter);
 		expect(key.pubkey).toBe(pubkey);
 		expect(Buffer.from(getPubKeyFromPrivKey(Buffer.from(key.privkey, 'hex'))).toString('hex')).toBe(pubkey);
 	});

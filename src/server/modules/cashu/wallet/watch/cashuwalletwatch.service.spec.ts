@@ -5,19 +5,19 @@ import {expect} from '@jest/globals';
 import type {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.entity';
 import {CashuWalletOperationService} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.service';
 import {CashuWalletRecoveryService} from '#server/modules/cashu/wallet/saga/cashuwalletrecovery.service';
-import {CashuWalletQuoteService} from '#server/modules/cashu/wallet/quote/cashuwalletquote.service';
+import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.service';
 import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwalletmint.service';
 import {CashuWalletProofService} from '#server/modules/cashu/wallet/proof/cashuwalletproof.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
-import type {CashuWalletQuoteRecord} from '#server/modules/cashu/wallet/cashuwallet.types';
+import type {CashuWalletMintQuoteRecord} from '#server/modules/cashu/wallet/cashuwallet.types';
 /* Local Dependencies */
 import {CashuWalletWatchService} from './cashuwalletwatch.service.js';
 
 describe('CashuWalletWatchService', () => {
 	let service: CashuWalletWatchService;
 	let operation: CashuWalletOperation;
-	let quote: CashuWalletQuoteRecord;
+	let quote: CashuWalletMintQuoteRecord;
 	let nut17: {supported: boolean; params?: {method: string; unit: string; commands: string[]}[]};
 	let socket: {notify?: (payload: {state: string}) => void; lost?: () => void};
 
@@ -41,10 +41,10 @@ describe('CashuWalletWatchService', () => {
 			throw walletError('Operation not found');
 		}),
 	};
-	const quote_service = {
+	const mint_quote_service = {
 		getQuote: jest.fn(async (user_id: string, id: string) => {
 			if (id === quote.id && user_id === quote.user_id) return quote;
-			throw walletError('Quote not found');
+			throw walletError('Mint quote not found');
 		}),
 		settleQuotes: jest.fn(async (_quote_ids: string[]) => undefined),
 		settleUpdate: jest.fn(async (_quote_id: string, _update: unknown) => undefined),
@@ -53,7 +53,7 @@ describe('CashuWalletWatchService', () => {
 	/** Ticks that settled something of a kind */
 	const settles = (settle: jest.Mock<Promise<undefined>, [string[]]>) => settle.mock.calls.filter(([ids]) => ids.length > 0).length;
 	const operationSettles = () => settles(recovery.settleOperations);
-	const quoteSettles = () => settles(quote_service.settleQuotes);
+	const mintQuoteSettles = () => settles(mint_quote_service.settleQuotes);
 	const pending = (changes: Partial<CashuWalletOperation> = {}) =>
 		({
 			id: 'op-1',
@@ -66,7 +66,7 @@ describe('CashuWalletWatchService', () => {
 			state: WalletOperationState.EXECUTING,
 			...changes,
 		}) as CashuWalletOperation;
-	const open = (changes: Partial<CashuWalletQuoteRecord> = {}) =>
+	const open = (changes: Partial<CashuWalletMintQuoteRecord> = {}) =>
 		({
 			id: 'quote-1',
 			user_id: 'user-1',
@@ -77,7 +77,7 @@ describe('CashuWalletWatchService', () => {
 			amount: 100,
 			final: false,
 			...changes,
-		}) as CashuWalletQuoteRecord;
+		}) as CashuWalletMintQuoteRecord;
 
 	beforeEach(async () => {
 		jest.clearAllMocks();
@@ -91,7 +91,7 @@ describe('CashuWalletWatchService', () => {
 				CashuWalletWatchService,
 				{provide: CashuWalletOperationService, useValue: operation_service},
 				{provide: CashuWalletRecoveryService, useValue: recovery},
-				{provide: CashuWalletQuoteService, useValue: quote_service},
+				{provide: CashuWalletMintQuoteService, useValue: mint_quote_service},
 				{provide: CashuWalletMintService, useValue: mint_service},
 				{provide: CashuWalletProofService, useValue: proof_service},
 			],
@@ -167,39 +167,39 @@ describe('CashuWalletWatchService', () => {
 
 		it('polls a bolt12 offer, which cashu-ts has no subscription for, until it takes no more payments', async () => {
 			quote = open({method: 'bolt12', amount: null});
-			await service.watchQuote('user-1', 'quote-1');
+			await service.watchMintQuote('user-1', 'quote-1');
 			await jest.advanceTimersByTimeAsync(5_000);
-			expect(quote_service.settleQuotes).toHaveBeenCalledWith(['quote-1']);
-			expect(quoteSettles()).toBe(2);
+			expect(mint_quote_service.settleQuotes).toHaveBeenCalledWith(['quote-1']);
+			expect(mintQuoteSettles()).toBe(2);
 			expect(wallet.on.mintQuoteUpdates).not.toHaveBeenCalled();
 
-			service.onQuoteUpdated({...quote, final: true});
+			service.onMintQuoteUpdated({...quote, final: true});
 			await jest.advanceTimersByTimeAsync(10_000);
-			expect(quoteSettles()).toBe(2);
+			expect(mintQuoteSettles()).toBe(2);
 		});
 
 		it('returns a quote that takes no more payments without watching it, and refuses one outside the wallet', async () => {
 			quote = open({final: true});
-			expect((await service.watchQuote('user-1', 'quote-1')).quote.final).toBe(true);
+			expect((await service.watchMintQuote('user-1', 'quote-1')).quote.final).toBe(true);
 			await jest.advanceTimersByTimeAsync(5_000);
-			expect(quoteSettles()).toBe(0);
-			await expect(service.watchQuote('user-2', 'quote-1')).rejects.toEqual(walletError('Quote not found'));
+			expect(mintQuoteSettles()).toBe(0);
+			await expect(service.watchMintQuote('user-2', 'quote-1')).rejects.toEqual(walletError('Mint quote not found'));
 		});
 	});
 
 	describe('websocket', () => {
 		it('settles a bolt11 invoice from each update its mint pushes without asking again, the safety poll counting from the push', async () => {
-			await service.watchQuote('user-1', 'quote-1');
+			await service.watchMintQuote('user-1', 'quote-1');
 			await jest.advanceTimersByTimeAsync(10_000);
 			expect(wallet.on.mintQuoteUpdates).toHaveBeenCalledWith(['mint-quote-1'], expect.any(Function), expect.any(Function));
-			expect(quoteSettles()).toBe(1);
+			expect(mintQuoteSettles()).toBe(1);
 
 			socket.notify!({state: 'PAID'});
-			expect(quote_service.settleUpdate).toHaveBeenCalledWith('quote-1', {state: 'PAID'});
+			expect(mint_quote_service.settleUpdate).toHaveBeenCalledWith('quote-1', {state: 'PAID'});
 			await jest.advanceTimersByTimeAsync(25_000);
-			expect(quoteSettles()).toBe(1);
+			expect(mintQuoteSettles()).toBe(1);
 			await jest.advanceTimersByTimeAsync(5_000);
-			expect(quoteSettles()).toBe(2);
+			expect(mintQuoteSettles()).toBe(2);
 		});
 
 		it("watches a sent token's proofs, settling once one is spent", async () => {
@@ -229,28 +229,28 @@ describe('CashuWalletWatchService', () => {
 		});
 
 		it('polls when the socket drops, then reopens it the next time the invoice is due', async () => {
-			await service.watchQuote('user-1', 'quote-1');
+			await service.watchMintQuote('user-1', 'quote-1');
 			await jest.advanceTimersByTimeAsync(0);
 			socket.lost!();
 			expect(cancel).toHaveBeenCalled();
 			expect(wallet.mint.disconnectWebSocket).toHaveBeenCalled();
 			await jest.advanceTimersByTimeAsync(5_000);
-			expect(quoteSettles()).toBe(2);
+			expect(mintQuoteSettles()).toBe(2);
 			expect(wallet.on.mintQuoteUpdates).toHaveBeenCalledTimes(2);
 			expect([mint_service.allowsSocket.mock.calls.length, mint_service.getWallet.mock.calls.length]).toEqual([1, 1]);
 
 			socket.notify!({state: 'PAID'});
-			expect(quote_service.settleUpdate).toHaveBeenCalledWith('quote-1', {state: 'PAID'});
+			expect(mint_quote_service.settleUpdate).toHaveBeenCalledWith('quote-1', {state: 'PAID'});
 		});
 
 		it('closes the subscription and the mint socket with it when the last viewer leaves', async () => {
-			const {release} = await service.watchQuote('user-1', 'quote-1');
+			const {release} = await service.watchMintQuote('user-1', 'quote-1');
 			await jest.advanceTimersByTimeAsync(0);
 			release();
 			expect(cancel).toHaveBeenCalled();
 			expect(wallet.mint.disconnectWebSocket).toHaveBeenCalled();
 			await jest.advanceTimersByTimeAsync(5_000);
-			expect(quoteSettles()).toBe(1);
+			expect(mintQuoteSettles()).toBe(1);
 		});
 
 		it.each([
@@ -258,10 +258,10 @@ describe('CashuWalletWatchService', () => {
 			['the mint offers no subscription for the unit', () => void (nut17 = {supported: true, params: []})],
 		])('polls instead when %s', async (_label, refuse) => {
 			refuse();
-			await service.watchQuote('user-1', 'quote-1');
+			await service.watchMintQuote('user-1', 'quote-1');
 			await jest.advanceTimersByTimeAsync(5_000);
 			expect(wallet.on.mintQuoteUpdates).not.toHaveBeenCalled();
-			expect(quoteSettles()).toBe(2);
+			expect(mintQuoteSettles()).toBe(2);
 		});
 	});
 });

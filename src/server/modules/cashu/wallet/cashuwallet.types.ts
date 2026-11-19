@@ -4,7 +4,7 @@ import type {MintInfo, MintQuoteBaseResponse, MintQuoteState} from '@cashu/cashu
 import type {CashuWalletMint} from './mint/cashuwalletmint.entity.js';
 import type {CashuWalletSeed} from './seed/cashuwalletseed.entity.js';
 import type {CashuWalletOperation} from './saga/cashuwalletoperation.entity.js';
-import type {CashuWalletQuote} from './quote/cashuwalletquote.entity.js';
+import type {CashuWalletMintQuote} from './mintquote/cashuwalletmintquote.entity.js';
 import type {WalletMintMatch, WalletOperationState, WalletOperationType} from './cashuwallet.enums.js';
 
 export type CashuWalletBalance = {
@@ -25,7 +25,7 @@ export type CashuWalletOperationFilters = {
 	page_size?: number;
 };
 
-export type CashuWalletMintQuote = MintQuoteBaseResponse & {
+export type CashuWalletMintQuoteResponse = MintQuoteBaseResponse & {
 	state?: MintQuoteState;
 	expiry?: number | null;
 };
@@ -55,7 +55,7 @@ export type CashuWalletIssueRequest = {
 export type CashuWalletScope = Partial<Pick<CashuWalletOperation, 'user_id' | 'mint_id'>>;
 
 /** A request to receive at a wallet mint: amount null for any amount, description null for none */
-export type CashuWalletQuoteRequest = {
+export type CashuWalletMintQuoteRequest = {
 	user_id: string;
 	mint_id: string;
 	method: string;
@@ -64,8 +64,8 @@ export type CashuWalletQuoteRequest = {
 	description: string | null;
 };
 
-/** A quote with what its payments brought in (the total minted from it and how many mints that took), and whether it's done receiving */
-export type CashuWalletQuoteRecord = CashuWalletQuote & {
+/** A mint quote with what its payments brought in (the total minted from it and how many mints that took), and whether it's done receiving */
+export type CashuWalletMintQuoteRecord = CashuWalletMintQuote & {
 	received: number;
 	payments: number;
 	final: boolean;
@@ -76,8 +76,8 @@ export type CashuWalletWatch = {
 	release: () => void;
 };
 
-export type CashuWalletQuoteWatch = {
-	quote: CashuWalletQuoteRecord;
+export type CashuWalletMintQuoteWatch = {
+	quote: CashuWalletMintQuoteRecord;
 	release: () => void;
 };
 
@@ -93,7 +93,7 @@ export type CashuWalletSendRequest = {
 };
 
 /** A token before it's received: amount is before the fee; fee and claimed are null until its mint is in the wallet */
-export type CashuWalletTokenPreview = {
+export type CashuWalletReceiveTokenPreview = {
 	amount: number;
 	unit: string;
 	memo: string | null;

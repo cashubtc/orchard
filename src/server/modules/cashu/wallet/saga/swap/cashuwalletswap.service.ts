@@ -33,7 +33,7 @@ import {
 } from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {describeMintError, walletError} from '#server/modules/cashu/wallet/cashuwallet.helpers';
 import {classifyMintError} from '#server/modules/cashu/wallet/saga/cashuwalletsaga.helpers';
-import type {CashuWalletSendRequest, CashuWalletTokenPreview} from '#server/modules/cashu/wallet/cashuwallet.types';
+import type {CashuWalletSendRequest, CashuWalletReceiveTokenPreview} from '#server/modules/cashu/wallet/cashuwallet.types';
 
 @Injectable()
 export class CashuWalletSwapService {
@@ -132,11 +132,11 @@ export class CashuWalletSwapService {
 	******************************************************** */
 
 	/** What a token holds and the mint it's from; fee and claimed state once that mint is in the wallet */
-	public async previewToken(user_id: string, token: string, allow_local: boolean): Promise<CashuWalletTokenPreview> {
+	public async previewReceive(user_id: string, token: string, allow_local: boolean): Promise<CashuWalletReceiveTokenPreview> {
 		const encoded = token.trim();
 		const metadata = this.readToken(encoded);
 		const mint = await this.cashuWalletMintService.lookupMint(user_id, metadata.mint, allow_local);
-		const preview: CashuWalletTokenPreview = {
+		const preview: CashuWalletReceiveTokenPreview = {
 			amount: metadata.amount.toNumber(),
 			unit: metadata.unit,
 			memo: metadata.memo ?? null,

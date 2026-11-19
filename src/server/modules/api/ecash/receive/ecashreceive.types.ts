@@ -1,6 +1,6 @@
 /* Local Dependencies */
-import type {OrchardEcashQuote} from './ecashreceive.model.js';
+import type {OrchardEcashMintQuote} from './ecashreceive.model.js';
 
-export type EcashQuoteWatchPayload = {
-	ecash_quote_watch: OrchardEcashQuote;
+export type EcashMintQuoteWatchPayload = {
+	ecash_mint_quote_watch: OrchardEcashMintQuote;
 };

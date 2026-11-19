@@ -3,17 +3,17 @@ import {expect} from '@jest/globals';
 /* Vendor Dependencies */
 import {HttpResponseError, MintOperationError, StaleKeysetError} from '@cashu/cashu-ts';
 /* Native Dependencies */
-import {CASHU_WALLET_QUOTE_METHODS} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
+import {CASHU_WALLET_MINT_QUOTE_METHODS} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 /* Local Dependencies */
-import {describeMintError, findQuoteMethod, getCounterKey} from './cashuwallet.helpers.js';
+import {describeMintError, findMintQuoteMethod, getCounterKey} from './cashuwallet.helpers.js';
 
-describe('findQuoteMethod', () => {
+describe('findMintQuoteMethod', () => {
 	it.each([
-		['a method the wallet receives by', 'bolt12', CASHU_WALLET_QUOTE_METHODS.bolt12],
+		['a method the wallet receives by', 'bolt12', CASHU_WALLET_MINT_QUOTE_METHODS.bolt12],
 		['an unknown method', 'custom', null],
 		['a name inherited from Object', 'constructor', null],
 	])('gives the rules for %s', (_label, method, rules) => {
-		expect(findQuoteMethod(method)).toBe(rules);
+		expect(findMintQuoteMethod(method)).toBe(rules);
 	});
 });
 

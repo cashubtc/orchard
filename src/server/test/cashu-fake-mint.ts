@@ -29,8 +29,8 @@ export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk =
 	const keysets = [newKeyset()];
 	const signed = new Map<string, {id: string; amount: number; C_: string}>();
 	const spent = new Set<string>();
-	// bolt11 quotes carry a state; bolt12 and onchain quotes carry paid and issued totals instead
-	const quotes = new Map<
+	// bolt11 mint quotes carry a state; bolt12 and onchain mint quotes carry paid and issued totals instead
+	const mint_quotes = new Map<
 		string,
 		{
 			method?: string;
@@ -43,7 +43,7 @@ export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk =
 			amount_issued?: number;
 		}
 	>();
-	const quote_defaults: {expiry: number | null} = {expiry: null};
+	const mint_quote_defaults: {expiry: number | null} = {expiry: null};
 	const failures: {code: number; detail: string}[] = [];
 	const outages = new Map<string, number>();
 	const lost = new Set<string>();
@@ -83,20 +83,20 @@ export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk =
 		return result;
 	};
 	const total = (items: {amount: number}[]) => items.reduce((sum, item) => sum + Number(item.amount), 0);
-	const quoteResponse = (id: string) => {
-		const {method = 'bolt11', description: _description, ...quote} = quotes.get(id)!;
+	const mintQuoteResponse = (id: string) => {
+		const {method = 'bolt11', description: _description, ...quote} = mint_quotes.get(id)!;
 		if (method === 'bolt11') return {quote: id, request: `lnbc${(quote.amount ?? 0) * 10}n1fake`, unit: 'sat', ...quote};
 		return {quote: id, request: method === 'bolt12' ? `lno1fake${id}` : `bcrt1qfake${id}`, unit: 'sat', ...quote};
 	};
-	const createQuote = (method: string, body: any) => {
-		const quote = `quote-${quotes.size + 1}`;
-		const terms = {pubkey: body.pubkey, expiry: quote_defaults.expiry, description: body.description};
-		if (method === 'bolt11') quotes.set(quote, {...terms, state: 'UNPAID', amount: body.amount});
-		else quotes.set(quote, {...terms, method, amount: body.amount ?? null, amount_paid: 0, amount_issued: 0});
-		return quoteResponse(quote);
+	const createMintQuote = (method: string, body: any) => {
+		const quote = `quote-${mint_quotes.size + 1}`;
+		const terms = {pubkey: body.pubkey, expiry: mint_quote_defaults.expiry, description: body.description};
+		if (method === 'bolt11') mint_quotes.set(quote, {...terms, state: 'UNPAID', amount: body.amount});
+		else mint_quotes.set(quote, {...terms, method, amount: body.amount ?? null, amount_paid: 0, amount_issued: 0});
+		return mintQuoteResponse(quote);
 	};
 	const mintOutputs = (body: any): [number, any] => {
-		const quote = quotes.get(body.quote);
+		const quote = mint_quotes.get(body.quote);
 		const amount = total(body.outputs);
 		if (quote?.amount_paid !== undefined && amount > quote.amount_paid - quote.amount_issued!) {
 			return [400, {code: 20001, detail: 'Quote not paid'}];
@@ -135,15 +135,15 @@ export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk =
 			const requested = keysets.filter((keyset) => path === '/v1/keys' || path.endsWith(`/${keyset.keysetId}`));
 			return [200, {keysets: requested.map((keyset) => ({...describeKeyset(keyset), keys: serializeMintKeys(keyset.pubKeys)}))}];
 		}
-		const quote_route = path.match(/^\/v1\/mint\/quote\/(\w+)(?:\/(.+))?$/);
-		if (quote_route) {
-			const [, method, quote] = quote_route;
-			if (!quote) return [200, createQuote(method, body)];
+		const mint_quote_route = path.match(/^\/v1\/mint\/quote\/(\w+)(?:\/(.+))?$/);
+		if (mint_quote_route) {
+			const [, method, quote] = mint_quote_route;
+			if (!quote) return [200, createMintQuote(method, body)];
 			if (quote === 'check' && info.nuts[29]) {
-				if (!body.quotes.every((id: string) => quotes.has(id))) return [400, {code: 20004, detail: 'Unknown quote'}];
-				return [200, body.quotes.map(quoteResponse)];
+				if (!body.quotes.every((id: string) => mint_quotes.has(id))) return [400, {code: 20004, detail: 'Unknown quote'}];
+				return [200, body.quotes.map(mintQuoteResponse)];
 			}
-			return quotes.has(quote) ? [200, quoteResponse(quote)] : [400, {code: 20004, detail: 'Unknown quote'}];
+			return mint_quotes.has(quote) ? [200, mintQuoteResponse(quote)] : [400, {code: 20004, detail: 'Unknown quote'}];
 		}
 		if (/^\/v1\/mint\/\w+$/.test(path) || path === '/v1/swap') {
 			const failure = failures.shift();
@@ -165,9 +165,9 @@ export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk =
 	};
 	/** Activate a new keyset, leaving the earlier ones inactive */
 	const rotate = () => void keysets.push(newKeyset());
-	/** Pay a quote: a bolt11 invoice in full, or an amount to an offer or address */
-	const pay = (quote_id: string, amount?: number) => {
-		const quote = quotes.get(quote_id)!;
+	/** Pay a mint quote: a bolt11 invoice in full, or an amount to an offer or address */
+	const payMintQuote = (quote_id: string, amount?: number) => {
+		const quote = mint_quotes.get(quote_id)!;
 		if (quote.amount_paid === undefined) quote.state = 'PAID';
 		else quote.amount_paid += amount ?? quote.amount ?? 0;
 	};
@@ -176,14 +176,14 @@ export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk =
 			return active();
 		},
 		info,
-		quotes,
-		quote_defaults,
+		mint_quotes,
+		mint_quote_defaults,
 		failures,
 		outages,
 		lost,
 		handle,
 		rotate,
-		pay,
+		payMintQuote,
 	};
 };
 

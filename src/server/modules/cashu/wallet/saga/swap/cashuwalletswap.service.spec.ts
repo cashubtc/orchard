@@ -25,8 +25,8 @@ import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwal
 import {CashuWalletMint} from '#server/modules/cashu/wallet/mint/cashuwalletmint.entity';
 import {CashuWalletMintInfo} from '#server/modules/cashu/wallet/mint/cashuwalletmintinfo.entity';
 import {CashuWalletMintKeyset} from '#server/modules/cashu/wallet/mint/cashuwalletmintkeyset.entity';
-import {CashuWalletQuote} from '#server/modules/cashu/wallet/quote/cashuwalletquote.entity';
-import {CashuWalletQuoteService} from '#server/modules/cashu/wallet/quote/cashuwalletquote.service';
+import {CashuWalletMintQuote} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.entity';
+import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.service';
 import {CashuWalletMintCacheService} from '#server/modules/cashu/wallet/mint/cashuwalletmintcache.service';
 import {CashuWalletMintTransportService} from '#server/modules/cashu/wallet/mint/cashuwalletminttransport.service';
 import {WalletMintMatch, WalletOperationState, WalletOperationType, WalletProofState} from '#server/modules/cashu/wallet/cashuwallet.enums';
@@ -69,8 +69,8 @@ describe('CashuWalletSwapService', () => {
 
 	/** Mint ecash into user-1's wallet through a quote already paid */
 	const fund = async (mint_id: string, amount: number, fake = orchard()) => {
-		const quote_id = `fund-${fake.quotes.size + 1}`;
-		fake.quotes.set(quote_id, {state: 'PAID', amount, expiry: null});
+		const quote_id = `fund-${fake.mint_quotes.size + 1}`;
+		fake.mint_quotes.set(quote_id, {state: 'PAID', amount, expiry: null});
 		const operation = await issue.createMintOperation({
 			user_id: 'user-1',
 			mint_id,
@@ -101,7 +101,7 @@ describe('CashuWalletSwapService', () => {
 		CashuWalletMint,
 		CashuWalletMintInfo,
 		CashuWalletMintKeyset,
-		CashuWalletQuote,
+		CashuWalletMintQuote,
 	];
 
 	beforeEach(async () => {
@@ -120,7 +120,7 @@ describe('CashuWalletSwapService', () => {
 				CashuWalletJournalService,
 				CashuWalletProofService,
 				CashuWalletRecoveryService,
-				CashuWalletQuoteService,
+				CashuWalletMintQuoteService,
 				CashuWalletMintService,
 				CashuWalletMintCacheService,
 				CashuWalletMintTransportService,
@@ -332,7 +332,7 @@ describe('CashuWalletSwapService', () => {
 		it('previews a token with its fee and claimed state once its mint is in the wallet', async () => {
 			const mint_id = await funded();
 			const sent = await send(mint_id, 30, 'Lunch');
-			expect(await service.previewToken('user-2', sent.token!, false)).toMatchObject({
+			expect(await service.previewReceive('user-2', sent.token!, false)).toMatchObject({
 				amount: 30,
 				unit: 'sat',
 				memo: 'Lunch',
@@ -341,14 +341,14 @@ describe('CashuWalletSwapService', () => {
 				mint: {url: ORCHARD_URL, match: WalletMintMatch.URL},
 			});
 			await receive(sent.token!);
-			expect(await service.previewToken('user-2', sent.token!, false)).toMatchObject({claimed: true});
+			expect(await service.previewReceive('user-2', sent.token!, false)).toMatchObject({claimed: true});
 		});
 
 		it('adds the mint of a token from outside the wallet only when asked to', async () => {
 			const mint_id = (await mint_service.addMint('user-1', CEDAR)).id;
 			await fund(mint_id, 100, cedar());
 			const sent = await send(mint_id, 10);
-			expect(await service.previewToken('user-2', sent.token!, false)).toMatchObject({
+			expect(await service.previewReceive('user-2', sent.token!, false)).toMatchObject({
 				fee: null,
 				claimed: null,
 				mint: {url: CEDAR, match: null, mint_id: null},
@@ -373,7 +373,7 @@ describe('CashuWalletSwapService', () => {
 			const outsider = new Wallet(new Mint(CEDAR, {customRequest: fakeMintRequest(cedar())}), {unit: 'sat'});
 			await outsider.loadMint();
 			const quote = await outsider.createMintQuoteBolt11(20);
-			cedar().quotes.get(quote.quote)!.state = 'PAID';
+			cedar().mint_quotes.get(quote.quote)!.state = 'PAID';
 			const proofs = await outsider.mintProofsBolt11(20, quote.quote);
 			const token = getEncodedToken({mint: CEDAR, proofs, unit: 'sat'});
 

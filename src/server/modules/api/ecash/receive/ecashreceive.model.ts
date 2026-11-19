@@ -3,10 +3,10 @@ import {Field, Float, ID, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {OrchardEcashMintLookup} from '#server/modules/api/ecash/mint/ecashmint.model';
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
-import type {CashuWalletQuoteRecord, CashuWalletTokenPreview} from '#server/modules/cashu/wallet/cashuwallet.types';
+import type {CashuWalletMintQuoteRecord, CashuWalletReceiveTokenPreview} from '#server/modules/cashu/wallet/cashuwallet.types';
 
 @ObjectType({description: "An ecash token read before receiving it into the current user's wallet"})
-export class OrchardEcashTokenPreview {
+export class OrchardEcashReceiveTokenPreview {
 	@Field(() => Float, {description: "Total of the token's proofs in the smallest unit, before the fee"})
 	amount: number;
 
@@ -25,7 +25,7 @@ export class OrchardEcashTokenPreview {
 	@Field(() => OrchardEcashMintLookup, {description: 'The mint the token is from, and how it matches one in the wallet'})
 	mint: OrchardEcashMintLookup;
 
-	constructor(preview: CashuWalletTokenPreview) {
+	constructor(preview: CashuWalletReceiveTokenPreview) {
 		this.amount = preview.amount;
 		this.unit = preview.unit;
 		this.memo = preview.memo;
@@ -35,9 +35,11 @@ export class OrchardEcashTokenPreview {
 	}
 }
 
-@ObjectType({description: "A payment request the current user's wallet receives on: a bolt11 invoice, bolt12 offer or onchain address"})
-export class OrchardEcashQuote {
-	@Field(() => ID, {description: 'Quote identifier'})
+@ObjectType({
+	description: "A mint quote the current user's wallet receives on: a bolt11 invoice, bolt12 offer or onchain address",
+})
+export class OrchardEcashMintQuote {
+	@Field(() => ID, {description: 'Mint quote identifier'})
 	id: string;
 
 	@Field({description: 'Wallet mint identifier'})
@@ -82,7 +84,7 @@ export class OrchardEcashQuote {
 	@Field(() => UnixTimestamp, {description: 'When the quote last changed'})
 	updated_at: number;
 
-	constructor(quote: CashuWalletQuoteRecord) {
+	constructor(quote: CashuWalletMintQuoteRecord) {
 		this.id = quote.id;
 		this.mint_id = quote.mint_id;
 		this.method = quote.method;

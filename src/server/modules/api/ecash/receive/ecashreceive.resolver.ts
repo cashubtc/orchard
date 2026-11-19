@@ -8,15 +8,15 @@ import {PubSub} from 'graphql-subscriptions';
 import {UserRole} from '#server/modules/user/user.enums';
 import {normalizeMintUnit} from '#server/modules/cashu/cashu.helpers';
 import {OrchardEcashOperation} from '#server/modules/api/ecash/operation/ecashoperation.model';
-import {CASHU_WALLET_QUOTE_UPDATED} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
-import type {CashuWalletQuoteRecord} from '#server/modules/cashu/wallet/cashuwallet.types';
+import {CASHU_WALLET_MINT_QUOTE_UPDATED} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
+import type {CashuWalletMintQuoteRecord} from '#server/modules/cashu/wallet/cashuwallet.types';
 /* Local Dependencies */
 import {EcashReceiveService} from './ecashreceive.service.js';
-import {OrchardEcashQuote, OrchardEcashTokenPreview} from './ecashreceive.model.js';
-import type {EcashQuoteWatchPayload} from './ecashreceive.types.js';
+import {OrchardEcashMintQuote, OrchardEcashReceiveTokenPreview} from './ecashreceive.model.js';
+import type {EcashMintQuoteWatchPayload} from './ecashreceive.types.js';
 
 const pubSub = new PubSub();
-const WATCH_TRIGGER = 'ecash_quote_watch';
+const WATCH_TRIGGER = 'ecash_mint_quote_watch';
 
 @Resolver()
 export class EcashReceiveResolver {
@@ -24,32 +24,32 @@ export class EcashReceiveResolver {
 
 	constructor(private ecashReceiveService: EcashReceiveService) {}
 
-	/** Pass each wallet quote change on to the clients watching that quote */
-	@OnEvent(CASHU_WALLET_QUOTE_UPDATED)
-	onQuoteUpdated(quote: CashuWalletQuoteRecord): void {
-		const payload: EcashQuoteWatchPayload = {ecash_quote_watch: new OrchardEcashQuote(quote)};
+	/** Pass each wallet mint quote change on to the clients watching that quote */
+	@OnEvent(CASHU_WALLET_MINT_QUOTE_UPDATED)
+	onMintQuoteUpdated(quote: CashuWalletMintQuoteRecord): void {
+		const payload: EcashMintQuoteWatchPayload = {ecash_mint_quote_watch: new OrchardEcashMintQuote(quote)};
 		void pubSub.publish(`${WATCH_TRIGGER}:${quote.id}`, payload);
 	}
 
-	@Subscription(() => OrchardEcashQuote, {
+	@Subscription(() => OrchardEcashMintQuote, {
 		description:
-			"Watch one of the current user's ecash wallet quotes: the quote now, then each payment and change until it takes no more",
+			"Watch one of the current user's ecash wallet mint quotes: the quote now, then each payment and change until it takes no more",
 	})
-	async ecash_quote_watch(
+	async ecash_mint_quote_watch(
 		@Context() context: any,
-		@Args('id', {type: () => ID, description: 'Quote identifier'}) id: string,
-	): Promise<AsyncIterableIterator<EcashQuoteWatchPayload>> {
-		const tag = 'SUBSCRIPTION { ecash_quote_watch }';
+		@Args('id', {type: () => ID, description: 'Mint quote identifier'}) id: string,
+	): Promise<AsyncIterableIterator<EcashMintQuoteWatchPayload>> {
+		const tag = 'SUBSCRIPTION { ecash_mint_quote_watch }';
 		this.logger.debug(tag);
-		const updates = pubSub.asyncIterableIterator<EcashQuoteWatchPayload>(`${WATCH_TRIGGER}:${id}`);
-		return await this.ecashReceiveService.watchEcashQuote(tag, context.req.user.id, id, updates);
+		const updates = pubSub.asyncIterableIterator<EcashMintQuoteWatchPayload>(`${WATCH_TRIGGER}:${id}`);
+		return await this.ecashReceiveService.watchMintQuote(tag, context.req.user.id, id, updates);
 	}
 
-	@Query(() => OrchardEcashTokenPreview, {description: "Read an ecash token before receiving it into the current user's wallet"})
+	@Query(() => OrchardEcashReceiveTokenPreview, {description: "Read an ecash token before receiving it into the current user's wallet"})
 	async ecash_receive_token_preview(
 		@Context() context: any,
 		@Args('token', {description: 'Encoded ecash token'}) token: string,
-	): Promise<OrchardEcashTokenPreview> {
+	): Promise<OrchardEcashReceiveTokenPreview> {
 		const tag = 'GET { ecash_receive_token_preview }';
 		this.logger.debug(tag);
 		const allow_local = context.req.user.role === UserRole.ADMIN;
@@ -69,11 +69,11 @@ export class EcashReceiveResolver {
 		return await this.ecashReceiveService.receiveToken(tag, context.req.user.id, token, add_mint, allow_local);
 	}
 
-	@Mutation(() => OrchardEcashQuote, {
+	@Mutation(() => OrchardEcashMintQuote, {
 		description:
-			"Get a payment request for the current user's wallet at one of its mints: a new bolt11 invoice, or a bolt12 offer or onchain address, reusing an unpaid one with the same terms",
+			"Get a mint quote for the current user's wallet at one of its mints: a new bolt11 invoice, or a bolt12 offer or onchain address, reusing an unpaid one with the same terms",
 	})
-	async ecash_quote_new(
+	async ecash_mint_quote_new(
 		@Context() context: any,
 		@Args('mint_id', {type: () => ID, description: 'Wallet mint to receive at'}) mint_id: string,
 		@Args('method', {description: 'Payment method: bolt11, bolt12 or onchain'}) method: string,
@@ -86,10 +86,10 @@ export class EcashReceiveResolver {
 		amount: number | null,
 		@Args('description', {type: () => String, nullable: true, description: 'Description payers see, when the mint takes one'})
 		description: string | null,
-	): Promise<OrchardEcashQuote> {
-		const tag = 'MUTATION { ecash_quote_new }';
+	): Promise<OrchardEcashMintQuote> {
+		const tag = 'MUTATION { ecash_mint_quote_new }';
 		this.logger.debug(tag);
-		return await this.ecashReceiveService.newQuote(tag, {
+		return await this.ecashReceiveService.newMintQuote(tag, {
 			user_id: context.req.user.id,
 			mint_id,
 			method,
@@ -99,18 +99,18 @@ export class EcashReceiveResolver {
 		});
 	}
 
-	@Mutation(() => OrchardEcashQuote, {
+	@Mutation(() => OrchardEcashMintQuote, {
 		description:
 			"Get the bolt12 offer or onchain address the current user's wallet receives on at a mint, creating one when there's none",
 	})
-	async ecash_quote_open(
+	async ecash_mint_quote_open(
 		@Context() context: any,
 		@Args('mint_id', {type: () => ID, description: 'Wallet mint to receive at'}) mint_id: string,
 		@Args('method', {description: 'Payment method: bolt12 or onchain'}) method: string,
 		@Args('unit', {description: 'Unit to receive'}) unit: string,
-	): Promise<OrchardEcashQuote> {
-		const tag = 'MUTATION { ecash_quote_open }';
+	): Promise<OrchardEcashMintQuote> {
+		const tag = 'MUTATION { ecash_mint_quote_open }';
 		this.logger.debug(tag);
-		return await this.ecashReceiveService.openQuote(tag, context.req.user.id, mint_id, method, normalizeMintUnit(unit));
+		return await this.ecashReceiveService.openMintQuote(tag, context.req.user.id, mint_id, method, normalizeMintUnit(unit));
 	}
 }

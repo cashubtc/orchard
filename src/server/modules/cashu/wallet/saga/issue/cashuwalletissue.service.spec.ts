@@ -25,8 +25,8 @@ import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwal
 import {CashuWalletMint} from '#server/modules/cashu/wallet/mint/cashuwalletmint.entity';
 import {CashuWalletMintInfo} from '#server/modules/cashu/wallet/mint/cashuwalletmintinfo.entity';
 import {CashuWalletMintKeyset} from '#server/modules/cashu/wallet/mint/cashuwalletmintkeyset.entity';
-import {CashuWalletQuote} from '#server/modules/cashu/wallet/quote/cashuwalletquote.entity';
-import {CashuWalletQuoteService} from '#server/modules/cashu/wallet/quote/cashuwalletquote.service';
+import {CashuWalletMintQuote} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.entity';
+import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.service';
 import {CashuWalletMintCacheService} from '#server/modules/cashu/wallet/mint/cashuwalletmintcache.service';
 import {CashuWalletMintTransportService} from '#server/modules/cashu/wallet/mint/cashuwalletminttransport.service';
 import {WalletOperationState, WalletOperationType, WalletProofState} from '#server/modules/cashu/wallet/cashuwallet.enums';
@@ -53,7 +53,7 @@ describe('CashuWalletIssueService', () => {
 	};
 	const mint_rpc = {
 		updateNut04Quote: jest.fn(async ({quote_id, state}: {quote_id: string; state: string}) => {
-			mint.quotes.get(quote_id)!.state = state;
+			mint.mint_quotes.get(quote_id)!.state = state;
 			return {quote_id, state};
 		}),
 	};
@@ -98,7 +98,7 @@ describe('CashuWalletIssueService', () => {
 		CashuWalletMint,
 		CashuWalletMintInfo,
 		CashuWalletMintKeyset,
-		CashuWalletQuote,
+		CashuWalletMintQuote,
 	];
 
 	/** A fresh service graph over the shared database, like Orchard after a restart */
@@ -110,7 +110,7 @@ describe('CashuWalletIssueService', () => {
 				CashuWalletJournalService,
 				CashuWalletProofService,
 				CashuWalletRecoveryService,
-				CashuWalletQuoteService,
+				CashuWalletMintQuoteService,
 				CashuWalletMintService,
 				CashuWalletMintCacheService,
 				CashuWalletMintTransportService,
@@ -232,7 +232,7 @@ describe('CashuWalletIssueService', () => {
 	});
 
 	it('mints a paid quote once the mint accepts the request again', async () => {
-		mint.quotes.set('quote-9', {state: 'PAID', amount: 100, expiry: null});
+		mint.mint_quotes.set('quote-9', {state: 'PAID', amount: 100, expiry: null});
 		mint.failures.push({code: 20003, detail: 'Minting is disabled'});
 		const operation = await service.createMintOperation(request('quote-9'));
 		expect((await service.executeMintOperation(operation.id)).state).toBe(WalletOperationState.PENDING);
@@ -307,7 +307,10 @@ describe('CashuWalletIssueService', () => {
 			quote_counter: 0,
 			memo: 'Giveaway',
 		});
-		expect(mint.quotes.get(result.quote_id!)).toMatchObject({pubkey: expect.stringMatching(/^0[23][0-9a-f]{64}$/), state: 'ISSUED'});
+		expect(mint.mint_quotes.get(result.quote_id!)).toMatchObject({
+			pubkey: expect.stringMatching(/^0[23][0-9a-f]{64}$/),
+			state: 'ISSUED',
+		});
 		expect(mint_rpc.updateNut04Quote).toHaveBeenCalledWith({quote_id: result.quote_id, state: 'PAID'});
 		expect(await total()).toBe(100);
 	});
@@ -325,7 +328,7 @@ describe('CashuWalletIssueService', () => {
 
 	it('keeps the issue pending when the mint RPC response is lost, finishing it once reconciliation finds the quote paid', async () => {
 		mint_rpc.updateNut04Quote.mockImplementationOnce(async ({quote_id}: {quote_id: string}) => {
-			mint.quotes.get(quote_id)!.state = 'PAID';
+			mint.mint_quotes.get(quote_id)!.state = 'PAID';
 			throw {code: 40005, details: 'Connection dropped'};
 		});
 		await expect(service.issueEcash({user_id: 'user-1', unit: 'sat', amount: 100, memo: null})).rejects.toMatchObject({
@@ -341,7 +344,7 @@ describe('CashuWalletIssueService', () => {
 
 	describe('reconcileOperations', () => {
 		const pendingOn = (state: string) => {
-			mint.quotes.set('quote-9', {state, amount: 100, expiry: null});
+			mint.mint_quotes.set('quote-9', {state, amount: 100, expiry: null});
 			return service.createMintOperation(request('quote-9'));
 		};
 
@@ -357,7 +360,7 @@ describe('CashuWalletIssueService', () => {
 			await recovery.reconcileOperations();
 			expect(await reload(waiting.id)).toMatchObject({state: WalletOperationState.PENDING});
 
-			mint.quotes.get('quote-9')!.expiry = 1;
+			mint.mint_quotes.get('quote-9')!.expiry = 1;
 			await recovery.reconcileOperations();
 			expect(await reload(waiting.id)).toMatchObject({state: WalletOperationState.FAILED, error: 'Mint quote expired unpaid'});
 		});
@@ -388,7 +391,7 @@ describe('CashuWalletIssueService', () => {
 
 		it('fails a pending operation when the mint no longer knows its quote', async () => {
 			const operation = await pendingOn('UNPAID');
-			mint.quotes.delete('quote-9');
+			mint.mint_quotes.delete('quote-9');
 			await recovery.reconcileOperations();
 			expect(await reload(operation.id)).toMatchObject({state: WalletOperationState.FAILED, error: expect.stringContaining('20004')});
 		});
