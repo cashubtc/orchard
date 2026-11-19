@@ -6,6 +6,7 @@ import {ConfigService} from '@nestjs/config';
 import {EventEmitter2} from '@nestjs/event-emitter';
 /* Vendor Dependencies */
 import {DataSource} from 'typeorm';
+import {Wallet} from '@cashu/cashu-ts';
 /* Application Dependencies */
 import {createFakeMint, fakeMintFetch, type FakeMint} from '#server/test/cashu-fake-mint';
 import {FetchService} from '#server/modules/fetch/fetch.service';
@@ -14,6 +15,8 @@ import {UserService} from '#server/modules/user/user.service';
 /* Native Dependencies */
 import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
 import {CashuWalletJournalService} from '#server/modules/cashu/wallet/saga/cashuwalletjournal.service';
+import {CashuWalletRecoveryService} from '#server/modules/cashu/wallet/saga/cashuwalletrecovery.service';
+import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
 import {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.entity';
 import {CashuWalletCounter} from '#server/modules/cashu/wallet/saga/cashuwalletcounter.entity';
 import {CashuWalletProof} from '#server/modules/cashu/wallet/proof/cashuwalletproof.entity';
@@ -24,34 +27,45 @@ import {CashuWalletMint} from '#server/modules/cashu/wallet/mint/cashuwalletmint
 import {CashuWalletMintInfo} from '#server/modules/cashu/wallet/mint/cashuwalletmintinfo.entity';
 import {CashuWalletMintKeyset} from '#server/modules/cashu/wallet/mint/cashuwalletmintkeyset.entity';
 import {CashuWalletMintQuote} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.entity';
+import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.service';
 import {CashuWalletMintCacheService} from '#server/modules/cashu/wallet/mint/cashuwalletmintcache.service';
 import {CashuWalletMintTransportService} from '#server/modules/cashu/wallet/mint/cashuwalletminttransport.service';
-import {WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
+import {CashuWalletUnsentError} from '#server/modules/cashu/wallet/classes/cashu-wallet-unsent-error.class';
+import {WalletOperationState, WalletOperationType, WalletProofState} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
-import type {CashuWalletMeltQuoteRequest} from '#server/modules/cashu/wallet/cashuwallet.types';
+import type {CashuWalletMeltQuoteRequest, CashuWalletMeltRequest} from '#server/modules/cashu/wallet/cashuwallet.types';
 /* Local Dependencies */
 import {CashuWalletMeltService} from './cashuwalletmelt.service.js';
 
 const ORCHARD_API = 'http://localhost:3338';
 const CEDAR = 'https://203.0.113.10';
 const EXPIRY = 2_000_000_000;
+const PREIMAGE = '00'.repeat(32);
 
 describe('CashuWalletMeltService', () => {
 	let service: CashuWalletMeltService;
 	let issue: CashuWalletIssueService;
+	let recovery: CashuWalletRecoveryService;
 	let mint_service: CashuWalletMintService;
 	let data_source: DataSource;
 	let mints: Map<string, FakeMint>;
 
-	const fetch_service = {fetchWithProxy: jest.fn(fakeMintFetch((origin) => mints.get(origin)!))};
+	const fetchMints = fakeMintFetch((origin) => mints.get(origin)!);
+	const fetch_service = {fetchWithProxy: jest.fn(fetchMints)};
 
 	const orchard = () => mints.get(ORCHARD_API)!;
 	const cedar = () => mints.get(CEDAR)!;
+	const callsTo = (path: string) => fetch_service.fetchWithProxy.mock.calls.filter(([url]) => url.endsWith(path));
 	/** The bodies of the melt quote requests sent for a method */
-	const meltQuotesSent = (method: string) =>
-		fetch_service.fetchWithProxy.mock.calls
-			.filter(([url]) => url.endsWith(`/v1/melt/quote/${method}`))
-			.map(([, options]) => JSON.parse(options.body!));
+	const meltQuotesSent = (method: string) => callsTo(`/v1/melt/quote/${method}`).map(([, options]) => JSON.parse(options.body!));
+	/** The bodies of the melts sent for a method */
+	const meltsSent = (method: string) => callsTo(`/v1/melt/${method}`).map(([, options]) => JSON.parse(options.body!));
+	const balance = async () =>
+		(await data_source.getRepository(CashuWalletProof).findBy({user_id: 'user-1', state: WalletProofState.READY})).reduce(
+			(sum, proof) => sum + proof.amount,
+			0,
+		);
+	const reload = (id: string) => data_source.getRepository(CashuWalletOperation).findOneByOrFail({id});
 
 	/** Mint ecash into user-1's wallet through a quote already paid */
 	const fund = async (mint_id: string, amount: number, fake = orchard()) => {
@@ -88,6 +102,9 @@ describe('CashuWalletMeltService', () => {
 			max: false,
 			...changes,
 		});
+	const pay = (mint_id: string, quote_id: string, changes: Partial<CashuWalletMeltRequest> = {}) =>
+		service.payQuote({user_id: 'user-1', mint_id, method: 'bolt11', unit: 'sat', quote_id, fee_index: null, ...changes});
+	const quoteAddress = (mint_id: string) => quote(mint_id, {method: 'onchain', request: 'bcrt1qfake', amount: 50});
 
 	const entities = [
 		CashuWalletOperation,
@@ -101,6 +118,7 @@ describe('CashuWalletMeltService', () => {
 
 	beforeEach(async () => {
 		jest.clearAllMocks();
+		fetch_service.fetchWithProxy.mockImplementation(fetchMints);
 		mints = new Map([
 			[ORCHARD_API, createFakeMint()],
 			[CEDAR, createFakeMint({pubkey: '02cedar', input_fee_ppk: 1000})],
@@ -111,6 +129,9 @@ describe('CashuWalletMeltService', () => {
 			providers: [
 				CashuWalletMeltService,
 				CashuWalletIssueService,
+				CashuWalletSwapService,
+				CashuWalletRecoveryService,
+				CashuWalletMintQuoteService,
 				CashuWalletJournalService,
 				CashuWalletProofService,
 				CashuWalletMintService,
@@ -127,6 +148,7 @@ describe('CashuWalletMeltService', () => {
 		}).compile();
 		service = module.get(CashuWalletMeltService);
 		issue = module.get(CashuWalletIssueService);
+		recovery = module.get(CashuWalletRecoveryService);
 		mint_service = module.get(CashuWalletMintService);
 	});
 
@@ -231,6 +253,188 @@ describe('CashuWalletMeltService', () => {
 				walletError('Not enough here to cover the fees'),
 			);
 			expect(meltQuotesSent('bolt12')).toHaveLength(0);
+		});
+	});
+
+	describe('pay', () => {
+		it('pays an invoice, keeping its change and preimage, at the fee the mint charged', async () => {
+			const mint_id = await funded();
+			const {quote_id} = await quote(mint_id);
+			expect(await pay(mint_id, quote_id)).toMatchObject({
+				type: WalletOperationType.MELT,
+				state: WalletOperationState.FINALIZED,
+				amount: 10,
+				fee_reserve: 2,
+				fee: 1,
+				request: 'lnbc100n1fake',
+				payment_proof: PREIMAGE,
+				error: null,
+			});
+			expect(meltsSent('bolt11')).toEqual([expect.objectContaining({quote: quote_id, prefer_async: true})]);
+			expect(await balance()).toBe(89);
+		});
+
+		it('pays an address at the speed chosen, sending it with the melt', async () => {
+			const mint_id = await funded();
+			const {quote_id} = await quoteAddress(mint_id);
+			expect(await pay(mint_id, quote_id, {method: 'onchain', fee_index: 1})).toMatchObject({
+				state: WalletOperationState.FINALIZED,
+				fee_index: 1,
+				fee_reserve: 4,
+				fee: 2,
+				payment_proof: `${'ab'.repeat(32)}:0`,
+			});
+			expect(meltsSent('onchain')).toEqual([expect.objectContaining({fee_index: 1})]);
+			expect(await balance()).toBe(48);
+		});
+
+		it('counts the input fee in what a fee-charging keyset pays', async () => {
+			const mint_id = (await mint_service.addMint('user-1', CEDAR)).id;
+			await fund(mint_id, 100, cedar());
+			const {quote_id} = await quote(mint_id, {request: 'lnbc950n1fake'});
+			expect(await pay(mint_id, quote_id)).toMatchObject({state: WalletOperationState.FINALIZED, fee: 4});
+			expect(await balance()).toBe(1);
+		});
+
+		it.each<[string, (mint_id: string) => Promise<unknown>, string]>([
+			[
+				'onchain without a speed',
+				async (mint_id) => pay(mint_id, (await quoteAddress(mint_id)).quote_id, {method: 'onchain'}),
+				'Pick a speed for onchain',
+			],
+			[
+				'a speed for Lightning',
+				async (mint_id) => pay(mint_id, (await quote(mint_id)).quote_id, {fee_index: 0}),
+				'No speed 0 for this melt quote',
+			],
+			[
+				'an expired quote',
+				async (mint_id) => {
+					orchard().melt_quote_defaults.expiry = 1;
+					return pay(mint_id, (await quote(mint_id)).quote_id);
+				},
+				'Melt quote expired; get a new one',
+			],
+			[
+				'more than the balance holds',
+				async (mint_id) => pay(mint_id, (await quote(mint_id, {request: 'lnbc1000n1fake'})).quote_id),
+				'Not enough here to pay 102 sat',
+			],
+		])('refuses %s before anything is saved', async (_label, attempt, details) => {
+			const mint_id = await funded();
+			await expect(attempt(mint_id)).rejects.toEqual(walletError(details));
+			expect(await data_source.getRepository(CashuWalletOperation).countBy({type: WalletOperationType.MELT})).toBe(0);
+			expect([...meltsSent('bolt11'), ...meltsSent('onchain')]).toHaveLength(0);
+			expect(await balance()).toBe(100);
+		});
+
+		it('refuses a quote already paid, and a request while a payment of it is still open', async () => {
+			const mint_id = await funded();
+			const {quote_id} = await quote(mint_id);
+			await pay(mint_id, quote_id);
+			await expect(pay(mint_id, quote_id)).rejects.toEqual(walletError('Melt quote already paid'));
+
+			orchard().melt_defaults.pending = true;
+			const first = await quote(mint_id, {request: 'lnbc200n1fake'});
+			expect(await pay(mint_id, first.quote_id)).toMatchObject({state: WalletOperationState.PENDING});
+			const again = await quote(mint_id, {request: 'lnbc200n1fake'});
+			await expect(pay(mint_id, again.quote_id)).rejects.toEqual(walletError('Already paying this request'));
+			expect(meltsSent('bolt11')).toHaveLength(2);
+		});
+
+		it('waits on a melt the mint pays later, through outages, finishing it with its change once paid and never sending it again', async () => {
+			orchard().melt_defaults.pending = true;
+			const mint_id = await funded();
+			const {quote_id} = await quote(mint_id);
+			const paying = await pay(mint_id, quote_id);
+			expect(paying).toMatchObject({state: WalletOperationState.PENDING, payment_proof: null, error: null});
+
+			orchard().outages.set(`/v1/melt/quote/bolt11/${quote_id}`, 503);
+			await recovery.reconcileOperations();
+			expect(await reload(paying.id)).toMatchObject({state: WalletOperationState.PENDING, error: 'Unavailable (HTTP 503)'});
+			orchard().outages.clear();
+			orchard().settleMelt(quote_id, 'PAID');
+			await recovery.reconcileOperations();
+			expect(await reload(paying.id)).toMatchObject({
+				state: WalletOperationState.FINALIZED,
+				fee: 1,
+				payment_proof: PREIMAGE,
+				error: null,
+			});
+			expect(meltsSent('bolt11')).toHaveLength(1);
+			expect(await balance()).toBe(89);
+		});
+
+		it('gives the inputs back once the mint reports a pending melt unpaid, as when an onchain send fails to broadcast', async () => {
+			orchard().melt_defaults.pending = true;
+			const mint_id = await funded();
+			const {quote_id} = await quoteAddress(mint_id);
+			const paying = await pay(mint_id, quote_id, {method: 'onchain', fee_index: 2});
+			orchard().settleMelt(quote_id, 'UNPAID');
+			await recovery.reconcileOperations();
+			expect(await reload(paying.id)).toMatchObject({state: WalletOperationState.FAILED, error: 'Payment failed'});
+			expect(await balance()).toBe(100);
+		});
+
+		it.each([
+			['with the change its quote check carries', true, 0],
+			['restoring change its quote check leaves out from the seed', false, 1],
+		])('never sends a melt whose response was lost again, finishing it from the quote %s', async (_label, quote_change, restores) => {
+			orchard().melt_defaults.quote_change = quote_change;
+			const mint_id = await funded();
+			const {quote_id} = await quote(mint_id);
+			orchard().lost.add('/v1/melt/bolt11');
+			expect(await pay(mint_id, quote_id)).toMatchObject({state: WalletOperationState.FINALIZED, fee: 1, payment_proof: PREIMAGE});
+			expect(meltsSent('bolt11')).toHaveLength(1);
+			expect(callsTo('/v1/restore')).toHaveLength(restores);
+			expect(await balance()).toBe(89);
+		});
+
+		it('leaves a melt still on its way to the mint alone while recovery runs', async () => {
+			const mint_id = await funded();
+			const {quote_id} = await quote(mint_id);
+			let sent!: () => void;
+			let arrive!: () => void;
+			const melt_sent = new Promise<void>((resolve) => (sent = resolve));
+			const on_its_way = new Promise<void>((resolve) => (arrive = resolve));
+			fetch_service.fetchWithProxy.mockImplementation(async (url, options) => {
+				if (url.endsWith('/v1/melt/bolt11')) {
+					sent();
+					await on_its_way;
+				}
+				return fetchMints(url, options);
+			});
+			const paying = pay(mint_id, quote_id);
+			await melt_sent;
+			await recovery.reconcileOperations();
+			expect(await data_source.getRepository(CashuWalletOperation).findOneByOrFail({type: WalletOperationType.MELT})).toMatchObject({
+				state: WalletOperationState.EXECUTING,
+				error: null,
+			});
+			arrive();
+			expect(await paying).toMatchObject({state: WalletOperationState.FINALIZED});
+			expect(await balance()).toBe(89);
+		});
+
+		it('gives the inputs back when the mint refuses the melt outright, quoting its reason', async () => {
+			const mint_id = await funded();
+			const {quote_id} = await quote(mint_id);
+			orchard().failures.push({code: 11014, detail: 'Max inputs exceeded'});
+			expect(await pay(mint_id, quote_id)).toMatchObject({
+				state: WalletOperationState.FAILED,
+				error: 'Mint error 11014: Max inputs exceeded',
+			});
+			expect(await balance()).toBe(100);
+		});
+
+		it('fails a first attempt Orchard holds back at once, with its balance back and no quote check', async () => {
+			const mint_id = await funded();
+			const {quote_id} = await quote(mint_id);
+			const held_back = 'too many requests; try again shortly';
+			jest.spyOn(Wallet.prototype, 'completeMelt').mockRejectedValueOnce(new CashuWalletUnsentError(held_back));
+			expect(await pay(mint_id, quote_id)).toMatchObject({state: WalletOperationState.FAILED, error: held_back});
+			expect(callsTo(`/v1/melt/quote/bolt11/${quote_id}`)).toHaveLength(1);
+			expect(await balance()).toBe(100);
 		});
 	});
 

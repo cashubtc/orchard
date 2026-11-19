@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {expect} from '@jest/globals';
 /* Vendor Dependencies */
-import {Amount, type MintInfo, type Wallet} from '@cashu/cashu-ts';
+import {Amount, type MeltQuoteBolt11Response, type MeltQuoteOnchainResponse, type MintInfo, type Wallet} from '@cashu/cashu-ts';
 /* Local Dependencies */
 import {
 	CashuWalletBolt11MeltQuoteMethod,
@@ -14,22 +14,32 @@ describe('CashuWalletMeltQuoteMethod', () => {
 	const bolt11 = new CashuWalletBolt11MeltQuoteMethod();
 	const bolt12 = new CashuWalletBolt12MeltQuoteMethod();
 	const onchain = new CashuWalletOnchainMeltQuoteMethod();
-	const lightning = {quote: 'melt-1', amount: Amount.from(25), expiry: 0, fee_reserve: Amount.from(2)};
+	const lightning = {
+		quote: 'melt-1',
+		amount: Amount.from(25),
+		expiry: 0,
+		fee_reserve: Amount.from(2),
+		payment_preimage: 'ff',
+	} as MeltQuoteBolt11Response;
+	const address = {
+		quote: 'melt-2',
+		amount: Amount.from(50),
+		expiry: 1_000,
+		fee_options: [
+			{fee_index: 0, fee_reserve: Amount.from(6), estimated_blocks: 1},
+			{fee_index: 1, fee_reserve: Amount.from(2), estimated_blocks: 144},
+			{fee_index: 2, fee_reserve: Amount.from(1), estimated_blocks: 1.5},
+		],
+		outpoint: 'txid:0',
+	} as unknown as MeltQuoteOnchainResponse;
 	const walletIn = (unit: string) =>
 		({
 			unit,
 			createMeltQuoteBolt11: jest.fn(async () => lightning),
 			createMeltQuoteBolt12: jest.fn(async () => lightning),
-			createMeltQuoteOnchain: jest.fn(async () => ({
-				quote: 'melt-2',
-				amount: Amount.from(50),
-				expiry: 1_000,
-				fee_options: [
-					{fee_index: 0, fee_reserve: Amount.from(6), estimated_blocks: 1},
-					{fee_index: 1, fee_reserve: Amount.from(2), estimated_blocks: 144},
-					{fee_index: 2, fee_reserve: Amount.from(1), estimated_blocks: 1.5},
-				],
-			})),
+			createMeltQuoteOnchain: jest.fn(async () => address),
+			checkMeltQuoteBolt11: jest.fn(async () => lightning),
+			checkMeltQuote: jest.fn(async () => address),
 		}) as unknown as Wallet;
 
 	it('finds the rules for a method the wallet pays by, and none for an unknown or inherited name', () => {
@@ -80,6 +90,28 @@ describe('CashuWalletMeltQuoteMethod', () => {
 			],
 		});
 		expect(wallet.createMeltQuoteOnchain).toHaveBeenCalledWith('bcrt1qfake', 50);
+	});
+
+	it("checks a quote again by id, a bolt11 invoice through cashu-ts's own call that checks its amount", async () => {
+		const wallet = walletIn('sat');
+		expect(await bolt11.check(wallet, 'melt-1')).toBe(lightning);
+		expect(await onchain.check(wallet, 'melt-2')).toBe(address);
+		expect(wallet.checkMeltQuoteBolt11).toHaveBeenCalledWith('melt-1');
+		expect(wallet.checkMeltQuote).toHaveBeenCalledWith('onchain', 'melt-2');
+	});
+
+	it('picks the reserve for the way chosen to pay: the one Lightning has, or the onchain speed', () => {
+		expect(bolt11.reserve(lightning, null)).toBe(2);
+		expect(onchain.reserve(address, 1)).toBe(2);
+	});
+
+	it('proves payment with the preimage, or the outpoint for onchain', () => {
+		expect([bolt11.paymentProof(lightning), onchain.paymentProof(address)]).toEqual(['ff', 'txid:0']);
+	});
+
+	it('asks the mint not to hold the melt open on the payment, sending the onchain speed with it', () => {
+		expect(bolt11.meltOptions(null)).toEqual({preferAsync: true});
+		expect(onchain.meltOptions(2)).toEqual({preferAsync: true, extraPayload: {fee_index: 2}});
 	});
 
 	it("caps one payment at the method's NUT-05 max_amount", () => {

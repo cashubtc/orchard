@@ -7,6 +7,7 @@ import {In} from 'typeorm';
 /* Native Dependencies */
 import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
 import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
+import {CashuWalletMeltService} from '#server/modules/cashu/wallet/saga/melt/cashuwalletmelt.service';
 import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 /* Local Dependencies */
@@ -23,6 +24,7 @@ describe('CashuWalletRecoveryService', () => {
 	const operation_repository = {find: jest.fn()};
 	const issue_service = {resume: jest.fn()};
 	const swap_service = {resume: jest.fn(async (operation) => operation), checkClaims: jest.fn(async (operations) => operations)};
+	const melt_service = {resume: jest.fn(async (operation) => operation)};
 	const mint_quote_service = {checkQuotes: jest.fn(async (_scope: object) => undefined)};
 
 	beforeEach(async () => {
@@ -35,6 +37,7 @@ describe('CashuWalletRecoveryService', () => {
 				{provide: getRepositoryToken(CashuWalletOperation), useValue: operation_repository},
 				{provide: CashuWalletIssueService, useValue: issue_service},
 				{provide: CashuWalletSwapService, useValue: swap_service},
+				{provide: CashuWalletMeltService, useValue: melt_service},
 				{provide: CashuWalletMintQuoteService, useValue: mint_quote_service},
 			],
 		}).compile();
@@ -67,6 +70,16 @@ describe('CashuWalletRecoveryService', () => {
 		expect(swap_service.checkClaims).toHaveBeenCalledTimes(1);
 		expect(swap_service.checkClaims.mock.calls[0][0].map((operation: {id: string}) => operation.id)).toEqual(['op-3', 'op-6']);
 		expect(issue_service.resume).not.toHaveBeenCalled();
+	});
+
+	it('resumes open melts through the melt saga, whether pending at the mint or interrupted', async () => {
+		operation_repository.find.mockResolvedValue([
+			{id: 'op-7', type: WalletOperationType.MELT, state: WalletOperationState.PENDING},
+			{id: 'op-8', type: WalletOperationType.MELT, state: WalletOperationState.EXECUTING},
+		]);
+		await service.reconcileOperations();
+		expect(melt_service.resume.mock.calls.map(([operation]) => operation.id)).toEqual(['op-7', 'op-8']);
+		expect(swap_service.checkClaims).toHaveBeenCalledWith([]);
 	});
 
 	it('keeps going when one operation cannot be resumed', async () => {

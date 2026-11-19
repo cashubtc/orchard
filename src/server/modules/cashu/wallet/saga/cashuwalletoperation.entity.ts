@@ -44,7 +44,7 @@ export class CashuWalletOperation {
 	@Column({type: 'integer'})
 	amount: number;
 
-	// Mint quote id, for operations backed by a quote
+	// Mint or melt quote id, for operations backed by a quote
 	@Column({type: 'text', nullable: true})
 	quote_id: string | null;
 
@@ -84,7 +84,7 @@ export class CashuWalletOperation {
 	@Column({type: 'text', nullable: true})
 	counters: string | null;
 
-	// Input proofs spent by this operation (serialized), for replay
+	// Input proofs spent by this operation (serialized), for replay or a state check
 	@Column({type: 'text', nullable: true})
 	inputs: string | null;
 

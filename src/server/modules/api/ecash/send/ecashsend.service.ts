@@ -10,6 +10,7 @@ import {ErrorService} from '#server/modules/error/error.service';
 import {OrchardEcashOperation} from '#server/modules/api/ecash/operation/ecashoperation.model';
 import type {
 	CashuWalletMeltQuoteRequest,
+	CashuWalletMeltRequest,
 	CashuWalletSendRequest,
 	CashuWalletSendTokenPreviewRequest,
 } from '#server/modules/cashu/wallet/cashuwallet.types';
@@ -39,6 +40,15 @@ export class EcashSendService {
 	async newMeltQuote(tag: string, request: CashuWalletMeltQuoteRequest): Promise<OrchardEcashMeltQuote> {
 		try {
 			return new OrchardEcashMeltQuote(await this.cashuWalletMeltService.newQuote(request));
+		} catch (error) {
+			throw this.handleError(tag, error);
+		}
+	}
+
+	/** Pay a melt quote from a user's wallet */
+	async payMeltQuote(tag: string, request: CashuWalletMeltRequest): Promise<OrchardEcashOperation> {
+		try {
+			return new OrchardEcashOperation(await this.cashuWalletMeltService.payQuote(request));
 		} catch (error) {
 			throw this.handleError(tag, error);
 		}

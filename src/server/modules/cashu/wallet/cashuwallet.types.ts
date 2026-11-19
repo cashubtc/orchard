@@ -1,5 +1,5 @@
 /* Vendor Dependencies */
-import type {MintInfo, MintQuoteBaseResponse, MintQuoteState} from '@cashu/cashu-ts';
+import type {MeltQuoteBaseResponse, MintInfo, MintQuoteBaseResponse, MintQuoteState} from '@cashu/cashu-ts';
 /* Local Dependencies */
 import type {CashuWalletMint} from './mint/cashuwalletmint.entity.js';
 import type {CashuWalletSeed} from './seed/cashuwalletseed.entity.js';
@@ -144,6 +144,17 @@ export type CashuWalletMeltQuoteFee = Pick<CashuWalletMeltQuoteReserve, 'fee_ind
 export type CashuWalletMeltQuoteRecord = Omit<CashuWalletMeltQuote, 'reserves'> & {
 	balance: number;
 	fees: CashuWalletMeltQuoteFee[];
+};
+
+/** A melt quote as cashu-ts returns it for any method, with the request it pays */
+export type CashuWalletMeltQuoteResponse = MeltQuoteBaseResponse & {
+	request: string;
+};
+
+/** A request to pay a melt quote from a wallet mint; fee_index picks an onchain speed, none for Lightning */
+export type CashuWalletMeltRequest = Pick<CashuWalletMeltQuoteRequest, 'user_id' | 'mint_id' | 'method' | 'unit'> & {
+	quote_id: string;
+	fee_index: number | null;
 };
 
 /** A token before it's received: amount is before the fee; fee and claimed are null until its mint is in the wallet */

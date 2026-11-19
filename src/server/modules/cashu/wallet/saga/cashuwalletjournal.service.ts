@@ -58,16 +58,29 @@ export class CashuWalletJournalService {
 		return transitioned;
 	}
 
-	/** Store the operation's new proofs (idempotent by secret), spend its inputs and mark it finalized */
-	public async finalize(operation: CashuWalletOperation, proofs: Proof[]): Promise<CashuWalletOperation> {
+	/** Store the operation's new proofs (idempotent by secret), spend its inputs and mark it finalized with any closing changes */
+	public async finalize(
+		operation: CashuWalletOperation,
+		proofs: Proof[],
+		changes: Partial<CashuWalletOperation> = {},
+	): Promise<CashuWalletOperation> {
 		await this.cashuWalletProofService.storeProofs(operation, proofs);
 		await this.cashuWalletProofService.spendInputs(operation.id);
-		return this.transition(operation, WalletOperationState.FINALIZED, {error: null});
+		return this.transition(operation, WalletOperationState.FINALIZED, {...changes, error: null});
 	}
 
-	/** Keep an operation executing with the failure recorded; reconciliation retries it */
+	/** Give the operation's inputs back and mark it failed, keeping as spent any the mint reports spent */
+	public async fail(operation: CashuWalletOperation, reason: string, spent: Pick<Proof, 'secret'>[] = []): Promise<CashuWalletOperation> {
+		await this.cashuWalletProofService.releaseInputs(
+			operation.id,
+			spent.map((proof) => proof.secret),
+		);
+		return this.transition(operation, WalletOperationState.FAILED, {error: reason});
+	}
+
+	/** Keep an operation as it is with the failure recorded; reconciliation retries it */
 	public wait(operation: CashuWalletOperation, error: unknown): Promise<CashuWalletOperation> {
-		return this.transition(operation, WalletOperationState.EXECUTING, {error: describeMintError(error)});
+		return this.transition(operation, operation.state, {error: describeMintError(error)});
 	}
 
 	/* *******************************************************

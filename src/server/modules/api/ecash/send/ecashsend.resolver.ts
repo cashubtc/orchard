@@ -1,6 +1,6 @@
 /* Core Dependencies */
 import {Logger} from '@nestjs/common';
-import {Resolver, Query, Mutation, Args, Context, Float, ID} from '@nestjs/graphql';
+import {Resolver, Query, Mutation, Args, Context, Float, ID, Int} from '@nestjs/graphql';
 /* Vendor Dependencies */
 import {Throttle, minutes} from '@nestjs/throttler';
 /* Application Dependencies */
@@ -70,6 +70,31 @@ export class EcashSendResolver {
 			request,
 			amount: amount ?? null,
 			max,
+		});
+	}
+
+	@Throttle({default: {limit: 20, ttl: minutes(1)}})
+	@Mutation(() => OrchardEcashOperation, {
+		description: "Pay a melt quote from the current user's wallet; the operation stays pending until the mint has paid",
+	})
+	async ecash_melt_quote_pay(
+		@Context() context: any,
+		@Args('mint_id', {type: () => ID, description: 'Wallet mint the melt quote is from'}) mint_id: string,
+		@Args('method', {description: 'Payment method: bolt11, bolt12 or onchain'}) method: string,
+		@Args('unit', {description: 'Unit to pay with'}) unit: string,
+		@Args('quote_id', {description: 'Melt quote to pay'}) quote_id: string,
+		@Args('fee_index', {type: () => Int, nullable: true, description: "Onchain speed from the melt quote's fees; none for Lightning"})
+		fee_index: number | null,
+	): Promise<OrchardEcashOperation> {
+		const tag = 'MUTATION { ecash_melt_quote_pay }';
+		this.logger.debug(tag);
+		return await this.ecashSendService.payMeltQuote(tag, {
+			user_id: context.req.user.id,
+			mint_id,
+			method,
+			unit: normalizeMintUnit(unit),
+			quote_id,
+			fee_index: fee_index ?? null,
 		});
 	}
 

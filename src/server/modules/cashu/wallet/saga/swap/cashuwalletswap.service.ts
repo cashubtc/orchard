@@ -306,31 +306,23 @@ export class CashuWalletSwapService {
 		const states = await this.cashuWalletJournalService.checkInputs(wallet, this.readPreview(operation).inputs);
 		if (!states || states.pending.length > 0) return this.cashuWalletJournalService.wait(operation, error);
 		if (states.unspent.length > 0) return this.refuse(operation, states.spent, error);
-		return this.spentElsewhere(operation, error);
+		return this.spentElsewhere(operation, states.spent, error);
 	}
 
 	/** The mint didn't take the swap: a reclaim waits to be tried again, a send gives its inputs back, a receive fails */
-	private async refuse(operation: CashuWalletOperation, spent: Proof[], error: unknown): Promise<CashuWalletOperation> {
-		const reason = {error: describeMintError(error)};
-		if (this.isReclaim(operation)) return this.cashuWalletJournalService.transition(operation, WalletOperationState.PENDING, reason);
-		if (operation.type === WalletOperationType.SEND) {
-			await this.cashuWalletProofService.releaseInputs(
-				operation.id,
-				spent.map((proof) => proof.secret),
-			);
+	private refuse(operation: CashuWalletOperation, spent: Proof[], error: unknown): Promise<CashuWalletOperation> {
+		const reason = describeMintError(error);
+		if (this.isReclaim(operation)) {
+			return this.cashuWalletJournalService.transition(operation, WalletOperationState.PENDING, {error: reason});
 		}
-		return this.cashuWalletJournalService.transition(operation, WalletOperationState.FAILED, reason);
+		return this.cashuWalletJournalService.fail(operation, reason, spent);
 	}
 
 	/** Every input was spent by something else: a reclaimed token was claimed first, anything else fails with the mint's reason */
-	private async spentElsewhere(operation: CashuWalletOperation, error: unknown): Promise<CashuWalletOperation> {
+	private spentElsewhere(operation: CashuWalletOperation, spent: Proof[], error: unknown): Promise<CashuWalletOperation> {
 		if (this.isReclaim(operation)) return this.claimed(operation);
-		const is_send = operation.type === WalletOperationType.SEND;
-		if (is_send) await this.cashuWalletProofService.spendInputs(operation.id);
-		const fallback = is_send ? 'Ecash already spent' : 'Token already claimed';
-		return this.cashuWalletJournalService.transition(operation, WalletOperationState.FAILED, {
-			error: isMintOperationError(error) ? describeMintError(error) : fallback,
-		});
+		const fallback = operation.type === WalletOperationType.SEND ? 'Ecash already spent' : 'Token already claimed';
+		return this.cashuWalletJournalService.fail(operation, isMintOperationError(error) ? describeMintError(error) : fallback, spent);
 	}
 
 	/** Settle from the proofs NUT-09 restored, sorted back into kept and sent by the preview's outputs */

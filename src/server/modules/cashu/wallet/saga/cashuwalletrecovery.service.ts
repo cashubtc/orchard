@@ -6,6 +6,7 @@ import {In, Repository, type FindOptionsWhere} from 'typeorm';
 /* Native Dependencies */
 import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
 import {CashuWalletSwapService} from '#server/modules/cashu/wallet/saga/swap/cashuwalletswap.service';
+import {CashuWalletMeltService} from '#server/modules/cashu/wallet/saga/melt/cashuwalletmelt.service';
 import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {describeMintError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
@@ -29,6 +30,7 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 		[WalletOperationType.ISSUE]: (operation) => this.cashuWalletIssueService.resume(operation),
 		[WalletOperationType.SEND]: (operation) => this.cashuWalletSwapService.resume(operation),
 		[WalletOperationType.RECEIVE]: (operation) => this.cashuWalletSwapService.resume(operation),
+		[WalletOperationType.MELT]: (operation) => this.cashuWalletMeltService.resume(operation),
 	};
 
 	constructor(
@@ -36,6 +38,7 @@ export class CashuWalletRecoveryService implements OnApplicationBootstrap {
 		private walletOperationRepository: Repository<CashuWalletOperation>,
 		private cashuWalletIssueService: CashuWalletIssueService,
 		private cashuWalletSwapService: CashuWalletSwapService,
+		private cashuWalletMeltService: CashuWalletMeltService,
 		private cashuWalletMintQuoteService: CashuWalletMintQuoteService,
 	) {}
 

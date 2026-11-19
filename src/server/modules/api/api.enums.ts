@@ -416,14 +416,15 @@ registerEnumType(WalletOperationType, {
 		ISSUE: {description: 'Ecash issued by the Orchard mint without a payment'},
 		SEND: {description: 'Ecash sent out of the wallet as a token'},
 		RECEIVE: {description: 'An ecash token received into the wallet'},
+		MELT: {description: 'Ecash melted to pay an invoice, offer or address'},
 	},
 });
 registerEnumType(WalletOperationState, {
 	name: 'WalletOperationState',
 	description: 'State of an ecash wallet operation',
 	valuesMap: {
-		PENDING: {description: 'Waiting on its mint quote, or a sent token waiting to be claimed'},
-		EXECUTING: {description: 'Sent to the mint; retried until it settles'},
+		PENDING: {description: 'Waiting on its mint quote, a sent token waiting to be claimed, or a payment the mint is still making'},
+		EXECUTING: {description: 'Sent to the mint; checked again until it settles'},
 		FINALIZED: {description: 'Completed; for a sent token, claimed'},
 		FAILED: {description: 'Ended without completing; its error says why'},
 		RECLAIMED: {description: 'A sent token taken back into the wallet before it was claimed'},

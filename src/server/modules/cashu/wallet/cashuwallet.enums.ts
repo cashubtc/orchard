@@ -11,6 +11,7 @@ export enum WalletOperationType {
 	ISSUE = 'ISSUE',
 	SEND = 'SEND',
 	RECEIVE = 'RECEIVE',
+	MELT = 'MELT',
 }
 
 export enum WalletMintMatch {

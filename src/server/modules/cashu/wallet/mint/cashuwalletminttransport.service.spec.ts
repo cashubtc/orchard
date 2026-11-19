@@ -49,6 +49,16 @@ describe('CashuWalletMintTransportService', () => {
 		);
 	});
 
+	it('gives a melt a minute to pay, keeping every other call, melt quotes included, to the usual timeout', async () => {
+		const timeout = jest.spyOn(AbortSignal, 'timeout');
+		fetch_service.fetchWithProxy.mockResolvedValue(response({state: 'PAID'}));
+		for (const path of ['/cashu/v1/melt/bolt11', '/v1/melt/quote/bolt11', '/v1/swap']) {
+			await service.request({endpoint: `https://203.0.113.12${path}`});
+		}
+		expect(timeout.mock.calls.map(([ms]) => ms)).toEqual([60_000, 10_000, 10_000]);
+		timeout.mockRestore();
+	});
+
 	it.each([
 		['a NUT error', response({code: 20003, detail: 'Minting is disabled'}, 400), MintOperationError],
 		['rate limiting', response('', 429, {'Retry-After': '5'}), RateLimitError],

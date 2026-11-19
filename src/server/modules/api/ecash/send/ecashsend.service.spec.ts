@@ -45,7 +45,7 @@ describe('EcashSendService', () => {
 					provide: CashuWalletSwapService,
 					useValue: {sendToken: jest.fn(), checkToken: jest.fn(), reclaimToken: jest.fn(), previewSend: jest.fn()},
 				},
-				{provide: CashuWalletMeltService, useValue: {newQuote: jest.fn()}},
+				{provide: CashuWalletMeltService, useValue: {newQuote: jest.fn(), payQuote: jest.fn()}},
 				{provide: ErrorService, useValue: {resolveError: jest.fn()}},
 			],
 		}).compile();
@@ -82,6 +82,25 @@ describe('EcashSendService', () => {
 		expect(result).toBeInstanceOf(OrchardEcashMeltQuote);
 		expect(result).toMatchObject({quote_id: 'melt-1', amount: 50, expiry: null, balance: 100, fees: [fee]});
 		expect(result.fees[0]).toBeInstanceOf(OrchardEcashMeltQuoteFee);
+	});
+
+	it('payMeltQuote returns the melt with its payment proof', async () => {
+		const pay_request = {user_id: 'user-1', mint_id: 'mint-1', method: 'bolt11', unit: 'sat', quote_id: 'melt-1', fee_index: null};
+		cashuWalletMeltService.payQuote.mockResolvedValue({
+			...operation,
+			type: 'MELT',
+			state: 'FINALIZED',
+			method: 'bolt11',
+			request: 'lnbc100n1invoice',
+			fee_reserve: 2,
+			payment_proof: 'preimage',
+			inputs: '[]',
+		});
+		const result = await ecashSendService.payMeltQuote('TAG', pay_request);
+		expect(cashuWalletMeltService.payQuote).toHaveBeenCalledWith(pay_request);
+		expect(result).toBeInstanceOf(OrchardEcashOperation);
+		expect(result).toMatchObject({type: 'MELT', request: 'lnbc100n1invoice', fee_reserve: 2, payment_proof: 'preimage'});
+		expect(result).not.toHaveProperty('inputs');
 	});
 
 	it('sendToken returns the operation without its token', async () => {

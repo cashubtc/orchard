@@ -16,6 +16,7 @@ import {UserService} from '#server/modules/user/user.service';
 import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
 import {CashuWalletJournalService} from '#server/modules/cashu/wallet/saga/cashuwalletjournal.service';
 import {CashuWalletRecoveryService} from '#server/modules/cashu/wallet/saga/cashuwalletrecovery.service';
+import {CashuWalletMeltService} from '#server/modules/cashu/wallet/saga/melt/cashuwalletmelt.service';
 import {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.entity';
 import {CashuWalletCounter} from '#server/modules/cashu/wallet/saga/cashuwalletcounter.entity';
 import {CashuWalletProof} from '#server/modules/cashu/wallet/proof/cashuwalletproof.entity';
@@ -124,6 +125,7 @@ describe('CashuWalletSwapService', () => {
 				CashuWalletJournalService,
 				CashuWalletProofService,
 				CashuWalletRecoveryService,
+				CashuWalletMeltService,
 				CashuWalletMintQuoteService,
 				CashuWalletMintService,
 				CashuWalletMintCacheService,

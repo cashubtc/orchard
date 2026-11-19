@@ -23,6 +23,9 @@ import {createCashuWalletSocket} from '#server/modules/cashu/wallet/classes/cash
 import {CASHU_WALLET_MINT_MAX_BYTES} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 
 const MINT_TIMEOUT_MS = 10_000;
+// A melt can wait on the payment itself when the mint doesn't answer async; matched on the path, as a mint URL may carry a prefix
+const MELT_TIMEOUT_MS = 60_000;
+const MELT_PATH = /\/v1\/melt\/[^/]+$/;
 const MINT_BURST = 20;
 const MINT_REQUESTS_PER_MINUTE = 20;
 const MINT_PACING_WAIT_MS = 15_000;
@@ -88,9 +91,9 @@ export class CashuWalletMintTransportService implements OnModuleInit {
 
 	/** cashu-ts RequestFn over FetchService (Tor proxy, timeout, size cap, no redirects), paced per mint host */
 	private async requestMint<T>({endpoint, requestBody, headers, method, requestTimeout, signal}: RequestOptions): Promise<T> {
-		const host = new URL(endpoint).host;
-		if (!(await this.pacer.acquire(host))) throw new CashuWalletUnsentError(`${endpoint}: too many requests; try again shortly`);
-		const timeout_ms = requestTimeout ?? MINT_TIMEOUT_MS;
+		const url = new URL(endpoint);
+		if (!(await this.pacer.acquire(url.host))) throw new CashuWalletUnsentError(`${endpoint}: too many requests; try again shortly`);
+		const timeout_ms = requestTimeout ?? (MELT_PATH.test(url.pathname) ? MELT_TIMEOUT_MS : MINT_TIMEOUT_MS);
 		const timeout = AbortSignal.timeout(timeout_ms);
 		const toNetworkError = (error: any): never => {
 			const reason = timeout.aborted ? `timed out after ${timeout_ms}ms` : (error?.code ?? error?.message ?? error);
@@ -113,7 +116,7 @@ export class CashuWalletMintTransportService implements OnModuleInit {
 		const text = await response.text().catch(toNetworkError);
 		if (response.status === 429) {
 			const retry_after_ms = this.parseRetryAfter(response.headers.get('Retry-After'));
-			this.pacer.pause(host, retry_after_ms ?? MINT_RATE_LIMIT_PAUSE_MS);
+			this.pacer.pause(url.host, retry_after_ms ?? MINT_RATE_LIMIT_PAUSE_MS);
 			throw new RateLimitError('429 Too Many Requests', retry_after_ms);
 		}
 		const body = this.parseBody(text);

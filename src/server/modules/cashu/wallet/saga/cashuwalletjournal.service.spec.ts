@@ -44,6 +44,16 @@ describe('CashuWalletJournalService', () => {
 			updated_at: 0,
 		});
 	const proof = (secret: string, amount: number) => ({id: '00abc', amount: Amount.from(amount), secret, C: '02c'}) as Proof;
+	const input = {
+		user_id: 'user-1',
+		mint_id: 'mint-1',
+		keyset_id: '00abc',
+		unit: 'sat',
+		amount: 4,
+		c: '02c',
+		created_at: 0,
+		updated_at: 0,
+	};
 	const event_emitter = {emit: jest.fn()};
 
 	beforeEach(async () => {
@@ -130,19 +140,30 @@ describe('CashuWalletJournalService', () => {
 		expect(await data_source.getRepository(CashuWalletProof).count()).toBe(2);
 	});
 
+	it('records what an operation closes with when it finalizes', async () => {
+		const operation = await createOperation();
+		expect(await service.finalize(operation, [], {fee: 1, payment_proof: 'preimage'})).toMatchObject({
+			state: WalletOperationState.FINALIZED,
+			fee: 1,
+			payment_proof: 'preimage',
+		});
+	});
+
+	it('gives the inputs back when it fails an operation, keeping as spent those the mint reports spent', async () => {
+		const operation = await createOperation();
+		const proofs = data_source.getRepository(CashuWalletProof);
+		await proofs.save(['a', 'b'].map((secret) => ({...input, secret, state: WalletProofState.INFLIGHT, used_by_op_id: operation.id})));
+		expect(await service.fail(operation, 'Payment failed', [{secret: 'b'}])).toMatchObject({
+			state: WalletOperationState.FAILED,
+			error: 'Payment failed',
+		});
+		expect(await proofs.findOneByOrFail({secret: 'a'})).toMatchObject({state: WalletProofState.READY, used_by_op_id: null});
+		expect(await proofs.findOneByOrFail({secret: 'b'})).toMatchObject({state: WalletProofState.SPENT});
+	});
+
 	it('spends the inputs an operation holds when it finalizes', async () => {
 		const operation = await createOperation();
 		const proofs = data_source.getRepository(CashuWalletProof);
-		const input = {
-			user_id: 'user-1',
-			mint_id: 'mint-1',
-			keyset_id: '00abc',
-			unit: 'sat',
-			amount: 4,
-			c: '02c',
-			created_at: 0,
-			updated_at: 0,
-		};
 		await proofs.save([
 			{...input, secret: 'input', state: WalletProofState.INFLIGHT, used_by_op_id: operation.id},
 			{...input, secret: 'other', state: WalletProofState.INFLIGHT, used_by_op_id: 'op-other'},
@@ -184,13 +205,13 @@ describe('CashuWalletJournalService', () => {
 			expect([settle.mock.calls.length, fallback.mock.calls.length]).toEqual([1, 1]);
 		});
 
-		it('waits when the restore fails, as for a range part signed unless that is allowed', async () => {
+		it('keeps the operation as it is with the failure recorded when the restore fails, as for a range part signed unless allowed', async () => {
 			const operation = {...(await createOperation()), counters};
 			const settle = jest.fn(async (_proofs: Proof[]) => operation);
 			const fallback = jest.fn(async () => operation);
 			const wallet = restoring([proof('new', 2)]);
 			expect(await service.restoreOr(operation, wallet, settle, fallback)).toMatchObject({
-				state: WalletOperationState.EXECUTING,
+				state: WalletOperationState.PENDING,
 				error: 'Mint restored 1 of 2 outputs',
 			});
 			await service.restoreOr(operation, wallet, settle, fallback, true);
