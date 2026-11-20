@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {Field, Float, ID, ObjectType} from '@nestjs/graphql';
+import {Field, Float, ID, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
 import {WalletOperationType, WalletOperationState} from '#server/modules/cashu/wallet/cashuwallet.enums';
@@ -40,8 +40,14 @@ export class OrchardEcashOperation {
 	@Field(() => UnixTimestamp, {nullable: true, description: "When the operation's quote expires"})
 	expiry: number | null;
 
-	@Field(() => String, {nullable: true, description: 'Lightning preimage or onchain outpoint (txid:vout) once paid'})
+	@Field(() => String, {nullable: true, description: 'Lightning preimage once paid, or onchain outpoint (txid:vout) once broadcast'})
 	payment_proof: string | null;
+
+	@Field(() => Int, {
+		nullable: true,
+		description: "Confirmations Orchard's Bitcoin node last saw on a pending onchain payment, 0 in the mempool; null if unknown",
+	})
+	confirmations: number | null;
 
 	@Field(() => String, {nullable: true, description: 'Operator note'})
 	memo: string | null;
@@ -68,6 +74,7 @@ export class OrchardEcashOperation {
 		this.request = operation.request;
 		this.expiry = operation.expiry;
 		this.payment_proof = operation.payment_proof;
+		this.confirmations = operation.state === WalletOperationState.PENDING ? operation.confirmations : null;
 		this.memo = operation.memo;
 		this.error = operation.error;
 		this.created_at = operation.created_at;

@@ -92,9 +92,13 @@ export class CashuWalletOperation {
 	@Column({type: 'text', nullable: true})
 	token: string | null;
 
-	// Lightning preimage or onchain outpoint (txid:vout) once paid
+	// Lightning preimage once paid, or onchain outpoint (txid:vout) once broadcast
 	@Column({type: 'text', nullable: true})
 	payment_proof: string | null;
+
+	// Confirmations Orchard's Bitcoin node last saw on an onchain melt while the mint was paying it, 0 in the mempool; null when it couldn't tell
+	@Column({type: 'integer', nullable: true})
+	confirmations: number | null;
 
 	// Last failure reason, for operator diagnosis
 	@Column({type: 'text', nullable: true})

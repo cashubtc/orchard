@@ -19,11 +19,12 @@ import type {
 
 const MSAT_PER_UNIT: Readonly<Record<string, number>> = {sat: 1000, msat: 1};
 
-/** How a payment method pays out: its melt quote calls, the reserves a quote holds, the proof it was paid and the NUT-17 subscription that watches it (none: polled); each method overrides only where it differs */
+/** How a payment method pays out: its melt quote calls, the reserves a quote holds, the proof it was paid, the NUT-17 subscription that watches it (none: polled) and whether its payments confirm onchain; each method overrides only where it differs */
 export abstract class CashuWalletMeltQuoteMethod<TQuote extends CashuWalletMeltQuoteResponse = CashuWalletMeltQuoteResponse> {
 	abstract readonly method: 'bolt11' | 'bolt12' | 'onchain';
 	abstract readonly amount: 'required' | 'optional';
 	readonly socket_kind: 'bolt11_melt_quote' | null = null;
+	readonly tracks_chain: boolean = false;
 
 	/** The payout rules for a payment method, or null when the wallet can't pay by it */
 	static find(method: string): CashuWalletMeltQuoteMethod | null {
@@ -131,6 +132,7 @@ export class CashuWalletBolt12MeltQuoteMethod extends CashuWalletLightningMeltQu
 export class CashuWalletOnchainMeltQuoteMethod extends CashuWalletMeltQuoteMethod<MeltQuoteOnchainResponse> {
 	readonly method = 'onchain';
 	readonly amount = 'required';
+	readonly tracks_chain = true;
 
 	protected create(wallet: Wallet, request: string, amount: number | null): Promise<MeltQuoteOnchainResponse> {
 		return wallet.createMeltQuoteOnchain(request, amount!);

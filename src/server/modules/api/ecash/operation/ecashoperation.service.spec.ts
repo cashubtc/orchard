@@ -90,6 +90,13 @@ describe('EcashOperationService', () => {
 		expect(result).not.toHaveProperty('token');
 	});
 
+	it('shows the confirmations of an onchain payment only while the mint is still paying it', async () => {
+		const melt = {...operation, type: 'MELT', method: 'onchain', confirmations: 5};
+		cashuWalletOperationService.getOperation.mockResolvedValueOnce({...melt, state: 'PENDING'}).mockResolvedValueOnce(melt);
+		expect((await ecashOperationService.getEcashOperation('TAG', 'user-1', 'op-1')).confirmations).toBe(5);
+		expect((await ecashOperationService.getEcashOperation('TAG', 'user-1', 'op-1')).confirmations).toBeNull();
+	});
+
 	it('getEcashOperationToken returns the token of a send', async () => {
 		cashuWalletOperationService.getToken.mockResolvedValue('cashuBtoken');
 		await expect(ecashOperationService.getEcashOperationToken('TAG', 'user-1', 'op-1')).resolves.toBe('cashuBtoken');

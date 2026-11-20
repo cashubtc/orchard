@@ -9,7 +9,9 @@ import {DataSource} from 'typeorm';
 import {Wallet} from '@cashu/cashu-ts';
 /* Application Dependencies */
 import {createFakeMint, fakeMintFetch, type FakeMint} from '#server/test/cashu-fake-mint';
+import {createFakeChain, type FakeChain} from '#server/test/bitcoin-fake-chain';
 import {FetchService} from '#server/modules/fetch/fetch.service';
+import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
 import {UserService} from '#server/modules/user/user.service';
 /* Native Dependencies */
@@ -30,6 +32,7 @@ import {CashuWalletMintQuote} from '#server/modules/cashu/wallet/mintquote/cashu
 import {CashuWalletMintQuoteService} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.service';
 import {CashuWalletMintCacheService} from '#server/modules/cashu/wallet/mint/cashuwalletmintcache.service';
 import {CashuWalletMintTransportService} from '#server/modules/cashu/wallet/mint/cashuwalletminttransport.service';
+import {CashuWalletChainService} from '#server/modules/cashu/wallet/chain/cashuwalletchain.service';
 import {CashuWalletUnsentError} from '#server/modules/cashu/wallet/classes/cashu-wallet-unsent-error.class';
 import {WalletOperationState, WalletOperationType, WalletProofState} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
@@ -41,6 +44,7 @@ const ORCHARD_API = 'http://localhost:3338';
 const CEDAR = 'https://203.0.113.10';
 const EXPIRY = 2_000_000_000;
 const PREIMAGE = '00'.repeat(32);
+const OUTPOINT = `${'ab'.repeat(32)}:0`;
 
 describe('CashuWalletMeltService', () => {
 	let service: CashuWalletMeltService;
@@ -49,6 +53,7 @@ describe('CashuWalletMeltService', () => {
 	let mint_service: CashuWalletMintService;
 	let data_source: DataSource;
 	let mints: Map<string, FakeMint>;
+	let chain: FakeChain;
 
 	const fetchMints = fakeMintFetch((origin) => mints.get(origin)!);
 	const fetch_service = {fetchWithProxy: jest.fn(fetchMints)};
@@ -123,6 +128,7 @@ describe('CashuWalletMeltService', () => {
 			[ORCHARD_API, createFakeMint()],
 			[CEDAR, createFakeMint({pubkey: '02cedar', input_fee_ppk: 1000})],
 		]);
+		chain = createFakeChain();
 		data_source = new DataSource({type: 'better-sqlite3', database: ':memory:', entities, synchronize: true});
 		await data_source.initialize();
 		const module: TestingModule = await Test.createTestingModule({
@@ -137,6 +143,8 @@ describe('CashuWalletMeltService', () => {
 				CashuWalletMintService,
 				CashuWalletMintCacheService,
 				CashuWalletMintTransportService,
+				CashuWalletChainService,
+				{provide: BitcoinRpcService, useValue: chain.rpc},
 				{provide: CashuWalletSeedService, useValue: {getSeed: jest.fn(async () => new Uint8Array(64).fill(7))}},
 				{provide: ConfigService, useValue: {get: jest.fn((key: string) => (key === 'cashu.api' ? ORCHARD_API : undefined))}},
 				{provide: FetchService, useValue: fetch_service},
@@ -282,7 +290,7 @@ describe('CashuWalletMeltService', () => {
 				fee_index: 1,
 				fee_reserve: 4,
 				fee: 2,
-				payment_proof: `${'ab'.repeat(32)}:0`,
+				payment_proof: OUTPOINT,
 			});
 			expect(meltsSent('onchain')).toEqual([expect.objectContaining({fee_index: 1})]);
 			expect(await balance()).toBe(48);
@@ -374,6 +382,27 @@ describe('CashuWalletMeltService', () => {
 			await recovery.reconcileOperations();
 			expect(await reload(paying.id)).toMatchObject({state: WalletOperationState.FAILED, error: 'Payment failed'});
 			expect(await balance()).toBe(100);
+		});
+
+		it("follows the confirmations Orchard's node sees on an onchain melt the mint broadcast, keeping the count while the node is down", async () => {
+			orchard().melt_defaults.pending = true;
+			const mint_id = await funded();
+			const {quote_id} = await quoteAddress(mint_id);
+			const paying = await pay(mint_id, quote_id, {method: 'onchain', fee_index: 1});
+			expect(paying).toMatchObject({state: WalletOperationState.PENDING, payment_proof: null, confirmations: null});
+
+			orchard().broadcastMelt(quote_id);
+			chain.outputs.set(OUTPOINT, 0);
+			await recovery.reconcileOperations();
+			expect(await reload(paying.id)).toMatchObject({state: WalletOperationState.PENDING, payment_proof: OUTPOINT, confirmations: 0});
+
+			chain.outputs.set(OUTPOINT, 2);
+			await recovery.reconcileOperations();
+			expect(await reload(paying.id)).toMatchObject({confirmations: 2});
+
+			chain.down = true;
+			await recovery.reconcileOperations();
+			expect(await reload(paying.id)).toMatchObject({state: WalletOperationState.PENDING, confirmations: 2});
 		});
 
 		it.each([

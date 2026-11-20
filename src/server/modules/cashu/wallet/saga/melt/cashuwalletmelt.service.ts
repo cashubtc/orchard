@@ -19,6 +19,7 @@ import {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalle
 import {CashuWalletJournalService} from '#server/modules/cashu/wallet/saga/cashuwalletjournal.service';
 import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwalletmint.service';
 import {CashuWalletProofService} from '#server/modules/cashu/wallet/proof/cashuwalletproof.service';
+import {CashuWalletChainService} from '#server/modules/cashu/wallet/chain/cashuwalletchain.service';
 import {WalletErrorAction, WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {classifyMintError, describeMintError, walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 import {estimateFee} from '#server/modules/cashu/wallet/helpers/cashuwalletfee.helpers';
@@ -46,6 +47,7 @@ export class CashuWalletMeltService {
 		private cashuWalletJournalService: CashuWalletJournalService,
 		private cashuWalletMintService: CashuWalletMintService,
 		private cashuWalletProofService: CashuWalletProofService,
+		private cashuWalletChainService: CashuWalletChainService,
 	) {}
 
 	/* *******************************************************
@@ -248,13 +250,26 @@ export class CashuWalletMeltService {
 		error?: unknown,
 	): Promise<CashuWalletOperation> {
 		if (quote.state === MeltQuoteState.PAID) return this.paid(operation, wallet, method, quote);
-		if (quote.state === MeltQuoteState.PENDING) {
-			return this.cashuWalletJournalService.transition(operation, WalletOperationState.PENDING, {
-				error: null,
-				payment_proof: method.paymentProof(quote),
-			});
-		}
+		if (quote.state === MeltQuoteState.PENDING) return this.pending(operation, method, quote);
 		return this.unpaid(operation, wallet, error);
+	}
+
+	/** A melt the mint is still paying, with how far its onchain payment has confirmed when Orchard's node can tell */
+	private async pending(
+		operation: CashuWalletOperation,
+		method: CashuWalletMeltQuoteMethod,
+		quote: CashuWalletMeltQuoteResponse,
+	): Promise<CashuWalletOperation> {
+		const payment_proof = method.paymentProof(quote);
+		const confirmations =
+			method.tracks_chain && payment_proof
+				? await this.cashuWalletChainService.confirmations(payment_proof, operation.confirmations)
+				: null;
+		return this.cashuWalletJournalService.transition(operation, WalletOperationState.PENDING, {
+			error: null,
+			payment_proof,
+			confirmations,
+		});
 	}
 
 	/** Finish a paid melt with the change the mint signed on its saved outputs, restored from the seed when the signatures can't be read */

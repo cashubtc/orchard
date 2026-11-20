@@ -17,6 +17,7 @@ import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/c
 import {CashuWalletJournalService} from '#server/modules/cashu/wallet/saga/cashuwalletjournal.service';
 import {CashuWalletRecoveryService} from '#server/modules/cashu/wallet/saga/cashuwalletrecovery.service';
 import {CashuWalletMeltService} from '#server/modules/cashu/wallet/saga/melt/cashuwalletmelt.service';
+import {CashuWalletChainService} from '#server/modules/cashu/wallet/chain/cashuwalletchain.service';
 import {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.entity';
 import {CashuWalletCounter} from '#server/modules/cashu/wallet/saga/cashuwalletcounter.entity';
 import {CashuWalletProof} from '#server/modules/cashu/wallet/proof/cashuwalletproof.entity';
@@ -134,6 +135,7 @@ describe('CashuWalletSwapService', () => {
 				{provide: ConfigService, useValue: {get: jest.fn((key: string) => (key === 'cashu.api' ? ORCHARD_API : undefined))}},
 				{provide: FetchService, useValue: fetch_service},
 				{provide: CashuMintRpcService, useValue: {updateNut04Quote: jest.fn()}},
+				{provide: CashuWalletChainService, useValue: {confirmations: jest.fn()}},
 				{provide: EventEmitter2, useValue: new EventEmitter2()},
 				{provide: UserService, useValue: {getUserById: jest.fn()}},
 				...entities.map((entity) => ({provide: getRepositoryToken(entity), useValue: data_source.getRepository(entity)})),

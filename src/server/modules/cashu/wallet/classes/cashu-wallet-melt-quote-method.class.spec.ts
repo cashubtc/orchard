@@ -118,6 +118,10 @@ describe('CashuWalletMeltQuoteMethod', () => {
 		expect([bolt11, bolt12, onchain].map((method) => method.socket_kind)).toEqual(['bolt11_melt_quote', null, null]);
 	});
 
+	it('follows only onchain payments on the chain', () => {
+		expect([bolt11, bolt12, onchain].map((method) => method.tracks_chain)).toEqual([false, false, true]);
+	});
+
 	it("caps one payment at the method's NUT-05 max_amount", () => {
 		const info = {isSupported: jest.fn(() => ({params: [{method: 'onchain', unit: 'sat', max_amount: 600}]}))} as unknown as MintInfo;
 		expect(onchain.maxAmount(info, 'sat')).toBe(600);

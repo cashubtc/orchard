@@ -5,6 +5,7 @@ import {TypeOrmModule} from '@nestjs/typeorm';
 import {FetchModule} from '#server/modules/fetch/fetch.module';
 import {UserModule} from '#server/modules/user/user.module';
 import {CashuMintRpcModule} from '#server/modules/cashu/mintrpc/cashumintrpc.module';
+import {BitcoinRpcModule} from '#server/modules/bitcoin/rpc/btcrpc.module';
 /* Local Dependencies */
 import {CashuWalletSeed} from './seed/cashuwalletseed.entity.js';
 import {CashuWalletCounter} from './saga/cashuwalletcounter.entity.js';
@@ -27,6 +28,7 @@ import {CashuWalletSwapService} from './saga/swap/cashuwalletswap.service.js';
 import {CashuWalletMeltService} from './saga/melt/cashuwalletmelt.service.js';
 import {CashuWalletMintQuoteService} from './mintquote/cashuwalletmintquote.service.js';
 import {CashuWalletWatchService} from './watch/cashuwalletwatch.service.js';
+import {CashuWalletChainService} from './chain/cashuwalletchain.service.js';
 
 @Module({
 	imports: [
@@ -43,6 +45,7 @@ import {CashuWalletWatchService} from './watch/cashuwalletwatch.service.js';
 		FetchModule,
 		UserModule,
 		CashuMintRpcModule,
+		BitcoinRpcModule,
 	],
 	providers: [
 		CashuWalletSeedService,
@@ -58,6 +61,7 @@ import {CashuWalletWatchService} from './watch/cashuwalletwatch.service.js';
 		CashuWalletMeltService,
 		CashuWalletMintQuoteService,
 		CashuWalletWatchService,
+		CashuWalletChainService,
 	],
 	exports: [
 		CashuWalletSeedService,

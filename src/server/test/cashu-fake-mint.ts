@@ -23,6 +23,9 @@ type FakeMintOptions = {
 
 type FakeMeltQuote = {method: string; response: Record<string, any>; inputs: string[]; outputs: any[]; refund: number};
 
+// Where every onchain melt pays
+const OUTPOINT = `${'ab'.repeat(32)}:0`;
+
 /** Y of a proof secret, which mints key spent state by (NUT-07) */
 const toY = (secret: string): string => hashToCurve(new TextEncoder().encode(secret)).toHex(true);
 
@@ -197,9 +200,13 @@ export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk =
 			return;
 		}
 		const change = splitAmount(quote.refund, serializeMintKeys(active().pubKeys)).map((amount) => amount.toNumber());
-		const paid = quote.method === 'onchain' ? {outpoint: `${'ab'.repeat(32)}:0`} : {payment_preimage: '00'.repeat(32)};
+		const paid = quote.method === 'onchain' ? {outpoint: OUTPOINT} : {payment_preimage: '00'.repeat(32)};
 		const signatures = change.slice(0, quote.outputs.length).map((amount, index) => sign({...quote.outputs[index], amount}));
 		Object.assign(quote.response, {state: 'PAID', ...paid, change: signatures});
+	};
+	/** Broadcast a pending onchain melt: its quote carries the outpoint while the payment confirms */
+	const broadcastMelt = (quote_id: string) => {
+		melt_quotes.get(quote_id)!.response.outpoint = OUTPOINT;
 	};
 	const mintOutputs = (body: any): [number, any] => {
 		const quote = mint_quotes.get(body.quote);
@@ -297,6 +304,7 @@ export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk =
 		rotate,
 		payMintQuote,
 		settleMelt,
+		broadcastMelt,
 	};
 };
 

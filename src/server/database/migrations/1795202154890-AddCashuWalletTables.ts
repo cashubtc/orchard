@@ -1,7 +1,7 @@
 import type {MigrationInterface, QueryRunner} from 'typeorm';
 
-export class AddCashuWalletTables1795107485481 implements MigrationInterface {
-	name = 'AddCashuWalletTables1795107485481';
+export class AddCashuWalletTables1795202154890 implements MigrationInterface {
+	name = 'AddCashuWalletTables1795202154890';
 
 	public async up(queryRunner: QueryRunner): Promise<void> {
 		await queryRunner.query(
@@ -18,7 +18,7 @@ export class AddCashuWalletTables1795107485481 implements MigrationInterface {
 			`CREATE INDEX "IDX_0317ba18fd31878dd48da168da" ON "cashu_wallet_proofs" ("user_id", "mint_id", "unit", "state") `,
 		);
 		await queryRunner.query(
-			`CREATE TABLE "cashu_wallet_operations" ("id" varchar PRIMARY KEY NOT NULL, "user_id" text NOT NULL, "mint_id" text NOT NULL, "method" text, "type" text NOT NULL, "state" text NOT NULL, "revision" integer NOT NULL DEFAULT (0), "unit" text NOT NULL, "amount" integer NOT NULL, "quote_id" text, "quote_counter" integer, "memo" text, "request" text, "expiry" integer, "fee" integer, "fee_reserve" integer, "fee_index" integer, "preview" text, "counters" text, "inputs" text, "token" text, "payment_proof" text, "error" text, "created_at" integer NOT NULL, "updated_at" integer NOT NULL)`,
+			`CREATE TABLE "cashu_wallet_operations" ("id" varchar PRIMARY KEY NOT NULL, "user_id" text NOT NULL, "mint_id" text NOT NULL, "method" text, "type" text NOT NULL, "state" text NOT NULL, "revision" integer NOT NULL DEFAULT (0), "unit" text NOT NULL, "amount" integer NOT NULL, "quote_id" text, "quote_counter" integer, "memo" text, "request" text, "expiry" integer, "fee" integer, "fee_reserve" integer, "fee_index" integer, "preview" text, "counters" text, "inputs" text, "token" text, "payment_proof" text, "confirmations" integer, "error" text, "created_at" integer NOT NULL, "updated_at" integer NOT NULL)`,
 		);
 		await queryRunner.query(`CREATE INDEX "IDX_c5fd76660207102232c2bf0a51" ON "cashu_wallet_operations" ("mint_id", "quote_id") `);
 		await queryRunner.query(`CREATE INDEX "IDX_69ed44119dbc3ba953fa0c742e" ON "cashu_wallet_operations" ("user_id", "created_at") `);
