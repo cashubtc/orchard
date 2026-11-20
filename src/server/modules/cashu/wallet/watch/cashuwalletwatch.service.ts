@@ -2,7 +2,16 @@
 import {Injectable, Logger, type OnModuleDestroy} from '@nestjs/common';
 import {OnEvent} from '@nestjs/event-emitter';
 /* Vendor Dependencies */
-import {CheckStateEnum, type Mint, type MintInfo, type RpcSubKinds, type SubscriptionCanceller, type Wallet} from '@cashu/cashu-ts';
+import {DateTime} from 'luxon';
+import {
+	CheckStateEnum,
+	MeltQuoteState,
+	type Mint,
+	type MintInfo,
+	type RpcSubKinds,
+	type SubscriptionCanceller,
+	type Wallet,
+} from '@cashu/cashu-ts';
 /* Native Dependencies */
 import type {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.entity';
 import {CashuWalletOperationService} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.service';
@@ -13,6 +22,7 @@ import {CashuWalletProofService} from '#server/modules/cashu/wallet/proof/cashuw
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {describeMintError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 import {CashuWalletMintQuoteMethod} from '#server/modules/cashu/wallet/classes/cashu-wallet-mint-quote-method.class';
+import {CashuWalletMeltQuoteMethod} from '#server/modules/cashu/wallet/classes/cashu-wallet-melt-quote-method.class';
 import {
 	CASHU_WALLET_FINAL_STATES,
 	CASHU_WALLET_OPERATION_UPDATED,
@@ -31,8 +41,6 @@ const WATCH_FAST_CHECKS = 5;
 const WATCH_SLOW_POLL_MS = 30_000;
 const WATCH_MAX_MS = 30 * 60_000;
 
-type WatchSocketKind = Exclude<RpcSubKinds, 'bolt11_melt_quote'>;
-
 type WatchSubject = {kind: 'operation'; subject: CashuWalletOperation} | {kind: 'mint_quote'; subject: CashuWalletMintQuoteRecord};
 
 type WatchTarget = WatchSubject & {
@@ -43,7 +51,7 @@ type WatchTarget = WatchSubject & {
 	checks: number;
 	notified: boolean;
 	reopen: boolean;
-	socket: {cancel: SubscriptionCanceller; mint: Mint} | null;
+	socket: {cancel: SubscriptionCanceller; mint: Mint; opened_at: number} | null;
 	wallet: Wallet | null;
 };
 
@@ -182,7 +190,7 @@ export class CashuWalletWatchService implements OnModuleDestroy {
 		return target.notified || now - target.settled_at >= this.interval(target);
 	}
 
-	/** 30s on a socket; otherwise 5s for the first five checks, then doubling up to 30s, so a long watch costs a mint little */
+	/** 30s on a socket; otherwise 5s for the first five checks (counted again once a working socket drops), then doubling up to 30s, so a long watch costs a mint little */
 	private interval(target: WatchTarget): number {
 		if (target.socket) return WATCH_SLOW_POLL_MS;
 		return Math.min(WATCH_POLL_MS * 2 ** Math.max(0, target.checks - WATCH_FAST_CHECKS + 1), WATCH_SLOW_POLL_MS);
@@ -224,27 +232,39 @@ export class CashuWalletWatchService implements OnModuleDestroy {
 		target.wallet = wallet;
 		const cancel = await this.subscribe(wallet, kind, target);
 		if (!cancel) return;
-		target.socket = {cancel, mint: wallet.mint};
+		target.socket = {cancel, mint: wallet.mint, opened_at: DateTime.now().toMillis()};
 		this.sockets.set(wallet.mint, (this.sockets.get(wallet.mint) ?? 0) + 1);
 		if (this.targets.get(target.key) !== target) this.closeSocket(target);
 	}
 
 	/** The wallet to open a target's socket with, when Orchard may reach its mint that way and the mint offers the subscription */
-	private async socketWallet(target: WatchTarget, kind: WatchSocketKind): Promise<Wallet | null> {
+	private async socketWallet(target: WatchTarget, kind: RpcSubKinds): Promise<Wallet | null> {
 		const {user_id, mint_id, unit} = target.subject;
 		if (!(await this.cashuWalletMintService.allowsSocket(user_id, mint_id))) return null;
 		const wallet = await this.cashuWalletMintService.getWallet(mint_id, unit);
 		return this.offersSocket(wallet.getMintInfo(), kind, target) ? wallet : null;
 	}
 
-	/** Subscribe to a mint quote, settled from each update the mint pushes, or a sent token's proofs, settled once one is spent; a lost socket polls until it reopens when next due */
-	private async subscribe(wallet: Wallet, kind: WatchSocketKind, target: WatchTarget): Promise<SubscriptionCanceller | null> {
+	/** Subscribe on the mint's socket: a mint quote settles from each pushed update, a melt is checked again once paid or unpaid, a sent token once a proof is spent; a lost socket reopens when next due */
+	private async subscribe(wallet: Wallet, kind: RpcSubKinds, target: WatchTarget): Promise<SubscriptionCanceller | null> {
 		const lost = () => {
+			const lasted_ms = target.socket ? DateTime.now().toMillis() - target.socket.opened_at : 0;
 			this.closeSocket(target);
 			target.reopen = true;
+			// A socket that was working checks fast again; one that fails as it opens backs off as polling does
+			if (lasted_ms >= WATCH_SLOW_POLL_MS) target.checks = 0;
 		};
 		if (kind === 'bolt11_mint_quote') {
 			return wallet.on.mintQuoteUpdates([target.subject.quote_id!], (update) => this.settlePush(target, update), lost);
+		}
+		if (kind === 'bolt11_melt_quote') {
+			return wallet.on.meltQuoteUpdates(
+				[target.subject.quote_id!],
+				(quote) => {
+					if (quote.state !== MeltQuoteState.PENDING) this.notify(target);
+				},
+				lost,
+			);
 		}
 		const held = await this.cashuWalletProofService.getHeldProofs(target.subject.id);
 		if (held.length === 0) return null;
@@ -272,15 +292,16 @@ export class CashuWalletWatchService implements OnModuleDestroy {
 		socket.mint.disconnectWebSocket();
 	}
 
-	/** The NUT-17 subscription a target can be watched with: its mint quote's method's, or a sent token's proofs */
-	private socketKind(target: WatchTarget): WatchSocketKind | null {
+	/** The NUT-17 subscription a target can be watched with: its mint quote's or melt's method's, or a sent token's proofs */
+	private socketKind(target: WatchTarget): RpcSubKinds | null {
 		if (target.kind === 'mint_quote') return CashuWalletMintQuoteMethod.find(target.subject.method)?.socket_kind ?? null;
 		const operation = target.subject;
+		if (operation.type === WalletOperationType.MELT) return CashuWalletMeltQuoteMethod.find(operation.method!)?.socket_kind ?? null;
 		return operation.type === WalletOperationType.SEND && operation.state === WalletOperationState.PENDING ? 'proof_state' : null;
 	}
 
 	/** Whether a mint offers the subscription for the target's unit and method (NUT-17) */
-	private offersSocket(info: MintInfo, kind: WatchSocketKind, target: WatchTarget): boolean {
+	private offersSocket(info: MintInfo, kind: RpcSubKinds, target: WatchTarget): boolean {
 		const {unit, method} = target.subject;
 		return (info.isSupported(17).params ?? []).some(
 			(entry) => entry.unit === unit && entry.commands.includes(kind) && (kind === 'proof_state' || entry.method === method),

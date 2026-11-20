@@ -29,7 +29,7 @@ describe('CashuWalletWatchService', () => {
 	};
 	const wallet = {
 		getMintInfo: () => ({isSupported: () => nut17}),
-		on: {mintQuoteUpdates: jest.fn(subscribe), proofStateUpdates: jest.fn(subscribe)},
+		on: {mintQuoteUpdates: jest.fn(subscribe), meltQuoteUpdates: jest.fn(subscribe), proofStateUpdates: jest.fn(subscribe)},
 		mint: {disconnectWebSocket: jest.fn()},
 	};
 	const mint_service = {allowsSocket: jest.fn(async () => true), getWallet: jest.fn(async () => wallet)};
@@ -81,10 +81,14 @@ describe('CashuWalletWatchService', () => {
 
 	beforeEach(async () => {
 		jest.clearAllMocks();
+		for (const on of Object.values(wallet.on)) on.mockImplementation(subscribe);
 		jest.useFakeTimers({now: 0});
 		operation = pending();
 		quote = open();
-		nut17 = {supported: true, params: [{method: 'bolt11', unit: 'sat', commands: ['bolt11_mint_quote', 'proof_state']}]};
+		nut17 = {
+			supported: true,
+			params: [{method: 'bolt11', unit: 'sat', commands: ['bolt11_mint_quote', 'bolt11_melt_quote', 'proof_state']}],
+		};
 		socket = {};
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
@@ -216,6 +220,34 @@ describe('CashuWalletWatchService', () => {
 			expect(operationSettles()).toBe(2);
 		});
 
+		it('checks a bolt11 melt again on each change its mint pushes', async () => {
+			operation = pending({
+				type: WalletOperationType.MELT,
+				state: WalletOperationState.PENDING,
+				method: 'bolt11',
+				quote_id: 'melt-1',
+			});
+			await service.watch('user-1', 'op-1');
+			await jest.advanceTimersByTimeAsync(0);
+			expect(wallet.on.meltQuoteUpdates).toHaveBeenCalledWith(['melt-1'], expect.any(Function), expect.any(Function));
+			expect(operationSettles()).toBe(1);
+
+			socket.notify!({state: 'PENDING'});
+			await jest.advanceTimersByTimeAsync(0);
+			expect(operationSettles()).toBe(1);
+			socket.notify!({state: 'PAID'});
+			await jest.advanceTimersByTimeAsync(0);
+			expect(operationSettles()).toBe(2);
+		});
+
+		it.each(['bolt12', 'onchain'])('polls a %s melt, not trying a socket cashu-ts has no subscription for', async (method) => {
+			operation = pending({type: WalletOperationType.MELT, state: WalletOperationState.PENDING, method, quote_id: 'melt-1'});
+			await service.watch('user-1', 'op-1');
+			await jest.advanceTimersByTimeAsync(5_000);
+			expect(mint_service.allowsSocket).not.toHaveBeenCalled();
+			expect(operationSettles()).toBe(2);
+		});
+
 		it('opens no socket for a mint operation, which only exists once its quote is paid', async () => {
 			operation = pending({
 				type: WalletOperationType.MINT,
@@ -241,6 +273,29 @@ describe('CashuWalletWatchService', () => {
 
 			socket.notify!({state: 'PAID'});
 			expect(mint_quote_service.settleUpdate).toHaveBeenCalledWith('quote-1', {state: 'PAID'});
+		});
+
+		it('checks every 5s again when a socket drops after a long watch, backing off while it stays down', async () => {
+			await service.watchMintQuote('user-1', 'quote-1');
+			await jest.advanceTimersByTimeAsync(300_000);
+			const before = mintQuoteSettles();
+			wallet.on.mintQuoteUpdates.mockRejectedValueOnce(new Error('socket refused'));
+			socket.lost!();
+			await jest.advanceTimersByTimeAsync(25_000);
+			expect(mintQuoteSettles() - before).toBe(5);
+			expect(wallet.on.mintQuoteUpdates).toHaveBeenCalledTimes(2);
+			await jest.advanceTimersByTimeAsync(5_000);
+			expect(mintQuoteSettles() - before).toBe(5);
+		});
+
+		it('backs off as polling does from a socket that drops a second after each open', async () => {
+			wallet.on.mintQuoteUpdates.mockImplementation(async (_items, _notify, lost) => {
+				setTimeout(lost, 1_000);
+				return cancel;
+			});
+			await service.watchMintQuote('user-1', 'quote-1');
+			await jest.advanceTimersByTimeAsync(120_000);
+			expect(mintQuoteSettles()).toBe(9);
 		});
 
 		it('closes the subscription and the mint socket with it when the last viewer leaves', async () => {
