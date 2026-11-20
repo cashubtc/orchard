@@ -46,7 +46,8 @@ max_melt = 1000000
 [bdk]
 mnemonic = "env:CDK_MINTD_BDK_MNEMONIC"
 network = "regtest"
-num_confs = 1
+# cdk's default; deposits credit and onchain melts settle after 6 blocks (~3 min with the block miner)
+num_confs = 6
 min_receive_amount_sat = 1000
 min_send_amount_sat = 546
 chain_source_type = "bitcoinrpc"

@@ -64,7 +64,7 @@ bcli() {
 }
 
 # Mine N regtest blocks to a throwaway address — confirms on-chain txs so the
-# mint's BDK backend (num_confs=1) sees deposits and its own melt broadcasts.
+# mint's BDK backend (num_confs=6) sees deposits and its own melt broadcasts.
 btc_mine() {
     # POSIX sh has no `local` — prefix vars so callers' $addr survives.
     mine_n="${1:-1}"
@@ -397,7 +397,7 @@ if [ "$ACTIVITY_ONCHAIN_MINTS" -gt 0 ]; then
         fi
 
         btc_send_sats "$addr" "$amt"
-        btc_mine 2   # num_confs=1 in mintd.toml; mine 2 for margin
+        btc_mine 7   # num_confs=6 in mintd.toml; mine 7 for margin
 
         # Redeem. The mint's BDK poller needs a moment to spot the confirmed
         # deposit, so allow a generous idle window (--wait-duration=0) bounded by
@@ -416,17 +416,27 @@ fi
 
 # ───── 10. Wallet onchain melts (NUT-30 / BDK backend) ─────
 # Wallet burns ecash and the mint pays a bitcoin address on-chain. Destination
-# is a fresh bitcoind address; a block is mined afterwards to confirm the mint's
-# broadcast. Needs the onchain mints above to have funded the mint's BDK wallet,
-# plus enough wallet sat balance to cover amount + fee reserve.
+# is a fresh bitcoind address. cdk-cli waits until the mint marks the send paid
+# (num_confs=6), so once bitcoind sees the payment the 6 blocks are mined.
+# Needs the onchain mints above to have funded the mint's BDK wallet, plus
+# enough wallet sat balance to cover amount + fee reserve.
 if [ "$ACTIVITY_ONCHAIN_MELTS" -gt 0 ]; then
     log "wallet onchain melts: $ACTIVITY_ONCHAIN_MELTS"
     i=0
     while [ "$i" -lt "$ACTIVITY_ONCHAIN_MELTS" ]; do
         amt=$(rand_sat 2000 5000)
         addr=$(bcli getnewaddress)
-        if wallet_bounded 60 melt --mint-url "$MINT_URL" --method onchain --address "$addr" --amount "$amt" >/dev/null 2>&1; then
-            btc_mine 1
+        wallet_bounded 180 melt --mint-url "$MINT_URL" --method onchain --address "$addr" --amount "$amt" >/dev/null 2>&1 &
+        melt_pid=$!
+        while kill -0 "$melt_pid" 2>/dev/null; do
+            received=$(bcli getreceivedbyaddress "[\"$addr\", 0]")
+            if [ -n "$received" ] && [ "$received" != "0" ]; then
+                btc_mine 6
+                break
+            fi
+            sleep 2
+        done
+        if wait "$melt_pid"; then
             log "  onchain melt ${amt} sat → ${addr}"
         else
             log "  onchain melt ${amt} FAILED"
