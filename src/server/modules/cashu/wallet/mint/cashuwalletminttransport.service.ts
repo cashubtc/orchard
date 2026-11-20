@@ -2,6 +2,7 @@
 import {Injectable, type OnModuleInit} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 /* Vendor Dependencies */
+import {DateTime} from 'luxon';
 import {
 	HttpResponseError,
 	JSONInt,
@@ -141,7 +142,7 @@ export class CashuWalletMintTransportService implements OnModuleInit {
 		if (!header) return undefined;
 		const seconds = Number(header);
 		if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
-		const date = Date.parse(header);
-		return Number.isNaN(date) ? undefined : Math.max(0, date - Date.now());
+		const date = DateTime.fromHTTP(header);
+		return date.isValid ? Math.max(0, date.diffNow().toMillis()) : undefined;
 	}
 }

@@ -280,7 +280,7 @@ export class CashuWalletMintService {
 
 	/** Share one load per key for ttl_ms, or for max_age_ms when a caller wants it fresher; a failed load is dropped so the next caller retries, and expired loads are dropped as new ones are stored */
 	private memoize<T>(cache: Map<string, Memo<T>>, key: string, ttl_ms: number, load: () => Promise<T>, max_age_ms = ttl_ms): Promise<T> {
-		const now = Date.now();
+		const now = DateTime.now().toMillis();
 		const cached = cache.get(key);
 		if (cached && cached.expires_at > now && now - cached.loaded_at < max_age_ms) return cached.value;
 		for (const [stale_key, memo] of cache) if (memo.expires_at <= now) cache.delete(stale_key);
@@ -358,14 +358,14 @@ export class CashuWalletMintService {
 
 	/** Time a mint's /v1/info, saving the fresh info and refreshing its keysets when they are due; for the Orchard mint it also renews the live identity */
 	private async probeMint(mint: Mint): Promise<CashuWalletMintProbe> {
-		const started_at = Date.now();
+		const started_at = DateTime.now().toMillis();
 		let info: MintInfo;
 		try {
 			info = new MintInfo(await mint.getInfo());
 		} catch (error) {
 			return {online: false, latency_ms: null, error: describeMintError(error), checked_at: DateTime.now().toUnixInteger()};
 		}
-		const latency_ms = Date.now() - started_at;
+		const latency_ms = DateTime.now().toMillis() - started_at;
 		if (mint.mintUrl === this.orchard_live?.api_url) this.orchard_live = this.toOrchardIdentity(mint.mintUrl, info.cache);
 		await this.cashuWalletMintCacheService
 			.saveInfo(mint.mintUrl, info)
@@ -389,11 +389,11 @@ export class CashuWalletMintService {
 	/** Identity from the mint itself, for anything that writes; one lookup at a time, a failed lookup is retried after ORCHARD_RETRY_MS */
 	private getLiveOrchardIdentity(): Promise<OrchardMintIdentity | null> {
 		if (this.orchard_live) return Promise.resolve(this.orchard_live);
-		if (Date.now() - this.orchard_failed_at < ORCHARD_RETRY_MS) return Promise.resolve(null);
+		if (DateTime.now().toMillis() - this.orchard_failed_at < ORCHARD_RETRY_MS) return Promise.resolve(null);
 		this.orchard_lookup ??= this.loadOrchardIdentity().then((identity) => {
 			this.orchard_lookup = null;
 			if (identity) this.orchard_live = identity;
-			else this.orchard_failed_at = Date.now();
+			else this.orchard_failed_at = DateTime.now().toMillis();
 			return identity;
 		});
 		return this.orchard_lookup;
@@ -508,7 +508,7 @@ export class CashuWalletMintService {
 		const request = this.cashuWalletMintTransportService.guardedRequest(allow_local);
 		let url = mint_url;
 		for (let hops = 0; ; hops++) {
-			const started_at = Date.now();
+			const started_at = DateTime.now().toMillis();
 			let info: MintInfo;
 			try {
 				info = await this.requestMintInfo(url, request);
@@ -523,7 +523,7 @@ export class CashuWalletMintService {
 			return {
 				url: hops === 0 ? url : (this.normalizeUrls(info.cache.urls ?? [])[0] ?? url),
 				info,
-				latency_ms: Date.now() - started_at,
+				latency_ms: DateTime.now().toMillis() - started_at,
 				time_offset: mint_time ? mint_time - DateTime.now().toUnixInteger() : null,
 			};
 		}

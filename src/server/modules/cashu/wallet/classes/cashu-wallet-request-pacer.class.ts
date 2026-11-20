@@ -1,3 +1,6 @@
+/* Vendor Dependencies */
+import {DateTime} from 'luxon';
+
 /** Paces requests per mint host (GCRA: a burst, then a steady rate), since every wallet on an instance shares one IP */
 export class CashuWalletRequestPacer {
 	private readonly arrivals = new Map<string, number>();
@@ -15,7 +18,7 @@ export class CashuWalletRequestPacer {
 
 	/** Claim a host's next slot and wait for it; false at once when it's further off than the longest wait */
 	public async acquire(host: string): Promise<boolean> {
-		const now = Date.now();
+		const now = DateTime.now().toMillis();
 		const arrival = Math.max(this.arrivals.get(host) ?? now, now);
 		const wait_ms = arrival - this.tolerance_ms - now;
 		if (wait_ms > this.max_wait_ms) return false;
@@ -26,7 +29,7 @@ export class CashuWalletRequestPacer {
 
 	/** Hold a host's requests until the mint is ready for them again */
 	public pause(host: string, retry_after_ms: number): void {
-		const now = Date.now();
+		const now = DateTime.now().toMillis();
 		this.arrivals.set(host, Math.max(this.arrivals.get(host) ?? now, now + retry_after_ms + this.tolerance_ms));
 	}
 }

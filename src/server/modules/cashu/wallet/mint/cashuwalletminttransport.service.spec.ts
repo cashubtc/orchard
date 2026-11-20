@@ -68,6 +68,15 @@ describe('CashuWalletMintTransportService', () => {
 		await expect(service.request({endpoint: 'https://203.0.113.12/v1/info'})).rejects.toBeInstanceOf(type);
 	});
 
+	it.each([
+		['seconds', '5', 5_000],
+		['an HTTP date already past', 'Wed, 21 Oct 2015 07:28:00 GMT', 0],
+		['anything else', 'soon', undefined],
+	])('reads a Retry-After header given as %s', async (_label, header, retry_after_ms) => {
+		fetch_service.fetchWithProxy.mockResolvedValue(response('', 429, {'Retry-After': header}));
+		await expect(service.request({endpoint: 'https://203.0.113.12/v1/info'})).rejects.toMatchObject({retryAfterMs: retry_after_ms});
+	});
+
 	it('holds off a mint that rate limited Orchard, without touching other mints', async () => {
 		fetch_service.fetchWithProxy.mockResolvedValueOnce(response({detail: 'Rate limit exceeded.'}, 429));
 		await expect(service.request({endpoint: 'https://203.0.113.12/v1/swap'})).rejects.toBeInstanceOf(RateLimitError);

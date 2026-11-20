@@ -1,6 +1,8 @@
 /* Core Dependencies */
 import {Injectable, Logger} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
+/* Vendor Dependencies */
+import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {FetchService} from '#server/modules/fetch/fetch.service';
 import {assertPublicDestination} from '#server/modules/fetch/network-guard';
@@ -42,7 +44,7 @@ export class PublicImageService {
 
 	/** An image shared for IMAGE_CACHE_MS; a failed fetch is dropped so the next caller retries, and expired images are dropped as new ones are stored */
 	private getImage(url: string): Promise<FetchedImage> {
-		const now = Date.now();
+		const now = DateTime.now().toMillis();
 		const cached = this.images.get(url);
 		if (cached && cached.expires_at > now) return cached.value;
 		for (const [stale_url, image] of this.images) if (image.expires_at <= now) this.images.delete(stale_url);

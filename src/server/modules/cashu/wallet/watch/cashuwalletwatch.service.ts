@@ -120,7 +120,7 @@ export class CashuWalletWatchService implements OnModuleDestroy {
 
 	/** Start watching: settle it now, then each tick it's due and on each websocket notification */
 	private addTarget(watched: WatchSubject): WatchTarget {
-		const now = Date.now();
+		const now = DateTime.now().toMillis();
 		const target: WatchTarget = {
 			...watched,
 			key: this.keyOf(watched.kind, watched.subject.id),
@@ -164,7 +164,7 @@ export class CashuWalletWatchService implements OnModuleDestroy {
 		if (this.ticking) return;
 		this.ticking = true;
 		try {
-			const now = Date.now();
+			const now = DateTime.now().toMillis();
 			for (const target of this.targets.values()) if (now - target.started_at >= WATCH_MAX_MS) this.drop(target);
 			const due = [...this.targets.values()].filter((target) => this.isDue(target, now));
 			if (due.length === 0) return;
@@ -205,7 +205,7 @@ export class CashuWalletWatchService implements OnModuleDestroy {
 	/** Settle a watched mint quote from the update its mint pushed, so nothing is asked of the mint again; the safety poll counts from here */
 	private settlePush(target: WatchTarget, update: CashuWalletMintQuoteResponse): void {
 		const quote_id = target.subject.id;
-		target.settled_at = Date.now();
+		target.settled_at = DateTime.now().toMillis();
 		this.cashuWalletMintQuoteService
 			.settleUpdate(quote_id, update)
 			.catch((error) => this.logger.warn(`Watched wallet mint quote ${quote_id} could not be settled: ${describeMintError(error)}`));
