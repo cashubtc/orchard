@@ -27,16 +27,18 @@ type FakeMeltQuote = {method: string; response: Record<string, any>; inputs: str
 const OUTPOINT = `${'ab'.repeat(32)}:0`;
 
 /** Y of a proof secret, which mints key spent state by (NUT-07) */
-const toY = (secret: string): string => hashToCurve(new TextEncoder().encode(secret)).toHex(true);
+function toY(secret: string): string {
+	return hashToCurve(new TextEncoder().encode(secret)).toHex(true);
+}
 
 /** Sats a fake invoice is for: its amount is in nano-bitcoin, ten to the sat; null when it sets none */
-const invoiceAmount = (invoice: string): number | null => {
+function invoiceAmount(invoice: string): number | null {
 	const match = /^lnbc(\d+)n1/.exec(invoice);
 	return match ? Number(match[1]) / 10 : null;
-};
+}
 
 /** Mint that signs, verifies and spends with cashu-ts crypto, with scriptable failures, outages and lost responses */
-export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk = 0, version_byte}: FakeMintOptions = {}) => {
+export function createFakeMint({pubkey = '02orchard', urls = [], input_fee_ppk = 0, version_byte}: FakeMintOptions = {}) {
 	const newKeyset = () => createNewMintKeys(8, undefined, {unit: 'sat', input_fee_ppk, versionByte: version_byte});
 	const keysets = [newKeyset()];
 	const signed = new Map<string, {id: string; amount: number; C_: string}>();
@@ -306,24 +308,23 @@ export const createFakeMint = ({pubkey = '02orchard', urls = [], input_fee_ppk =
 		settleMelt,
 		broadcastMelt,
 	};
-};
+}
 
 export type FakeMint = ReturnType<typeof createFakeMint>;
 
 /** FetchService.fetchWithProxy answered by the fake mint at each URL's origin; offline fails like an unreachable mint */
-export const fakeMintFetch =
-	(mintAt: (origin: string) => FakeMint, offline: () => boolean = () => false) =>
-	async (url: string, options: {body?: string}) => {
+export function fakeMintFetch(mintAt: (origin: string) => FakeMint, offline: () => boolean = () => false) {
+	return async (url: string, options: {body?: string}) => {
 		if (offline()) throw new Error('socket hang up');
 		const {origin, pathname} = new URL(url);
 		const [status, body] = mintAt(origin).handle(pathname, options.body ? JSON.parse(options.body) : undefined);
 		return {ok: status < 300, status, text: async () => JSON.stringify(body), headers: {get: () => null}};
 	};
+}
 
 /** cashu-ts transport straight onto a fake mint, for wallets built outside Orchard */
-export const fakeMintRequest =
-	(mint: FakeMint): RequestFn =>
-	async <T>({endpoint, requestBody}: RequestOptions): Promise<T> => {
+export function fakeMintRequest(mint: FakeMint): RequestFn {
+	return async <T>({endpoint, requestBody}: RequestOptions): Promise<T> => {
 		const [status, body] = mint.handle(
 			new URL(endpoint).pathname,
 			requestBody ? JSON.parse(JSONInt.stringify(requestBody)) : undefined,
@@ -331,3 +332,4 @@ export const fakeMintRequest =
 		if (status >= 300) throw new MintOperationError(body.code, body.detail);
 		return body as T;
 	};
+}

@@ -7,7 +7,7 @@ import {WebSocketServer} from 'ws';
 /* Native Dependencies */
 import {CASHU_WALLET_MINT_MAX_BYTES} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 /* Local Dependencies */
-import {createCashuWalletSocket} from './cashu-wallet-socket.class.js';
+import {createCashuWalletSocket} from './cashuwalletsocket.factory.js';
 
 describe('createCashuWalletSocket', () => {
 	/** A local server that sends each connection one message; resolves with the outcome a socket to the given host sees */

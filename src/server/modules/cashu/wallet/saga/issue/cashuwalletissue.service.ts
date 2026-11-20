@@ -33,7 +33,10 @@ import type {CashuWalletIssueRequest, CashuWalletMintQuoteResponse, CashuWalletM
 
 const MINT_QUOTE_KEY_COUNTER = 'nut20';
 
-const hasMintCode = (error: unknown, code: CashuMintErrorCode): boolean => isMintOperationError(error) && error.code === code;
+/** Whether a mint refused with this NUT error code */
+function hasMintCode(error: unknown, code: CashuMintErrorCode): boolean {
+	return isMintOperationError(error) && error.code === code;
+}
 
 @Injectable()
 export class CashuWalletIssueService {

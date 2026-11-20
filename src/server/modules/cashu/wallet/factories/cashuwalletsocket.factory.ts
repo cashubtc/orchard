@@ -12,11 +12,11 @@ import {CASHU_WALLET_MINT_MAX_BYTES} from '#server/modules/cashu/wallet/constant
  * WebSocket class for cashu-ts that reaches each mint the way FetchService does: through the Tor proxy unless it's local, with the
  * same size cap; a direct socket refuses a host that resolves to a private address unless that host may be local
  */
-export const createCashuWalletSocket = (
+export function createCashuWalletSocket(
 	fetch_service: Pick<FetchService, 'agentFor'>,
 	allowsLocal: (url: string) => boolean,
-): typeof globalThis.WebSocket =>
-	class CashuWalletSocket extends WebSocket {
+): typeof globalThis.WebSocket {
+	return class CashuWalletSocket extends WebSocket {
 		constructor(address: string | URL) {
 			const url = String(address);
 			const agent = fetch_service.agentFor(url);
@@ -25,3 +25,4 @@ export const createCashuWalletSocket = (
 			super(address, options);
 		}
 	} as unknown as typeof globalThis.WebSocket;
+}

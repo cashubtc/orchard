@@ -20,7 +20,7 @@ import {assertPublicDestination} from '#server/modules/fetch/network-guard';
 import {MintRedirectError} from '#server/modules/cashu/wallet/classes/mint-redirect-error.class';
 import {CashuWalletUnsentError} from '#server/modules/cashu/wallet/classes/cashu-wallet-unsent-error.class';
 import {CashuWalletRequestPacer} from '#server/modules/cashu/wallet/classes/cashu-wallet-request-pacer.class';
-import {createCashuWalletSocket} from '#server/modules/cashu/wallet/classes/cashu-wallet-socket.class';
+import {createCashuWalletSocket} from '#server/modules/cashu/wallet/factories/cashuwalletsocket.factory';
 import {CASHU_WALLET_MINT_MAX_BYTES} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 
 const MINT_TIMEOUT_MS = 10_000;

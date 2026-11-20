@@ -3,7 +3,7 @@ import type {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service
 import type {BitcoinTxOut} from '#server/modules/bitcoin/rpc/btcrpc.types';
 
 /** Bitcoin Core node behind the BitcoinRpcService reads the wallet makes, for specs; down fails every read like an unreachable node */
-export const createFakeChain = () => {
+export function createFakeChain() {
 	const fake = {
 		configured: true,
 		down: false,
@@ -19,6 +19,6 @@ export const createFakeChain = () => {
 		} satisfies Pick<BitcoinRpcService, 'isConfigured' | 'getBitcoinTxOut'>,
 	};
 	return fake;
-};
+}
 
 export type FakeChain = ReturnType<typeof createFakeChain>;

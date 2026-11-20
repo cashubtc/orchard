@@ -16,8 +16,9 @@ import type {CashuWalletScope} from '#server/modules/cashu/wallet/cashuwallet.ty
 import {CashuWalletOperation} from './cashuwalletoperation.entity.js';
 
 /** A sent token waiting to be claimed, checked in batches rather than resumed one by one */
-const isUnclaimed = (operation: CashuWalletOperation): boolean =>
-	operation.type === WalletOperationType.SEND && operation.state === WalletOperationState.PENDING;
+function isUnclaimed(operation: CashuWalletOperation): boolean {
+	return operation.type === WalletOperationType.SEND && operation.state === WalletOperationState.PENDING;
+}
 
 @Injectable()
 export class CashuWalletRecoveryService implements OnApplicationBootstrap {

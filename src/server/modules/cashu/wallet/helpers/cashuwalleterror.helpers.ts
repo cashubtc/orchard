@@ -47,13 +47,17 @@ const RPC_REFUSALS = new Set<number>([
 ]);
 
 /** Operator-facing wallet error, resolved to EcashWalletError with its details */
-export const walletError = (details: string) => ({code: OrchardErrorCode.EcashWalletError, details});
+export function walletError(details: string): {code: OrchardErrorCode.EcashWalletError; details: string} {
+	return {code: OrchardErrorCode.EcashWalletError, details};
+}
 
 /** Any failure as an operator-readable wallet error, so NUT codes never pass as Orchard codes; wallet errors pass through */
-export const toWalletError = (error: unknown) => walletError(describeMintError(error));
+export function toWalletError(error: unknown): ReturnType<typeof walletError> {
+	return walletError(describeMintError(error));
+}
 
 /** Operator-readable description of a failed mint or mint RPC call, naming the NUT error code when the mint sent one */
-export const describeMintError = (error: unknown): string => {
+export function describeMintError(error: unknown): string {
 	const mint_error = error instanceof StaleKeysetError && isMintOperationError(error.cause) ? error.cause : error;
 	if (isMintOperationError(mint_error)) {
 		const auth = AUTH_CODES.has(mint_error.code) ? '; this mint requires authentication, which Orchard wallets do not support yet' : '';
@@ -63,21 +67,21 @@ export const describeMintError = (error: unknown): string => {
 	if (error instanceof Error) return error.message;
 	const orchard_error = (typeof error === 'number' ? {code: error} : error) as {code?: number; details?: string} | null;
 	return orchard_error?.details ?? OrchardErrorMessages[orchard_error?.code ?? ''] ?? String(error);
-};
+}
 
 /** Decide what a journaled operation does after a mint call fails: spec refusals are definitive, unknown codes check state, transport failures wait unless a `fresh` first attempt was never sent */
-export const classifyMintError = (error: unknown, fresh = false): WalletErrorAction => {
+export function classifyMintError(error: unknown, fresh = false): WalletErrorAction {
 	if (error instanceof StaleKeysetError) return WalletErrorAction.REBUILD;
 	// Only a first attempt proves the mint never saw it; a replay's earlier attempt may have reached it
 	if (fresh && error instanceof CashuWalletUnsentError) return WalletErrorAction.UNSENT;
 	if (!isMintOperationError(error)) return WalletErrorAction.WAIT;
 	if (error.code === CashuMintErrorCode.PROOFS_PENDING && LEGACY_NOT_BALANCED.test(error.message)) return WalletErrorAction.FAIL;
 	return ACTION_BY_CODE[error.code] ?? (SPEC_CODES.has(error.code) ? WalletErrorAction.FAIL : WalletErrorAction.CHECK_STATE);
-};
+}
 
 /** Decide what a journaled operation does after a mint RPC call fails: refusals fail, anything that may have applied waits */
-export const classifyMintRpcError = (error: unknown): WalletErrorAction => {
+export function classifyMintRpcError(error: unknown): WalletErrorAction {
 	if (typeof error === 'number') return WalletErrorAction.FAIL; // CashuMintRpcService throws bare codes only before sending
 	const code = (error as {code?: unknown} | null)?.code;
 	return typeof code === 'number' && RPC_REFUSALS.has(code) ? WalletErrorAction.FAIL : WalletErrorAction.WAIT;
-};
+}

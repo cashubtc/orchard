@@ -1,5 +1,5 @@
 /* Core Dependencies */
-import {lookup, promises as dns} from 'dns';
+import {lookup, promises as dns, type LookupAddress, type LookupOptions} from 'dns';
 import {URL} from 'url';
 import * as net from 'net';
 
@@ -167,7 +167,11 @@ export async function assertPublicHost(host: string): Promise<string | null> {
  * DNS lookup for a connection that must stay off private and reserved ranges, checking the addresses it will actually dial;
  * a host that resolves to one fails the connection
  */
-export const lookupPublic: net.LookupFunction = (hostname, options, callback) => {
+export function lookupPublic(
+	hostname: string,
+	options: LookupOptions,
+	callback: (error: NodeJS.ErrnoException | null, address: string | LookupAddress[], family?: number) => void,
+): void {
 	lookup(hostname, options, (error, address, family) => {
 		if (error) return callback(error, address, family);
 		const addresses = Array.isArray(address) ? address.map((entry) => entry.address) : [address];
@@ -175,7 +179,7 @@ export const lookupPublic: net.LookupFunction = (hostname, options, callback) =>
 		if (!blocked) return callback(null, address, family);
 		callback(new Error(`Blocked: '${hostname}' resolves to private/reserved IP '${blocked}'`), address, family);
 	});
-};
+}
 
 /**
  * Whether a URL is sent direct rather than through Tor: localhost, local TLDs, names with no TLD,
