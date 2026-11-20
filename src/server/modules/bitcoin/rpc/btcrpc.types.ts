@@ -1,3 +1,17 @@
+/* *******************************************************
+	Options
+******************************************************** */
+
+/** How a call treats a failing node: `strict` throws the node's error instead of returning null, `timeout_ms` gives up on one that doesn't answer */
+export type BitcoinRpcOptions = {
+	strict?: boolean;
+	timeout_ms?: number;
+};
+
+/* *******************************************************
+	Blockchain
+******************************************************** */
+
 export type BitcoinBlockchainInfo = {
 	chain: string;
 	blocks: number;
@@ -37,6 +51,32 @@ export type BitcoinBlockchainInfo = {
 	};
 };
 
+export type BitcoinBlock = {
+	hash: string;
+	confirmations: number;
+	height: number;
+	version: number;
+	versionHex: string;
+	merkleroot: string;
+	time: number;
+	mediantime: number;
+	nonce: number;
+	bits: string;
+	difficulty: number;
+	chainwork: string;
+	nTx: number;
+	previousblockhash: string;
+	nextblockhash: string;
+	strippedsize: number;
+	size: number;
+	weight: number;
+	tx: BitcoinRawTransaction[];
+};
+
+/* *******************************************************
+	Network
+******************************************************** */
+
 export type BitcoinNetworkInfo = {
 	version: number;
 	subversion: string;
@@ -66,27 +106,35 @@ export type BitcoinNetworkInfo = {
 	warnings: string[];
 };
 
-export type BitcoinBlock = {
-	hash: string;
-	confirmations: number;
-	height: number;
-	version: number;
-	versionHex: string;
-	merkleroot: string;
-	time: number;
-	mediantime: number;
-	nonce: number;
-	bits: string;
-	difficulty: number;
-	chainwork: string;
-	nTx: number;
-	previousblockhash: string;
-	nextblockhash: string;
-	strippedsize: number;
-	size: number;
+/* *******************************************************
+	Mempool
+******************************************************** */
+
+export type BitcoinTransaction = {
+	vsize: number;
 	weight: number;
-	tx: BitcoinRawTransaction[];
+	time: number;
+	height: number;
+	descendantcount: number;
+	descendantsize: number;
+	ancestorcount: number;
+	ancestorsize: number;
+	wtxid: string;
+	fees: {
+		base: number;
+		modified: number;
+		ancestor: number;
+		descendant: number;
+	};
+	depends: string[];
+	spentby: string[];
+	'bip125-replaceable': boolean;
+	unbroadcast: boolean;
 };
+
+/* *******************************************************
+	Transaction
+******************************************************** */
 
 export interface BitcoinRawTransaction {
 	in_active_chain?: boolean;
@@ -125,33 +173,22 @@ export interface BitcoinRawTransaction {
 	time?: number;
 }
 
-export type BitcoinTransaction = {
-	vsize: number;
-	weight: number;
-	time: number;
-	height: number;
-	descendantcount: number;
-	descendantsize: number;
-	ancestorcount: number;
-	ancestorsize: number;
-	wtxid: string;
-	fees: {
-		base: number;
-		modified: number;
-		ancestor: number;
-		descendant: number;
+export type BitcoinTxOut = {
+	bestblock: string;
+	confirmations: number;
+	value: number;
+	scriptPubKey: {
+		asm: string;
+		hex: string;
+		type: string;
+		address?: string;
 	};
-	depends: string[];
-	spentby: string[];
-	'bip125-replaceable': boolean;
-	unbroadcast: boolean;
+	coinbase: boolean;
 };
 
-export type BitcoinFeeEstimate = {
-	feerate?: number;
-	errors?: string[];
-	blocks: number;
-};
+/* *******************************************************
+	Mining
+******************************************************** */
 
 export type BitcoinBlockTemplate = {
 	version: number;
@@ -186,4 +223,14 @@ export type BitcoinBlockTemplate = {
 	bits: string;
 	height: number;
 	default_witness_commitment?: string;
+};
+
+/* *******************************************************
+	Utilities
+******************************************************** */
+
+export type BitcoinFeeEstimate = {
+	feerate?: number;
+	errors?: string[];
+	blocks: number;
 };

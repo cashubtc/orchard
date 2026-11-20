@@ -13,6 +13,8 @@ import type {
 	BitcoinTransaction,
 	BitcoinFeeEstimate,
 	BitcoinBlockTemplate,
+	BitcoinRpcOptions,
+	BitcoinTxOut,
 } from './btcrpc.types.js';
 
 @Injectable()
@@ -56,81 +58,79 @@ export class BitcoinRpcService implements OnModuleInit {
 	   Blockchain                      
 	******************************************************** */
 
-	public async getBitcoinBlockCount(): Promise<number> {
-		if (this.type === BitcoinType.CORE) return this.coreService.makeRpcRequest('getblockcount', []);
+	public async getBitcoinBlockCount(options?: BitcoinRpcOptions): Promise<number> {
+		return this.request('getblockcount', [], options);
 	}
 
-	public async getBitcoinBlockchainInfo(): Promise<BitcoinBlockchainInfo> {
-		if (this.type === BitcoinType.CORE) return this.coreService.makeRpcRequest('getblockchaininfo', []);
+	public async getBitcoinBlockchainInfo(options?: BitcoinRpcOptions): Promise<BitcoinBlockchainInfo> {
+		return this.request('getblockchaininfo', [], options);
 	}
 
-	public async getBitcoinBlock(hash: string): Promise<BitcoinBlock> {
-		if (this.type === BitcoinType.CORE) return this.coreService.makeRpcRequest('getblock', [hash, 2]);
+	public async getBitcoinBlock(hash: string, options?: BitcoinRpcOptions): Promise<BitcoinBlock> {
+		return this.request('getblock', [hash, 2], options);
 	}
 
-	public async getBitcoinBlockHash(height: number): Promise<string> {
-		if (this.type === BitcoinType.CORE) return this.coreService.makeRpcRequest('getblockhash', [height]);
+	public async getBitcoinBlockHash(height: number, options?: BitcoinRpcOptions): Promise<string> {
+		return this.request('getblockhash', [height], options);
 	}
 
-	public async getBitcoinBlockHeader(hash: string): Promise<any> {
-		if (this.type === BitcoinType.CORE) return this.coreService.makeRpcRequest('getblockheader', [hash, true]);
+	public async getBitcoinBlockHeader(hash: string, options?: BitcoinRpcOptions): Promise<any> {
+		return this.request('getblockheader', [hash, true], options);
 	}
 
-	public async getBitcoinBlockRaw(hash: string): Promise<string> {
-		if (this.type === BitcoinType.CORE) return this.coreService.makeRpcRequest('getblock', [hash, 0]);
+	public async getBitcoinBlockRaw(hash: string, options?: BitcoinRpcOptions): Promise<string> {
+		return this.request('getblock', [hash, 0], options);
 	}
 
 	/* *******************************************************
 	   Network                      
 	******************************************************** */
 
-	public async getBitcoinNetworkInfo(): Promise<BitcoinNetworkInfo> {
-		if (this.type === BitcoinType.CORE) return this.coreService.makeRpcRequest('getnetworkinfo', []);
+	public async getBitcoinNetworkInfo(options?: BitcoinRpcOptions): Promise<BitcoinNetworkInfo> {
+		return this.request('getnetworkinfo', [], options);
 	}
 
 	/* *******************************************************
 	   Mempool                      
 	******************************************************** */
 
-	public async getBitcoinMempool(): Promise<Record<string, BitcoinTransaction>> {
-		if (this.type === BitcoinType.CORE) return this.coreService.makeRpcRequest('getrawmempool', [true]);
+	public async getBitcoinMempool(options?: BitcoinRpcOptions): Promise<Record<string, BitcoinTransaction>> {
+		return this.request('getrawmempool', [true], options);
 	}
 
 	/* *******************************************************
 	    Transaction                      
 	******************************************************** */
 
-	public async getTransaction(txid: string): Promise<BitcoinRawTransaction> {
-		if (this.type === BitcoinType.CORE) return this.coreService.makeRpcRequest('getrawtransaction', [txid, true]);
+	public async getTransaction(txid: string, options?: BitcoinRpcOptions): Promise<BitcoinRawTransaction> {
+		return this.request('getrawtransaction', [txid, true], options);
+	}
+
+	/** An output still unspent in the chain or mempool with its confirmations, 0 in the mempool; null once spent or unknown */
+	public async getBitcoinTxOut(txid: string, vout: number, options?: BitcoinRpcOptions): Promise<BitcoinTxOut | null> {
+		return this.request('gettxout', [txid, vout, true], options);
 	}
 
 	/* *******************************************************
 	   Mining                      
 	******************************************************** */
 
-	public async getBitcoinBlockTemplate(): Promise<BitcoinBlockTemplate> {
-		if (this.type === BitcoinType.CORE) {
-			if (!this.chain) {
-				const blockchain_info = await this.getBitcoinBlockchainInfo();
-				this.chain = blockchain_info.chain;
-			}
-			const rules = ['segwit'];
-			if (this.chain === 'signet') rules.push('signet');
-			return this.coreService.makeRpcRequest('getblocktemplate', [
-				{
-					rules,
-					mode: 'template',
-				},
-			]);
+	public async getBitcoinBlockTemplate(options?: BitcoinRpcOptions): Promise<BitcoinBlockTemplate> {
+		if (this.type === BitcoinType.CORE && !this.chain) {
+			const blockchain_info = await this.getBitcoinBlockchainInfo(options);
+			this.chain = blockchain_info.chain;
 		}
+		const rules = ['segwit'];
+		if (this.chain === 'signet') rules.push('signet');
+		return this.request('getblocktemplate', [{rules, mode: 'template'}], options);
 	}
 
 	/* *******************************************************
 	   Utilities
 	******************************************************** */
 
-	public async getBitcoinFeeEstimate(target: number): Promise<BitcoinFeeEstimate> {
-		if (this.type === BitcoinType.CORE) return this.coreService.makeRpcRequest('estimatesmartfee', [target]);
+	public async getBitcoinFeeEstimate(target: number, options?: BitcoinRpcOptions): Promise<BitcoinFeeEstimate> {
+		return this.request('estimatesmartfee', [target], options);
 	}
 
 	/**
@@ -154,5 +154,11 @@ export class BitcoinRpcService implements OnModuleInit {
 	 */
 	public isConfigured(): boolean {
 		return this.type === BitcoinType.CORE;
+	}
+
+	/** A call to the configured node; with none, a strict caller gets an error and the rest nothing */
+	private async request(method: string, params: unknown[], options: BitcoinRpcOptions = {}): Promise<any> {
+		if (this.type === BitcoinType.CORE) return this.coreService.makeRpcRequest(method, params, options);
+		if (options.strict) throw new Error('No Bitcoin node configured');
 	}
 }
