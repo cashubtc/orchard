@@ -164,6 +164,7 @@ export interface BitcoinRawTransaction {
 			hex: string;
 			reqSigs?: number;
 			type: string;
+			address?: string;
 			addresses?: string[];
 		};
 	}>;

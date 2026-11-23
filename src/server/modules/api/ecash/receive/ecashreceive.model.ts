@@ -3,7 +3,11 @@ import {Field, Float, ID, Int, ObjectType} from '@nestjs/graphql';
 /* Application Dependencies */
 import {OrchardEcashMintLookup} from '#server/modules/api/ecash/mint/ecashmint.model';
 import {UnixTimestamp} from '#server/modules/graphql/scalars/unixtimestamp.scalar';
-import type {CashuWalletMintQuoteRecord, CashuWalletReceiveTokenPreview} from '#server/modules/cashu/wallet/cashuwallet.types';
+import type {
+	CashuWalletMintQuoteDeposit,
+	CashuWalletMintQuoteRecord,
+	CashuWalletReceiveTokenPreview,
+} from '#server/modules/cashu/wallet/cashuwallet.types';
 
 @ObjectType({description: "An ecash token read before receiving it into the current user's wallet"})
 export class OrchardEcashReceiveTokenPreview {
@@ -32,6 +36,24 @@ export class OrchardEcashReceiveTokenPreview {
 		this.fee = preview.fee;
 		this.claimed = preview.claimed;
 		this.mint = new OrchardEcashMintLookup(preview.mint);
+	}
+}
+
+@ObjectType({description: "A payment to an onchain mint quote's address that the mint hasn't credited yet"})
+export class OrchardEcashMintQuoteDeposit {
+	@Field({description: 'Transaction that paid it'})
+	txid: string;
+
+	@Field(() => Float, {description: 'Amount paid, in sat'})
+	amount: number;
+
+	@Field(() => Int, {description: "Confirmations Orchard's Bitcoin node last saw on it"})
+	confirmations: number;
+
+	constructor(deposit: CashuWalletMintQuoteDeposit) {
+		this.txid = deposit.txid;
+		this.amount = deposit.amount;
+		this.confirmations = deposit.confirmations;
 	}
 }
 
@@ -78,6 +100,11 @@ export class OrchardEcashMintQuote {
 	@Field({description: 'Whether it takes no more payments: minted in full, or past its window with nothing owed'})
 	final: boolean;
 
+	@Field(() => [OrchardEcashMintQuoteDeposit], {
+		description: "Onchain payments to it that Orchard's Bitcoin node sees and the mint hasn't credited yet; empty without a node",
+	})
+	deposits: OrchardEcashMintQuoteDeposit[];
+
 	@Field(() => UnixTimestamp, {description: 'When the quote was created'})
 	created_at: number;
 
@@ -98,6 +125,7 @@ export class OrchardEcashMintQuote {
 		this.payments = quote.payments;
 		this.latest = quote.latest;
 		this.final = quote.final;
+		this.deposits = quote.deposits.map((deposit) => new OrchardEcashMintQuoteDeposit(deposit));
 		this.created_at = quote.created_at;
 		this.updated_at = quote.updated_at;
 	}

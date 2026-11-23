@@ -67,7 +67,7 @@ describe('EcashReceiveService', () => {
 	});
 
 	it('newMintQuote and openMintQuote map the quote with what its payments brought in', async () => {
-		const quote = {id: 'quote-1', method: 'bolt12', request: 'lno1offer', amount: null, received: 50, payments: 2} as any;
+		const quote = {id: 'quote-1', method: 'bolt12', request: 'lno1offer', amount: null, received: 50, payments: 2, deposits: []} as any;
 		cashuWalletMintQuoteService.newQuote.mockResolvedValue(quote);
 		cashuWalletMintQuoteService.openQuote.mockResolvedValue(quote);
 		const request = {user_id: 'user-1', mint_id: 'mint-1', method: 'bolt12', unit: 'sat', amount: null, description: null};
@@ -89,6 +89,7 @@ describe('EcashReceiveService', () => {
 			received: 0,
 			payments: 0,
 			final: false,
+			deposits: [],
 		} as any;
 		let pub_sub: PubSub;
 		let updates: AsyncIterableIterator<EcashMintQuoteWatchPayload>;

@@ -10,9 +10,11 @@ import {isMintOperationError, type Wallet} from '@cashu/cashu-ts';
 import {CashuWalletOperation} from '#server/modules/cashu/wallet/saga/cashuwalletoperation.entity';
 import {CashuWalletIssueService} from '#server/modules/cashu/wallet/saga/issue/cashuwalletissue.service';
 import {CashuWalletMintService} from '#server/modules/cashu/wallet/mint/cashuwalletmint.service';
+import {CashuWalletChainService} from '#server/modules/cashu/wallet/chain/cashuwalletchain.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {describeMintError, walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 import {mintQuoteTotals, quoteExpiry} from '#server/modules/cashu/wallet/helpers/cashuwalletquote.helpers';
+import {chainConfirmations} from '#server/modules/cashu/wallet/helpers/cashuwalletchain.helpers';
 import {
 	CASHU_WALLET_FINAL_STATES,
 	CASHU_WALLET_OPEN_STATES,
@@ -21,6 +23,10 @@ import {
 } from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 import {CashuWalletMintQuoteMethod} from '#server/modules/cashu/wallet/classes/cashu-wallet-mint-quote-method.class';
 import type {
+	CashuWalletChainDeposit,
+	CashuWalletDepositRules,
+	CashuWalletDepositUpdate,
+	CashuWalletMintQuoteDeposit,
 	CashuWalletMintQuoteResponse,
 	CashuWalletOperationUpdate,
 	CashuWalletMintQuoteRecord,
@@ -37,6 +43,8 @@ export class CashuWalletMintQuoteService {
 	private readonly logger = new Logger(CashuWalletMintQuoteService.name);
 	/** Work running now by key, so creates per wallet mint, method and unit, and settles per quote, run one at a time */
 	private readonly running = new Map<string, Promise<unknown>>();
+	/** The run following onchain deposits, while one reads the chain */
+	private following: Promise<void> | null = null;
 
 	constructor(
 		@InjectRepository(CashuWalletMintQuote)
@@ -45,6 +53,7 @@ export class CashuWalletMintQuoteService {
 		private walletOperationRepository: Repository<CashuWalletOperation>,
 		private cashuWalletMintService: CashuWalletMintService,
 		private cashuWalletIssueService: CashuWalletIssueService,
+		private cashuWalletChainService: CashuWalletChainService,
 		private eventEmitter: EventEmitter2,
 	) {}
 
@@ -217,10 +226,11 @@ export class CashuWalletMintQuoteService {
 		if (quote) await this.settle(quote, update, this.findMethod(quote.method));
 	}
 
-	/** Check quotes in one go per mint, method and unit */
+	/** Check quotes in one go per mint, method and unit, then follow the deposits to their onchain addresses without waiting on it */
 	private async checkAll(quotes: CashuWalletMintQuote[]): Promise<void> {
-		const groups = await this.groupByMint(quotes);
-		await Promise.all([...groups.values()].map(({wallet, members}) => this.checkGroup(wallet, members)));
+		const groups = [...(await this.groupByMint(quotes)).values()];
+		await Promise.all(groups.map(({wallet, members}) => this.checkGroup(wallet, members)));
+		this.followDeposits(groups);
 	}
 
 	/** Quotes grouped by mint URL, unit and method across every user's wallet, each group with one wallet to check through; a wallet that can't load waits for the next pass */
@@ -326,7 +336,7 @@ export class CashuWalletMintQuoteService {
 		remote: CashuWalletMintQuoteResponse,
 		method: CashuWalletMintQuoteMethod,
 	): Promise<CashuWalletMintQuote> {
-		return this.serially(`settle:${quote.id}`, async () => {
+		return this.serially(this.settleKey(quote.id), async () => {
 			const current = await this.walletMintQuoteRepository.findOneByOrFail({id: quote.id});
 			return this.claim(await this.observe(current, remote, method), method);
 		});
@@ -401,13 +411,14 @@ export class CashuWalletMintQuoteService {
 		});
 	}
 
-	/** A quote with the total minted from it, how many mints that took, and whether it's done receiving */
+	/** A quote with the total minted from it, how many mints that took, whether it's done receiving, and its deposits while it isn't */
 	private async toRecord(quote: CashuWalletMintQuote): Promise<CashuWalletMintQuoteRecord> {
 		const [received, payments] = await Promise.all([
 			this.mintedTotal(quote),
 			this.walletOperationRepository.countBy(this.mintedFrom(quote)),
 		]);
-		return {...quote, received, payments, final: this.isFinal(quote)};
+		const final = this.isFinal(quote);
+		return {...quote, received, payments, final, deposits: final ? [] : this.showDeposits(quote)};
 	}
 
 	/** Whether a quote is done receiving: none of checkQuotes' reasons to check it still hold */
@@ -427,6 +438,60 @@ export class CashuWalletMintQuoteService {
 	}
 
 	/* *******************************************************
+		Deposits
+	******************************************************** */
+
+	/** Follow deposits to the addresses checked where the mint counts confirmations, in the background since block reads can take minutes over Tor; one run at a time, so addresses checked while one reads wait for the next check */
+	private followDeposits(groups: {wallet: Wallet; members: CashuWalletMintQuote[]}[]): void {
+		if (this.following) return;
+		const rules = new Map<string, CashuWalletDepositRules>();
+		for (const {wallet, members} of groups) {
+			const found = this.findMethod(members[0].method).depositRules(wallet.getMintInfo(), members[0].unit);
+			if (found) for (const {id} of members) rules.set(id, found);
+		}
+		if (rules.size === 0) return;
+		this.following = this.trackDeposits(rules)
+			.catch((error) => this.logger.warn(`Onchain deposits could not be recorded: ${describeMintError(error)}`))
+			.finally(() => {
+				this.following = null;
+			});
+	}
+
+	/** Follow deposits against each quote's paid total as just checked, and store what changed */
+	private async trackDeposits(rules: Map<string, CashuWalletDepositRules>): Promise<void> {
+		const quotes = await this.walletMintQuoteRepository.findBy({id: In([...rules.keys()])});
+		const updates = await this.cashuWalletChainService.trackDeposits(
+			quotes.map((quote) => ({...quote, ...rules.get(quote.id)!, deposits: this.readDeposits(quote)})),
+		);
+		await Promise.all(quotes.map((quote) => updates.has(quote.id) && this.writeDeposits(quote, updates.get(quote.id)!)));
+	}
+
+	/** Store a quote's deposits and scan position unless both are as read; with none listed before or after nothing shown changes, so the position moves on quietly */
+	private async writeDeposits(quote: CashuWalletMintQuote, {chain_height, deposits}: CashuWalletDepositUpdate): Promise<void> {
+		const stored = deposits.length > 0 ? JSON.stringify(deposits) : null;
+		if (quote.chain_height === chain_height && quote.deposits === stored) return;
+		await this.serially(this.settleKey(quote.id), async () => {
+			const current = await this.walletMintQuoteRepository.findOneByOrFail({id: quote.id});
+			if (stored !== null || current.deposits !== null) await this.writeQuote(current, {chain_height, deposits: stored});
+			else await this.walletMintQuoteRepository.update({id: quote.id}, {chain_height});
+		});
+	}
+
+	/** A quote's deposits as shown, counted from the block it was last scanned at */
+	private showDeposits(quote: CashuWalletMintQuote): CashuWalletMintQuoteDeposit[] {
+		return this.readDeposits(quote).map(({txid, amount, height}) => ({
+			txid,
+			amount,
+			confirmations: chainConfirmations(quote.chain_height!, height),
+		}));
+	}
+
+	/** The deposits stored on a quote */
+	private readDeposits(quote: CashuWalletMintQuote): CashuWalletChainDeposit[] {
+		return quote.deposits ? (JSON.parse(quote.deposits) as CashuWalletChainDeposit[]) : [];
+	}
+
+	/* *******************************************************
 		Helpers
 	******************************************************** */
 
@@ -440,6 +505,11 @@ export class CashuWalletMintQuoteService {
 	/** Key that serializes creating quotes at one wallet mint, method and unit */
 	private createKey({user_id, mint_id, method, unit}: CashuWalletMintQuoteRequest): string {
 		return `create:${user_id}:${mint_id}:${method}:${unit}`;
+	}
+
+	/** Key that serializes settling one quote */
+	private settleKey(id: string): string {
+		return `settle:${id}`;
 	}
 
 	/** Run work one at a time per key; a caller waits for the work before it, whether that succeeded or failed */

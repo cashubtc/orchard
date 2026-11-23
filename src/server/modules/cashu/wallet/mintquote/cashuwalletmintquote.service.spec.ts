@@ -9,7 +9,9 @@ import {DataSource} from 'typeorm';
 import {DateTime} from 'luxon';
 /* Application Dependencies */
 import {createFakeMint, fakeMintFetch, type FakeMint} from '#server/test/cashu-fake-mint';
+import {createFakeChain, type FakeChain} from '#server/test/bitcoin-fake-chain';
 import {FetchService} from '#server/modules/fetch/fetch.service';
+import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
 import {CashuMintRpcService} from '#server/modules/cashu/mintrpc/cashumintrpc.service';
 import {UserService} from '#server/modules/user/user.service';
 /* Native Dependencies */
@@ -26,6 +28,7 @@ import {CashuWalletMintInfo} from '#server/modules/cashu/wallet/mint/cashuwallet
 import {CashuWalletMintKeyset} from '#server/modules/cashu/wallet/mint/cashuwalletmintkeyset.entity';
 import {CashuWalletMintCacheService} from '#server/modules/cashu/wallet/mint/cashuwalletmintcache.service';
 import {CashuWalletMintTransportService} from '#server/modules/cashu/wallet/mint/cashuwalletminttransport.service';
+import {CashuWalletChainService} from '#server/modules/cashu/wallet/chain/cashuwalletchain.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 import {CASHU_WALLET_MINT_QUOTE_UPDATED} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
@@ -44,6 +47,7 @@ describe('CashuWalletMintQuoteService', () => {
 	let emitter: EventEmitter2;
 	let data_source: DataSource;
 	let mint: FakeMint;
+	let chain: FakeChain;
 	let mint_row: CashuWalletMint;
 	let offline: boolean;
 
@@ -85,10 +89,18 @@ describe('CashuWalletMintQuoteService', () => {
 			.sort((a, b) => a - b);
 	const requests = (path: RegExp) => fetch_service.fetchWithProxy.mock.calls.filter(([url]) => path.test(url)).length;
 	const checksOf = (quote_id: string) => requests(new RegExp(`/v1/mint/quote/\\w+/${quote_id}$`));
+	/** Let fire-and-forget work land: announcements, and the deposit runs checks start */
+	const settled = () => new Promise((resolve) => setTimeout(resolve, 20));
+	/** Check the quotes, then let the deposits the check follows land */
+	const checkDeposits = async () => {
+		await service.checkQuotes();
+		await settled();
+	};
 
 	beforeEach(async () => {
 		jest.clearAllMocks();
 		mint = createFakeMint();
+		chain = createFakeChain();
 		offline = false;
 		data_source = new DataSource({type: 'better-sqlite3', database: ':memory:', entities, synchronize: true});
 		await data_source.initialize();
@@ -107,6 +119,8 @@ describe('CashuWalletMintQuoteService', () => {
 				CashuWalletMintService,
 				CashuWalletMintCacheService,
 				CashuWalletMintTransportService,
+				CashuWalletChainService,
+				{provide: BitcoinRpcService, useValue: chain.rpc},
 				{provide: CashuWalletSeedService, useValue: {getSeed: jest.fn(async (user_id: string) => seeds[user_id])}},
 				{
 					provide: ConfigService,
@@ -252,6 +266,52 @@ describe('CashuWalletMintQuoteService', () => {
 			await service.checkQuotes();
 			expect(await minted(address.quote_id)).toEqual([400, 600]);
 		});
+
+		it('reads no chain for an address its mint credits at the first confirmation', async () => {
+			const tips = jest.spyOn(chain.rpc, 'getBitcoinBlockCount');
+			const address = await open('onchain');
+			chain.mine({address: address.request, amount: 5_000});
+			await service.checkQuotes();
+			expect(tips).not.toHaveBeenCalled();
+		});
+
+		describe('deposits', () => {
+			beforeEach(() => {
+				mint.info.nuts[4].methods[2].options = {confirmations: 3};
+			});
+
+			it('follows a deposit to the address from the block it lands in while it confirms, until the mint credits it', async () => {
+				const address = await open('onchain');
+				const shown = () => service.getQuote('user-1', address.id);
+				const [txid] = chain.mine({address: address.request, amount: 5_000});
+				await checkDeposits();
+				expect((await shown()).deposits).toEqual([{txid, amount: 5_000, confirmations: 1}]);
+				chain.mine();
+				chain.mine();
+				await checkDeposits();
+				expect((await shown()).deposits).toEqual([{txid, amount: 5_000, confirmations: 3}]);
+				mint.payMintQuote(address.quote_id, 5_000);
+				await checkDeposits();
+				expect(await shown()).toMatchObject({received: 5_000, deposits: []});
+			});
+
+			it('checks without waiting on block reads, and starts no second run while one reads', async () => {
+				const blocks = jest.spyOn(chain.rpc, 'getBitcoinBlock').mockReturnValue(new Promise<never>(() => undefined));
+				const address = await open('onchain');
+				chain.mine({address: address.request, amount: 5_000});
+				await checkDeposits();
+				await checkDeposits();
+				expect(blocks).toHaveBeenCalledTimes(1);
+			});
+
+			it('shows no deposits on an address done receiving', async () => {
+				const address = await open('onchain');
+				chain.mine({address: address.request, amount: 5_000});
+				await checkDeposits();
+				await data_source.getRepository(CashuWalletMintQuote).update({id: address.id}, {latest: false, check_until: 0});
+				expect(await service.getQuote('user-1', address.id)).toMatchObject({final: true, deposits: []});
+			});
+		});
 	});
 
 	it.each([
@@ -326,8 +386,6 @@ describe('CashuWalletMintQuoteService', () => {
 
 	describe('watching', () => {
 		let events: CashuWalletMintQuoteRecord[];
-		/** Let fire-and-forget announcements land */
-		const settled = () => new Promise((resolve) => setTimeout(resolve, 20));
 
 		beforeEach(() => {
 			events = [];
@@ -348,6 +406,31 @@ describe('CashuWalletMintQuoteService', () => {
 			expect(events.length).toBeGreaterThan(0);
 			expect(events.every(({id}) => id === invoice.id)).toBe(true);
 			expect(events).toContainEqual(expect.objectContaining({amount_paid: 100, received: 100, payments: 1, final: true}));
+		});
+
+		it('announces each new confirmation on a deposit the mint is waiting on', async () => {
+			mint.info.nuts[4].methods[2].options = {confirmations: 3};
+			const address = await open('onchain');
+			const [txid] = chain.mine({address: address.request, amount: 5_000});
+			await checkDeposits();
+			chain.mine();
+			await checkDeposits();
+			for (const confirmations of [1, 2]) {
+				expect(events).toContainEqual(expect.objectContaining({id: address.id, deposits: [{txid, amount: 5_000, confirmations}]}));
+			}
+		});
+
+		it('moves an address with no deposits on to each new block without announcing it or marking it changed', async () => {
+			mint.info.nuts[4].methods[2].options = {confirmations: 3};
+			const address = await open('onchain');
+			const quotes = data_source.getRepository(CashuWalletMintQuote);
+			await quotes.update({id: address.id}, {updated_at: 0});
+			await settled();
+			events = [];
+			chain.mine();
+			await checkDeposits();
+			expect(await quotes.findOneByOrFail({id: address.id})).toMatchObject({chain_height: chain.tip(), updated_at: 0});
+			expect(events).toEqual([]);
 		});
 
 		it('announces a quote again when one of its mints finishes, whichever path minted it', async () => {

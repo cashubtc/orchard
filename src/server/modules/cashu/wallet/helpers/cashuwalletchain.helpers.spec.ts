@@ -1,7 +1,7 @@
 /* Core Dependencies */
 import {expect} from '@jest/globals';
 /* Local Dependencies */
-import {parseOutpoint} from './cashuwalletchain.helpers.js';
+import {chainConfirmations, parseOutpoint} from './cashuwalletchain.helpers.js';
 
 describe('parseOutpoint', () => {
 	it('splits an outpoint into its txid and output index', () => {
@@ -10,5 +10,11 @@ describe('parseOutpoint', () => {
 
 	it.each(['ab'.repeat(32), `${'ab'.repeat(31)}:0`, `${'ab'.repeat(32)}:-1`, `${'zz'.repeat(32)}:0`])('refuses %s', (outpoint) => {
 		expect(parseOutpoint(outpoint)).toBeNull();
+	});
+});
+
+describe('chainConfirmations', () => {
+	it('counts the block a transaction is in and each block on top of it', () => {
+		expect([chainConfirmations(100, 100), chainConfirmations(105, 100)]).toEqual([1, 6]);
 	});
 });

@@ -75,6 +75,20 @@ describe('CashuWalletMintQuoteMethod', () => {
 		expect(info.isSupported).toHaveBeenCalledWith(4);
 	});
 
+	it("follows onchain deposits by the mint's NUT-04 count and minimum, only where it counts more than one confirmation in sat", () => {
+		const info = (unit: string, confirmations?: number) =>
+			({
+				isSupported: () => ({params: [{method: 'onchain', unit, min_amount: 1000, options: {confirmations}}]}),
+			}) as unknown as MintInfo;
+		expect(onchain.depositRules(info('sat', 6), 'sat')).toEqual({required: 6, min_amount: 1000});
+		expect([
+			onchain.depositRules(info('sat', 1), 'sat'),
+			onchain.depositRules(info('sat'), 'sat'),
+			onchain.depositRules(info('usd', 6), 'usd'),
+			bolt12.depositRules(info('sat', 6), 'sat'),
+		]).toEqual([null, null, null, null]);
+	});
+
 	it('locks bolt11 invoices only at mints that support NUT-20, and bolt12 and onchain quotes always', () => {
 		const info = (supported: boolean) => ({isSupported: () => ({supported})}) as unknown as MintInfo;
 		expect([bolt11.locks(info(true)), bolt11.locks(info(false))]).toEqual([true, false]);

@@ -1,9 +1,9 @@
 /* Vendor Dependencies */
 import type {MintInfo, Wallet} from '@cashu/cashu-ts';
 /* Native Dependencies */
-import {methodMaxAmount} from '#server/modules/cashu/wallet/helpers/cashuwalletmethod.helpers';
+import {methodMaxAmount, methodMinAmount, methodSetting} from '#server/modules/cashu/wallet/helpers/cashuwalletmethod.helpers';
 import type {CashuWalletMintQuote} from '#server/modules/cashu/wallet/mintquote/cashuwalletmintquote.entity';
-import type {CashuWalletMintQuoteResponse} from '#server/modules/cashu/wallet/cashuwallet.types';
+import type {CashuWalletDepositRules, CashuWalletMintQuoteResponse} from '#server/modules/cashu/wallet/cashuwallet.types';
 
 const HOUR = 60 * 60;
 const DAY = 24 * HOUR;
@@ -43,6 +43,11 @@ export abstract class CashuWalletMintQuoteMethod {
 	/** Most one mint from its quotes may be at this mint for the unit, when the mint sets a limit */
 	public maxAmount(info: MintInfo, unit: string): number {
 		return methodMaxAmount(info, 4, this.method, unit);
+	}
+
+	/** How the mint credits deposits to its quotes, when Orchard follows them onchain; null when it doesn't */
+	public depositRules(_info: MintInfo, _unit: string): CashuWalletDepositRules | null {
+		return null;
 	}
 
 	/** What's owed: everything paid and not yet minted */
@@ -126,6 +131,12 @@ export class CashuWalletOnchainMintQuoteMethod extends CashuWalletMintQuoteMetho
 	/** Only while nothing has been paid to it */
 	public canHandOut(quote: Pick<CashuWalletMintQuote, 'expiry' | 'amount_paid'>, now: number): boolean {
 		return quote.amount_paid === 0 && super.canHandOut(quote, now);
+	}
+
+	/** The confirmation count and per-deposit minimum the mint publishes, while the count is more than one and in sat, the unit chain amounts are in; at one the mint credits a deposit as soon as Orchard could see it */
+	public depositRules(info: MintInfo, unit: string): CashuWalletDepositRules | null {
+		const required = methodSetting(info, 4, this.method, unit)?.options?.confirmations ?? 0;
+		return unit === 'sat' && required > 1 ? {required, min_amount: methodMinAmount(info, 4, this.method, unit)} : null;
 	}
 }
 

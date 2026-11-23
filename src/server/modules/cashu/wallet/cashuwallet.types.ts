@@ -64,11 +64,41 @@ export type CashuWalletMintQuoteRequest = {
 	description: string | null;
 };
 
-/** A mint quote with what its payments brought in (the total minted from it and how many mints that took), and whether it's done receiving */
-export type CashuWalletMintQuoteRecord = CashuWalletMintQuote & {
+/** A mint quote with what its payments brought in (the total minted from it and how many mints that took), whether it's done receiving, and the onchain deposits the mint hasn't credited yet */
+export type CashuWalletMintQuoteRecord = Omit<CashuWalletMintQuote, 'deposits'> & {
 	received: number;
 	payments: number;
 	final: boolean;
+	deposits: CashuWalletMintQuoteDeposit[];
+};
+
+/** A deposit as its mint quote shows it */
+export type CashuWalletMintQuoteDeposit = Pick<CashuWalletChainDeposit, 'txid' | 'amount'> & {confirmations: number};
+
+/** A deposit to an onchain mint quote's address as stored: where it sits in the chain, and the paid total its quote reaches once the mint credits it (null under the mint's minimum, which it never credits) */
+export type CashuWalletChainDeposit = {
+	txid: string;
+	vout: number;
+	amount: number;
+	height: number;
+	blockhash: string;
+	paid_when_credited: number | null;
+};
+
+/** What a mint needs to credit a deposit: the confirmations it waits for, and the least a single deposit may be */
+export type CashuWalletDepositRules = {
+	required: number;
+	min_amount: number;
+};
+
+/** An onchain address whose deposits are followed, with its mint's rules for crediting them */
+export type CashuWalletDepositTrack = Pick<CashuWalletMintQuote, 'id' | 'request' | 'chain_height' | 'amount_paid'> &
+	CashuWalletDepositRules & {deposits: CashuWalletChainDeposit[]};
+
+/** A followed address's last scanned block and the deposits it still lists */
+export type CashuWalletDepositUpdate = {
+	chain_height: number;
+	deposits: CashuWalletChainDeposit[];
 };
 
 export type CashuWalletWatch = {
