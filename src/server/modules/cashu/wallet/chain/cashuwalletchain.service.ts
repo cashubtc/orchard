@@ -4,7 +4,7 @@ import {Injectable, Logger} from '@nestjs/common';
 import {BitcoinRpcService} from '#server/modules/bitcoin/rpc/btcrpc.service';
 import type {BitcoinRpcOptions} from '#server/modules/bitcoin/rpc/btcrpc.types';
 /* Native Dependencies */
-import {chainConfirmations, parseOutpoint} from '#server/modules/cashu/wallet/helpers/cashuwalletchain.helpers';
+import {chainConfirmations, isDepositCredited, parseOutpoint} from '#server/modules/cashu/wallet/helpers/cashuwalletchain.helpers';
 import type {
 	CashuWalletChainDeposit,
 	CashuWalletDepositTrack,
@@ -130,6 +130,6 @@ export class CashuWalletChainService {
 	private isOutstanding(deposit: CashuWalletChainDeposit, track: CashuWalletDepositTrack, tip: number): boolean {
 		const confirmations = chainConfirmations(tip, deposit.height);
 		if (deposit.paid_when_credited === null) return confirmations < track.required;
-		return track.amount_paid < deposit.paid_when_credited && confirmations < track.required + NEVER_CREDITED_BLOCKS;
+		return !isDepositCredited(deposit, track.amount_paid) && confirmations < track.required + NEVER_CREDITED_BLOCKS;
 	}
 }

@@ -14,7 +14,7 @@ import {CashuWalletChainService} from '#server/modules/cashu/wallet/chain/cashuw
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {describeMintError, walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
 import {mintQuoteTotals, quoteExpiry} from '#server/modules/cashu/wallet/helpers/cashuwalletquote.helpers';
-import {chainConfirmations} from '#server/modules/cashu/wallet/helpers/cashuwalletchain.helpers';
+import {chainConfirmations, isDepositCredited} from '#server/modules/cashu/wallet/helpers/cashuwalletchain.helpers';
 import {
 	CASHU_WALLET_FINAL_STATES,
 	CASHU_WALLET_OPEN_STATES,
@@ -177,14 +177,23 @@ export class CashuWalletMintQuoteService {
 		Updates
 	******************************************************** */
 
-	/** Announce a quote again when one of its mints finishes, so what it brought in reaches its watchers whichever path minted it */
+	/** Note a mint on its quote when it finishes, so what it brought in reaches the quote's watchers whichever path minted it */
 	@OnEvent(CASHU_WALLET_OPERATION_UPDATED)
 	public onOperationUpdated(operation: CashuWalletOperationUpdate): void {
 		if (operation.type !== WalletOperationType.MINT || !operation.quote_id || !CASHU_WALLET_FINAL_STATES.has(operation.state)) return;
-		this.walletMintQuoteRepository.findOneBy({mint_id: operation.mint_id, quote_id: operation.quote_id}).then(
-			(quote) => quote && this.announce(quote),
-			(error) => this.logger.warn(`Wallet mint quote for ${operation.quote_id} could not be announced: ${describeMintError(error)}`),
+		this.recordFinished(operation.mint_id, operation.quote_id).catch((error) =>
+			this.logger.warn(`Wallet mint quote for ${operation.quote_id} could not be updated: ${describeMintError(error)}`),
 		);
+	}
+
+	/** Note a finished mint on its quote once any settle under way is done, which notes and announces its own mints */
+	private async recordFinished(mint_id: string, quote_id: string): Promise<void> {
+		const quote = await this.walletMintQuoteRepository.findOneBy({mint_id, quote_id});
+		if (!quote) return;
+		await this.serially(this.settleKey(quote.id), async () => {
+			const current = await this.walletMintQuoteRepository.findOneByOrFail({id: quote.id});
+			await this.recordMinted(current, this.findMethod(current.method));
+		});
 	}
 
 	/** Emit a quote's current record for its watchers; a failure is only logged */
@@ -466,24 +475,24 @@ export class CashuWalletMintQuoteService {
 		await Promise.all(quotes.map((quote) => updates.has(quote.id) && this.writeDeposits(quote, updates.get(quote.id)!)));
 	}
 
-	/** Store a quote's deposits and scan position unless both are as read; with none listed before or after nothing shown changes, so the position moves on quietly */
+	/** Store a quote's deposits and scan position unless both are as read; a change to neither the deposits shown nor their counts moves on quietly */
 	private async writeDeposits(quote: CashuWalletMintQuote, {chain_height, deposits}: CashuWalletDepositUpdate): Promise<void> {
 		const stored = deposits.length > 0 ? JSON.stringify(deposits) : null;
 		if (quote.chain_height === chain_height && quote.deposits === stored) return;
 		await this.serially(this.settleKey(quote.id), async () => {
 			const current = await this.walletMintQuoteRepository.findOneByOrFail({id: quote.id});
-			if (stored !== null || current.deposits !== null) await this.writeQuote(current, {chain_height, deposits: stored});
-			else await this.walletMintQuoteRepository.update({id: quote.id}, {chain_height});
+			const changes = {chain_height, deposits: stored};
+			const unseen = JSON.stringify(this.showDeposits(current)) === JSON.stringify(this.showDeposits({...current, ...changes}));
+			if (unseen) await this.walletMintQuoteRepository.update({id: quote.id}, changes);
+			else await this.writeQuote(current, changes);
 		});
 	}
 
-	/** A quote's deposits as shown, counted from the block it was last scanned at */
+	/** A quote's deposits the mint hasn't credited yet, counted from the block it was last scanned at */
 	private showDeposits(quote: CashuWalletMintQuote): CashuWalletMintQuoteDeposit[] {
-		return this.readDeposits(quote).map(({txid, amount, height}) => ({
-			txid,
-			amount,
-			confirmations: chainConfirmations(quote.chain_height!, height),
-		}));
+		return this.readDeposits(quote)
+			.filter((deposit) => !isDepositCredited(deposit, quote.amount_paid))
+			.map(({txid, amount, height}) => ({txid, amount, confirmations: chainConfirmations(quote.chain_height!, height)}));
 	}
 
 	/** The deposits stored on a quote */

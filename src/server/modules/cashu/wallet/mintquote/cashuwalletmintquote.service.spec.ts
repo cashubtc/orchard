@@ -31,7 +31,10 @@ import {CashuWalletMintTransportService} from '#server/modules/cashu/wallet/mint
 import {CashuWalletChainService} from '#server/modules/cashu/wallet/chain/cashuwalletchain.service';
 import {WalletOperationState, WalletOperationType} from '#server/modules/cashu/wallet/cashuwallet.enums';
 import {walletError} from '#server/modules/cashu/wallet/helpers/cashuwalleterror.helpers';
-import {CASHU_WALLET_MINT_QUOTE_UPDATED} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
+import {
+	CASHU_WALLET_MINT_QUOTE_UPDATED,
+	CASHU_WALLET_OPERATION_UPDATED,
+} from '#server/modules/cashu/wallet/constants/cashuwallet.constants';
 import type {
 	CashuWalletOperationUpdate,
 	CashuWalletMintQuoteRecord,
@@ -433,19 +436,50 @@ describe('CashuWalletMintQuoteService', () => {
 			expect(events).toEqual([]);
 		});
 
-		it('announces a quote again when one of its mints finishes, whichever path minted it', async () => {
+		it('notes a mint that recovery finishes on its quote, announcing what it brought in once', async () => {
+			const offer = await service.newQuote(request('bolt12'));
+			mint.payMintQuote(offer.quote_id, 30);
+			mint.outages.set('/v1/mint/bolt12', 503);
+			await service.checkQuotes();
+			const [operation] = await data_source.getRepository(CashuWalletOperation).findBy({quote_id: offer.quote_id});
+			mint.outages.clear();
+			await settled();
+			events = [];
+			emitter.on(CASHU_WALLET_OPERATION_UPDATED, (update: CashuWalletOperationUpdate) => service.onOperationUpdated(update));
+			service.onOperationUpdated({...operation, type: WalletOperationType.SEND, state: WalletOperationState.FINALIZED});
+			await issue.executeMintOperation(operation.id);
+			await settled();
+			expect(events).toEqual([expect.objectContaining({id: offer.id, amount_issued: 30, received: 30, payments: 1})]);
+			expect((await data_source.getRepository(CashuWalletMintQuote).findOneByOrFail({id: offer.id})).amount_issued).toBe(30);
+		});
+
+		it('announces a payment once as paid and once as minted, however many paths note the mint', async () => {
+			emitter.on(CASHU_WALLET_OPERATION_UPDATED, (update: CashuWalletOperationUpdate) => service.onOperationUpdated(update));
 			const offer = await service.newQuote(request('bolt12'));
 			await settled();
 			events = [];
-			const finished = {type: WalletOperationType.MINT, state: WalletOperationState.FINALIZED, mint_id: mint_row.id};
-			service.onOperationUpdated({...finished, quote_id: offer.quote_id} as CashuWalletOperationUpdate);
-			service.onOperationUpdated({
-				...finished,
-				type: WalletOperationType.SEND,
-				quote_id: offer.quote_id,
-			} as CashuWalletOperationUpdate);
+			mint.payMintQuote(offer.quote_id, 30);
+			await service.checkQuotes();
 			await settled();
-			expect(events).toEqual([expect.objectContaining({id: offer.id, final: false})]);
+			expect(events.map(({amount_paid, received}) => ({amount_paid, received}))).toEqual([
+				{amount_paid: 30, received: 0},
+				{amount_paid: 30, received: 30},
+			]);
+		});
+
+		it('stops showing a deposit once the mint credits it, and the run that drops it announces nothing', async () => {
+			mint.info.nuts[4].methods[2].options = {confirmations: 3};
+			const address = await open('onchain');
+			chain.mine({address: address.request, amount: 5_000});
+			await checkDeposits();
+			events = [];
+			mint.payMintQuote(address.quote_id, 5_000);
+			await checkDeposits();
+			expect(events.map(({amount_paid, received, deposits}) => ({amount_paid, received, deposits}))).toEqual([
+				{amount_paid: 5_000, received: 0, deposits: []},
+				{amount_paid: 5_000, received: 5_000, deposits: []},
+			]);
+			expect(await data_source.getRepository(CashuWalletMintQuote).findOneByOrFail({id: address.id})).toMatchObject({deposits: null});
 		});
 
 		it('settles a quote from an update its mint pushed, asking the mint nothing', async () => {
