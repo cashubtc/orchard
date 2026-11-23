@@ -69,6 +69,7 @@ describe('CashuWalletSwapService', () => {
 	const balance = (user_id = 'user-1') => sumOf(user_id, WalletProofState.READY);
 	const held = (user_id = 'user-1') => sumOf(user_id, WalletProofState.HELD);
 	const reload = (id: string) => data_source.getRepository(CashuWalletOperation).findOneByOrFail({id});
+	const operationsOf = (user_id: string) => data_source.getRepository(CashuWalletOperation).findBy({user_id});
 	const tokenAmount = (token: string | null) => getTokenMetadata(token!).amount.toNumber();
 
 	/** Mint ecash into user-1's wallet through a quote already paid */
@@ -273,17 +274,19 @@ describe('CashuWalletSwapService', () => {
 			expect(await balance()).toBe(70);
 		});
 
-		it.each([
-			['fails a first receive', (sent: CashuWalletOperation) => receive(sent.token!), WalletOperationState.FAILED],
-			[
-				'puts a first reclaim back to waiting',
-				(sent: CashuWalletOperation) => service.reclaimToken('user-1', sent.id),
-				WalletOperationState.PENDING,
-			],
-		])('%s, leaving the token unclaimed', async (_label, attempt, state) => {
+		it('refuses a first receive with nothing left in activity, leaving the token unclaimed', async () => {
 			const sent = await send(await funded(), 30);
 			jest.spyOn(Wallet.prototype, 'completeSwap').mockRejectedValueOnce(new CashuWalletUnsentError(held_back));
-			expect(await attempt(sent)).toMatchObject({state, error: held_back});
+			await expect(receive(sent.token!)).rejects.toEqual(walletError(held_back));
+			expect(await operationsOf('user-2')).toEqual([]);
+			expect(await service.checkToken('user-1', sent.id)).toMatchObject({state: WalletOperationState.PENDING});
+			expect(await held()).toBe(30);
+		});
+
+		it('puts a first reclaim back to waiting, leaving the token unclaimed', async () => {
+			const sent = await send(await funded(), 30);
+			jest.spyOn(Wallet.prototype, 'completeSwap').mockRejectedValueOnce(new CashuWalletUnsentError(held_back));
+			expect(await service.reclaimToken('user-1', sent.id)).toMatchObject({state: WalletOperationState.PENDING, error: held_back});
 			expect(await service.checkToken('user-1', sent.id)).toMatchObject({state: WalletOperationState.PENDING});
 			expect(await held()).toBe(30);
 		});
@@ -378,10 +381,20 @@ describe('CashuWalletSwapService', () => {
 			expect(await held()).toBe(0);
 			await expect(service.reclaimToken('user-1', sent.id)).rejects.toEqual(walletError('Only an unclaimed token can be reclaimed'));
 
-			expect(await receive(sent.token!)).toMatchObject({
-				state: WalletOperationState.FAILED,
-				error: 'Mint error 11001: Token already spent',
-			});
+			await expect(receive(sent.token!)).rejects.toEqual(walletError('Mint error 11001: Token already spent'));
+			expect(await balance('user-2')).toBe(0);
+			expect(await operationsOf('user-2')).toEqual([]);
+		});
+
+		it('drops a receive left waiting once recovery finds its token claimed elsewhere', async () => {
+			const mint_id = await funded();
+			const sent = await send(mint_id, 30);
+			offline = true;
+			expect(await receive(sent.token!)).toMatchObject({state: WalletOperationState.EXECUTING});
+			offline = false;
+			expect(await service.reclaimToken('user-1', sent.id)).toMatchObject({state: WalletOperationState.RECLAIMED});
+			await recovery.reconcileOperations();
+			expect(await operationsOf('user-2')).toEqual([]);
 			expect(await balance('user-2')).toBe(0);
 		});
 

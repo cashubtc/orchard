@@ -78,6 +78,11 @@ export class CashuWalletJournalService {
 		return this.transition(operation, WalletOperationState.FAILED, {error: reason});
 	}
 
+	/** Delete an operation that holds none of the wallet and changed nothing in it, so it leaves nothing in activity */
+	public async discard(operation: CashuWalletOperation): Promise<void> {
+		await this.walletOperationRepository.delete({id: operation.id});
+	}
+
 	/** Keep an operation as it is with the failure recorded; reconciliation retries it */
 	public wait(operation: CashuWalletOperation, error: unknown): Promise<CashuWalletOperation> {
 		return this.transition(operation, operation.state, {error: describeMintError(error)});

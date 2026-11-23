@@ -161,6 +161,12 @@ describe('CashuWalletJournalService', () => {
 		expect(await proofs.findOneByOrFail({secret: 'b'})).toMatchObject({state: WalletProofState.SPENT});
 	});
 
+	it('deletes an operation that changed nothing in the wallet', async () => {
+		const operation = await createOperation();
+		await service.discard(operation);
+		expect(await data_source.getRepository(CashuWalletOperation).count()).toBe(0);
+	});
+
 	it('spends the inputs an operation holds when it finalizes', async () => {
 		const operation = await createOperation();
 		const proofs = data_source.getRepository(CashuWalletProof);
