@@ -82,6 +82,10 @@ $group-padding-bottom: 0.375rem;
 		@extend %orc-error-color;
 	}
 
+	&.incoming .ecash-activity-amount {
+		@extend %orc-status-active-color;
+	}
+
 	&.failed .ecash-activity-amount {
 		@extend %orc-outline-color;
 		text-decoration: line-through;
@@ -138,10 +142,6 @@ $group-padding-bottom: 0.375rem;
 		height: 0.875rem;
 		font-size: 0.875rem;
 	}
-}
-
-.ecash-activity-amount {
-	@extend %orc-status-active-color;
 }
 
 .ecash-activity-pill {

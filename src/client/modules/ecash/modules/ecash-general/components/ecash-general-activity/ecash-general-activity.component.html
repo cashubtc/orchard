@@ -38,6 +38,7 @@
 							class="ecash-activity-row"
 							[class.open]="row.progress === 'open'"
 							[class.failed]="row.progress === 'failed'"
+							[class.incoming]="row.sign === '+'"
 							(click)="open.emit(row.operation)"
 						>
 							<span class="ecash-activity-time font-size-xs orc-outline-color">{{ row.time }}</span>
@@ -49,8 +50,8 @@
 							<span class="flex flex-column flex-gap-0-25 w-min-0">
 								<span class="flex flex-items-center flex-gap-0-5">
 									<span>{{ row.title }}</span>
-									@if (row.progress === 'open') {
-										<span class="ecash-activity-pill font-size-xs font-weight-semi-bold">Pending</span>
+									@if (row.pill) {
+										<span class="ecash-activity-pill font-size-xs font-weight-semi-bold">{{ row.pill }}</span>
 									}
 								</span>
 								@if (row.subtitle) {
@@ -59,9 +60,7 @@
 							</span>
 							<span class="flex flex-column flex-items-end">
 								<span class="ecash-activity-amount font-weight-semi-bold text-nowrap">
-									@if (row.progress !== 'failed') {
-										+
-									}
+									{{ row.sign }}
 									<span [innerHTML]="row.operation.amount | localAmount: row.operation.unit"></span>
 								</span>
 								@if (row.amount_oracle !== null) {

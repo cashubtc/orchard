@@ -151,24 +151,41 @@ describe('buildActivityGroups', () => {
 		expect(groups.slice(4).map((group) => group.rows[0].time)).toEqual(['Oct 7', 'Sep 28', 'Dec 3']);
 	});
 
-	it('reads each row from its kind, state and payment method', () => {
+	it('reads each row from its kind, state and payment method, signed by the way the ecash moved', () => {
 		const [{rows}] = buildActivityGroups(
 			[
-				operation('2026-10-14T14:05', {memo: 'Meetup prizes'}),
-				operation('2026-10-14T14:04', {state: WalletOperationState.Executing}),
-				operation('2026-10-14T14:03', {state: WalletOperationState.Failed, error: 'Mint unreachable', memo: 'Raffle'}),
-				operation('2026-10-14T14:02', {type: WalletOperationType.Mint, method: 'bolt12'}),
-				operation('2026-10-14T14:01', {type: WalletOperationType.Mint, method: 'branch'}),
+				operation('2026-10-14T14:11', {memo: 'Meetup prizes'}),
+				operation('2026-10-14T14:10', {state: WalletOperationState.Executing}),
+				operation('2026-10-14T14:09', {state: WalletOperationState.Failed, error: 'Mint unreachable', memo: 'Raffle'}),
+				operation('2026-10-14T14:08', {type: WalletOperationType.Mint, method: 'bolt12'}),
+				operation('2026-10-14T14:07', {type: WalletOperationType.Mint, method: 'branch'}),
+				operation('2026-10-14T14:06', {type: WalletOperationType.Send, state: WalletOperationState.Pending, memo: 'Coffee'}),
+				operation('2026-10-14T14:05', {type: WalletOperationType.Send}),
+				operation('2026-10-14T14:04', {type: WalletOperationType.Send, state: WalletOperationState.Reclaimed, memo: 'Coffee'}),
+				operation('2026-10-14T14:03', {type: WalletOperationType.Receive}),
+				operation('2026-10-14T14:02', {type: WalletOperationType.Melt, method: 'bolt11', state: WalletOperationState.Pending}),
+				operation('2026-10-14T14:01', {
+					type: WalletOperationType.Melt,
+					method: 'onchain',
+					state: WalletOperationState.Failed,
+					error: 'Mint error 20006: Invoice already paid.',
+				}),
 			],
 			null,
 			now,
 		);
-		expect(rows.map(({title, subtitle, progress}) => ({title, subtitle, progress}))).toEqual([
-			{title: 'Issued', subtitle: 'Meetup prizes', progress: 'done'},
-			{title: 'Issuing', subtitle: null, progress: 'open'},
-			{title: 'Issue failed', subtitle: 'Mint unreachable', progress: 'failed'},
-			{title: 'Received', subtitle: null, progress: 'done'},
-			{title: 'Received', subtitle: null, progress: 'done'},
+		expect(rows.map(({title, subtitle, progress, sign, pill}) => ({title, subtitle, progress, sign, pill}))).toEqual([
+			{title: 'Issued', subtitle: 'Meetup prizes', progress: 'done', sign: '+', pill: null},
+			{title: 'Issuing', subtitle: null, progress: 'open', sign: '+', pill: 'Pending'},
+			{title: 'Issue failed', subtitle: 'Mint unreachable', progress: 'failed', sign: null, pill: null},
+			{title: 'Received', subtitle: null, progress: 'done', sign: '+', pill: null},
+			{title: 'Received', subtitle: null, progress: 'done', sign: '+', pill: null},
+			{title: 'Sent', subtitle: 'Coffee', progress: 'open', sign: '−', pill: 'Unclaimed'},
+			{title: 'Sent', subtitle: null, progress: 'done', sign: '−', pill: null},
+			{title: 'Reclaimed', subtitle: 'Coffee', progress: 'done', sign: null, pill: null},
+			{title: 'Received', subtitle: null, progress: 'done', sign: '+', pill: null},
+			{title: 'Paying', subtitle: null, progress: 'open', sign: '−', pill: 'Pending'},
+			{title: 'Payment failed', subtitle: 'Mint error 20006: Invoice already paid.', progress: 'failed', sign: null, pill: null},
 		]);
 		expect(rows.map((row) => row.method)).toEqual([
 			{label: 'Ecash', icon: 'payments', svg_icon: false},
@@ -176,6 +193,12 @@ describe('buildActivityGroups', () => {
 			{label: 'Ecash', icon: 'payments', svg_icon: false},
 			{label: 'BOLT 12', icon: 'double_bolt', svg_icon: true},
 			{label: 'BRANCH', icon: 'money_bag', svg_icon: false},
+			{label: 'Ecash', icon: 'payments', svg_icon: false},
+			{label: 'Ecash', icon: 'payments', svg_icon: false},
+			{label: 'Ecash', icon: 'payments', svg_icon: false},
+			{label: 'Ecash', icon: 'payments', svg_icon: false},
+			{label: 'BOLT 11', icon: 'bolt', svg_icon: false},
+			{label: 'ONCHAIN', icon: 'deployed_code', svg_icon: false},
 		]);
 	});
 

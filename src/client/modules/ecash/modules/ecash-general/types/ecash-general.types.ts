@@ -77,6 +77,8 @@ export type EcashActivityRow = {
 	subtitle: string | null;
 	method: CashuMethodDisplay;
 	progress: EcashActivityProgress;
+	sign: '+' | '−' | null;
+	pill: string | null;
 	amount_oracle: number | null;
 };
 

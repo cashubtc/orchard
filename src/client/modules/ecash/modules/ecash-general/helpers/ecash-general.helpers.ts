@@ -28,19 +28,40 @@ import {
 /* Shared Dependencies */
 import {OrchardNuts, WalletOperationState, WalletOperationType} from '@shared/generated.types';
 
-/** How a kind of operation reads in the activity list; without a method it shows the operation's payment method */
+/** How a kind of operation reads in the activity list; without a method it shows the operation's payment method, and pending_pill names its PENDING state */
 type EcashActivityKind = {
 	method?: CashuMethodDisplay;
 	titles: Record<EcashActivityProgress, string>;
+	outgoing: boolean;
+	pending_pill?: string;
 };
+
+const ECASH_METHOD: CashuMethodDisplay = {label: 'Ecash', icon: 'payments', svg_icon: false};
 
 const ACTIVITY_KINDS: Record<WalletOperationType, EcashActivityKind> = {
 	[WalletOperationType.Issue]: {
-		method: {label: 'Ecash', icon: 'payments', svg_icon: false},
+		method: ECASH_METHOD,
 		titles: {done: 'Issued', open: 'Issuing', failed: 'Issue failed'},
+		outgoing: false,
 	},
 	[WalletOperationType.Mint]: {
 		titles: {done: 'Received', open: 'Receiving', failed: 'Receive failed'},
+		outgoing: false,
+	},
+	[WalletOperationType.Receive]: {
+		method: ECASH_METHOD,
+		titles: {done: 'Received', open: 'Receiving', failed: 'Receive failed'},
+		outgoing: false,
+	},
+	[WalletOperationType.Send]: {
+		method: ECASH_METHOD,
+		titles: {done: 'Sent', open: 'Sent', failed: 'Send failed'},
+		outgoing: true,
+		pending_pill: 'Unclaimed',
+	},
+	[WalletOperationType.Melt]: {
+		titles: {done: 'Paid', open: 'Paying', failed: 'Payment failed'},
+		outgoing: true,
 	},
 };
 
@@ -207,23 +228,49 @@ function buildActivityRow(operation: EcashOperation, oracle_price: number | null
 	return {
 		operation,
 		time,
-		title: kind.titles[progress],
+		title: operation.state === WalletOperationState.Reclaimed ? 'Reclaimed' : kind.titles[progress],
 		subtitle: failed ? operation.error : operation.memo,
 		method: kind.method ?? getCashuMethodDisplay(operation.method),
 		progress,
+		sign: getActivitySign(kind, operation.state),
+		pill: getActivityPill(kind, operation.state, progress),
 		amount_oracle: failed ? null : oracleConvertToUSDCents(operation.amount, oracle_price, operation.unit),
 	};
 }
 
 /**
- * Where an operation stands, from its saga state
+ * Where an operation stands, from its saga state; a reclaimed token is settled
  * @param {WalletOperationState} state - The operation's state
  * @returns {EcashActivityProgress} Done, open or failed
  */
 function getActivityProgress(state: WalletOperationState): EcashActivityProgress {
-	if (state === WalletOperationState.Finalized) return 'done';
+	if (state === WalletOperationState.Finalized || state === WalletOperationState.Reclaimed) return 'done';
 	if (state === WalletOperationState.Failed) return 'failed';
 	return 'open';
+}
+
+/**
+ * The sign before a row's amount, by the way the ecash moved
+ * @param {EcashActivityKind} kind - The operation's kind
+ * @param {WalletOperationState} state - The operation's state
+ * @returns {EcashActivityRow['sign']} + or −, none when nothing moved: failed, or a token taken back
+ */
+function getActivitySign(kind: EcashActivityKind, state: WalletOperationState): EcashActivityRow['sign'] {
+	if (state === WalletOperationState.Failed || state === WalletOperationState.Reclaimed) return null;
+	return kind.outgoing ? '−' : '+';
+}
+
+/**
+ * The pill an open row carries: its kind's name for PENDING, else Pending
+ * @param {EcashActivityKind} kind - The operation's kind
+ * @param {WalletOperationState} state - The operation's state
+ * @param {EcashActivityProgress} progress - Where the operation stands
+ * @returns {string | null} The pill's text, null once it has settled
+ */
+function getActivityPill(kind: EcashActivityKind, state: WalletOperationState, progress: EcashActivityProgress): string | null {
+	if (progress !== 'open') return null;
+	if (state === WalletOperationState.Pending && kind.pending_pill) return kind.pending_pill;
+	return 'Pending';
 }
 
 /**
