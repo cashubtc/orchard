@@ -1,6 +1,7 @@
 /* Core Dependencies */
 import {Test, TestingModule} from '@nestjs/testing';
 import {expect} from '@jest/globals';
+import {EventEmitter2} from '@nestjs/event-emitter';
 /* Vendor Dependencies */
 import {Client, credentials, Metadata, status, type ServiceError} from '@grpc/grpc-js';
 /* Native Dependencies */
@@ -10,6 +11,7 @@ import {CdkService} from '#server/modules/cashu/cdk/cdk.service';
 import {NutshellService} from '#server/modules/cashu/nutshell/nutshell.service';
 /* Local Dependencies */
 import {CashuMintRpcService} from './cashumintrpc.service.js';
+import {CASHU_MINT_URLS_UPDATED} from './cashumintrpc.constants.js';
 import {OrchardErrorCode} from '#server/modules/error/error.types';
 
 describe('CashuMintRpcService', () => {
@@ -17,14 +19,17 @@ describe('CashuMintRpcService', () => {
 	let configService: jest.Mocked<ConfigService>;
 	let cdkService: jest.Mocked<CdkService>;
 	let nutshellService: jest.Mocked<NutshellService>;
+	const event_emitter = {emit: jest.fn()};
 
 	beforeEach(async () => {
+		event_emitter.emit.mockClear();
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				CashuMintRpcService,
 				{provide: ConfigService, useValue: {get: jest.fn()}},
 				{provide: CdkService, useValue: {initializeGrpcClient: jest.fn(), initializeWalletClient: jest.fn()}},
 				{provide: NutshellService, useValue: {initializeGrpcClient: jest.fn()}},
+				{provide: EventEmitter2, useValue: event_emitter},
 			],
 		}).compile();
 
@@ -280,6 +285,21 @@ describe('CashuMintRpcService', () => {
 		expect(client.AddUrl).toHaveBeenCalledWith({url: 'u'}, expect.any(Object), expect.any(Function));
 		await cashuMintRpcService.removeUrl({url: 'u'});
 		expect(client.RemoveUrl).toHaveBeenCalledWith({url: 'u'}, expect.any(Object), expect.any(Function));
+	});
+
+	it('announces a change to the URLs once the mint accepts it, and nothing for one it refuses', async () => {
+		const client: any = {
+			AddUrl: jest.fn((req: any, _metadata: any, cb: any) => cb(null, {})),
+			RemoveUrl: jest.fn((req: any, _metadata: any, cb: any) =>
+				cb({code: status.INVALID_ARGUMENT, message: '3 INVALID_ARGUMENT', details: 'unknown url'}, null),
+			),
+		};
+		(cdkService.initializeGrpcClient as jest.Mock).mockReturnValue(client);
+		configService.get.mockReturnValue('cdk');
+		await cashuMintRpcService.onModuleInit();
+		await cashuMintRpcService.addUrl({url: 'u'});
+		await expect(cashuMintRpcService.removeUrl({url: 'u'})).rejects.toMatchObject({details: 'unknown url'});
+		expect(event_emitter.emit.mock.calls).toEqual([[CASHU_MINT_URLS_UPDATED]]);
 	});
 
 	it('addContact and removeContact send method and info', async () => {

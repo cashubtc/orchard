@@ -171,7 +171,7 @@ describe('CashuWalletSwapService', () => {
 		it('refuses to send from the Orchard mint while it publishes no URL', async () => {
 			orchard().info.urls = [];
 			const mint_id = await funded();
-			await expect(send(mint_id, 30)).rejects.toEqual(walletError('Orchard mint has no public URL; add one to its info'));
+			await expect(send(mint_id, 30)).rejects.toEqual(walletError('Orchard mint has no public URL; add one in Mint Info'));
 			expect(await balance()).toBe(100);
 		});
 
@@ -326,7 +326,7 @@ describe('CashuWalletSwapService', () => {
 					orchard().info.urls = [];
 					return preview(await funded(), 30);
 				},
-				'Orchard mint has no public URL; add one to its info',
+				'Orchard mint has no public URL; add one in Mint Info',
 			],
 		])('refuses %s', async (_label, attempt, details) => {
 			await expect(attempt()).rejects.toEqual(walletError(details));

@@ -244,8 +244,35 @@ describe('CashuWalletMintService', () => {
 			route(ORCHARD_API, async () => response({...orchard_info, urls: []}));
 			const {id} = await service.getOrchardMint('user-1');
 			await expect(service.getTokenUrl('user-1', id)).rejects.toEqual(
-				walletError('Orchard mint has no public URL; add one to its info'),
+				walletError('Orchard mint has no public URL; add one in Mint Info'),
 			);
+		});
+
+		it('carries the URLs the Orchard mint publishes once it changes them, and none it removed', async () => {
+			route(ORCHARD_API, async () => response({...orchard_info, urls: []}));
+			const {id} = await service.getOrchardMint('user-1');
+			route(ORCHARD_API, async () => response({...orchard_info, urls: ['https://new.orchard.example']}));
+			service.onMintUrlsUpdated();
+			expect(await service.getTokenUrl('user-1', id)).toBe('https://new.orchard.example');
+			route(ORCHARD_API, async () => response({...orchard_info, urls: ['https://other.orchard.example']}));
+			service.onMintUrlsUpdated();
+			expect(await service.getTokenUrl('user-1', id)).toBe('https://other.orchard.example');
+		});
+
+		it('asks the Orchard mint nothing for a send until it changes its URLs', async () => {
+			const {id} = await service.getOrchardMint('user-1');
+			const asked = () => fetch_service.fetchWithProxy.mock.calls.filter(([url]) => url.startsWith(ORCHARD_API)).length;
+			const before = asked();
+			await service.getTokenUrl('user-1', id);
+			await service.getTokenUrl('user-1', id);
+			expect(asked()).toBe(before);
+		});
+
+		it('keeps the URLs the Orchard mint last published while it cannot be reached', async () => {
+			const {id} = await service.getOrchardMint('user-1');
+			route(ORCHARD_API, () => Promise.reject(new Error('ECONNREFUSED')));
+			service.onMintUrlsUpdated();
+			expect(await service.getTokenUrl('user-1', id)).toBe('https://mint.orchard.example');
 		});
 
 		it("uses another mint's first URL, only in its own wallet", async () => {

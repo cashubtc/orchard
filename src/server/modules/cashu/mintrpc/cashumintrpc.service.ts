@@ -1,6 +1,7 @@
 /* Core Dependencies */
 import {Injectable, Logger, type OnModuleInit} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
+import {EventEmitter2} from '@nestjs/event-emitter';
 /* Vendor Dependencies */
 import {Metadata, type ServiceError, status} from '@grpc/grpc-js';
 /* Application Dependencies */
@@ -10,6 +11,7 @@ import {OrchardErrorCode} from '#server/modules/error/error.types';
 import {MintType} from '#server/modules/cashu/cashu.enums';
 /* Local Dependencies */
 import type {CashuMintInfoRpc, CashuMintWalletBalanceRpc} from './cashumintrpc.types.js';
+import {CASHU_MINT_URLS_UPDATED} from './cashumintrpc.constants.js';
 
 @Injectable()
 export class CashuMintRpcService implements OnModuleInit {
@@ -23,6 +25,7 @@ export class CashuMintRpcService implements OnModuleInit {
 		private configService: ConfigService,
 		private cdkService: CdkService,
 		private nutshellService: NutshellService,
+		private eventEmitter: EventEmitter2,
 	) {}
 
 	public onModuleInit() {
@@ -109,11 +112,18 @@ export class CashuMintRpcService implements OnModuleInit {
 	}
 
 	async addUrl({url}: {url: string}): Promise<{}> {
-		return this.makeGrpcRequest('AddUrl', {url});
+		return this.updateUrls('AddUrl', url);
 	}
 
 	async removeUrl({url}: {url: string}): Promise<{}> {
-		return this.makeGrpcRequest('RemoveUrl', {url});
+		return this.updateUrls('RemoveUrl', url);
+	}
+
+	/** Add or remove a URL the mint publishes, announcing the change once the mint accepts it */
+	private async updateUrls(method: 'AddUrl' | 'RemoveUrl', url: string): Promise<{}> {
+		const response = await this.makeGrpcRequest(method, {url});
+		this.eventEmitter.emit(CASHU_MINT_URLS_UPDATED);
+		return response;
 	}
 
 	async addContact({method, info}: {method: string; info: string}): Promise<{}> {

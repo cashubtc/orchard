@@ -2,6 +2,7 @@
 import {Injectable, Logger} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {ConfigService} from '@nestjs/config';
+import {OnEvent} from '@nestjs/event-emitter';
 /* Vendor Dependencies */
 import {In, Raw, Repository} from 'typeorm';
 import {DateTime} from 'luxon';
@@ -19,6 +20,7 @@ import {
 /* Application Dependencies */
 import {UserService} from '#server/modules/user/user.service';
 import {UserRole} from '#server/modules/user/user.enums';
+import {CASHU_MINT_URLS_UPDATED} from '#server/modules/cashu/mintrpc/cashumintrpc.constants';
 /* Native Dependencies */
 import {MintRedirectError} from '#server/modules/cashu/wallet/classes/mint-redirect-error.class';
 import {CashuWalletCounterSource} from '#server/modules/cashu/wallet/classes/cashu-wallet-counter-source.class';
@@ -55,6 +57,7 @@ type Memo<T> = {value: Promise<T>; loaded_at: number; expires_at: number};
 export class CashuWalletMintService {
 	private readonly logger = new Logger(CashuWalletMintService.name);
 	private orchard_live: OrchardMintIdentity | null = null;
+	private orchard_stale = false;
 	private orchard_cached: OrchardMintIdentity | null | undefined = undefined;
 	private orchard_lookup: Promise<OrchardMintIdentity | null> | null = null;
 	private orchard_failed_at = 0;
@@ -238,11 +241,12 @@ export class CashuWalletMintService {
 		await wallet.loadMint(true).finally(() => this.saveKeychain(wallet.keyChain.cache));
 	}
 
-	/** URL a token from a wallet mint carries: its first, or the first the Orchard mint publishes */
+	/** URL a token from a wallet mint carries: its first, or the first the Orchard mint publishes, waiting on a lookup after it changed them */
 	public async getTokenUrl(user_id: string, mint_id: string): Promise<string> {
-		const [mint, identity] = await Promise.all([this.findWalletMint(user_id, mint_id), this.getOrchardIdentity()]);
+		const [mint, live] = await Promise.all([this.findWalletMint(user_id, mint_id), this.getLiveOrchardIdentity()]);
+		const identity = live ?? (await this.getCachedOrchardIdentity());
 		if (!identity || !this.isOrchardMint(mint, identity)) return mint.urls[0];
-		if (identity.urls.length === 0) throw walletError('Orchard mint has no public URL; add one to its info');
+		if (identity.urls.length === 0) throw walletError('Orchard mint has no public URL; add one in Mint Info');
 		return identity.urls[0];
 	}
 
@@ -366,7 +370,7 @@ export class CashuWalletMintService {
 			return {online: false, latency_ms: null, error: describeMintError(error), checked_at: DateTime.now().toUnixInteger()};
 		}
 		const latency_ms = DateTime.now().toMillis() - started_at;
-		if (mint.mintUrl === this.orchard_live?.api_url) this.orchard_live = this.toOrchardIdentity(mint.mintUrl, info.cache);
+		if (mint.mintUrl === this.orchard_live?.api_url) this.renewOrchardLive(this.toOrchardIdentity(mint.mintUrl, info.cache));
 		await this.cashuWalletMintCacheService
 			.saveInfo(mint.mintUrl, info)
 			.then(() => (this.orchard_cached = undefined))
@@ -386,17 +390,31 @@ export class CashuWalletMintService {
 		return (await this.getCachedOrchardIdentity()) ?? live;
 	}
 
-	/** Identity from the mint itself, for anything that writes; one lookup at a time, a failed lookup is retried after ORCHARD_RETRY_MS */
+	/** Identity from the mint itself, for anything that writes, looked up again once the mint changes its URLs; one lookup at a time, keeping the last one known while the mint can't be reached, and a failed lookup is retried after ORCHARD_RETRY_MS */
 	private getLiveOrchardIdentity(): Promise<OrchardMintIdentity | null> {
-		if (this.orchard_live) return Promise.resolve(this.orchard_live);
-		if (DateTime.now().toMillis() - this.orchard_failed_at < ORCHARD_RETRY_MS) return Promise.resolve(null);
+		if (this.orchard_live && !this.orchard_stale) return Promise.resolve(this.orchard_live);
+		if (DateTime.now().toMillis() - this.orchard_failed_at < ORCHARD_RETRY_MS) return Promise.resolve(this.orchard_live);
 		this.orchard_lookup ??= this.loadOrchardIdentity().then((identity) => {
 			this.orchard_lookup = null;
-			if (identity) this.orchard_live = identity;
+			if (identity) this.renewOrchardLive(identity);
 			else this.orchard_failed_at = DateTime.now().toMillis();
-			return identity;
+			return this.orchard_live;
 		});
 		return this.orchard_lookup;
+	}
+
+	/** Keep an identity fresh from the mint as the live one */
+	private renewOrchardLive(identity: OrchardMintIdentity): void {
+		this.orchard_live = identity;
+		this.orchard_stale = false;
+	}
+
+	/** The Orchard mint accepted a change to its URLs: look it up again now, so tokens and lists carry the new ones */
+	@OnEvent(CASHU_MINT_URLS_UPDATED)
+	public onMintUrlsUpdated(): void {
+		this.orchard_stale = true;
+		this.orchard_failed_at = 0;
+		void this.getLiveOrchardIdentity();
 	}
 
 	/** The Orchard mint's identity from the /v1/info last saved for MINT_API, read once until a probe saves fresh info */
