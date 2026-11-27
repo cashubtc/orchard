@@ -93,6 +93,7 @@ export class CashuWalletSwapService {
 
 	/** The most a token can carry once its redeemer's fee and the swap's are paid from every ready proof; the fee follows the amount's split, so it's searched down from the top */
 	private maxSend(wallet: Wallet, ready: Proof[]): number {
+		if (ready.length === 0) throw walletError('No ecash at this mint');
 		const spendable = wallet.maxSpendableAfterFees(ready).toNumber();
 		for (let amount = spendable; amount > 0; amount--) {
 			if (amount + wallet.getFeesToInclude(amount).toNumber() <= spendable) return amount;

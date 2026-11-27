@@ -318,9 +318,14 @@ describe('CashuWalletSwapService', () => {
 
 		it.each([
 			['without an amount', async () => preview(await funded(), null), 'An amount is required'],
+			['max from an empty wallet', async () => preview(await orchardMint(), null, true), 'No ecash at this mint'],
 			[
 				'max from a wallet too small to cover the fees',
-				async () => preview(await orchardMint(), null, true),
+				async () => {
+					const mint_id = (await mint_service.addMint('user-1', CEDAR)).id;
+					await fund(mint_id, 1, cedar());
+					return preview(mint_id, null, true);
+				},
 				'Not enough here to cover the fees',
 			],
 			[

@@ -255,8 +255,17 @@ describe('CashuWalletMeltService', () => {
 			expect(meltQuotesSent('bolt12')).toHaveLength(1);
 		});
 
-		it('refuses when the balance cannot cover the fees, without asking the mint', async () => {
+		it('refuses max from an empty wallet without asking the mint', async () => {
 			const mint_id = await orchardMint();
+			await expect(quote(mint_id, {method: 'bolt12', request: 'lno1fake', max: true})).rejects.toEqual(
+				walletError('No ecash at this mint'),
+			);
+			expect(meltQuotesSent('bolt12')).toHaveLength(0);
+		});
+
+		it('refuses when the balance cannot cover the fees, without asking the mint', async () => {
+			const mint_id = (await mint_service.addMint('user-1', CEDAR)).id;
+			await fund(mint_id, 1, cedar());
 			await expect(quote(mint_id, {method: 'bolt12', request: 'lno1fake', max: true})).rejects.toEqual(
 				walletError('Not enough here to cover the fees'),
 			);

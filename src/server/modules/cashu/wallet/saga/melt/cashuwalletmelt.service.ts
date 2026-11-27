@@ -85,6 +85,7 @@ export class CashuWalletMeltService {
 		request: string,
 		ready: Proof[],
 	): Promise<CashuWalletMeltQuote> {
+		if (ready.length === 0) throw walletError('No ecash at this mint');
 		let amount = Math.min(wallet.maxSpendableAfterFees(ready).toNumber(), method.maxAmount(wallet.getMintInfo(), wallet.unit));
 		for (let attempt = 1; ; attempt++) {
 			if (amount <= 0) throw walletError('Not enough here to cover the fees');
